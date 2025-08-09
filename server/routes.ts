@@ -8,6 +8,8 @@ import fs from "fs/promises";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
+import * as XLSX from 'xlsx';
+import { stringify } from 'csv-stringify/sync';
 import { 
   sendEmail,
   sendTeacherRegistrationAlert, 
@@ -1113,6 +1115,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Forgot password error:", error);
       res.status(500).json({ message: "Failed to send reset request" });
+    }
+  });
+
+  // Export scholars data endpoint
+  app.get("/api/admin/export/scholars/:format", async (req, res) => {
+    try {
+      const { format } = req.params;
+      const scholars = await storage.getAllScholars();
+      const houses = await storage.getHouses();
+      
+      // Create a map for house names
+      const houseMap = new Map(houses.map(h => [h.id, h.name]));
+      
+      // Format the data for export
+      const exportData = scholars.map(scholar => ({
+        'Student Name': scholar.name,
+        'Student ID': scholar.studentId,
+        'Grade Level': scholar.grade,
+        'House Assigned': houseMap.get(scholar.houseId) || 'Not Assigned',
+        'Academic Points': scholar.academicPoints,
+        'Attendance Points': scholar.attendancePoints,
+        'Behavior Points': scholar.behaviorPoints,
+        'Total Points': scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints,
+        'Date Added': scholar.createdAt ? new Date(scholar.createdAt).toLocaleDateString() : 'N/A'
+      }));
+
+      if (format === 'csv') {
+        const csv = stringify(exportData, { 
+          header: true,
+          columns: [
+            'Student Name',
+            'Student ID', 
+            'Grade Level',
+            'House Assigned',
+            'Academic Points',
+            'Attendance Points',
+            'Behavior Points',
+            'Total Points',
+            'Date Added'
+          ]
+        });
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="bhsa-scholars-${new Date().toISOString().split('T')[0]}.csv"`);
+        res.send(csv);
+        
+      } else if (format === 'excel') {
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'BHSA Scholars');
+        
+        // Set column widths for better readability
+        worksheet['!cols'] = [
+          { width: 20 }, // Student Name
+          { width: 15 }, // Student ID
+          { width: 12 }, // Grade Level
+          { width: 20 }, // House Assigned
+          { width: 15 }, // Academic Points
+          { width: 15 }, // Attendance Points
+          { width: 15 }, // Behavior Points
+          { width: 12 }, // Total Points
+          { width: 12 }  // Date Added
+        ];
+        
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="bhsa-scholars-${new Date().toISOString().split('T')[0]}.xlsx"`);
+        res.send(buffer);
+        
+      } else {
+        res.status(400).json({ message: 'Invalid format. Use "csv" or "excel"' });
+      }
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ message: 'Failed to export scholar data' });
     }
   });
 

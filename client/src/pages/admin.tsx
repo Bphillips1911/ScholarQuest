@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet } from "lucide-react";
 import { Link } from "wouter";
 import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -91,21 +91,17 @@ export default function Admin() {
     });
   };
 
-  const handleExportData = () => {
-    const data = {
-      houses,
-      pointEntries,
-      exportDate: new Date().toISOString(),
-    };
-    
-    const dataStr = JSON.stringify(data, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
+  const handleExportData = (format: 'csv' | 'excel') => {
+    const url = `/api/admin/export/scholars/${format}`;
     const link = document.createElement('a');
     link.href = url;
-    link.download = `house-data-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `bhsa-scholars-${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'csv'}`;
     link.click();
-    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Started",
+      description: `Scholar data export in ${format.toUpperCase()} format has started.`,
+    });
   };
 
   const handleResetPoints = () => {
@@ -177,12 +173,20 @@ export default function Admin() {
               Parent Portal Info
             </Button>
             <Button 
-              onClick={handleExportData}
+              onClick={() => handleExportData('csv')}
               className="bg-green-600 text-white hover:bg-green-700"
-              data-testid="button-export-data"
+              data-testid="button-export-csv"
             >
               <Download className="mr-2 h-4 w-4" />
-              Export Data
+              Export CSV
+            </Button>
+            <Button 
+              onClick={() => handleExportData('excel')}
+              className="bg-green-700 text-white hover:bg-green-800"
+              data-testid="button-export-excel"
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Export Excel
             </Button>
             <Button 
               onClick={handleResetPoints}

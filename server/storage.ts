@@ -341,7 +341,8 @@ export class MemStorage implements IStorage {
 
     for (const teacher of sampleTeachers) {
       const id = randomUUID();
-      const hashedPassword = await bcrypt.hash("password123", 10); // Default password for demo
+      const defaultPassword = process.env.DEMO_TEACHER_PASSWORD || "password123";
+      const hashedPassword = await bcrypt.hash(defaultPassword, 10); // Default password for demo
       const newTeacher: Teacher = {
         id,
         name: teacher.name,
@@ -809,27 +810,28 @@ export class MemStorage implements IStorage {
 
   // Initialize demo teacher authentication accounts
   private async initializeTeacherAuth() {
+    const defaultPassword = process.env.DEMO_TEACHER_PASSWORD || "password123";
     const demoTeachers = [
       {
         email: "s.johnson@bhsteam.edu",
         name: "Sarah Johnson", 
         gradeRole: "6th Grade Teacher",
         subject: "Mathematics",
-        password: "password123"
+        password: defaultPassword
       },
       {
         email: "r.miller@bhsteam.edu", 
         name: "Robert Miller",
         gradeRole: "Unified Arts Teacher",
         subject: "Art",
-        password: "password123"
+        password: defaultPassword
       },
       {
         email: "principal@bhsteam.edu",
         name: "Dr. Phillips",
         gradeRole: "Administrator", 
         subject: "Administration",
-        password: "password123"
+        password: defaultPassword
       }
     ];
 

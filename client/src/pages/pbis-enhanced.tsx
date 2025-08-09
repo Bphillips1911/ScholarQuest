@@ -79,6 +79,25 @@ const pbisCategories = {
       { value: "grateful", label: "Grateful - Expresses appreciation and thankfulness", points: 2 },
       { value: "accountable", label: "Accountable - Accepts responsibility and learns from mistakes", points: 3 }
     ]
+  },
+  negative_behavior: {
+    label: "Universal Negative Characteristics",
+    icon: Star,
+    color: "bg-red-500",
+    subcategories: [
+      { value: "arrogant", label: "Arrogant - Shows excessive pride and superiority over others", points: -2 },
+      { value: "selfish", label: "Selfish - Acts only in self-interest without regard for others", points: -2 },
+      { value: "rude", label: "Rude - Shows lack of respect in words or actions", points: -2 },
+      { value: "disrespectful", label: "Disrespectful - Shows contempt for authority, peers, or property", points: -3 },
+      { value: "pessimistic", label: "Pessimistic - Maintains consistently negative attitude", points: -1 },
+      { value: "dismissive", label: "Dismissive - Rejects others' ideas or feelings without consideration", points: -2 },
+      { value: "overbearing", label: "Overbearing - Dominates others in an oppressive manner", points: -2 },
+      { value: "manipulative", label: "Manipulative - Uses deception to control or influence others", points: -3 },
+      { value: "temperamental", label: "Temperamental - Shows unpredictable mood swings or outbursts", points: -2 },
+      { value: "untrustworthy", label: "Untrustworthy - Cannot be relied upon to tell truth or keep promises", points: -3 },
+      { value: "argumentative", label: "Argumentative - Engages in unnecessary conflict or disputes", points: -2 },
+      { value: "condescending", label: "Condescending - Talks down to others in a patronizing manner", points: -2 }
+    ]
   }
 };
 
@@ -173,9 +192,12 @@ export default function PBIS() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pbis"] });
       queryClient.invalidateQueries({ queryKey: ["/api/scholars"] });
+      const points = getSelectedPoints();
       toast({
         title: "PBIS Entry Added",
-        description: "Student has been awarded MUSTANG points!",
+        description: points >= 0 
+          ? "Student has been awarded MUSTANG points!" 
+          : "Student points have been deducted for negative behavior.",
       });
       // Reset form
       setSelectedStudent("");
@@ -259,7 +281,7 @@ export default function PBIS() {
       points: subcategoryData.points,
       reason: customReason || subcategoryData.label,
       mustangTrait: selectedTrait as "Make good choices" | "Use kind words" | "Show school pride" | "Tolerant of others" | "Aim for excellence" | "Need to be responsible" | "Give 100% everyday",
-      category: selectedCategory as "attendance" | "behavior" | "academic",
+      category: selectedCategory as "attendance" | "behavior" | "academic" | "recognition" | "negative_behavior",
       subcategory: selectedSubcategory,
     };
 

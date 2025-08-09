@@ -167,9 +167,9 @@ export const insertPbisEntrySchema = createInsertSchema(pbisEntries).omit({
   createdAt: true,
 }).extend({
   teacherRole: z.enum(["6th Grade", "7th Grade", "8th Grade", "Unified Arts", "Administration", "Counselor"]),
-  points: z.number().min(1).max(10),
+  points: z.number().min(-3).max(10),
   mustangTrait: z.enum(["Make good choices", "Use kind words", "Show school pride", "Tolerant of others", "Aim for excellence", "Need to be responsible", "Give 100% everyday"]),
-  category: z.enum(["attendance", "behavior", "academic"]),
+  category: z.enum(["attendance", "behavior", "academic", "recognition", "negative_behavior"]),
   subcategory: z.string().min(1),
 });
 

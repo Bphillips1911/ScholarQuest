@@ -15,7 +15,7 @@ if (process.env.SENDGRID_API_KEY) {
 
 // Administrator email - update this with your actual email address
 const ADMIN_EMAIL = "BHSAHouses25@gmail.com";
-const FROM_EMAIL = "test@example.com"; // Use a verified sender domain for testing
+const FROM_EMAIL = "noreply@sendgrid.net"; // Use SendGrid's default verified sender
 
 interface EmailParams {
   to: string;
@@ -43,13 +43,13 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html || undefined,
       mail_settings: {
         sandbox_mode: {
-          enable: true // Enable sandbox mode for testing
+          enable: false // Disable sandbox mode for production email delivery
         }
       }
     };
     
     await mailService.send(emailData);
-    console.log('✅ Email sent successfully to:', params.to, '(sandbox mode)');
+    console.log('✅ Email sent successfully to:', params.to);
     return true;
   } catch (error: any) {
     console.error('❌ SendGrid email error:', error.message || error);

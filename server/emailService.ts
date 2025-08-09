@@ -15,7 +15,7 @@ if (process.env.SENDGRID_API_KEY) {
 
 // Administrator email - update this with your actual email address
 const ADMIN_EMAIL = "BHSAHouses25@gmail.com";
-const FROM_EMAIL = "test@example.com"; // Generic test sender - will need verification
+const FROM_EMAIL = "BHSAHouses25@gmail.com"; // Must be verified in SendGrid dashboard
 
 interface EmailParams {
   to: string;

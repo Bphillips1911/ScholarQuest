@@ -200,6 +200,7 @@ export const insertTeacherAuthSchema = createInsertSchema(teacherAuth).omit({
   email: z.string().email(),
   password: z.string().min(6),
   gradeRole: z.enum(["6th Grade", "7th Grade", "8th Grade", "Unified Arts", "Administration", "Counselor"]),
+  subject: z.string().optional(),
 });
 
 export const insertTeacherSessionSchema = createInsertSchema(teacherSessions).omit({

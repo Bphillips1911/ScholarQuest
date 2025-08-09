@@ -151,6 +151,7 @@ export class MemStorage implements IStorage {
     setTimeout(() => {
       this.initializeTeacherAuth().then(() => {
         console.log("Teacher auth accounts initialized");
+        this.createDemoStudentCredentials();
       });
     }, 100);
   }
@@ -219,10 +220,58 @@ export class MemStorage implements IStorage {
 
   private async initializeScholars() {
     const sampleScholars = [
-      { name: "Emma Johnson", studentId: "BH6001", houseId: "franklin", grade: 6 },
-      { name: "Liam Williams", studentId: "BH6002", houseId: "courie", grade: 6 },
-      { name: "Sophia Brown", studentId: "BH6003", houseId: "west", grade: 6 },
-      { name: "Noah Davis", studentId: "BH6004", houseId: "blackwell", grade: 6 },
+      { 
+        name: "Emma Johnson", 
+        studentId: "BH6001", 
+        houseId: "franklin", 
+        grade: 6,
+        isHouseSorted: true,
+        sortingNumber: 1,
+        addedByTeacher: null,
+        username: null,
+        passwordHash: null,
+        teacherId: null,
+        needsPasswordReset: false
+      },
+      { 
+        name: "Liam Williams", 
+        studentId: "BH6002", 
+        houseId: "courie", 
+        grade: 6,
+        isHouseSorted: true,
+        sortingNumber: 2,
+        addedByTeacher: null,
+        username: null,
+        passwordHash: null,
+        teacherId: null,
+        needsPasswordReset: false
+      },
+      { 
+        name: "Sophia Brown", 
+        studentId: "BH6003", 
+        houseId: "west", 
+        grade: 6,
+        isHouseSorted: true,
+        sortingNumber: 3,
+        addedByTeacher: null,
+        username: null,
+        passwordHash: null,
+        teacherId: null,
+        needsPasswordReset: false
+      },
+      { 
+        name: "Noah Davis", 
+        studentId: "BH6004", 
+        houseId: "blackwell", 
+        grade: 6,
+        isHouseSorted: true,
+        sortingNumber: 4,
+        addedByTeacher: null,
+        username: null,
+        passwordHash: null,
+        teacherId: null,
+        needsPasswordReset: false
+      },
       { name: "Isabella Miller", studentId: "BH6005", houseId: "berruguete", grade: 6 },
       { name: "James Wilson", studentId: "BH7001", houseId: "franklin", grade: 7 },
       { name: "Olivia Moore", studentId: "BH7002", houseId: "courie", grade: 7 },
@@ -657,6 +706,7 @@ export class MemStorage implements IStorage {
     scholar.teacherId = teacherId;
     this.scholars.set(scholarId, scholar);
 
+    console.log(`Created credentials for ${scholar.name}: ${username} / ${password}`);
     return { username, password };
   }
 
@@ -703,6 +753,18 @@ export class MemStorage implements IStorage {
 
   async getPasswordResetRequests(teacherId: string): Promise<PasswordResetRequest[]> {
     return Array.from(this.passwordResetRequests.values()).filter(req => req.teacherId === teacherId);
+  }
+
+  async authenticateStudent(username: string, password: string): Promise<Scholar | null> {
+    // Find scholar by username
+    const scholar = Array.from(this.scholars.values()).find(s => s.username === username);
+    if (!scholar || !scholar.passwordHash) {
+      return null;
+    }
+
+    // Verify password
+    const isValid = await bcrypt.compare(password, scholar.passwordHash);
+    return isValid ? scholar : null;
   }
 
   async resetStudentPassword(studentId: string, newPassword: string): Promise<boolean> {

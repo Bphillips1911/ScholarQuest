@@ -161,11 +161,11 @@ export default function ParentLetter() {
                   <div className="mt-6 flex flex-col md:flex-row justify-center gap-6 text-sm text-gray-600">
                     <div className="flex items-center justify-center">
                       <Phone className="mr-2 h-4 w-4" />
-                      <span>Phone: (555) 123-4567</span>
+                      <span>Phone: 205-231-6370</span>
                     </div>
                     <div className="flex items-center justify-center">
                       <Mail className="mr-2 h-4 w-4" />
-                      <span>Email: info@bushillssteam.edu</span>
+                      <span>Email: BHSAHouses25@gmail.com</span>
                     </div>
                   </div>
                 </div>

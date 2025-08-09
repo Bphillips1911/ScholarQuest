@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema } from "@shared/schema";
+import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -384,6 +384,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch scholar data" });
+    }
+  });
+
+  // Teacher authentication middleware
+  const authenticateTeacher = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "teacher-secret-key");
+      const teacher = await storage.getTeacher(decoded.teacherId);
+      if (!teacher) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      req.teacher = teacher;
+      next();
+    } catch (error) {
+      res.status(401).json({ message: "Invalid token" });
+    }
+  };
+
+  // Teacher routes
+  // Teacher login
+  app.post("/api/teacher/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const teacher = await storage.getTeacherByEmail(email);
+      
+      if (!teacher) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const isValid = await bcrypt.compare(password, teacher.password);
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const token = jwt.sign(
+        { teacherId: teacher.id, role: teacher.role },
+        process.env.JWT_SECRET || "teacher-secret-key",
+        { expiresIn: "24h" }
+      );
+
+      res.json({
+        token,
+        teacher: {
+          id: teacher.id,
+          name: teacher.name,
+          email: teacher.email,
+          role: teacher.role,
+          subject: teacher.subject,
+          canSeeGrades: teacher.canSeeGrades,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Create teacher account (for admin use)
+  app.post("/api/teacher/register", async (req, res) => {
+    try {
+      const validatedData = insertTeacherSchema.parse(req.body);
+      const existingTeacher = await storage.getTeacherByEmail(validatedData.email);
+      
+      if (existingTeacher) {
+        return res.status(400).json({ message: "Teacher already exists with this email" });
+      }
+
+      const teacher = await storage.createTeacher(validatedData);
+      res.status(201).json({
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        role: teacher.role,
+        subject: teacher.subject,
+        canSeeGrades: teacher.canSeeGrades,
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create teacher account" });
+    }
+  });
+
+  // Get teacher's visible scholars
+  app.get("/api/teacher/scholars", authenticateTeacher, async (req: any, res) => {
+    try {
+      const scholars = await storage.getVisibleScholarsForTeacher(req.teacher.id);
+      res.json(scholars);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch scholars" });
+    }
+  });
+
+  // Get scholars by grade (for teachers)
+  app.get("/api/scholars/grade/:grade", authenticateTeacher, async (req: any, res) => {
+    try {
+      const grade = parseInt(req.params.grade);
+      const teacher = req.teacher;
+      
+      // Check if teacher has permission to see this grade
+      if (!teacher.canSeeGrades?.includes(grade)) {
+        return res.status(403).json({ message: "You don't have permission to view this grade" });
+      }
+
+      const scholars = await storage.getScholarsByGrade(grade);
+      res.json(scholars);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch scholars by grade" });
+    }
+  });
+
+  // Create PBIS entry with teacher authentication
+  app.post("/api/teacher/pbis", authenticateTeacher, async (req: any, res) => {
+    try {
+      const teacher = req.teacher;
+      const pbisData = {
+        ...req.body,
+        teacherName: teacher.name,
+        teacherRole: teacher.role,
+      };
+      
+      const validatedData = insertPbisEntrySchema.parse(pbisData);
+      
+      // Verify teacher can see the scholar
+      const scholar = await storage.getScholar(validatedData.scholarId);
+      if (!scholar || !teacher.canSeeGrades?.includes(scholar.grade)) {
+        return res.status(403).json({ message: "You don't have permission to award points to this scholar" });
+      }
+
+      const entry = await storage.createPbisEntry(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create PBIS entry" });
+    }
+  });
+
+  // Add scholar to system (for teachers)
+  app.post("/api/teacher/scholars", authenticateTeacher, async (req: any, res) => {
+    try {
+      const teacher = req.teacher;
+      const scholarData = req.body;
+      
+      // Verify teacher can add scholars of this grade
+      if (!teacher.canSeeGrades?.includes(scholarData.grade)) {
+        return res.status(403).json({ message: "You don't have permission to add scholars for this grade" });
+      }
+
+      const validatedData = insertScholarSchema.parse(scholarData);
+      const scholar = await storage.createScholar(validatedData);
+      res.status(201).json(scholar);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add scholar" });
     }
   });
 

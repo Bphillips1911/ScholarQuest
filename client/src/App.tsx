@@ -13,6 +13,8 @@ import ParentLetter from "@/pages/parent-letter";
 import ParentSignup from "@/pages/parent-signup";
 import ParentLogin from "@/pages/parent-login";
 import ParentPortal from "@/pages/parent-portal";
+import TeacherLogin from "@/pages/teacher-login";
+import TeacherDashboard from "@/pages/teacher-dashboard";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
@@ -24,6 +26,10 @@ function Router() {
         <Route path="/parent-signup" component={ParentSignup} />
         <Route path="/parent-login" component={ParentLogin} />
         <Route path="/parent-portal" component={ParentPortal} />
+        
+        {/* Teacher portal routes without navigation */}
+        <Route path="/teacher/login" component={TeacherLogin} />
+        <Route path="/teacher/dashboard" component={TeacherDashboard} />
         
         {/* Main app routes with navigation */}
         <Route>

@@ -1,4 +1,4 @@
-import { type House, type Scholar, type PointEntry, type PbisEntry, type PbisPhoto, type Parent, type InsertHouse, type InsertScholar, type InsertPointEntry, type InsertPbisEntry, type InsertPbisPhoto, type InsertParent, houses, scholars, pointEntries, pbisEntries, pbisPhotos, parents } from "@shared/schema";
+import { type House, type Scholar, type Teacher, type PointEntry, type PbisEntry, type PbisPhoto, type Parent, type InsertHouse, type InsertScholar, type InsertTeacher, type InsertPointEntry, type InsertPbisEntry, type InsertPbisPhoto, type InsertParent, houses, scholars, teachers, pointEntries, pbisEntries, pbisPhotos, parents } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import { eq, desc, sql } from "drizzle-orm";
@@ -12,9 +12,16 @@ export interface IStorage {
   
   // Scholars
   getScholarsByHouse(houseId: string): Promise<Scholar[]>;
+  getScholarsByGrade(grade: number): Promise<Scholar[]>;
   getScholar(id: string): Promise<Scholar | undefined>;
   createScholar(scholar: InsertScholar): Promise<Scholar>;
   updateScholarPoints(scholarId: string, category: string, points: number): Promise<void>;
+  
+  // Teachers
+  getTeacher(id: string): Promise<Teacher | undefined>;
+  getTeacherByEmail(email: string): Promise<Teacher | undefined>;
+  createTeacher(teacher: InsertTeacher): Promise<Teacher>;
+  getVisibleScholarsForTeacher(teacherId: string): Promise<Scholar[]>;
   
   // Point Entries
   getPointEntries(): Promise<PointEntry[]>;
@@ -46,6 +53,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private houses: Map<string, House>;
   private scholars: Map<string, Scholar>;
+  private teachers: Map<string, Teacher>;
   private pointEntries: Map<string, PointEntry>;
   private pbisEntries: Map<string, PbisEntry>;
   private pbisPhotos: Map<string, PbisPhoto>;
@@ -54,14 +62,16 @@ export class MemStorage implements IStorage {
   constructor() {
     this.houses = new Map();
     this.scholars = new Map();
+    this.teachers = new Map();
     this.pointEntries = new Map();
     this.pbisEntries = new Map();
     this.pbisPhotos = new Map();
     this.parents = new Map();
     
-    // Initialize with the five houses and sample scholars
+    // Initialize with the five houses and sample scholars and teachers
     this.initializeHouses();
     this.initializeScholars();
+    this.initializeTeachers();
   }
 
   private initializeHouses() {
@@ -128,21 +138,21 @@ export class MemStorage implements IStorage {
 
   private async initializeScholars() {
     const sampleScholars = [
-      { name: "Emma Johnson", studentId: "BH6001", houseId: "franklin" },
-      { name: "Liam Williams", studentId: "BH6002", houseId: "courie" },
-      { name: "Sophia Brown", studentId: "BH6003", houseId: "west" },
-      { name: "Noah Davis", studentId: "BH6004", houseId: "blackwell" },
-      { name: "Isabella Miller", studentId: "BH6005", houseId: "berruguete" },
-      { name: "James Wilson", studentId: "BH7001", houseId: "franklin" },
-      { name: "Olivia Moore", studentId: "BH7002", houseId: "courie" },
-      { name: "Benjamin Taylor", studentId: "BH7003", houseId: "west" },
-      { name: "Charlotte Anderson", studentId: "BH7004", houseId: "blackwell" },
-      { name: "Alexander Thomas", studentId: "BH7005", houseId: "berruguete" },
-      { name: "Mia Jackson", studentId: "BH8001", houseId: "franklin" },
-      { name: "Ethan White", studentId: "BH8002", houseId: "courie" },
-      { name: "Amelia Harris", studentId: "BH8003", houseId: "west" },
-      { name: "Mason Martin", studentId: "BH8004", houseId: "blackwell" },
-      { name: "Harper Thompson", studentId: "BH8005", houseId: "berruguete" },
+      { name: "Emma Johnson", studentId: "BH6001", houseId: "franklin", grade: 6 },
+      { name: "Liam Williams", studentId: "BH6002", houseId: "courie", grade: 6 },
+      { name: "Sophia Brown", studentId: "BH6003", houseId: "west", grade: 6 },
+      { name: "Noah Davis", studentId: "BH6004", houseId: "blackwell", grade: 6 },
+      { name: "Isabella Miller", studentId: "BH6005", houseId: "berruguete", grade: 6 },
+      { name: "James Wilson", studentId: "BH7001", houseId: "franklin", grade: 7 },
+      { name: "Olivia Moore", studentId: "BH7002", houseId: "courie", grade: 7 },
+      { name: "Benjamin Taylor", studentId: "BH7003", houseId: "west", grade: 7 },
+      { name: "Charlotte Anderson", studentId: "BH7004", houseId: "blackwell", grade: 7 },
+      { name: "Alexander Thomas", studentId: "BH7005", houseId: "berruguete", grade: 7 },
+      { name: "Mia Jackson", studentId: "BH8001", houseId: "franklin", grade: 8 },
+      { name: "Ethan White", studentId: "BH8002", houseId: "courie", grade: 8 },
+      { name: "Amelia Harris", studentId: "BH8003", houseId: "west", grade: 8 },
+      { name: "Mason Martin", studentId: "BH8004", houseId: "blackwell", grade: 8 },
+      { name: "Harper Thompson", studentId: "BH8005", houseId: "berruguete", grade: 8 },
     ];
 
     for (const scholar of sampleScholars) {
@@ -152,12 +162,63 @@ export class MemStorage implements IStorage {
         name: scholar.name,
         studentId: scholar.studentId,
         houseId: scholar.houseId,
+        grade: scholar.grade,
         academicPoints: 0,
         attendancePoints: 0,
         behaviorPoints: 0,
         createdAt: new Date(),
       };
       this.scholars.set(id, newScholar);
+    }
+  }
+
+  private async initializeTeachers() {
+    const sampleTeachers = [
+      // 6th Grade Teachers
+      { name: "Ms. Sarah Johnson", email: "s.johnson@bhsteam.edu", role: "6th Grade", subject: "Math", canSeeGrades: [6] },
+      { name: "Mr. David Smith", email: "d.smith@bhsteam.edu", role: "6th Grade", subject: "English", canSeeGrades: [6] },
+      { name: "Mrs. Emily Davis", email: "e.davis@bhsteam.edu", role: "6th Grade", subject: "Science", canSeeGrades: [6] },
+      
+      // 7th Grade Teachers
+      { name: "Ms. Jennifer Wilson", email: "j.wilson@bhsteam.edu", role: "7th Grade", subject: "Math", canSeeGrades: [7] },
+      { name: "Mr. Michael Brown", email: "m.brown@bhsteam.edu", role: "7th Grade", subject: "English", canSeeGrades: [7] },
+      { name: "Mrs. Lisa Taylor", email: "l.taylor@bhsteam.edu", role: "7th Grade", subject: "Science", canSeeGrades: [7] },
+      
+      // 8th Grade Teachers
+      { name: "Ms. Amanda Moore", email: "a.moore@bhsteam.edu", role: "8th Grade", subject: "Math", canSeeGrades: [8] },
+      { name: "Mr. Robert Anderson", email: "r.anderson@bhsteam.edu", role: "8th Grade", subject: "English", canSeeGrades: [8] },
+      { name: "Mrs. Maria Garcia", email: "m.garcia@bhsteam.edu", role: "8th Grade", subject: "Science", canSeeGrades: [8] },
+      
+      // Unified Arts Teachers
+      { name: "Ms. Rebecca Miller", email: "r.miller@bhsteam.edu", role: "Unified Arts", subject: "Library", canSeeGrades: [6, 7, 8] },
+      { name: "Mr. James Thompson", email: "j.thompson@bhsteam.edu", role: "Unified Arts", subject: "Computer Science", canSeeGrades: [6, 7, 8] },
+      { name: "Mrs. Jessica White", email: "j.white@bhsteam.edu", role: "Unified Arts", subject: "Art", canSeeGrades: [6, 7, 8] },
+      { name: "Mr. Kevin Johnson", email: "k.johnson@bhsteam.edu", role: "Unified Arts", subject: "PE", canSeeGrades: [6, 7, 8] },
+      { name: "Ms. Lauren Davis", email: "l.davis@bhsteam.edu", role: "Unified Arts", subject: "Band", canSeeGrades: [6, 7, 8] },
+      { name: "Mr. Christopher Lee", email: "c.lee@bhsteam.edu", role: "Unified Arts", subject: "Theater", canSeeGrades: [6, 7, 8] },
+      { name: "Mrs. Nicole Harris", email: "n.harris@bhsteam.edu", role: "Unified Arts", subject: "STEM Tech", canSeeGrades: [6, 7, 8] },
+      { name: "Ms. Michelle Clark", email: "m.clark@bhsteam.edu", role: "Unified Arts", subject: "Choir", canSeeGrades: [6, 7, 8] },
+      
+      // Administration and Counselor
+      { name: "Dr. Principal Roberts", email: "principal@bhsteam.edu", role: "Administration", subject: "Principal", canSeeGrades: [6, 7, 8] },
+      { name: "Mrs. VP Johnson", email: "vp@bhsteam.edu", role: "Administration", subject: "Vice Principal", canSeeGrades: [6, 7, 8] },
+      { name: "Ms. Counselor Williams", email: "counselor@bhsteam.edu", role: "Counselor", subject: "School Counselor", canSeeGrades: [6, 7, 8] },
+    ];
+
+    for (const teacher of sampleTeachers) {
+      const id = randomUUID();
+      const hashedPassword = await bcrypt.hash("password123", 10); // Default password for demo
+      const newTeacher: Teacher = {
+        id,
+        name: teacher.name,
+        email: teacher.email,
+        password: hashedPassword,
+        role: teacher.role as any,
+        subject: teacher.subject,
+        canSeeGrades: teacher.canSeeGrades,
+        createdAt: new Date(),
+      };
+      this.teachers.set(id, newTeacher);
     }
   }
 
@@ -234,6 +295,60 @@ export class MemStorage implements IStorage {
     else if (category === "behavior") updatedScholar.behaviorPoints += points;
 
     this.scholars.set(scholarId, updatedScholar);
+  }
+
+  async getScholarsByGrade(grade: number): Promise<Scholar[]> {
+    return Array.from(this.scholars.values()).filter(scholar => scholar.grade === grade);
+  }
+
+  async getTeacher(id: string): Promise<Teacher | undefined> {
+    return this.teachers.get(id);
+  }
+
+  async getTeacherByEmail(email: string): Promise<Teacher | undefined> {
+    return Array.from(this.teachers.values()).find(teacher => teacher.email === email);
+  }
+
+  async createTeacher(teacher: InsertTeacher): Promise<Teacher> {
+    const id = randomUUID();
+    const hashedPassword = await bcrypt.hash(teacher.password, 10);
+    const newTeacher: Teacher = {
+      ...teacher,
+      id,
+      password: hashedPassword,
+      subject: teacher.subject || null,
+      canSeeGrades: this.calculateCanSeeGrades(teacher.role),
+      createdAt: new Date(),
+    };
+    this.teachers.set(id, newTeacher);
+    return newTeacher;
+  }
+
+  async getVisibleScholarsForTeacher(teacherId: string): Promise<Scholar[]> {
+    const teacher = this.teachers.get(teacherId);
+    if (!teacher) return [];
+
+    const visibleGrades = teacher.canSeeGrades || [];
+    return Array.from(this.scholars.values()).filter(scholar => 
+      visibleGrades.includes(scholar.grade)
+    );
+  }
+
+  private calculateCanSeeGrades(role: string): number[] {
+    switch (role) {
+      case "6th Grade":
+        return [6];
+      case "7th Grade":
+        return [7];
+      case "8th Grade":
+        return [8];
+      case "Unified Arts":
+      case "Administration":
+      case "Counselor":
+        return [6, 7, 8];
+      default:
+        return [];
+    }
   }
 
   async getPointEntries(): Promise<PointEntry[]> {
@@ -343,10 +458,11 @@ export class MemStorage implements IStorage {
     
     if (!parent || !scholar) return false;
     
-    if (!parent.scholarIds.includes(scholarId)) {
+    const scholarIds = parent.scholarIds || [];
+    if (!scholarIds.includes(scholarId)) {
       const updatedParent = {
         ...parent,
-        scholarIds: [...parent.scholarIds, scholarId],
+        scholarIds: [...scholarIds, scholarId],
       };
       this.parents.set(parentId, updatedParent);
     }
@@ -357,7 +473,8 @@ export class MemStorage implements IStorage {
     const parent = this.parents.get(parentId);
     if (!parent) return [];
     
-    return parent.scholarIds
+    const scholarIds = parent.scholarIds || [];
+    return scholarIds
       .map(scholarId => this.scholars.get(scholarId))
       .filter(Boolean) as Scholar[];
   }

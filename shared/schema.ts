@@ -20,9 +20,21 @@ export const scholars = pgTable("scholars", {
   name: text("name").notNull(),
   studentId: text("student_id").notNull().unique(),
   houseId: varchar("house_id").notNull().references(() => houses.id),
+  grade: integer("grade").notNull(), // 6, 7, or 8
   academicPoints: integer("academic_points").notNull().default(0),
   attendancePoints: integer("attendance_points").notNull().default(0),
   behaviorPoints: integer("behavior_points").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const teachers = pgTable("teachers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: varchar("email").unique().notNull(),
+  password: text("password").notNull(),
+  role: text("role").notNull(), // '6th Grade', '7th Grade', '8th Grade', 'Unified Arts', 'Administration', 'Counselor'
+  subject: text("subject"), // For unified arts teachers: 'Library', 'Computer Science', 'Art', 'PE', 'Band', 'Theater', 'STEM Tech', 'Choir'
+  canSeeGrades: integer("can_see_grades").array().default([]), // Array of grade levels this teacher can see [6,7,8]
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -82,6 +94,18 @@ export const insertScholarSchema = createInsertSchema(scholars).omit({
   attendancePoints: true,
   behaviorPoints: true,
   createdAt: true,
+}).extend({
+  grade: z.number().min(6).max(8),
+});
+
+export const insertTeacherSchema = createInsertSchema(teachers).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  email: z.string().email(),
+  password: z.string().min(6),
+  role: z.enum(["6th Grade", "7th Grade", "8th Grade", "Unified Arts", "Administration", "Counselor"]),
+  subject: z.string().optional(),
 });
 
 export const insertPointEntrySchema = createInsertSchema(pointEntries).omit({
@@ -119,12 +143,14 @@ export const insertParentSchema = createInsertSchema(parents).omit({
 
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;
+export type Teacher = typeof teachers.$inferSelect;
 export type PointEntry = typeof pointEntries.$inferSelect;
 export type PbisEntry = typeof pbisEntries.$inferSelect;
 export type PbisPhoto = typeof pbisPhotos.$inferSelect;
 export type Parent = typeof parents.$inferSelect;
 export type InsertHouse = z.infer<typeof insertHouseSchema>;
 export type InsertScholar = z.infer<typeof insertScholarSchema>;
+export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 export type InsertPointEntry = z.infer<typeof insertPointEntrySchema>;
 export type InsertPbisEntry = z.infer<typeof insertPbisEntrySchema>;
 export type InsertPbisPhoto = z.infer<typeof insertPbisPhotoSchema>;

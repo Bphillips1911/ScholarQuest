@@ -90,9 +90,12 @@ export default function HouseDetail() {
               <p className="text-white/90 mt-2" data-testid="house-detail-motto">{house.motto}</p>
               <div className="mt-4 flex items-center space-x-4">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                  <span className="house-icon-large-3d text-white" data-testid={`icon-house-${house.id}`}>
-                    {house.icon}
-                  </span>
+                  <div className="house-icon-large-3d text-white" data-testid={`icon-house-${house.id}`}>
+                    {(() => {
+                      const IconComponent = iconMap[house.icon as keyof typeof iconMap];
+                      return IconComponent ? <IconComponent size={32} className="text-white" /> : <span>{house.icon}</span>;
+                    })()}
+                  </div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold" data-testid="house-detail-total-points">

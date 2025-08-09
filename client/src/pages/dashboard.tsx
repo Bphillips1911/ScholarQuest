@@ -119,9 +119,12 @@ export default function Dashboard() {
                 data-testid={`house-standing-${house.id}`}
               >
                 <div className={`w-12 h-12 ${houseBgClass} rounded-full flex items-center justify-center mx-auto mb-3`}>
-                  <span className="house-icon-3d text-white" data-testid={`icon-house-${house.id}`}>
-                    {house.icon}
-                  </span>
+                  <div className="house-icon-3d text-white" data-testid={`icon-house-${house.id}`}>
+                    {(() => {
+                      const IconComponent = iconMap[house.icon as keyof typeof iconMap];
+                      return IconComponent ? <IconComponent size={24} className="text-white" /> : <span>{house.icon}</span>;
+                    })()}
+                  </div>
                 </div>
                 <h4 className="font-bold text-gray-900 mb-1" data-testid={`house-name-${house.id}`}>
                   {house.name.replace("House of ", "")}

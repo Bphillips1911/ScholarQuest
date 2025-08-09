@@ -44,6 +44,7 @@ const gradeTeachers = {
     { name: "Mr. Worley", subject: "Art" },
     { name: "Ms. Radney", subject: "Choir" },
     { name: "Mr. Hill", subject: "Band" },
+    { name: "Mrs. Fields-Jones", subject: "Gifted Specialist" },
   ],
   "Administration": [
     { name: "Dr. Phillips", subject: "Principal" },

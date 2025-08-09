@@ -332,6 +332,7 @@ export class MemStorage implements IStorage {
       { name: "Mr. Christopher Lee", email: "c.lee@bhsteam.edu", role: "Unified Arts", subject: "Theater", canSeeGrades: [6, 7, 8] },
       { name: "Mrs. Nicole Harris", email: "n.harris@bhsteam.edu", role: "Unified Arts", subject: "STEM Tech", canSeeGrades: [6, 7, 8] },
       { name: "Ms. Michelle Clark", email: "m.clark@bhsteam.edu", role: "Unified Arts", subject: "Choir", canSeeGrades: [6, 7, 8] },
+      { name: "Mrs. Fields-Jones", email: "s.fields-jones@bhsteam.edu", role: "Unified Arts", subject: "Gifted Specialist", canSeeGrades: [6, 7, 8] },
       
       // Administration and Counselor
       { name: "Dr. Phillips", email: "principal@bhsteam.edu", role: "Administration", subject: "Principal", canSeeGrades: [6, 7, 8] },

@@ -168,10 +168,10 @@ export class MemStorage implements IStorage {
         color: "#DC2626",
         icon: "shield-alt",
         motto: "Leadership • Innovation • Integrity",
-        academicPoints: 845,
-        attendancePoints: 672,
-        behaviorPoints: 968,
-        memberCount: 124,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0,
       },
       {
         id: "courie",
@@ -179,10 +179,10 @@ export class MemStorage implements IStorage {
         color: "#7C3AED",
         icon: "star",
         motto: "Courage • Determination • Excellence",
-        academicPoints: 798,
-        attendancePoints: 621,
-        behaviorPoints: 922,
-        memberCount: 118,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0,
       },
       {
         id: "west",
@@ -190,10 +190,10 @@ export class MemStorage implements IStorage {
         color: "#059669",
         icon: "leaf",
         motto: "Growth • Wisdom • Collaboration",
-        academicPoints: 776,
-        attendancePoints: 654,
-        behaviorPoints: 868,
-        memberCount: 122,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0,
       },
       {
         id: "blackwell",
@@ -201,10 +201,10 @@ export class MemStorage implements IStorage {
         color: "#1F2937",
         icon: "mountain",
         motto: "Strength • Perseverance • Honor",
-        academicPoints: 734,
-        attendancePoints: 598,
-        behaviorPoints: 824,
-        memberCount: 119,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0,
       },
       {
         id: "berruguete",
@@ -212,10 +212,10 @@ export class MemStorage implements IStorage {
         color: "#EA580C",
         icon: "lion",
         motto: "Creativity • Passion • Innovation",
-        academicPoints: 694,
-        attendancePoints: 589,
-        behaviorPoints: 806,
-        memberCount: 117,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0,
       },
     ];
 
@@ -223,87 +223,8 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeScholars() {
-    const sampleScholars = [
-      { 
-        name: "Emma Johnson", 
-        studentId: "BH6001", 
-        houseId: "franklin", 
-        grade: 6,
-        isHouseSorted: true,
-        sortingNumber: 1,
-        addedByTeacher: null,
-        username: null,
-        passwordHash: null,
-        teacherId: null,
-        needsPasswordReset: false
-      },
-      { 
-        name: "Liam Williams", 
-        studentId: "BH6002", 
-        houseId: "courie", 
-        grade: 6,
-        isHouseSorted: true,
-        sortingNumber: 2,
-        addedByTeacher: null,
-        username: null,
-        passwordHash: null,
-        teacherId: null,
-        needsPasswordReset: false
-      },
-      { 
-        name: "Sophia Brown", 
-        studentId: "BH6003", 
-        houseId: "west", 
-        grade: 6,
-        isHouseSorted: true,
-        sortingNumber: 3,
-        addedByTeacher: null,
-        username: null,
-        passwordHash: null,
-        teacherId: null,
-        needsPasswordReset: false
-      },
-      { 
-        name: "Noah Davis", 
-        studentId: "BH6004", 
-        houseId: "blackwell", 
-        grade: 6,
-        isHouseSorted: true,
-        sortingNumber: 4,
-        addedByTeacher: null,
-        username: null,
-        passwordHash: null,
-        teacherId: null,
-        needsPasswordReset: false
-      },
-      { name: "Isabella Miller", studentId: "BH6005", houseId: "berruguete", grade: 6 },
-      { name: "James Wilson", studentId: "BH7001", houseId: "franklin", grade: 7 },
-      { name: "Olivia Moore", studentId: "BH7002", houseId: "courie", grade: 7 },
-      { name: "Benjamin Taylor", studentId: "BH7003", houseId: "west", grade: 7 },
-      { name: "Charlotte Anderson", studentId: "BH7004", houseId: "blackwell", grade: 7 },
-      { name: "Alexander Thomas", studentId: "BH7005", houseId: "berruguete", grade: 7 },
-      { name: "Mia Jackson", studentId: "BH8001", houseId: "franklin", grade: 8 },
-      { name: "Ethan White", studentId: "BH8002", houseId: "courie", grade: 8 },
-      { name: "Amelia Harris", studentId: "BH8003", houseId: "west", grade: 8 },
-      { name: "Mason Martin", studentId: "BH8004", houseId: "blackwell", grade: 8 },
-      { name: "Harper Thompson", studentId: "BH8005", houseId: "berruguete", grade: 8 },
-    ];
-
-    for (const scholar of sampleScholars) {
-      const id = randomUUID();
-      const newScholar: Scholar = {
-        id,
-        name: scholar.name,
-        studentId: scholar.studentId,
-        houseId: scholar.houseId,
-        grade: scholar.grade,
-        academicPoints: 0,
-        attendancePoints: 0,
-        behaviorPoints: 0,
-        createdAt: new Date(),
-      };
-      this.scholars.set(id, newScholar);
-    }
+    // No default scholars - start with empty scholar list
+    // Teachers will add scholars as needed
   }
 
   private async initializeTeachers() {

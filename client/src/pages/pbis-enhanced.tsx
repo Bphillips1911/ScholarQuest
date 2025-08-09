@@ -107,8 +107,8 @@ const gradeTeachers = {
     { name: "Ms. Mincey", subject: "Band" }
   ],
   "Administration": [
-    { name: "Dr. Jackson", subject: "Principal" },
-    { name: "Mrs. Williams", subject: "Assistant Principal" }
+    { name: "Dr. Phillips", subject: "Principal" },
+    { name: "Dr. Stewart", subject: "Assistant Principal" }
   ],
   "Counselor": [
     { name: "Ms. Johnson", subject: "School Counselor" },

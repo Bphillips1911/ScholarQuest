@@ -15,6 +15,10 @@ Preferred communication style: Simple, everyday language.
 - N - Need to be responsible
 - G - Give 100% everyday
 
+## School Administration
+- Principal: Dr. Phillips
+- Assistant Principal: Dr. Stewart
+
 # System Architecture
 
 ## Frontend Architecture

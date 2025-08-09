@@ -27,6 +27,10 @@ export const scholars = pgTable("scholars", {
   isHouseSorted: boolean("is_house_sorted").notNull().default(false),
   sortingNumber: integer("sorting_number"),
   addedByTeacher: varchar("added_by_teacher"),
+  username: varchar("username").unique(),
+  passwordHash: varchar("password_hash"),
+  teacherId: varchar("teacher_id").references(() => teacherAuth.id),
+  needsPasswordReset: boolean("needs_password_reset").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -104,6 +108,22 @@ export const teacherSessions = pgTable("teacher_sessions", {
   teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
   token: varchar("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const studentSessions = pgTable("student_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => scholars.id),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const passwordResetRequests = pgTable("password_reset_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => scholars.id),
+  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
+  status: varchar("status").notNull().default("pending"), // 'pending', 'completed'
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -187,6 +207,17 @@ export const insertTeacherSessionSchema = createInsertSchema(teacherSessions).om
   createdAt: true,
 });
 
+export const insertStudentSessionSchema = createInsertSchema(studentSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPasswordResetRequestSchema = createInsertSchema(passwordResetRequests).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;
 export type Teacher = typeof teachers.$inferSelect;
@@ -205,3 +236,7 @@ export type InsertTeacherAuth = z.infer<typeof insertTeacherAuthSchema>;
 export type TeacherAuth = typeof teacherAuth.$inferSelect;
 export type InsertTeacherSession = z.infer<typeof insertTeacherSessionSchema>;
 export type TeacherSession = typeof teacherSessions.$inferSelect;
+export type StudentSession = typeof studentSessions.$inferSelect;
+export type PasswordResetRequest = typeof passwordResetRequests.$inferSelect;
+export type InsertStudentSession = z.infer<typeof insertStudentSessionSchema>;
+export type InsertPasswordResetRequest = z.infer<typeof insertPasswordResetRequestSchema>;

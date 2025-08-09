@@ -743,6 +743,233 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Teacher Dashboard Route
+  app.get("/api/teacher/dashboard", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getTeacherSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const teacher = await storage.getTeacherAuth(session.teacherId);
+      if (!teacher || !teacher.isApproved) {
+        return res.status(401).json({ message: "Teacher not approved" });
+      }
+
+      const houses = await storage.getHouses();
+      const allScholars = await storage.getAllScholars();
+      const passwordResetRequests = await storage.getPasswordResetRequests(teacher.id);
+      
+      res.json({
+        teacher: {
+          id: teacher.id,
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          email: teacher.email,
+          gradeRole: teacher.gradeRole,
+          isApproved: teacher.isApproved,
+        },
+        houses,
+        scholars: allScholars,
+        passwordResetRequests,
+      });
+    } catch (error) {
+      console.error("Teacher dashboard error:", error);
+      res.status(500).json({ message: "Dashboard load failed" });
+    }
+  });
+
+  // Teacher Student Credentials Route
+  app.post("/api/teacher/create-student-credentials", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getTeacherSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const teacher = await storage.getTeacherAuth(session.teacherId);
+      if (!teacher || !teacher.isApproved) {
+        return res.status(401).json({ message: "Teacher not approved" });
+      }
+
+      const { studentId } = req.body;
+      if (!studentId) {
+        return res.status(400).json({ message: "Student ID required" });
+      }
+
+      const credentials = await storage.createStudentCredentials(studentId, teacher.id);
+      
+      res.json({
+        success: true,
+        credentials,
+        message: "Student credentials created successfully"
+      });
+    } catch (error) {
+      console.error("Create student credentials error:", error);
+      res.status(500).json({ message: "Failed to create credentials" });
+    }
+  });
+
+  // Teacher Reset Student Password Route  
+  app.post("/api/teacher/reset-student-password", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getTeacherSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const teacher = await storage.getTeacherAuth(session.teacherId);
+      if (!teacher || !teacher.isApproved) {
+        return res.status(401).json({ message: "Teacher not approved" });
+      }
+
+      const { studentId } = req.body;
+      if (!studentId) {
+        return res.status(400).json({ message: "Student ID required" });
+      }
+
+      const newPassword = Math.random().toString(36).slice(-8);
+      const success = await storage.resetStudentPassword(studentId, newPassword);
+      
+      if (success) {
+        res.json({
+          success: true,
+          newPassword,
+          message: "Password reset successfully"
+        });
+      } else {
+        res.status(404).json({ message: "Student not found" });
+      }
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // Student Authentication Routes
+  app.post("/api/student/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password required" });
+      }
+
+      const student = await storage.authenticateStudent(username, password);
+      if (!student) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Create session token
+      const token = jwt.sign({ studentId: student.id }, process.env.JWT_SECRET || "secret", { expiresIn: "24h" });
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await storage.createStudentSession({
+        studentId: student.id,
+        token,
+        expiresAt,
+      });
+
+      res.json({
+        success: true,
+        token,
+        student: {
+          id: student.id,
+          name: student.name,
+          username: student.username,
+        }
+      });
+    } catch (error) {
+      console.error("Student login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.get("/api/student/dashboard", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const student = await storage.getScholar(session.studentId);
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      const house = student.houseId ? await storage.getHouse(student.houseId) : null;
+      const pbisEntries = await storage.getPbisEntriesByScholar(session.studentId);
+      const allStudents = await storage.getAllScholars();
+      
+      const totalPoints = student.academicPoints + student.attendancePoints + student.behaviorPoints;
+      const sortedStudents = allStudents
+        .map(s => ({ ...s, total: s.academicPoints + s.attendancePoints + s.behaviorPoints }))
+        .sort((a, b) => b.total - a.total);
+      
+      const rank = sortedStudents.findIndex(s => s.id === student.id) + 1;
+
+      res.json({
+        student,
+        house,
+        pbisEntries: pbisEntries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        totalPoints,
+        rank,
+        totalStudents: allStudents.length,
+      });
+    } catch (error) {
+      console.error("Dashboard error:", error);
+      res.status(500).json({ message: "Failed to load dashboard" });
+    }
+  });
+
+  app.post("/api/student/forgot-password", async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ message: "Username required" });
+      }
+
+      // Find student by username
+      const allScholars = await storage.getAllScholars();
+      const student = allScholars.find(s => s.username === username);
+      
+      if (!student || !student.teacherId) {
+        return res.status(404).json({ message: "Student not found or no teacher assigned" });
+      }
+
+      await storage.createPasswordResetRequest({
+        studentId: student.id,
+        teacherId: student.teacherId,
+      });
+
+      res.json({ message: "Password reset request sent to teacher" });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Failed to send reset request" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

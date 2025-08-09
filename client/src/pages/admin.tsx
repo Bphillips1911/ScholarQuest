@@ -68,7 +68,7 @@ export default function Admin() {
 
     // Auto-assign to house with least members if no house selected
     let houseId = newStudentHouse;
-    if (!houseId && houses) {
+    if ((!houseId || houseId === "auto") && houses) {
       const leastPopulatedHouse = houses.reduce((min, house) => 
         house.memberCount < min.memberCount ? house : min
       );

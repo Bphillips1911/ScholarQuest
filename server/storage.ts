@@ -8,6 +8,8 @@ import {
   type Parent,
   type TeacherAuth,
   type TeacherSession,
+  type StudentSession,
+  type PasswordResetRequest,
   type InsertHouse, 
   type InsertScholar, 
   type InsertTeacher, 
@@ -17,6 +19,8 @@ import {
   type InsertParent,
   type InsertTeacherAuth,
   type InsertTeacherSession,
+  type InsertStudentSession,
+  type InsertPasswordResetRequest,
   houses, 
   scholars, 
   teachers, 
@@ -25,7 +29,9 @@ import {
   pbisPhotos, 
   parents,
   teacherAuth,
-  teacherSessions
+  teacherSessions,
+  studentSessions,
+  passwordResetRequests
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -44,6 +50,7 @@ export interface IStorage {
   getScholarsByHouse(houseId: string): Promise<Scholar[]>;
   getScholarsByGrade(grade: number): Promise<Scholar[]>;
   getScholar(id: string): Promise<Scholar | undefined>;
+  getAllScholars(): Promise<Scholar[]>;
   createScholar(scholar: InsertScholar): Promise<Scholar>;
   updateScholarPoints(scholarId: string, category: string, points: number): Promise<void>;
   
@@ -85,6 +92,16 @@ export interface IStorage {
   createTeacherSession(session: InsertTeacherSession): Promise<TeacherSession>;
   getTeacherSession(token: string): Promise<TeacherSession | undefined>;
   deleteTeacherSession(token: string): Promise<boolean>;
+
+  // Student Authentication  
+  createStudentCredentials(scholarId: string, teacherId: string): Promise<{ username: string; password: string }>;
+  authenticateStudent(username: string, password: string): Promise<Scholar | null>;
+  createStudentSession(session: InsertStudentSession): Promise<StudentSession>;
+  getStudentSession(token: string): Promise<StudentSession | undefined>;
+  deleteStudentSession(token: string): Promise<boolean>;
+  createPasswordResetRequest(request: InsertPasswordResetRequest): Promise<PasswordResetRequest>;
+  getPasswordResetRequests(teacherId: string): Promise<PasswordResetRequest[]>;
+  resetStudentPassword(studentId: string, newPassword: string): Promise<boolean>;
   
   // House Sorting
   getUnsortedStudents(): Promise<Scholar[]>;
@@ -107,6 +124,8 @@ export class MemStorage implements IStorage {
   private parents: Map<string, Parent>;
   private teacherAuth: Map<string, TeacherAuth>;
   private teacherSessions: Map<string, TeacherSession>;
+  private studentSessions: Map<string, StudentSession>;
+  private passwordResetRequests: Map<string, PasswordResetRequest>;
   private parentScholars: Map<string, string[]>; // parentId -> scholarIds
 
   constructor() {
@@ -119,6 +138,8 @@ export class MemStorage implements IStorage {
     this.parents = new Map();
     this.teacherAuth = new Map();
     this.teacherSessions = new Map();
+    this.studentSessions = new Map();
+    this.passwordResetRequests = new Map();
     this.parentScholars = new Map();
     
     // Initialize with the five houses and sample scholars and teachers
@@ -322,6 +343,10 @@ export class MemStorage implements IStorage {
 
   async getScholar(id: string): Promise<Scholar | undefined> {
     return this.scholars.get(id);
+  }
+
+  async getAllScholars(): Promise<Scholar[]> {
+    return Array.from(this.scholars.values());
   }
 
   async createScholar(scholar: InsertScholar): Promise<Scholar> {
@@ -614,6 +639,90 @@ export class MemStorage implements IStorage {
 
   async deleteTeacherSession(token: string): Promise<boolean> {
     return this.teacherSessions.delete(token);
+  }
+
+  // Student Authentication methods
+  async createStudentCredentials(scholarId: string, teacherId: string): Promise<{ username: string; password: string }> {
+    const scholar = this.scholars.get(scholarId);
+    if (!scholar) throw new Error("Scholar not found");
+
+    // Generate username from student ID and first name
+    const username = `${scholar.studentId.toLowerCase()}${scholar.name.split(' ')[0].toLowerCase()}`;
+    const password = Math.random().toString(36).slice(-8); // Generate 8-character password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update scholar with credentials
+    scholar.username = username;
+    scholar.passwordHash = hashedPassword;
+    scholar.teacherId = teacherId;
+    this.scholars.set(scholarId, scholar);
+
+    return { username, password };
+  }
+
+  async authenticateStudent(username: string, password: string): Promise<Scholar | null> {
+    for (const scholar of this.scholars.values()) {
+      if (scholar.username === username && scholar.passwordHash) {
+        const isValid = await bcrypt.compare(password, scholar.passwordHash);
+        if (isValid) return scholar;
+      }
+    }
+    return null;
+  }
+
+  async createStudentSession(sessionData: InsertStudentSession): Promise<StudentSession> {
+    const session: StudentSession = {
+      id: randomUUID(),
+      ...sessionData,
+      createdAt: new Date(),
+    };
+    
+    this.studentSessions.set(session.token, session);
+    return session;
+  }
+
+  async getStudentSession(token: string): Promise<StudentSession | undefined> {
+    return this.studentSessions.get(token);
+  }
+
+  async deleteStudentSession(token: string): Promise<boolean> {
+    return this.studentSessions.delete(token);
+  }
+
+  async createPasswordResetRequest(requestData: InsertPasswordResetRequest): Promise<PasswordResetRequest> {
+    const request: PasswordResetRequest = {
+      id: randomUUID(),
+      ...requestData,
+      status: "pending",
+      createdAt: new Date(),
+    };
+    
+    this.passwordResetRequests.set(request.id, request);
+    return request;
+  }
+
+  async getPasswordResetRequests(teacherId: string): Promise<PasswordResetRequest[]> {
+    return Array.from(this.passwordResetRequests.values()).filter(req => req.teacherId === teacherId);
+  }
+
+  async resetStudentPassword(studentId: string, newPassword: string): Promise<boolean> {
+    const scholar = this.scholars.get(studentId);
+    if (!scholar) return false;
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    scholar.passwordHash = hashedPassword;
+    scholar.needsPasswordReset = false;
+    this.scholars.set(studentId, scholar);
+
+    // Mark related reset requests as completed
+    for (const [id, request] of this.passwordResetRequests) {
+      if (request.studentId === studentId && request.status === "pending") {
+        request.status = "completed";
+        this.passwordResetRequests.set(id, request);
+      }
+    }
+
+    return true;
   }
 
 

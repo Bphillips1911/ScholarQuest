@@ -1119,6 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin email test endpoint
   app.post("/api/admin/test-email", async (req, res) => {
     try {
+      console.log('🧪 Testing email configuration...');
       const { email } = req.body;
       
       if (!email) {
@@ -1127,27 +1128,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const success = await sendEmail({
         to: email,
-        from: "BHSAHouses25@gmail.com",
-        subject: "Bush Hills STEAM Academy - Test Email",
+        from: "test@example.com", // Use verified sender for testing
+        subject: "Bush Hills STEAM Academy - Email Test",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #1f2937;">Bush Hills STEAM Academy</h2>
+            <h3 style="color: #059669;">Email Configuration Test</h3>
             <p>This is a test email to confirm your administrator email configuration is working correctly.</p>
-            <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
-            <p>If you received this email, your notification system is properly configured!</p>
+            <p><strong>Test Date:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Recipient:</strong> ${email}</p>
+            <hr style="margin: 20px 0; border: 1px solid #e5e7eb;">
+            <p style="color: #059669; font-weight: bold;">✅ If you received this email, your notification system is properly configured!</p>
+            <p style="color: #6b7280; font-size: 12px;">
+              This email was sent from the Bush Hills STEAM Academy House Character Development Program.
+            </p>
           </div>
         `,
-        text: "This is a test email to confirm your administrator email configuration is working correctly."
+        text: `Bush Hills STEAM Academy Email Test\n\nThis is a test email to confirm your administrator email configuration is working correctly.\n\nTest Date: ${new Date().toLocaleString()}\nRecipient: ${email}\n\nIf you received this email, your notification system is properly configured!`
       });
 
       if (success) {
-        res.json({ message: "Test email sent successfully" });
+        res.json({ 
+          message: "Test email sent successfully!",
+          details: `Email sent to ${email}. Check your inbox to confirm delivery.`
+        });
       } else {
-        res.status(500).json({ message: "Failed to send test email" });
+        res.status(500).json({ 
+          message: "Email test failed",
+          details: "Check server logs for error details. Common issues: invalid API key, unverified sender domain, or insufficient permissions."
+        });
       }
     } catch (error) {
-      console.error("Test email error:", error);
-      res.status(500).json({ message: "Failed to send test email" });
+      console.error("❌ Test email error:", error);
+      res.status(500).json({ 
+        message: "Email test failed",
+        details: "Server error occurred during email test. Check logs for details."
+      });
     }
   });
 

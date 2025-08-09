@@ -15,7 +15,7 @@ if (process.env.SENDGRID_API_KEY) {
 
 // Administrator email - update this with your actual email address
 const ADMIN_EMAIL = "BHSAHouses25@gmail.com";
-const FROM_EMAIL = "BHSAHouses25@gmail.com"; // This should be a verified sender in SendGrid
+const FROM_EMAIL = "test@example.com"; // Use a verified sender domain for testing
 
 interface EmailParams {
   to: string;
@@ -27,8 +27,10 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
-    console.log('Email would be sent to:', params.to, 'Subject:', params.subject);
-    console.log('(Email notifications disabled - no SendGrid API key configured)');
+    console.log('📧 Email would be sent:');
+    console.log('  To:', params.to);
+    console.log('  Subject:', params.subject);
+    console.log('  (Email notifications disabled - no SendGrid API key configured)');
     return false;
   }
 
@@ -40,10 +42,24 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       text: params.text || undefined,
       html: params.html || undefined,
     });
-    console.log('Email sent successfully to:', params.to);
+    console.log('✅ Email sent successfully to:', params.to);
     return true;
-  } catch (error) {
-    console.error('SendGrid email error:', error);
+  } catch (error: any) {
+    console.error('❌ SendGrid email error:', error.message || error);
+    
+    // Check for common error types
+    if (error.code === 403) {
+      console.error('💡 Suggestion: Check your SendGrid API key permissions and sender verification');
+    } else if (error.code === 401) {
+      console.error('💡 Suggestion: Your SendGrid API key may be invalid or expired');
+    }
+    
+    // Log email details for debugging
+    console.log('📧 Attempted email details:');
+    console.log('  To:', params.to);
+    console.log('  From:', params.from);
+    console.log('  Subject:', params.subject);
+    
     return false;
   }
 }

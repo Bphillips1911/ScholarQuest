@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings } from "lucide-react";
+import { Link } from "wouter";
 import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
@@ -158,6 +159,15 @@ export default function Admin() {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
+            <Link href="/admin-settings">
+              <Button 
+                className="bg-gray-600 text-white hover:bg-gray-700"
+                data-testid="button-admin-settings"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Email Settings
+              </Button>
+            </Link>
             <Button 
               onClick={() => window.open("/parent-letter", "_blank")}
               className="bg-blue-600 text-white hover:bg-blue-700"

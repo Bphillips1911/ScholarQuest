@@ -8,6 +8,12 @@ import fs from "fs/promises";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
+import { 
+  sendTeacherRegistrationAlert, 
+  sendParentRegistrationAlert, 
+  sendStudentRegistrationAlert, 
+  sendPasswordResetAlert 
+} from "./emailService";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -261,6 +267,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const parent = await storage.createParent(validatedData);
       
+      // Get student names for email notification
+      const studentNames = validatedData.studentNames || ['Student information to be verified'];
+
+      // Send email notification to administrator
+      try {
+        await sendParentRegistrationAlert({
+          firstName: parent.firstName,
+          lastName: parent.lastName,
+          email: parent.email,
+          studentNames,
+        });
+      } catch (emailError) {
+        console.error("Failed to send parent registration email:", emailError);
+        // Continue with registration even if email fails
+      }
+
       // Generate JWT token
       const token = jwt.sign(
         { parentId: parent.id },
@@ -669,6 +691,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const teacher = await storage.createTeacherAuth(validatedData);
       
+      // Send email notification to administrator
+      try {
+        await sendTeacherRegistrationAlert({
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          email: teacher.email,
+          gradeRole: teacher.gradeRole,
+          subject: teacher.subject,
+        });
+      } catch (emailError) {
+        console.error("Failed to send teacher registration email:", emailError);
+        // Continue with registration even if email fails
+      }
+
       res.status(201).json({
         message: "Registration submitted for approval",
         teacher: {
@@ -945,6 +981,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         needsPasswordReset: false,
       });
 
+      // Get house assignment if available
+      const house = scholar.houseId ? await storage.getHouse(scholar.houseId) : null;
+
+      // Send email notification to administrator
+      try {
+        await sendStudentRegistrationAlert({
+          firstName: name.split(' ')[0],
+          lastName: name.split(' ').slice(1).join(' ') || '',
+          studentId,
+          grade,
+          homeroom: teacher.name,
+          username,
+          houseName: house?.name || 'Not yet assigned',
+        });
+      } catch (emailError) {
+        console.error("Failed to send student registration email:", emailError);
+        // Continue with registration even if email fails
+      }
+
       res.json({ 
         success: true, 
         message: "Account created successfully",
@@ -1036,10 +1091,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         teacherId: student.teacherId,
       });
 
+      // Get teacher information for email notification
+      const teacher = await storage.getTeacher(student.teacherId);
+
+      // Send email notification to administrator
+      try {
+        await sendPasswordResetAlert({
+          studentName: student.name,
+          studentId: student.studentId,
+          grade: student.grade,
+          teacherName: teacher ? teacher.name : 'Unknown Teacher',
+          reason: 'Student forgot password',
+        });
+      } catch (emailError) {
+        console.error("Failed to send password reset email:", emailError);
+        // Continue with request even if email fails
+      }
+
       res.json({ message: "Password reset request sent to teacher" });
     } catch (error) {
       console.error("Forgot password error:", error);
       res.status(500).json({ message: "Failed to send reset request" });
+    }
+  });
+
+  // Admin email test endpoint
+  app.post("/api/admin/test-email", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email address required" });
+      }
+
+      const success = await sendEmail({
+        to: email,
+        from: "BHSAHouses25@gmail.com",
+        subject: "Bush Hills STEAM Academy - Test Email",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1f2937;">Bush Hills STEAM Academy</h2>
+            <p>This is a test email to confirm your administrator email configuration is working correctly.</p>
+            <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+            <p>If you received this email, your notification system is properly configured!</p>
+          </div>
+        `,
+        text: "This is a test email to confirm your administrator email configuration is working correctly."
+      });
+
+      if (success) {
+        res.json({ message: "Test email sent successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to send test email" });
+      }
+    } catch (error) {
+      console.error("Test email error:", error);
+      res.status(500).json({ message: "Failed to send test email" });
     }
   });
 

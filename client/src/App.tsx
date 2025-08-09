@@ -21,6 +21,7 @@ import StudentDashboard from "@/pages/student-dashboard";
 import TeacherDashboard from "@/pages/teacher-dashboard";
 import HouseSorting from "@/pages/house-sorting";
 import Admin from "@/pages/admin";
+import AdminSettings from "@/pages/admin-settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -53,6 +54,7 @@ function Router() {
               <Route path="/parent-letter" component={ParentLetter} />
               <Route path="/house-sorting" component={HouseSorting} />
               <Route path="/admin" component={Admin} />
+              <Route path="/admin-settings" component={AdminSettings} />
               <Route component={NotFound} />
             </Switch>
           </main>

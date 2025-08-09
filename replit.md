@@ -92,6 +92,14 @@ Preferred communication style: Simple, everyday language.
 - **Asset Management**: Vite-based asset importing with @assets/ alias for images and media
 - **School Branding**: Consistent use of school identity in navigation, dashboard, admin panel, and parent communications
 
+## Email Notification System
+- **Service Provider**: SendGrid API for reliable email delivery
+- **Administrator Email**: BHSAHouses25@gmail.com (configurable via admin settings)
+- **Notification Types**: Teacher registrations, parent signups, student registrations, password reset requests
+- **Email Templates**: HTML-formatted notifications with school branding and detailed information
+- **Admin Configuration**: Admin settings page (/admin-settings) for email management and testing
+- **Automated Alerts**: Real-time notifications sent when new users register in the system
+
 ## Form Validation
 - **Zod**: Schema validation library
 - **Drizzle-Zod**: Integration between Drizzle schemas and Zod validation

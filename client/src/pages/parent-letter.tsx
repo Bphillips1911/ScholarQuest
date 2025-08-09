@@ -1,184 +1,192 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Mail, Printer, CheckCircle, Book, Calendar, Heart } from "lucide-react";
+import { Printer, Download, QrCode, Mail, Phone, Users } from "lucide-react";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function ParentLetter() {
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long", 
-    day: "numeric"
+  const { data: qrData } = useQuery({
+    queryKey: ["/api/parent/qr-code"],
+    queryFn: async () => {
+      const response = await fetch("/api/parent/qr-code");
+      if (!response.ok) throw new Error("Failed to generate QR code");
+      return response.json();
+    },
   });
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleEmail = () => {
-    const subject = "House Character Development Program Information";
-    const body = "Please find attached information about our House Character Development Program.";
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const handleDownload = () => {
+    if (qrData?.qrCode) {
+      const link = document.createElement('a');
+      link.href = qrData.qrCode;
+      link.download = 'BHSA-Parent-Portal-QR.png';
+      link.click();
+    }
   };
 
   return (
-    <section data-testid="parent-letter-section">
-      <Card className="bg-white rounded-2xl shadow-lg p-8">
-        <div className="flex items-center mb-8">
-          <img 
-            src={schoolLogoPath} 
-            alt="Bush Hills STEAM Academy" 
-            className="h-16 w-auto mr-6"
-            data-testid="parent-letter-logo"
-          />
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900" data-testid="parent-letter-title">Letter to Parents</h2>
-            <p className="text-gray-600" data-testid="parent-letter-subtitle">
-              Bush Hills STEAM Academy House Character Development Program
-            </p>
-          </div>
-        </div>
-
-        <div className="prose max-w-none">
-          <div className="bg-gray-50 rounded-lg p-6 mb-6" data-testid="letter-header">
-            <p className="text-sm text-gray-600 mb-2">
-              Date: <span data-testid="letter-date">{currentDate}</span>
-            </p>
-            <p className="text-sm text-gray-600">From: Bush Hills STEAM Academy Administration</p>
-          </div>
-
-          <div className="space-y-6 text-gray-800 leading-relaxed" data-testid="letter-content">
-            <p className="text-lg font-medium text-gray-900">Dear Parents and Guardians,</p>
-            
-            <p>
-              We are excited to introduce our innovative House Character Development Program, designed to foster 
-              community, character, and academic excellence among our middle school students.
-            </p>
-            
-            <Card className="bg-blue-50 p-6" data-testid="program-overview">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Program Overview</h3>
-              <p>
-                Your child has been placed into one of five distinguished houses: Franklin, Courie, West, 
-                Blackwell, or Berruguete. Each house represents unique values and characteristics that 
-                contribute to our school's diverse community.
-              </p>
-            </Card>
-
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">How the Point System Works</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6" data-testid="point-system-grid">
-                <Card className="bg-green-50 p-4" data-testid="academic-points-info">
-                  <h4 className="font-bold text-green-700 mb-2">
-                    <Book className="inline mr-2" />
-                    Academic Excellence
-                  </h4>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Outstanding test scores</li>
-                    <li>• Completed assignments</li>
-                    <li>• Academic improvement</li>
-                    <li>• Participation in class</li>
-                  </ul>
-                </Card>
-                
-                <Card className="bg-blue-50 p-4" data-testid="attendance-points-info">
-                  <h4 className="font-bold text-blue-700 mb-2">
-                    <Calendar className="inline mr-2" />
-                    Perfect Attendance
-                  </h4>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Daily attendance</li>
-                    <li>• Punctuality to class</li>
-                    <li>• Consistent presence</li>
-                    <li>• Engagement in learning</li>
-                  </ul>
-                </Card>
-
-                <Card className="bg-purple-50 p-4" data-testid="behavior-points-info">
-                  <h4 className="font-bold text-purple-700 mb-2">
-                    <Heart className="inline mr-2" />
-                    Character Behavior
-                  </h4>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Respectful interactions</li>
-                    <li>• Helping others</li>
-                    <li>• Following school rules</li>
-                    <li>• Leadership qualities</li>
-                  </ul>
-                </Card>
-              </div>
-            </div>
-
-            <Card className="bg-yellow-50 p-6" data-testid="benefits-section">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Benefits for Your Child</h3>
-              <ul className="space-y-2 text-gray-700">
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mr-3 mt-1 h-4 w-4" />
-                  <span><strong>Sense of Belonging:</strong> Students develop connections and friendships within their house community</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mr-3 mt-1 h-4 w-4" />
-                  <span><strong>Character Development:</strong> Focus on core values that build strong character traits</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mr-3 mt-1 h-4 w-4" />
-                  <span><strong>Academic Motivation:</strong> Positive competition encourages academic excellence</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mr-3 mt-1 h-4 w-4" />
-                  <span><strong>Recognition System:</strong> Regular celebration of achievements and positive behaviors</span>
-                </li>
-              </ul>
-            </Card>
-
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">How You Can Support Your Child</h3>
-              <Card className="bg-gray-50 p-6" data-testid="support-section">
-                <ul className="space-y-3 text-gray-700">
-                  <li>• Ask about their house activities and point earnings regularly</li>
-                  <li>• Celebrate their achievements in academics, attendance, and behavior</li>
-                  <li>• Reinforce the house values at home</li>
-                  <li>• Encourage positive peer relationships within their house community</li>
-                  <li>• Support consistent school attendance and punctuality</li>
-                </ul>
-              </Card>
-            </div>
-
-            <p>
-              We believe this program will provide your child with valuable opportunities for growth, 
-              leadership, and community engagement. Thank you for your continued support of our school's 
-              mission to develop well-rounded, character-driven students.
-            </p>
-
-            <div className="border-t pt-6" data-testid="letter-signature">
-              <p className="font-medium text-gray-900">Sincerely,</p>
-              <p className="text-gray-700 mt-2">The Bush Hills STEAM Academy Administration Team</p>
-              <div className="mt-6 text-sm text-gray-600" data-testid="contact-info">
-                <p><strong>Contact Information:</strong></p>
-                <p>Phone: <span data-testid="school-phone">(555) 123-4567</span></p>
-                <p>Email: <span data-testid="school-email">houses@bushillssteam.edu</span></p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-center mt-8 space-x-4" data-testid="letter-actions">
-          <Button 
-            onClick={handlePrint}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-            data-testid="button-print-letter"
-          >
+    <section className="min-h-screen bg-gray-50 p-4 print:bg-white print:p-0" data-testid="parent-letter-section">
+      <div className="max-w-4xl mx-auto">
+        {/* Print/Download Controls */}
+        <div className="mb-6 flex justify-end gap-2 print:hidden">
+          <Button onClick={handleDownload} variant="outline" data-testid="button-download-qr">
+            <Download className="mr-2 h-4 w-4" />
+            Download QR Code
+          </Button>
+          <Button onClick={handlePrint} className="bg-blue-600 text-white hover:bg-blue-700" data-testid="button-print-letter">
             <Printer className="mr-2 h-4 w-4" />
             Print Letter
           </Button>
-          <Button 
-            onClick={handleEmail}
-            className="bg-green-600 text-white hover:bg-green-700"
-            data-testid="button-email-letter"
-          >
-            <Mail className="mr-2 h-4 w-4" />
-            Email to Parents
-          </Button>
         </div>
-      </Card>
+
+        {/* Letter Content */}
+        <Card className="bg-white shadow-lg print:shadow-none print:border-none">
+          <CardHeader className="text-center border-b print:border-b-2">
+            <div className="flex justify-center mb-4">
+              <img 
+                src={schoolLogoPath} 
+                alt="Bush Hills STEAM Academy" 
+                className="h-20 w-auto"
+                data-testid="letter-school-logo"
+              />
+            </div>
+            <CardTitle className="text-3xl font-bold text-gray-900 mb-2" data-testid="letter-title">
+              Bush Hills STEAM Academy
+            </CardTitle>
+            <p className="text-lg text-gray-600">
+              House Character Development Program - Parent Portal
+            </p>
+          </CardHeader>
+          
+          <CardContent className="p-8">
+            <div className="space-y-6 text-gray-800 leading-relaxed">
+              <div>
+                <p className="text-lg font-medium mb-4">Dear Bush Hills STEAM Academy Families,</p>
+                
+                <p className="mb-4">
+                  We are excited to introduce our new <strong>Parent Portal</strong> for the House Character Development Program! 
+                  This digital platform will allow you to stay connected with your child's academic progress, character development, 
+                  and MUSTANG recognition in real-time.
+                </p>
+
+                <p className="mb-4">
+                  Through the Parent Portal, you will be able to:
+                </p>
+
+                <ul className="list-disc pl-6 mb-6 space-y-2">
+                  <li>View your child's academic, attendance, and behavior points</li>
+                  <li>See detailed MUSTANG trait recognition from teachers</li>
+                  <li>Track your child's house standings and achievements</li>
+                  <li>Read specific comments and reasons for point awards</li>
+                  <li>Stay updated on your child's character development journey</li>
+                </ul>
+
+                <div className="bg-blue-50 p-6 rounded-lg mb-6 border border-blue-200">
+                  <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center">
+                    <QrCode className="mr-2 h-5 w-5" />
+                    Getting Started - Scan to Register
+                  </h3>
+                  
+                  <div className="flex flex-col md:flex-row items-center gap-6">
+                    <div className="flex-shrink-0">
+                      {qrData?.qrCode ? (
+                        <img 
+                          src={qrData.qrCode} 
+                          alt="QR Code for Parent Portal Registration"
+                          className="w-32 h-32 border-2 border-blue-300 rounded-lg"
+                          data-testid="qr-code-image"
+                        />
+                      ) : (
+                        <div className="w-32 h-32 bg-gray-200 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                          <QrCode className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <p className="text-blue-800 font-medium mb-2">
+                        Scan this QR code with your phone's camera to access the registration page
+                      </p>
+                      <p className="text-sm text-blue-700 mb-3">
+                        Or visit: <span className="font-mono bg-white px-2 py-1 rounded border">
+                          {qrData?.url || "Loading..."}
+                        </span>
+                      </p>
+                      <div className="text-sm text-blue-700">
+                        <strong>You will need:</strong>
+                        <ul className="list-disc pl-4 mt-1">
+                          <li>Your email address</li>
+                          <li>Your child's Student ID (found on report cards and school communications)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-6 rounded-lg mb-6 border border-green-200">
+                  <h3 className="text-xl font-bold text-green-900 mb-4 flex items-center">
+                    <Users className="mr-2 h-5 w-5" />
+                    About Our MUSTANG Values
+                  </h3>
+                  <p className="text-green-800 mb-3">
+                    The House Character Development Program focuses on recognizing students who demonstrate our core MUSTANG traits:
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-green-700">
+                    <div><strong>M</strong> - Motivated</div>
+                    <div><strong>U</strong> - Understanding</div>
+                    <div><strong>S</strong> - Safe</div>
+                    <div><strong>T</strong> - Teamwork</div>
+                    <div><strong>A</strong> - Accountable</div>
+                    <div><strong>N</strong> - Noble</div>
+                    <div><strong>G</strong> - Growth</div>
+                  </div>
+                </div>
+
+                <p className="mb-4">
+                  We believe that strong home-school partnerships are essential for student success. This portal represents 
+                  our commitment to keeping you informed and engaged in your child's educational journey at Bush Hills STEAM Academy.
+                </p>
+
+                <p className="mb-6">
+                  If you have any questions about the Parent Portal or need assistance with registration, please don't hesitate to contact us.
+                </p>
+
+                <div className="border-t pt-6 text-center">
+                  <p className="font-medium mb-2">Sincerely,</p>
+                  <p className="text-lg font-bold">Bush Hills STEAM Academy Administration</p>
+                  
+                  <div className="mt-6 flex flex-col md:flex-row justify-center gap-6 text-sm text-gray-600">
+                    <div className="flex items-center justify-center">
+                      <Phone className="mr-2 h-4 w-4" />
+                      <span>Phone: (555) 123-4567</span>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <Mail className="mr-2 h-4 w-4" />
+                      <span>Email: info@bushillssteam.edu</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Print-specific styles */}
+      <style jsx>{`
+        @media print {
+          body { margin: 0; }
+          .print\\:hidden { display: none !important; }
+          .print\\:bg-white { background-color: white !important; }
+          .print\\:p-0 { padding: 0 !important; }
+          .print\\:shadow-none { box-shadow: none !important; }
+          .print\\:border-none { border: none !important; }
+          .print\\:border-b-2 { border-bottom: 2px solid #000 !important; }
+        }
+      `}</style>
     </section>
   );
 }

@@ -127,6 +127,14 @@ export default function Admin() {
           </div>
           <div className="flex space-x-4">
             <Button 
+              onClick={() => window.open("/parent-letter", "_blank")}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="button-parent-portal"
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Parent Portal Info
+            </Button>
+            <Button 
               onClick={handleExportData}
               className="bg-green-600 text-white hover:bg-green-700"
               data-testid="button-export-data"

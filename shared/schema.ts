@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -57,6 +57,18 @@ export const pbisPhotos = pgTable("pbis_photos", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const parents = pgTable("parents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique().notNull(),
+  password: text("password").notNull(),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
+  phone: varchar("phone"),
+  scholarIds: text("scholar_ids").array().default([]), // Array of scholar IDs this parent can view
+  isVerified: boolean("is_verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertHouseSchema = createInsertSchema(houses).omit({
   academicPoints: true,
   attendancePoints: true,
@@ -94,13 +106,26 @@ export const insertPbisPhotoSchema = createInsertSchema(pbisPhotos).omit({
   createdAt: true,
 });
 
+export const insertParentSchema = createInsertSchema(parents).omit({
+  id: true,
+  createdAt: true,
+  isVerified: true,
+}).extend({
+  email: z.string().email(),
+  password: z.string().min(6),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+});
+
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;
 export type PointEntry = typeof pointEntries.$inferSelect;
 export type PbisEntry = typeof pbisEntries.$inferSelect;
 export type PbisPhoto = typeof pbisPhotos.$inferSelect;
+export type Parent = typeof parents.$inferSelect;
 export type InsertHouse = z.infer<typeof insertHouseSchema>;
 export type InsertScholar = z.infer<typeof insertScholarSchema>;
 export type InsertPointEntry = z.infer<typeof insertPointEntrySchema>;
 export type InsertPbisEntry = z.infer<typeof insertPbisEntrySchema>;
 export type InsertPbisPhoto = z.infer<typeof insertPbisPhotoSchema>;
+export type InsertParent = z.infer<typeof insertParentSchema>;

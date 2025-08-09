@@ -1,10 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema } from "@shared/schema";
+import { insertScholarSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import QRCode from "qrcode";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -210,6 +213,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ message: "Photo not found" });
       }
     });
+  });
+
+  // Parent authentication middleware
+  const authenticateParent = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as any;
+      const parent = await storage.getParent(decoded.parentId);
+      if (!parent) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      req.parent = parent;
+      next();
+    } catch (error) {
+      res.status(401).json({ message: "Invalid token" });
+    }
+  };
+
+  // Parent routes
+  // Generate QR code for parent registration
+  app.get("/api/parent/qr-code", async (req, res) => {
+    try {
+      const registrationUrl = `${req.protocol}://${req.hostname}/parent-signup`;
+      const qrCodeImage = await QRCode.toDataURL(registrationUrl);
+      res.json({ qrCode: qrCodeImage, url: registrationUrl });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate QR code" });
+    }
+  });
+
+  // Parent registration
+  app.post("/api/parent/register", async (req, res) => {
+    try {
+      const validatedData = insertParentSchema.parse(req.body);
+      
+      // Check if parent already exists
+      const existingParent = await storage.getParentByEmail(validatedData.email);
+      if (existingParent) {
+        return res.status(400).json({ message: "Parent already registered with this email" });
+      }
+
+      const parent = await storage.createParent(validatedData);
+      
+      // Generate JWT token
+      const token = jwt.sign(
+        { parentId: parent.id },
+        process.env.JWT_SECRET || "fallback_secret",
+        { expiresIn: "7d" }
+      );
+
+      res.status(201).json({
+        message: "Registration successful",
+        token,
+        parent: {
+          id: parent.id,
+          email: parent.email,
+          firstName: parent.firstName,
+          lastName: parent.lastName,
+        },
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid registration data" });
+    }
+  });
+
+  // Parent login
+  app.post("/api/parent/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      const parent = await storage.getParentByEmail(email);
+      if (!parent) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, parent.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const token = jwt.sign(
+        { parentId: parent.id },
+        process.env.JWT_SECRET || "fallback_secret",
+        { expiresIn: "7d" }
+      );
+
+      res.json({
+        message: "Login successful",
+        token,
+        parent: {
+          id: parent.id,
+          email: parent.email,
+          firstName: parent.firstName,
+          lastName: parent.lastName,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Add scholar to parent account
+  app.post("/api/parent/add-scholar", authenticateParent, async (req: any, res) => {
+    try {
+      const { studentId } = req.body;
+      
+      if (!studentId) {
+        return res.status(400).json({ message: "Student ID required" });
+      }
+
+      // Find scholar by student ID
+      const scholars = await storage.getAllScholars();
+      const scholar = scholars.find(s => s.studentId === studentId);
+      
+      if (!scholar) {
+        return res.status(404).json({ message: "Scholar not found with this Student ID" });
+      }
+
+      const success = await storage.addScholarToParent(req.parent.id, scholar.id);
+      if (success) {
+        res.json({ message: "Scholar added successfully", scholar });
+      } else {
+        res.status(400).json({ message: "Failed to add scholar" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to add scholar" });
+    }
+  });
+
+  // Get parent's scholars
+  app.get("/api/parent/scholars", authenticateParent, async (req: any, res) => {
+    try {
+      const scholars = await storage.getParentScholars(req.parent.id);
+      res.json(scholars);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch scholars" });
+    }
+  });
+
+  // Get scholar's points and PBIS entries
+  app.get("/api/parent/scholar/:scholarId", authenticateParent, async (req: any, res) => {
+    try {
+      const { scholarId } = req.params;
+      
+      // Verify parent has access to this scholar
+      const parentScholars = await storage.getParentScholars(req.parent.id);
+      const hasAccess = parentScholars.some(s => s.id === scholarId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied to this scholar" });
+      }
+
+      const scholar = parentScholars.find(s => s.id === scholarId);
+      const pbisEntries = await storage.getPbisEntriesByScholar(scholarId);
+      
+      res.json({
+        scholar,
+        pbisEntries: pbisEntries.sort((a, b) => 
+          new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+        ),
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch scholar data" });
+    }
   });
 
   const httpServer = createServer(app);

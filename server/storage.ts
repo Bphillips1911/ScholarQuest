@@ -1,5 +1,7 @@
-import { type House, type Scholar, type PointEntry, type PbisEntry, type PbisPhoto, type InsertHouse, type InsertScholar, type InsertPointEntry, type InsertPbisEntry, type InsertPbisPhoto } from "@shared/schema";
+import { type House, type Scholar, type PointEntry, type PbisEntry, type PbisPhoto, type Parent, type InsertHouse, type InsertScholar, type InsertPointEntry, type InsertPbisEntry, type InsertPbisPhoto, type InsertParent, houses, scholars, pointEntries, pbisEntries, pbisPhotos, parents } from "@shared/schema";
 import { randomUUID } from "crypto";
+import bcrypt from "bcryptjs";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Houses
@@ -30,6 +32,13 @@ export interface IStorage {
   createPbisPhoto(photo: InsertPbisPhoto): Promise<PbisPhoto>;
   deletePbisPhoto(id: string): Promise<boolean>;
   
+  // Parents
+  getParent(id: string): Promise<Parent | undefined>;
+  getParentByEmail(email: string): Promise<Parent | undefined>;
+  createParent(parent: InsertParent): Promise<Parent>;
+  addScholarToParent(parentId: string, scholarId: string): Promise<boolean>;
+  getParentScholars(parentId: string): Promise<Scholar[]>;
+  
   // Utility
   getHouseStandings(): Promise<House[]>;
 }
@@ -40,6 +49,7 @@ export class MemStorage implements IStorage {
   private pointEntries: Map<string, PointEntry>;
   private pbisEntries: Map<string, PbisEntry>;
   private pbisPhotos: Map<string, PbisPhoto>;
+  private parents: Map<string, Parent>;
 
   constructor() {
     this.houses = new Map();
@@ -47,6 +57,7 @@ export class MemStorage implements IStorage {
     this.pointEntries = new Map();
     this.pbisEntries = new Map();
     this.pbisPhotos = new Map();
+    this.parents = new Map();
     
     // Initialize with the five houses and sample scholars
     this.initializeHouses();
@@ -302,6 +313,55 @@ export class MemStorage implements IStorage {
     return this.pbisPhotos.delete(id);
   }
 
+  async getParent(id: string): Promise<Parent | undefined> {
+    return this.parents.get(id);
+  }
+
+  async getParentByEmail(email: string): Promise<Parent | undefined> {
+    return Array.from(this.parents.values()).find(parent => parent.email === email);
+  }
+
+  async createParent(parentData: InsertParent): Promise<Parent> {
+    const id = randomUUID();
+    const hashedPassword = await bcrypt.hash(parentData.password, 10);
+    const newParent: Parent = {
+      ...parentData,
+      id,
+      password: hashedPassword,
+      phone: parentData.phone || null,
+      scholarIds: [],
+      isVerified: false,
+      createdAt: new Date(),
+    };
+    this.parents.set(id, newParent);
+    return newParent;
+  }
+
+  async addScholarToParent(parentId: string, scholarId: string): Promise<boolean> {
+    const parent = this.parents.get(parentId);
+    const scholar = this.scholars.get(scholarId);
+    
+    if (!parent || !scholar) return false;
+    
+    if (!parent.scholarIds.includes(scholarId)) {
+      const updatedParent = {
+        ...parent,
+        scholarIds: [...parent.scholarIds, scholarId],
+      };
+      this.parents.set(parentId, updatedParent);
+    }
+    return true;
+  }
+
+  async getParentScholars(parentId: string): Promise<Scholar[]> {
+    const parent = this.parents.get(parentId);
+    if (!parent) return [];
+    
+    return parent.scholarIds
+      .map(scholarId => this.scholars.get(scholarId))
+      .filter(Boolean) as Scholar[];
+  }
+
   async getHouseStandings(): Promise<House[]> {
     const houses = Array.from(this.houses.values());
     return houses.sort((a, b) => {
@@ -312,4 +372,179 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  // Houses
+  async getHouses(): Promise<House[]> {
+    return await db.select().from(houses).orderBy(houses.name);
+  }
+
+  async getHouse(id: string): Promise<House | undefined> {
+    const [house] = await db.select().from(houses).where(eq(houses.id, id));
+    return house;
+  }
+
+  async createHouse(house: InsertHouse): Promise<House> {
+    const [newHouse] = await db.insert(houses).values(house).returning();
+    return newHouse;
+  }
+
+  async updateHouse(id: string, house: Partial<InsertHouse>): Promise<House | undefined> {
+    const [updatedHouse] = await db.update(houses)
+      .set(house)
+      .where(eq(houses.id, id))
+      .returning();
+    return updatedHouse;
+  }
+
+  async deleteHouse(id: string): Promise<boolean> {
+    const result = await db.delete(houses).where(eq(houses.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Scholars
+  async getScholars(): Promise<Scholar[]> {
+    return await db.select().from(scholars).orderBy(scholars.name);
+  }
+
+  async getScholar(id: string): Promise<Scholar | undefined> {
+    const [scholar] = await db.select().from(scholars).where(eq(scholars.id, id));
+    return scholar;
+  }
+
+  async getScholarsByHouse(houseId: string): Promise<Scholar[]> {
+    return await db.select().from(scholars).where(eq(scholars.houseId, houseId));
+  }
+
+  async createScholar(scholar: InsertScholar): Promise<Scholar> {
+    const [newScholar] = await db.insert(scholars).values(scholar).returning();
+    return newScholar;
+  }
+
+  async updateScholar(id: string, scholar: Partial<InsertScholar>): Promise<Scholar | undefined> {
+    const [updatedScholar] = await db.update(scholars)
+      .set(scholar)
+      .where(eq(scholars.id, id))
+      .returning();
+    return updatedScholar;
+  }
+
+  async deleteScholar(id: string): Promise<boolean> {
+    const result = await db.delete(scholars).where(eq(scholars.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Point Entries
+  async getPointEntries(): Promise<PointEntry[]> {
+    return await db.select().from(pointEntries).orderBy(desc(pointEntries.createdAt));
+  }
+
+  async getPointEntriesByHouse(houseId: string): Promise<PointEntry[]> {
+    return await db.select().from(pointEntries)
+      .where(eq(pointEntries.houseId, houseId))
+      .orderBy(desc(pointEntries.createdAt));
+  }
+
+  async getPointEntriesByScholar(scholarId: string): Promise<PointEntry[]> {
+    return await db.select().from(pointEntries)
+      .where(eq(pointEntries.scholarId, scholarId))
+      .orderBy(desc(pointEntries.createdAt));
+  }
+
+  async createPointEntry(entry: InsertPointEntry): Promise<PointEntry> {
+    const [newEntry] = await db.insert(pointEntries).values(entry).returning();
+    return newEntry;
+  }
+
+  // PBIS Entries
+  async getPbisEntries(): Promise<PbisEntry[]> {
+    return await db.select().from(pbisEntries).orderBy(desc(pbisEntries.createdAt));
+  }
+
+  async getPbisEntriesByScholar(scholarId: string): Promise<PbisEntry[]> {
+    return await db.select().from(pbisEntries)
+      .where(eq(pbisEntries.scholarId, scholarId))
+      .orderBy(desc(pbisEntries.createdAt));
+  }
+
+  async createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry> {
+    const [newEntry] = await db.insert(pbisEntries).values(entry).returning();
+    return newEntry;
+  }
+
+  async getAllScholars(): Promise<Scholar[]> {
+    return await db.select().from(scholars).orderBy(scholars.name);
+  }
+
+  // PBIS Photos
+  async getPbisPhotos(): Promise<PbisPhoto[]> {
+    return await db.select().from(pbisPhotos).orderBy(desc(pbisPhotos.createdAt));
+  }
+
+  async createPbisPhoto(photo: InsertPbisPhoto): Promise<PbisPhoto> {
+    const [newPhoto] = await db.insert(pbisPhotos).values(photo).returning();
+    return newPhoto;
+  }
+
+  async deletePbisPhoto(id: string): Promise<boolean> {
+    const result = await db.delete(pbisPhotos).where(eq(pbisPhotos.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Parents
+  async getParent(id: string): Promise<Parent | undefined> {
+    const [parent] = await db.select().from(parents).where(eq(parents.id, id));
+    return parent;
+  }
+
+  async getParentByEmail(email: string): Promise<Parent | undefined> {
+    const [parent] = await db.select().from(parents).where(eq(parents.email, email));
+    return parent;
+  }
+
+  async createParent(parentData: InsertParent): Promise<Parent> {
+    const hashedPassword = await bcrypt.hash(parentData.password, 10);
+    const [newParent] = await db.insert(parents).values({
+      ...parentData,
+      password: hashedPassword,
+    }).returning();
+    return newParent;
+  }
+
+  async addScholarToParent(parentId: string, scholarId: string): Promise<boolean> {
+    const parent = await this.getParent(parentId);
+    const scholar = await this.getScholar(scholarId);
+    
+    if (!parent || !scholar) return false;
+    
+    const scholarIds = parent.scholarIds || [];
+    if (!scholarIds.includes(scholarId)) {
+      const [updatedParent] = await db.update(parents)
+        .set({ scholarIds: [...scholarIds, scholarId] })
+        .where(eq(parents.id, parentId))
+        .returning();
+      return !!updatedParent;
+    }
+    return true;
+  }
+
+  async getParentScholars(parentId: string): Promise<Scholar[]> {
+    const parent = await this.getParent(parentId);
+    if (!parent || !parent.scholarIds) return [];
+    
+    const scholarsList = await Promise.all(
+      parent.scholarIds.map(id => this.getScholar(id))
+    );
+    return scholarsList.filter(Boolean) as Scholar[];
+  }
+
+  // Utility
+  async getHouseStandings(): Promise<House[]> {
+    return await db.select().from(houses).orderBy(
+      desc(sql`${houses.academicPoints} + ${houses.attendancePoints} + ${houses.behaviorPoints}`)
+    );
+  }
+}
+
+import { db } from "./db";
+
+export const storage = new DatabaseStorage();

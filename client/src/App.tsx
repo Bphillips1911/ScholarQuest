@@ -10,25 +10,38 @@ import HouseDetail from "@/pages/house-detail";
 import PBIS from "@/pages/pbis";
 import Pledge from "@/pages/pledge";
 import ParentLetter from "@/pages/parent-letter";
+import ParentSignup from "@/pages/parent-signup";
+import ParentLogin from "@/pages/parent-login";
+import ParentPortal from "@/pages/parent-portal";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <>
-      <NavigationHeader />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/houses" component={Houses} />
-          <Route path="/houses/:id" component={HouseDetail} />
-          <Route path="/pbis" component={PBIS} />
-          <Route path="/pledge" component={Pledge} />
-          <Route path="/parent-letter" component={ParentLetter} />
-          <Route path="/admin" component={Admin} />
-          <Route component={NotFound} />
-        </Switch>
-      </main>
+      <Switch>
+        {/* Parent portal routes without navigation */}
+        <Route path="/parent-signup" component={ParentSignup} />
+        <Route path="/parent-login" component={ParentLogin} />
+        <Route path="/parent-portal" component={ParentPortal} />
+        
+        {/* Main app routes with navigation */}
+        <Route>
+          <NavigationHeader />
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Switch>
+              <Route path="/" component={Dashboard} />
+              <Route path="/houses" component={Houses} />
+              <Route path="/houses/:id" component={HouseDetail} />
+              <Route path="/pbis" component={PBIS} />
+              <Route path="/pledge" component={Pledge} />
+              <Route path="/parent-letter" component={ParentLetter} />
+              <Route path="/admin" component={Admin} />
+              <Route component={NotFound} />
+            </Switch>
+          </main>
+        </Route>
+      </Switch>
     </>
   );
 }

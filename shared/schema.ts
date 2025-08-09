@@ -1,0 +1,68 @@
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar, integer, timestamp } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+export const houses = pgTable("houses", {
+  id: varchar("id").primaryKey(),
+  name: text("name").notNull(),
+  color: text("color").notNull(),
+  icon: text("icon").notNull(),
+  motto: text("motto").notNull(),
+  academicPoints: integer("academic_points").notNull().default(0),
+  attendancePoints: integer("attendance_points").notNull().default(0),
+  behaviorPoints: integer("behavior_points").notNull().default(0),
+  memberCount: integer("member_count").notNull().default(0),
+});
+
+export const scholars = pgTable("scholars", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  studentId: text("student_id").notNull().unique(),
+  houseId: varchar("house_id").notNull().references(() => houses.id),
+  academicPoints: integer("academic_points").notNull().default(0),
+  attendancePoints: integer("attendance_points").notNull().default(0),
+  behaviorPoints: integer("behavior_points").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const pointEntries = pgTable("point_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  houseId: varchar("house_id").notNull().references(() => houses.id),
+  scholarId: varchar("scholar_id").references(() => scholars.id),
+  category: text("category").notNull(), // 'academic', 'attendance', 'behavior'
+  points: integer("points").notNull(),
+  reason: text("reason"),
+  addedBy: text("added_by").notNull().default("admin"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertHouseSchema = createInsertSchema(houses).omit({
+  academicPoints: true,
+  attendancePoints: true,
+  behaviorPoints: true,
+  memberCount: true,
+});
+
+export const insertScholarSchema = createInsertSchema(scholars).omit({
+  id: true,
+  academicPoints: true,
+  attendancePoints: true,
+  behaviorPoints: true,
+  createdAt: true,
+});
+
+export const insertPointEntrySchema = createInsertSchema(pointEntries).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  category: z.enum(["academic", "attendance", "behavior"]),
+  points: z.number().min(1).max(100),
+});
+
+export type House = typeof houses.$inferSelect;
+export type Scholar = typeof scholars.$inferSelect;
+export type PointEntry = typeof pointEntries.$inferSelect;
+export type InsertHouse = z.infer<typeof insertHouseSchema>;
+export type InsertScholar = z.infer<typeof insertScholarSchema>;
+export type InsertPointEntry = z.infer<typeof insertPointEntrySchema>;

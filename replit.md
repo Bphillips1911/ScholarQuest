@@ -1,0 +1,81 @@
+# Overview
+
+This is a House Character Development Program web application for a middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application provides a dashboard for viewing house standings, managing scholars, awarding points, and displaying program information to parents.
+
+# User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+# System Architecture
+
+## Frontend Architecture
+- **Framework**: React 18 with TypeScript using Vite as the build tool
+- **UI Library**: Shadcn/ui components built on Radix UI primitives
+- **Styling**: Tailwind CSS with custom CSS variables for theming
+- **Routing**: Wouter for client-side routing
+- **State Management**: TanStack React Query for server state management
+- **Component Structure**: 
+  - Page components for main routes (dashboard, houses, admin, etc.)
+  - Reusable UI components in the shadcn/ui pattern
+  - Custom components for house cards and forms
+
+## Backend Architecture
+- **Framework**: Express.js with TypeScript
+- **API Design**: RESTful API endpoints for houses, scholars, and point entries
+- **Storage Layer**: In-memory storage implementation with interface for future database integration
+- **Development Setup**: Vite middleware integration for development with HMR support
+- **Build Process**: ESBuild for server bundling, Vite for client bundling
+
+## Data Storage
+- **Database**: PostgreSQL configured with Drizzle ORM
+- **Schema**: Three main tables - houses, scholars, and point_entries
+- **Database Provider**: Neon Database (serverless PostgreSQL)
+- **Current Implementation**: In-memory storage with predefined house data for development
+- **Migration Strategy**: Drizzle-kit for schema migrations
+
+## Database Schema Design
+- **Houses Table**: Stores house information, colors, mottos, and point totals
+- **Scholars Table**: Student records linked to houses with individual point tracking
+- **Point Entries Table**: Audit trail for all point awards with reasons and timestamps
+- **Relationships**: Foreign key constraints ensuring data integrity between tables
+
+## Authentication and Authorization
+- **Current State**: No authentication implemented
+- **Future Consideration**: Session-based authentication anticipated based on connect-pg-simple dependency
+
+## Development Environment
+- **Hot Reload**: Vite dev server with Express middleware integration
+- **TypeScript**: Strict configuration with path aliases for clean imports
+- **Code Quality**: Structured with shared types and schemas between client and server
+- **Replit Integration**: Custom plugins for development environment support
+
+# External Dependencies
+
+## Database Services
+- **Neon Database**: Serverless PostgreSQL hosting
+- **Drizzle ORM**: Type-safe database queries and migrations
+- **connect-pg-simple**: PostgreSQL session store (prepared for future auth)
+
+## UI and Styling
+- **Radix UI**: Accessible component primitives for complex UI components
+- **Tailwind CSS**: Utility-first CSS framework with custom design system
+- **Lucide React**: Icon library for consistent iconography
+- **Embla Carousel**: Carousel component for image/content rotation
+
+## Development Tools
+- **Vite**: Build tool and development server
+- **TanStack React Query**: Server state management and caching
+- **Wouter**: Lightweight React router
+- **ESBuild**: Fast JavaScript bundler for production builds
+- **React Hook Form**: Form handling with validation
+
+## Form Validation
+- **Zod**: Schema validation library
+- **Drizzle-Zod**: Integration between Drizzle schemas and Zod validation
+- **Hookform Resolvers**: Bridge between React Hook Form and Zod
+
+## Utility Libraries
+- **date-fns**: Date manipulation and formatting
+- **clsx & tailwind-merge**: Conditional CSS class composition
+- **class-variance-authority**: Type-safe component variant handling
+- **nanoid**: URL-safe unique ID generation

@@ -1,0 +1,87 @@
+import { Card, CardContent } from "@/components/ui/card";
+import { HandHeart, Shield, Star, Leaf, Mountain, Flame } from "lucide-react";
+
+const houses = [
+  { id: "franklin", name: "Franklin", icon: Shield, color: "house-franklin", bg: "bg-house-franklin" },
+  { id: "courie", name: "Courie", icon: Star, color: "house-courie", bg: "bg-house-courie" },
+  { id: "west", name: "West", icon: Leaf, color: "house-west", bg: "bg-house-west" },
+  { id: "blackwell", name: "Blackwell", icon: Mountain, color: "house-blackwell", bg: "bg-house-blackwell" },
+  { id: "berruguete", name: "Berruguete", icon: Flame, color: "house-berruguete", bg: "bg-house-berruguete" },
+];
+
+const houseValues = {
+  franklin: "Leadership",
+  courie: "Courage", 
+  west: "Wisdom",
+  blackwell: "Strength",
+  berruguete: "Creativity",
+};
+
+export default function Pledge() {
+  return (
+    <section data-testid="pledge-section">
+      <Card className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <HandHeart className="text-white text-2xl" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4" data-testid="pledge-title">House Pledge</h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto" data-testid="pledge-subtitle">
+            Our commitment to character, excellence, and community that unites all five houses.
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 mb-8" data-testid="pledge-text-container">
+          <div className="text-center space-y-4 text-lg leading-relaxed text-gray-800">
+            <p className="font-semibold text-xl text-gray-900" data-testid="pledge-opening">
+              "We, the scholars of our distinguished houses,
+            </p>
+            <p data-testid="pledge-line-1">pledge to uphold the values that make our community strong.</p>
+            <p data-testid="pledge-line-2">
+              We commit to <span className="font-semibold text-blue-600">academic excellence</span> in all our studies,
+            </p>
+            <p data-testid="pledge-line-3">
+              to <span className="font-semibold text-green-600">consistent attendance</span> that shows our dedication,
+            </p>
+            <p data-testid="pledge-line-4">
+              and to <span className="font-semibold text-purple-600">positive behavior</span> that reflects our character.
+            </p>
+            <p data-testid="pledge-line-5">Whether we stand with Franklin's leadership, Courie's courage,</p>
+            <p data-testid="pledge-line-6">West's wisdom, Blackwell's strength, or Berruguete's creativity,</p>
+            <p data-testid="pledge-line-7">we are united in our commitment to growth, respect, and service.</p>
+            <p className="font-semibold text-xl text-gray-900" data-testid="pledge-closing">
+              Together, we rise. Together, we succeed."
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4" data-testid="house-values-grid">
+          {houses.map((house) => {
+            const Icon = house.icon;
+            const houseBgLightClass = {
+              franklin: "bg-red-50",
+              courie: "bg-purple-50", 
+              west: "bg-emerald-50",
+              blackwell: "bg-gray-50",
+              berruguete: "bg-orange-50",
+            }[house.id] || "bg-red-50";
+
+            return (
+              <div key={house.id} className={`text-center p-4 ${houseBgLightClass} rounded-lg`} data-testid={`house-value-${house.id}`}>
+                <div className={`w-12 h-12 ${house.bg} rounded-full flex items-center justify-center mx-auto mb-2`}>
+                  <Icon className="text-white" />
+                </div>
+                <h4 className={`font-bold ${house.color}`} data-testid={`house-value-name-${house.id}`}>
+                  {house.name}
+                </h4>
+                <p className="text-sm text-gray-600" data-testid={`house-value-trait-${house.id}`}>
+                  {houseValues[house.id as keyof typeof houseValues]}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </section>
+  );
+}

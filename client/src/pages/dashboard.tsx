@@ -41,7 +41,7 @@ export default function Dashboard() {
               <img 
                 src={schoolLogoPath} 
                 alt="Bush Hills STEAM Academy" 
-                className="h-16 w-auto mr-4 bg-white rounded-lg p-2"
+                className="h-16 w-auto mr-4 bg-white rounded-lg p-2 school-logo-3d"
                 data-testid="hero-school-logo"
               />
               <div>

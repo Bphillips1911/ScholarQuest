@@ -49,7 +49,7 @@ export default function ParentLetter() {
               <img 
                 src={schoolLogoPath} 
                 alt="Bush Hills STEAM Academy" 
-                className="h-20 w-auto"
+                className="h-20 w-auto school-logo-3d"
                 data-testid="letter-school-logo"
               />
             </div>

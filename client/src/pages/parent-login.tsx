@@ -71,7 +71,7 @@ export default function ParentLogin() {
             <img 
               src={schoolLogoPath} 
               alt="Bush Hills STEAM Academy" 
-              className="h-16 w-auto"
+              className="h-16 w-auto school-logo-3d"
               data-testid="login-school-logo"
             />
           </div>

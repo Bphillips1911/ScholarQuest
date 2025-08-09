@@ -2,11 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { HandHeart, Shield, Star, Leaf, Mountain, Flame } from "lucide-react";
 
 const houses = [
-  { id: "franklin", name: "Franklin", icon: Shield, color: "house-franklin", bg: "bg-house-franklin" },
-  { id: "courie", name: "Courie", icon: Star, color: "house-courie", bg: "bg-house-courie" },
-  { id: "west", name: "West", icon: Leaf, color: "house-west", bg: "bg-house-west" },
-  { id: "blackwell", name: "Blackwell", icon: Mountain, color: "house-blackwell", bg: "bg-house-blackwell" },
-  { id: "berruguete", name: "Berruguete", icon: Flame, color: "house-berruguete", bg: "bg-house-berruguete" },
+  { id: "franklin", name: "Franklin", icon: "🐎", color: "house-franklin", bg: "bg-house-franklin" },
+  { id: "courie", name: "Courie", icon: "🦉", color: "house-courie", bg: "bg-house-courie" },
+  { id: "west", name: "West", icon: "🐺", color: "house-west", bg: "bg-house-west" },
+  { id: "blackwell", name: "Blackwell", icon: "🦅", color: "house-blackwell", bg: "bg-house-blackwell" },
+  { id: "berruguete", name: "Berruguete", icon: "🦁", color: "house-berruguete", bg: "bg-house-berruguete" },
 ];
 
 const houseValues = {

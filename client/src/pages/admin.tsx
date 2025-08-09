@@ -117,7 +117,7 @@ export default function Admin() {
             <img 
               src={schoolLogoPath} 
               alt="Bush Hills STEAM Academy" 
-              className="h-12 w-auto mr-4"
+              className="h-12 w-auto mr-4 school-logo-3d"
               data-testid="admin-school-logo"
             />
             <div>

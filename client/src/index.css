@@ -197,3 +197,49 @@
     8px 8px 12px rgba(0, 0, 0, 0.3),
     0 0 20px rgba(255, 255, 255, 0.2);
 }
+
+/* 3D School Logo Styling */
+.school-logo-3d {
+  filter: 
+    drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.3))
+    drop-shadow(0 0 10px rgba(59, 130, 246, 0.2));
+  transform: perspective(200px) rotateX(5deg) rotateY(2deg);
+  transition: all 0.3s ease;
+}
+
+.school-logo-3d:hover {
+  transform: perspective(200px) rotateX(10deg) rotateY(5deg) scale(1.05);
+  filter: 
+    drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 0 15px rgba(59, 130, 246, 0.3));
+}
+
+/* 3D Text Styling for School Name */
+.school-name-3d {
+  text-shadow: 
+    2px 2px 0px rgba(0, 0, 0, 0.2),
+    4px 4px 8px rgba(0, 0, 0, 0.15),
+    0 0 20px rgba(59, 130, 246, 0.1);
+  transform: perspective(150px) rotateX(3deg);
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.school-name-3d:hover {
+  transform: perspective(150px) rotateX(6deg) scale(1.02);
+  text-shadow: 
+    3px 3px 0px rgba(0, 0, 0, 0.3),
+    6px 6px 10px rgba(0, 0, 0, 0.2),
+    0 0 25px rgba(59, 130, 246, 0.2);
+}
+
+/* 3D Program Title Styling */
+.program-title-3d {
+  text-shadow: 
+    1px 1px 0px rgba(0, 0, 0, 0.2),
+    2px 2px 4px rgba(0, 0, 0, 0.15),
+    0 0 15px rgba(99, 102, 241, 0.1);
+  transform: perspective(100px) rotateX(2deg);
+  transition: all 0.3s ease;
+  display: inline-block;
+}

@@ -29,12 +29,12 @@ export default function NavigationHeader() {
             <img 
               src={schoolLogoPath} 
               alt="Bush Hills STEAM Academy" 
-              className="h-12 w-auto"
+              className="h-12 w-auto school-logo-3d"
               data-testid="school-logo"
             />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">House Character Development</h1>
-              <p className="text-sm text-gray-600">Bush Hills STEAM Academy</p>
+              <h1 className="text-xl font-bold text-gray-900 school-name-3d">House Character Development</h1>
+              <p className="text-sm text-gray-600 program-title-3d">Bush Hills STEAM Academy</p>
             </div>
           </Link>
           

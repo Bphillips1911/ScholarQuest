@@ -165,7 +165,7 @@ export default function ParentPortal() {
                 <img 
                   src={schoolLogoPath} 
                   alt="Bush Hills STEAM Academy" 
-                  className="h-12 w-auto mr-4"
+                  className="h-12 w-auto mr-4 school-logo-3d"
                   data-testid="portal-school-logo"
                 />
                 <div>

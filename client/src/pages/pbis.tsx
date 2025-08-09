@@ -478,7 +478,7 @@ export default function PBIS() {
           <img 
             src={schoolLogoPath} 
             alt="Bush Hills STEAM Academy" 
-            className="h-16 w-auto mr-6"
+            className="h-16 w-auto mr-6 school-logo-3d"
             data-testid="pbis-school-logo"
           />
           <div>

@@ -135,13 +135,13 @@ export default function ParentLetter() {
                     The House Character Development Program focuses on recognizing students who demonstrate our core MUSTANG traits:
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-green-700">
-                    <div><strong>M</strong> - Motivated</div>
-                    <div><strong>U</strong> - Understanding</div>
-                    <div><strong>S</strong> - Safe</div>
-                    <div><strong>T</strong> - Teamwork</div>
-                    <div><strong>A</strong> - Accountable</div>
-                    <div><strong>N</strong> - Noble</div>
-                    <div><strong>G</strong> - Growth</div>
+                    <div><strong>M</strong> - Make good choices</div>
+                    <div><strong>U</strong> - Use kind words</div>
+                    <div><strong>S</strong> - Show school pride</div>
+                    <div><strong>T</strong> - Tolerant of others</div>
+                    <div><strong>A</strong> - Aim for excellence</div>
+                    <div><strong>N</strong> - Need to be responsible</div>
+                    <div><strong>G</strong> - Give 100% everyday</div>
                   </div>
                 </div>
 

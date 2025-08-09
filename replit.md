@@ -6,6 +6,15 @@ This is a House Character Development Program web application for Bush Hills STE
 
 Preferred communication style: Simple, everyday language.
 
+## MUSTANG Trait Definitions
+- M - Make good choices
+- U - Use kind words  
+- S - Show school pride
+- T - Tolerant of others
+- A - Aim for excellence
+- N - Need to be responsible
+- G - Give 100% everyday
+
 # System Architecture
 
 ## Frontend Architecture

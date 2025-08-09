@@ -64,13 +64,13 @@ const pbisCategories = {
 };
 
 const mustangTraits = [
-  { value: "Motivated", label: "M - Motivated", color: "bg-red-500" },
-  { value: "Understanding", label: "U - Understanding", color: "bg-orange-500" },
-  { value: "Safe", label: "S - Safe", color: "bg-yellow-500" },
-  { value: "Teamwork", label: "T - Teamwork", color: "bg-green-500" },
-  { value: "Accountable", label: "A - Accountable", color: "bg-blue-500" },
-  { value: "Noble", label: "N - Noble", color: "bg-indigo-500" },
-  { value: "Growth", label: "G - Growth", color: "bg-purple-500" }
+  { value: "Make good choices", label: "M - Make good choices", color: "bg-red-500" },
+  { value: "Use kind words", label: "U - Use kind words", color: "bg-orange-500" },
+  { value: "Show school pride", label: "S - Show school pride", color: "bg-yellow-500" },
+  { value: "Tolerant of others", label: "T - Tolerant of others", color: "bg-green-500" },
+  { value: "Aim for excellence", label: "A - Aim for excellence", color: "bg-blue-500" },
+  { value: "Need to be responsible", label: "N - Need to be responsible", color: "bg-indigo-500" },
+  { value: "Give 100% everyday", label: "G - Give 100% everyday", color: "bg-purple-500" }
 ];
 
 const gradeTeachers = {
@@ -239,7 +239,7 @@ export default function PBIS() {
       teacherRole: selectedGrade as "6th Grade" | "7th Grade" | "8th Grade" | "Unified Arts" | "Administration" | "Counselor",
       points: subcategoryData.points,
       reason: customReason || subcategoryData.label,
-      mustangTrait: selectedTrait as "Motivated" | "Understanding" | "Safe" | "Teamwork" | "Accountable" | "Noble" | "Growth",
+      mustangTrait: selectedTrait as "Make good choices" | "Use kind words" | "Show school pride" | "Tolerant of others" | "Aim for excellence" | "Need to be responsible" | "Give 100% everyday",
       category: selectedCategory as "attendance" | "behavior" | "academic",
       subcategory: selectedSubcategory,
     };

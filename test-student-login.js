@@ -7,7 +7,7 @@ console.log("====================================");
 // Test 1: Create demo student credentials
 async function createTestCredentials() {
   const username = "bh6001emma";
-  const password = "test1234";
+  const password = process.env.TEST_STUDENT_PASSWORD || "test1234";
   const hashedPassword = await bcrypt.hash(password, 10);
   
   console.log("Demo Student Credentials:");

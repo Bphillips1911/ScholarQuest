@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mail, Printer, CheckCircle, Book, Calendar, Heart } from "lucide-react";
+import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function ParentLetter() {
   const currentDate = new Date().toLocaleDateString("en-US", {
@@ -23,13 +24,16 @@ export default function ParentLetter() {
     <section data-testid="parent-letter-section">
       <Card className="bg-white rounded-2xl shadow-lg p-8">
         <div className="flex items-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-            <Mail className="text-blue-600 text-2xl" />
-          </div>
+          <img 
+            src={schoolLogoPath} 
+            alt="Bush Hills STEAM Academy" 
+            className="h-16 w-auto mr-6"
+            data-testid="parent-letter-logo"
+          />
           <div>
             <h2 className="text-3xl font-bold text-gray-900" data-testid="parent-letter-title">Letter to Parents</h2>
             <p className="text-gray-600" data-testid="parent-letter-subtitle">
-              Information about our House Character Development Program
+              Bush Hills STEAM Academy House Character Development Program
             </p>
           </div>
         </div>
@@ -39,7 +43,7 @@ export default function ParentLetter() {
             <p className="text-sm text-gray-600 mb-2">
               Date: <span data-testid="letter-date">{currentDate}</span>
             </p>
-            <p className="text-sm text-gray-600">From: Middle School Administration</p>
+            <p className="text-sm text-gray-600">From: Bush Hills STEAM Academy Administration</p>
           </div>
 
           <div className="space-y-6 text-gray-800 leading-relaxed" data-testid="letter-content">
@@ -146,11 +150,11 @@ export default function ParentLetter() {
 
             <div className="border-t pt-6" data-testid="letter-signature">
               <p className="font-medium text-gray-900">Sincerely,</p>
-              <p className="text-gray-700 mt-2">The Middle School Administration Team</p>
+              <p className="text-gray-700 mt-2">The Bush Hills STEAM Academy Administration Team</p>
               <div className="mt-6 text-sm text-gray-600" data-testid="contact-info">
                 <p><strong>Contact Information:</strong></p>
                 <p>Phone: <span data-testid="school-phone">(555) 123-4567</span></p>
-                <p>Email: <span data-testid="school-email">houses@middleschool.edu</span></p>
+                <p>Email: <span data-testid="school-email">houses@bushillssteam.edu</span></p>
               </div>
             </div>
           </div>

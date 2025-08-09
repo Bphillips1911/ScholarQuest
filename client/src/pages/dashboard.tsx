@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Trophy, Plus, Book, Calendar, Heart, Shield, Star, Leaf, Mountain, Flame } from "lucide-react";
 import type { House } from "@shared/schema";
+import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 const iconMap = {
   "shield-alt": Shield,
@@ -34,24 +35,37 @@ export default function Dashboard() {
     <section data-testid="dashboard-section">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white mb-8" data-testid="hero-section">
-        <div className="max-w-3xl">
-          <h2 className="text-4xl font-bold mb-4">Welcome to House Character Development</h2>
-          <p className="text-xl text-blue-100 mb-6">
-            Building character, fostering community, and celebrating excellence in our five distinguished houses.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <Link href="/houses">
-              <Button className="bg-white text-blue-600 hover:bg-blue-50" data-testid="button-view-leaderboard">
-                <Trophy className="mr-2 h-4 w-4" />
-                View Leaderboard
-              </Button>
-            </Link>
-            <Link href="/admin">
-              <Button className="bg-blue-500 hover:bg-blue-400" data-testid="button-add-points">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Points
-              </Button>
-            </Link>
+        <div className="flex items-center justify-between">
+          <div className="max-w-3xl">
+            <div className="flex items-center mb-4">
+              <img 
+                src={schoolLogoPath} 
+                alt="Bush Hills STEAM Academy" 
+                className="h-16 w-auto mr-4 bg-white rounded-lg p-2"
+                data-testid="hero-school-logo"
+              />
+              <div>
+                <h2 className="text-4xl font-bold mb-2">Welcome to House Character Development</h2>
+                <p className="text-blue-100 font-medium">Bush Hills STEAM Academy</p>
+              </div>
+            </div>
+            <p className="text-xl text-blue-100 mb-6">
+              Building character, fostering community, and celebrating excellence in our five distinguished houses.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link href="/houses">
+                <Button className="bg-white text-blue-600 hover:bg-blue-50" data-testid="button-view-leaderboard">
+                  <Trophy className="mr-2 h-4 w-4" />
+                  View Leaderboard
+                </Button>
+              </Link>
+              <Link href="/admin">
+                <Button className="bg-blue-500 hover:bg-blue-400" data-testid="button-add-points">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Points
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

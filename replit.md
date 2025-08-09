@@ -1,6 +1,6 @@
 # Overview
 
-This is a House Character Development Program web application for a middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application provides a dashboard for viewing house standings, managing scholars, awarding points, and displaying program information to parents.
+This is a House Character Development Program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application provides a dashboard for viewing house standings, managing scholars, awarding points, and displaying program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride.
 
 # User Preferences
 
@@ -68,6 +68,11 @@ Preferred communication style: Simple, everyday language.
 - **Wouter**: Lightweight React router
 - **ESBuild**: Fast JavaScript bundler for production builds
 - **React Hook Form**: Form handling with validation
+
+## Visual Assets and Branding
+- **School Logo**: Bush Hills STEAM Academy (BHSA) Mustangs Crest integrated throughout the app
+- **Asset Management**: Vite-based asset importing with @assets/ alias for images and media
+- **School Branding**: Consistent use of school identity in navigation, dashboard, admin panel, and parent communications
 
 ## Form Validation
 - **Zod**: Schema validation library

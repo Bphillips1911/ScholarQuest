@@ -10,6 +10,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
 import { Download, RefreshCw, UserPlus, Plus } from "lucide-react";
 import type { House, Scholar, InsertScholar, PointEntry } from "@shared/schema";
+import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function Admin() {
   const [newStudentName, setNewStudentName] = useState("");
@@ -112,9 +113,17 @@ export default function Admin() {
     <section data-testid="admin-section">
       <Card className="bg-white rounded-2xl shadow-lg p-8">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900" data-testid="admin-title">Admin Dashboard</h2>
-            <p className="text-gray-600">Manage points, scholars, and house activities</p>
+          <div className="flex items-center">
+            <img 
+              src={schoolLogoPath} 
+              alt="Bush Hills STEAM Academy" 
+              className="h-12 w-auto mr-4"
+              data-testid="admin-school-logo"
+            />
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900" data-testid="admin-title">Admin Dashboard</h2>
+              <p className="text-gray-600">Manage points, scholars, and house activities</p>
+            </div>
           </div>
           <div className="flex space-x-4">
             <Button 

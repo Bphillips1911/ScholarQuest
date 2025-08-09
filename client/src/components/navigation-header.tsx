@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { GraduationCap, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function NavigationHeader() {
   const [location] = useLocation();
@@ -24,8 +25,16 @@ export default function NavigationHeader() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-4" data-testid="link-home">
-            <GraduationCap className="text-2xl text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900">House Character Development</h1>
+            <img 
+              src={schoolLogoPath} 
+              alt="Bush Hills STEAM Academy" 
+              className="h-12 w-auto"
+              data-testid="school-logo"
+            />
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">House Character Development</h1>
+              <p className="text-sm text-gray-600">Bush Hills STEAM Academy</p>
+            </div>
           </Link>
           
           {/* Desktop Navigation */}

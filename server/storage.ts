@@ -1,4 +1,4 @@
-import { type House, type Scholar, type PointEntry, type InsertHouse, type InsertScholar, type InsertPointEntry } from "@shared/schema";
+import { type House, type Scholar, type PointEntry, type PbisEntry, type InsertHouse, type InsertScholar, type InsertPointEntry, type InsertPbisEntry } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -19,6 +19,12 @@ export interface IStorage {
   getPointEntriesByHouse(houseId: string): Promise<PointEntry[]>;
   createPointEntry(entry: InsertPointEntry): Promise<PointEntry>;
   
+  // PBIS Entries
+  getPbisEntries(): Promise<PbisEntry[]>;
+  getPbisEntriesByScholar(scholarId: string): Promise<PbisEntry[]>;
+  createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry>;
+  getAllScholars(): Promise<Scholar[]>;
+  
   // Utility
   getHouseStandings(): Promise<House[]>;
 }
@@ -27,14 +33,17 @@ export class MemStorage implements IStorage {
   private houses: Map<string, House>;
   private scholars: Map<string, Scholar>;
   private pointEntries: Map<string, PointEntry>;
+  private pbisEntries: Map<string, PbisEntry>;
 
   constructor() {
     this.houses = new Map();
     this.scholars = new Map();
     this.pointEntries = new Map();
+    this.pbisEntries = new Map();
     
-    // Initialize with the five houses
+    // Initialize with the five houses and sample scholars
     this.initializeHouses();
+    this.initializeScholars();
   }
 
   private initializeHouses() {
@@ -97,6 +106,41 @@ export class MemStorage implements IStorage {
     ];
 
     initialHouses.forEach(house => this.houses.set(house.id, house));
+  }
+
+  private async initializeScholars() {
+    const sampleScholars = [
+      { name: "Emma Johnson", studentId: "BH6001", houseId: "franklin" },
+      { name: "Liam Williams", studentId: "BH6002", houseId: "courie" },
+      { name: "Sophia Brown", studentId: "BH6003", houseId: "west" },
+      { name: "Noah Davis", studentId: "BH6004", houseId: "blackwell" },
+      { name: "Isabella Miller", studentId: "BH6005", houseId: "berruguete" },
+      { name: "James Wilson", studentId: "BH7001", houseId: "franklin" },
+      { name: "Olivia Moore", studentId: "BH7002", houseId: "courie" },
+      { name: "Benjamin Taylor", studentId: "BH7003", houseId: "west" },
+      { name: "Charlotte Anderson", studentId: "BH7004", houseId: "blackwell" },
+      { name: "Alexander Thomas", studentId: "BH7005", houseId: "berruguete" },
+      { name: "Mia Jackson", studentId: "BH8001", houseId: "franklin" },
+      { name: "Ethan White", studentId: "BH8002", houseId: "courie" },
+      { name: "Amelia Harris", studentId: "BH8003", houseId: "west" },
+      { name: "Mason Martin", studentId: "BH8004", houseId: "blackwell" },
+      { name: "Harper Thompson", studentId: "BH8005", houseId: "berruguete" },
+    ];
+
+    for (const scholar of sampleScholars) {
+      const id = randomUUID();
+      const newScholar: Scholar = {
+        id,
+        name: scholar.name,
+        studentId: scholar.studentId,
+        houseId: scholar.houseId,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        createdAt: new Date(),
+      };
+      this.scholars.set(id, newScholar);
+    }
   }
 
   async getHouses(): Promise<House[]> {
@@ -187,6 +231,9 @@ export class MemStorage implements IStorage {
     const newEntry: PointEntry = {
       ...entry,
       id,
+      scholarId: entry.scholarId || null,
+      reason: entry.reason || null,
+      addedBy: entry.addedBy || "admin",
       createdAt: new Date(),
     };
     this.pointEntries.set(id, newEntry);
@@ -200,6 +247,30 @@ export class MemStorage implements IStorage {
     }
 
     return newEntry;
+  }
+
+  async getPbisEntries(): Promise<PbisEntry[]> {
+    return Array.from(this.pbisEntries.values());
+  }
+
+  async getPbisEntriesByScholar(scholarId: string): Promise<PbisEntry[]> {
+    return Array.from(this.pbisEntries.values()).filter(entry => entry.scholarId === scholarId);
+  }
+
+  async createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry> {
+    const id = randomUUID();
+    const newEntry: PbisEntry = {
+      ...entry,
+      id,
+      reason: entry.reason || null,
+      createdAt: new Date(),
+    };
+    this.pbisEntries.set(id, newEntry);
+    return newEntry;
+  }
+
+  async getAllScholars(): Promise<Scholar[]> {
+    return Array.from(this.scholars.values());
   }
 
   async getHouseStandings(): Promise<House[]> {

@@ -37,6 +37,17 @@ export const pointEntries = pgTable("point_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const pbisEntries = pgTable("pbis_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  teacherName: text("teacher_name").notNull(),
+  teacherRole: text("teacher_role").notNull(), // '6th Grade', '7th Grade', '8th Grade', 'Unified Arts', 'Administration', 'Counselor'
+  points: integer("points").notNull().default(1),
+  reason: text("reason"),
+  mustangTrait: text("mustang_trait").notNull(), // M-Motivated, U-Understanding, S-Safe, T-Teamwork, A-Accountable, N-Noble, G-Growth
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertHouseSchema = createInsertSchema(houses).omit({
   academicPoints: true,
   attendancePoints: true,
@@ -60,9 +71,20 @@ export const insertPointEntrySchema = createInsertSchema(pointEntries).omit({
   points: z.number().min(1).max(100),
 });
 
+export const insertPbisEntrySchema = createInsertSchema(pbisEntries).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  teacherRole: z.enum(["6th Grade", "7th Grade", "8th Grade", "Unified Arts", "Administration", "Counselor"]),
+  points: z.number().min(1).max(10),
+  mustangTrait: z.enum(["Motivated", "Understanding", "Safe", "Teamwork", "Accountable", "Noble", "Growth"]),
+});
+
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;
 export type PointEntry = typeof pointEntries.$inferSelect;
+export type PbisEntry = typeof pbisEntries.$inferSelect;
 export type InsertHouse = z.infer<typeof insertHouseSchema>;
 export type InsertScholar = z.infer<typeof insertScholarSchema>;
 export type InsertPointEntry = z.infer<typeof insertPointEntrySchema>;
+export type InsertPbisEntry = z.infer<typeof insertPbisEntrySchema>;

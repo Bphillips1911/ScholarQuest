@@ -7,6 +7,7 @@ import NavigationHeader from "@/components/navigation-header";
 import Dashboard from "@/pages/dashboard";
 import Houses from "@/pages/houses";
 import HouseDetail from "@/pages/house-detail";
+import PBIS from "@/pages/pbis";
 import Pledge from "@/pages/pledge";
 import ParentLetter from "@/pages/parent-letter";
 import Admin from "@/pages/admin";
@@ -21,6 +22,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/houses" component={Houses} />
           <Route path="/houses/:id" component={HouseDetail} />
+          <Route path="/pbis" component={PBIS} />
           <Route path="/pledge" component={Pledge} />
           <Route path="/parent-letter" component={ParentLetter} />
           <Route path="/admin" component={Admin} />

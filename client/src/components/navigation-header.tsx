@@ -10,6 +10,7 @@ export default function NavigationHeader() {
   const navItems = [
     { path: "/", label: "Dashboard" },
     { path: "/houses", label: "Houses" },
+    { path: "/pbis", label: "PBIS" },
     { path: "/pledge", label: "House Pledge" },
     { path: "/parent-letter", label: "Parent Letter" },
     { path: "/admin", label: "Admin" },

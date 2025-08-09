@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertPointEntrySchema } from "@shared/schema";
+import { insertScholarSchema, insertPointEntrySchema, insertPbisEntrySchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all houses with standings
@@ -76,6 +76,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(entries);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch point entries" });
+    }
+  });
+
+  // PBIS routes
+  // Get all PBIS entries
+  app.get("/api/pbis", async (_req, res) => {
+    try {
+      const entries = await storage.getPbisEntries();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch PBIS entries" });
+    }
+  });
+
+  // Create PBIS entry
+  app.post("/api/pbis", async (req, res) => {
+    try {
+      const validatedData = insertPbisEntrySchema.parse(req.body);
+      const entry = await storage.createPbisEntry(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid PBIS entry data" });
+    }
+  });
+
+  // Get all scholars
+  app.get("/api/scholars", async (_req, res) => {
+    try {
+      const scholars = await storage.getAllScholars();
+      res.json(scholars);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch scholars" });
+    }
+  });
+
+  // Get PBIS entries for a specific scholar
+  app.get("/api/scholars/:id/pbis", async (req, res) => {
+    try {
+      const entries = await storage.getPbisEntriesByScholar(req.params.id);
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch PBIS entries for scholar" });
     }
   });
 

@@ -201,14 +201,16 @@ export default function Admin() {
 
         {/* Admin Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="dashboard" className="flex items-center" data-testid="tab-dashboard">
-              <GraduationCap className="mr-2 h-4 w-4" />
-              House Management
+          <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsTrigger value="dashboard" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-dashboard">
+              <GraduationCap className="mr-1 h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">House Management</span>
+              <span className="sm:hidden">Houses</span>
             </TabsTrigger>
-            <TabsTrigger value="students" className="flex items-center" data-testid="tab-students">
-              <Users className="mr-2 h-4 w-4" />
-              Student Portal Information
+            <TabsTrigger value="students" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-students">
+              <Users className="mr-1 h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Student Information</span>
+              <span className="sm:hidden">Students</span>
             </TabsTrigger>
           </TabsList>
 

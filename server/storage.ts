@@ -556,10 +556,6 @@ export class MemStorage implements IStorage {
     return newEntry;
   }
 
-  async getAllScholars(): Promise<Scholar[]> {
-    return Array.from(this.scholars.values());
-  }
-
   async getPbisPhotos(): Promise<PbisPhoto[]> {
     return Array.from(this.pbisPhotos.values()).sort((a, b) => 
       new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
@@ -623,14 +619,7 @@ export class MemStorage implements IStorage {
     return true;
   }
 
-  async addScholarToParent(parentId: string, scholarId: string): Promise<boolean> {
-    const currentScholars = this.parentScholars.get(parentId) || [];
-    if (!currentScholars.includes(scholarId)) {
-      currentScholars.push(scholarId);
-      this.parentScholars.set(parentId, currentScholars);
-    }
-    return true;
-  }
+
 
   async getParentScholars(parentId: string): Promise<Scholar[]> {
     const scholarIds = this.parentScholars.get(parentId) || [];
@@ -796,17 +785,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.passwordResetRequests.values()).filter(req => req.teacherId === teacherId);
   }
 
-  async authenticateStudent(username: string, password: string): Promise<Scholar | null> {
-    // Find scholar by username
-    const scholar = Array.from(this.scholars.values()).find(s => s.username === username);
-    if (!scholar || !scholar.passwordHash) {
-      return null;
-    }
 
-    // Verify password
-    const isValid = await bcrypt.compare(password, scholar.passwordHash);
-    return isValid ? scholar : null;
-  }
 
   async resetStudentPassword(studentId: string, newPassword: string): Promise<boolean> {
     const scholar = this.scholars.get(studentId);
@@ -827,8 +806,6 @@ export class MemStorage implements IStorage {
 
     return true;
   }
-
-
 
   // Initialize demo teacher authentication accounts
   private async initializeTeacherAuth() {

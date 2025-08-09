@@ -86,6 +86,26 @@ export const parents = pgTable("parents", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const teacherAuth = pgTable("teacher_auth", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull().unique(),
+  name: varchar("name").notNull(),
+  subject: varchar("subject").notNull(),
+  gradeRole: text("grade_role").notNull(), // '6th Grade', '7th Grade', '8th Grade', 'Unified Arts', 'Administration', 'Counselor'
+  passwordHash: varchar("password_hash").notNull(),
+  isApproved: boolean("is_approved").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
+});
+
+export const teacherSessions = pgTable("teacher_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertHouseSchema = createInsertSchema(houses).omit({
   academicPoints: true,
   attendancePoints: true,
@@ -148,6 +168,22 @@ export const insertParentSchema = createInsertSchema(parents).omit({
   lastName: z.string().min(1),
 });
 
+export const insertTeacherAuthSchema = createInsertSchema(teacherAuth).omit({
+  id: true,
+  createdAt: true,
+  lastLoginAt: true,
+  isApproved: true,
+}).extend({
+  email: z.string().email(),
+  password: z.string().min(6),
+  gradeRole: z.enum(["6th Grade", "7th Grade", "8th Grade", "Unified Arts", "Administration", "Counselor"]),
+});
+
+export const insertTeacherSessionSchema = createInsertSchema(teacherSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;
 export type Teacher = typeof teachers.$inferSelect;
@@ -162,3 +198,7 @@ export type InsertPointEntry = z.infer<typeof insertPointEntrySchema>;
 export type InsertPbisEntry = z.infer<typeof insertPbisEntrySchema>;
 export type InsertPbisPhoto = z.infer<typeof insertPbisPhotoSchema>;
 export type InsertParent = z.infer<typeof insertParentSchema>;
+export type InsertTeacherAuth = z.infer<typeof insertTeacherAuthSchema>;
+export type TeacherAuth = typeof teacherAuth.$inferSelect;
+export type InsertTeacherSession = z.infer<typeof insertTeacherSessionSchema>;
+export type TeacherSession = typeof teacherSessions.$inferSelect;

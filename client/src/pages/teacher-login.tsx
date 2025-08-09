@@ -37,7 +37,7 @@ export default function TeacherLogin() {
           description: `Welcome back, ${data.teacher.name}!`,
         });
         
-        setLocation("/teacher/dashboard");
+        setLocation("/teacher-dashboard");
       } else {
         const error = await response.json();
         toast({

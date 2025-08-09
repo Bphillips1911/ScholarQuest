@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema } from "@shared/schema";
+import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -619,6 +619,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error resetting houses:", error);
       res.status(500).json({ message: "Failed to reset houses" });
+    }
+  });
+
+  // Teacher Authentication Routes
+  app.post("/api/teacher/signup", async (req, res) => {
+    try {
+      const validatedData = insertTeacherAuthSchema.parse(req.body);
+      
+      // Check if teacher already exists
+      const existingTeacher = await storage.getTeacherAuthByEmail(validatedData.email);
+      if (existingTeacher) {
+        return res.status(400).json({ message: "Teacher already registered with this email" });
+      }
+
+      const teacher = await storage.createTeacherAuth(validatedData);
+      
+      res.status(201).json({
+        message: "Registration submitted for approval",
+        teacher: {
+          id: teacher.id,
+          email: teacher.email,
+          name: teacher.name,
+          gradeRole: teacher.gradeRole,
+          isApproved: teacher.isApproved,
+        },
+      });
+    } catch (error) {
+      console.error("Teacher signup error:", error);
+      res.status(400).json({ message: "Invalid registration data" });
+    }
+  });
+
+  app.post("/api/teacher/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      const teacher = await storage.getTeacherAuthByEmail(email);
+      if (!teacher) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      if (!teacher.isApproved) {
+        return res.status(401).json({ message: "Account pending approval" });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, teacher.passwordHash);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Generate session token
+      const token = jwt.sign(
+        { teacherId: teacher.id, gradeRole: teacher.gradeRole },
+        process.env.JWT_SECRET || "fallback_secret",
+        { expiresIn: "7d" }
+      );
+
+      // Create session record
+      await storage.createTeacherSession({
+        teacherId: teacher.id,
+        token,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      });
+
+      res.json({
+        message: "Login successful",
+        token,
+        teacher: {
+          id: teacher.id,
+          email: teacher.email,
+          name: teacher.name,
+          gradeRole: teacher.gradeRole,
+          subject: teacher.subject,
+        },
+      });
+    } catch (error) {
+      console.error("Teacher login error:", error);
+      res.status(500).json({ message: "Login failed" });
     }
   });
 

@@ -1,7 +1,37 @@
-import { type House, type Scholar, type Teacher, type PointEntry, type PbisEntry, type PbisPhoto, type Parent, type InsertHouse, type InsertScholar, type InsertTeacher, type InsertPointEntry, type InsertPbisEntry, type InsertPbisPhoto, type InsertParent, houses, scholars, teachers, pointEntries, pbisEntries, pbisPhotos, parents } from "@shared/schema";
+import { 
+  type House, 
+  type Scholar, 
+  type Teacher, 
+  type PointEntry, 
+  type PbisEntry, 
+  type PbisPhoto, 
+  type Parent,
+  type TeacherAuth,
+  type TeacherSession,
+  type InsertHouse, 
+  type InsertScholar, 
+  type InsertTeacher, 
+  type InsertPointEntry, 
+  type InsertPbisEntry, 
+  type InsertPbisPhoto, 
+  type InsertParent,
+  type InsertTeacherAuth,
+  type InsertTeacherSession,
+  houses, 
+  scholars, 
+  teachers, 
+  pointEntries, 
+  pbisEntries, 
+  pbisPhotos, 
+  parents,
+  teacherAuth,
+  teacherSessions
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { eq, desc, sql } from "drizzle-orm";
+import { db } from "./db";
 
 export interface IStorage {
   // Houses
@@ -52,6 +82,14 @@ export interface IStorage {
   removeUnsortedStudent(studentId: string): Promise<boolean>;
   sortStudentsIntoHouses(): Promise<{ sortedCount: number }>;
   resetAllHouses(): Promise<void>;
+  
+  // Teacher Authentication
+  createTeacherAuth(teacher: InsertTeacherAuth): Promise<TeacherAuth>;
+  getTeacherAuthByEmail(email: string): Promise<TeacherAuth | undefined>;
+  approveTeacher(teacherId: string): Promise<boolean>;
+  createTeacherSession(session: InsertTeacherSession): Promise<TeacherSession>;
+  getTeacherSession(token: string): Promise<TeacherSession | undefined>;
+  deleteTeacherSession(token: string): Promise<boolean>;
   
   // Utility
   getHouseStandings(): Promise<House[]>;
@@ -778,8 +816,50 @@ export class DatabaseStorage implements IStorage {
       desc(sql`${houses.academicPoints} + ${houses.attendancePoints} + ${houses.behaviorPoints}`)
     );
   }
-}
 
-import { db } from "./db";
+  // Teacher Authentication
+  async createTeacherAuth(teacher: InsertTeacherAuth): Promise<TeacherAuth> {
+    // Hash password before storing
+    const passwordHash = await bcrypt.hash(teacher.password, 12);
+    
+    const teacherData = {
+      email: teacher.email,
+      name: teacher.name,
+      subject: teacher.subject,
+      gradeRole: teacher.gradeRole,
+      passwordHash,
+    };
+
+    const [newTeacher] = await db.insert(teacherAuth).values(teacherData).returning();
+    return newTeacher;
+  }
+
+  async getTeacherAuthByEmail(email: string): Promise<TeacherAuth | undefined> {
+    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.email, email));
+    return teacher;
+  }
+
+  async approveTeacher(teacherId: string): Promise<boolean> {
+    const result = await db.update(teacherAuth)
+      .set({ isApproved: true })
+      .where(eq(teacherAuth.id, teacherId));
+    return result.rowCount > 0;
+  }
+
+  async createTeacherSession(session: InsertTeacherSession): Promise<TeacherSession> {
+    const [newSession] = await db.insert(teacherSessions).values(session).returning();
+    return newSession;
+  }
+
+  async getTeacherSession(token: string): Promise<TeacherSession | undefined> {
+    const [session] = await db.select().from(teacherSessions).where(eq(teacherSessions.token, token));
+    return session;
+  }
+
+  async deleteTeacherSession(token: string): Promise<boolean> {
+    const result = await db.delete(teacherSessions).where(eq(teacherSessions.token, token));
+    return result.rowCount > 0;
+  }
+}
 
 export const storage = new DatabaseStorage();

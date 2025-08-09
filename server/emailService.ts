@@ -35,14 +35,21 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
   }
 
   try {
-    await mailService.send({
+    const emailData = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text || undefined,
       html: params.html || undefined,
-    });
-    console.log('✅ Email sent successfully to:', params.to);
+      mail_settings: {
+        sandbox_mode: {
+          enable: true // Enable sandbox mode for testing
+        }
+      }
+    };
+    
+    await mailService.send(emailData);
+    console.log('✅ Email sent successfully to:', params.to, '(sandbox mode)');
     return true;
   } catch (error: any) {
     console.error('❌ SendGrid email error:', error.message || error);

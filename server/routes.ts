@@ -1128,7 +1128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const success = await sendEmail({
         to: email,
-        from: "test@example.com", // Use verified sender for testing
+        from: "noreply@sendgrid.net", // Use SendGrid's default verified sender
         subject: "Bush Hills STEAM Academy - Email Test",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

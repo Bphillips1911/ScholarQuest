@@ -8,73 +8,92 @@ export default function LionIcon({ className = "w-6 h-6", size = 24 }: LionIconP
     <svg
       width={size}
       height={size}
-      viewBox="0 0 100 100"
+      viewBox="0 0 120 120"
       fill="currentColor"
       className={className}
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Outer mane layers */}
-      <path d="M 20 30 Q 15 20 25 15 Q 35 10 50 12 Q 65 10 75 15 Q 85 20 80 30 Q 85 40 82 50 Q 85 60 80 70 Q 75 80 65 82 Q 50 85 35 82 Q 25 80 20 70 Q 15 60 18 50 Q 15 40 20 30" fill="currentColor" opacity="0.3"/>
+      {/* Dramatic mane outer layer */}
+      <path d="M 15 45 Q 8 25 20 15 Q 30 5 45 8 Q 60 2 75 8 Q 90 5 100 15 Q 112 25 105 45 Q 115 60 110 75 Q 105 90 90 100 Q 75 110 60 105 Q 45 110 30 100 Q 15 90 10 75 Q 5 60 15 45" fill="currentColor" opacity="0.2"/>
       
-      {/* Middle mane layer */}
-      <path d="M 25 32 Q 22 25 30 22 Q 40 18 50 20 Q 60 18 70 22 Q 78 25 75 32 Q 78 42 76 50 Q 78 58 75 68 Q 70 75 60 76 Q 50 78 40 76 Q 30 75 25 68 Q 22 58 24 50 Q 22 42 25 32" fill="currentColor" opacity="0.5"/>
+      {/* Secondary mane layer */}
+      <path d="M 22 48 Q 18 32 28 25 Q 38 18 52 20 Q 60 15 68 20 Q 82 18 92 25 Q 102 32 98 48 Q 102 62 98 76 Q 92 86 82 88 Q 68 92 60 88 Q 52 92 38 88 Q 28 86 22 76 Q 18 62 22 48" fill="currentColor" opacity="0.35"/>
       
-      {/* Inner mane */}
-      <ellipse cx="50" cy="48" rx="22" ry="26" fill="currentColor" opacity="0.7"/>
+      {/* Primary mane body */}
+      <ellipse cx="60" cy="55" rx="32" ry="36" fill="currentColor" opacity="0.5"/>
       
-      {/* Lion's head/face base */}
-      <ellipse cx="50" cy="52" rx="16" ry="18" fill="currentColor"/>
+      {/* Mane texture strands */}
+      <path d="M 35 40 Q 30 35 38 32 Q 45 36 42 42 Q 38 45 35 40" fill="currentColor" opacity="0.3"/>
+      <path d="M 85 40 Q 90 35 82 32 Q 75 36 78 42 Q 82 45 85 40" fill="currentColor" opacity="0.3"/>
+      <path d="M 28 65 Q 22 60 30 58 Q 38 62 35 68 Q 30 70 28 65" fill="currentColor" opacity="0.3"/>
+      <path d="M 92 65 Q 98 60 90 58 Q 82 62 85 68 Q 90 70 92 65" fill="currentColor" opacity="0.3"/>
       
-      {/* Forehead definition */}
-      <ellipse cx="50" cy="45" rx="14" ry="12" fill="currentColor" opacity="0.9"/>
+      {/* Lion's main head shape */}
+      <ellipse cx="60" cy="62" rx="20" ry="24" fill="currentColor"/>
       
-      {/* Ear base shapes */}
-      <ellipse cx="38" cy="38" rx="5" ry="7" fill="currentColor" transform="rotate(-25 38 38)"/>
-      <ellipse cx="62" cy="38" rx="5" ry="7" fill="currentColor" transform="rotate(25 62 38)"/>
+      {/* Facial structure - cheek bones */}
+      <ellipse cx="48" cy="58" rx="8" ry="12" fill="currentColor" opacity="0.9"/>
+      <ellipse cx="72" cy="58" rx="8" ry="12" fill="currentColor" opacity="0.9"/>
       
-      {/* Inner ears */}
-      <ellipse cx="39" cy="40" rx="2.5" ry="4" fill="currentColor" opacity="0.6" transform="rotate(-25 39 40)"/>
-      <ellipse cx="61" cy="40" rx="2.5" ry="4" fill="currentColor" opacity="0.6" transform="rotate(25 61 40)"/>
+      {/* Forehead prominence */}
+      <ellipse cx="60" cy="50" rx="16" ry="14" fill="currentColor" opacity="0.95"/>
       
-      {/* Eye sockets/brow ridge */}
-      <ellipse cx="44" cy="48" rx="4" ry="3" fill="currentColor" opacity="0.8"/>
-      <ellipse cx="56" cy="48" rx="4" ry="3" fill="currentColor" opacity="0.8"/>
+      {/* Realistic ear structure */}
+      <ellipse cx="46" cy="42" rx="6" ry="9" fill="currentColor" transform="rotate(-30 46 42)"/>
+      <ellipse cx="74" cy="42" rx="6" ry="9" fill="currentColor" transform="rotate(30 74 42)"/>
       
-      {/* Eyes */}
-      <ellipse cx="44" cy="49" rx="2.5" ry="2" fill="currentColor" opacity="0.9"/>
-      <ellipse cx="56" cy="49" rx="2.5" ry="2" fill="currentColor" opacity="0.9"/>
+      {/* Inner ear cavities */}
+      <ellipse cx="47" cy="44" rx="3" ry="5" fill="currentColor" opacity="0.4" transform="rotate(-30 47 44)"/>
+      <ellipse cx="73" cy="44" rx="3" ry="5" fill="currentColor" opacity="0.4" transform="rotate(30 73 44)"/>
       
-      {/* Eye highlights */}
-      <circle cx="45" cy="48.5" r="1" fill="white" opacity="0.8"/>
-      <circle cx="57" cy="48.5" r="1" fill="white" opacity="0.8"/>
+      {/* Eye socket depth */}
+      <ellipse cx="53" cy="56" rx="5" ry="4" fill="currentColor" opacity="0.7"/>
+      <ellipse cx="67" cy="56" rx="5" ry="4" fill="currentColor" opacity="0.7"/>
       
-      {/* Muzzle area */}
-      <ellipse cx="50" cy="58" rx="6" ry="8" fill="currentColor" opacity="0.9"/>
+      {/* Realistic eyes with depth */}
+      <ellipse cx="53" cy="57" rx="3.5" ry="3" fill="currentColor" opacity="0.9"/>
+      <ellipse cx="67" cy="57" rx="3.5" ry="3" fill="currentColor" opacity="0.9"/>
       
-      {/* Nose bridge */}
-      <ellipse cx="50" cy="55" rx="2" ry="4" fill="currentColor" opacity="0.8"/>
+      {/* Pupil definition */}
+      <ellipse cx="53" cy="57" rx="2" ry="2.5" fill="currentColor"/>
+      <ellipse cx="67" cy="57" rx="2" ry="2.5" fill="currentColor"/>
       
-      {/* Nose */}
-      <path d="M 48 57 Q 50 55 52 57 Q 52 59 50 60 Q 48 59 48 57" fill="currentColor" opacity="0.7"/>
+      {/* Eye shine/life */}
+      <circle cx="54" cy="56" r="1.2" fill="white" opacity="0.9"/>
+      <circle cx="68" cy="56" r="1.2" fill="white" opacity="0.9"/>
       
-      {/* Mouth/muzzle definition */}
-      <path d="M 46 62 Q 50 65 54 62" stroke="currentColor" strokeWidth="1.2" fill="none" opacity="0.7"/>
-      <path d="M 50 60 L 50 63" stroke="currentColor" strokeWidth="1" opacity="0.7"/>
+      {/* Prominent muzzle structure */}
+      <ellipse cx="60" cy="68" rx="8" ry="10" fill="currentColor" opacity="0.95"/>
       
-      {/* Chin definition */}
-      <ellipse cx="50" cy="66" rx="4" ry="3" fill="currentColor" opacity="0.8"/>
+      {/* Nose bridge definition */}
+      <ellipse cx="60" cy="64" rx="3" ry="6" fill="currentColor" opacity="0.8"/>
       
-      {/* Whisker spots */}
-      <circle cx="40" cy="56" r="0.8" fill="currentColor" opacity="0.6"/>
-      <circle cx="60" cy="56" r="0.8" fill="currentColor" opacity="0.6"/>
-      <circle cx="38" cy="60" r="0.8" fill="currentColor" opacity="0.6"/>
-      <circle cx="62" cy="60" r="0.8" fill="currentColor" opacity="0.6"/>
+      {/* Realistic nose shape */}
+      <path d="M 57 67 Q 60 65 63 67 Q 63 70 60 71 Q 57 70 57 67" fill="currentColor" opacity="0.6"/>
+      <ellipse cx="60" cy="68" rx="1.5" ry="1" fill="currentColor" opacity="0.8"/>
       
-      {/* Mane texture details */}
-      <path d="M 32 35 Q 28 30 35 28 Q 40 32 38 38" fill="currentColor" opacity="0.4"/>
-      <path d="M 68 35 Q 72 30 65 28 Q 60 32 62 38" fill="currentColor" opacity="0.4"/>
-      <path d="M 30 55 Q 25 50 32 48 Q 37 52 35 58" fill="currentColor" opacity="0.4"/>
-      <path d="M 70 55 Q 75 50 68 48 Q 63 52 65 58" fill="currentColor" opacity="0.4"/>
+      {/* Mouth and jaw structure */}
+      <path d="M 55 74 Q 60 77 65 74" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.7"/>
+      <path d="M 60 71 L 60 75" stroke="currentColor" strokeWidth="1.2" opacity="0.7"/>
+      
+      {/* Jaw definition */}
+      <ellipse cx="60" cy="78" rx="6" ry="4" fill="currentColor" opacity="0.85"/>
+      
+      {/* Whisker emergence points */}
+      <circle cx="47" cy="65" r="1" fill="currentColor" opacity="0.5"/>
+      <circle cx="73" cy="65" r="1" fill="currentColor" opacity="0.5"/>
+      <circle cx="45" cy="70" r="1" fill="currentColor" opacity="0.5"/>
+      <circle cx="75" cy="70" r="1" fill="currentColor" opacity="0.5"/>
+      
+      {/* Additional mane wild strands for realism */}
+      <path d="M 40 52 Q 35 48 42 45 Q 48 49 45 55" fill="currentColor" opacity="0.25"/>
+      <path d="M 80 52 Q 85 48 78 45 Q 72 49 75 55" fill="currentColor" opacity="0.25"/>
+      <path d="M 38 72 Q 32 68 40 65 Q 47 69 44 75" fill="currentColor" opacity="0.25"/>
+      <path d="M 82 72 Q 88 68 80 65 Q 73 69 76 75" fill="currentColor" opacity="0.25"/>
+      
+      {/* Subtle facial wrinkles for character */}
+      <path d="M 50 52 Q 55 50 60 52" stroke="currentColor" strokeWidth="0.8" fill="none" opacity="0.4"/>
+      <path d="M 50 62 Q 55 60 60 62" stroke="currentColor" strokeWidth="0.8" fill="none" opacity="0.4"/>
     </svg>
   );
 }

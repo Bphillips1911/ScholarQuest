@@ -60,6 +60,8 @@ export const pbisEntries = pgTable("pbis_entries", {
   points: integer("points").notNull().default(1),
   reason: text("reason"),
   mustangTrait: text("mustang_trait").notNull(), // M-Motivated, U-Understanding, S-Safe, T-Teamwork, A-Accountable, N-Noble, G-Growth
+  category: text("category").notNull(), // 'attendance', 'behavior', 'academic'
+  subcategory: text("subcategory").notNull(), // Specific reason within each category
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -126,6 +128,8 @@ export const insertPbisEntrySchema = createInsertSchema(pbisEntries).omit({
   teacherRole: z.enum(["6th Grade", "7th Grade", "8th Grade", "Unified Arts", "Administration", "Counselor"]),
   points: z.number().min(1).max(10),
   mustangTrait: z.enum(["Motivated", "Understanding", "Safe", "Teamwork", "Accountable", "Noble", "Growth"]),
+  category: z.enum(["attendance", "behavior", "academic"]),
+  subcategory: z.string().min(1),
 });
 
 export const insertPbisPhotoSchema = createInsertSchema(pbisPhotos).omit({

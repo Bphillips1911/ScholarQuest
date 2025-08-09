@@ -403,6 +403,8 @@ export class MemStorage implements IStorage {
       ...entry,
       id,
       reason: entry.reason || null,
+      category: entry.category || "behavior",
+      subcategory: entry.subcategory || "positive_attitude",
       createdAt: new Date(),
     };
     this.pbisEntries.set(id, newEntry);
@@ -487,8 +489,13 @@ export class MemStorage implements IStorage {
   }
 
   async getUnsortedStudents(): Promise<Scholar[]> {
-    const scholars = Array.from(this.scholars.values());
-    return scholars.filter(scholar => scholar.isHouseSorted === false);
+    try {
+      const scholars = Array.from(this.scholars.values());
+      return scholars.filter(scholar => scholar.isHouseSorted === false || scholar.isHouseSorted === undefined);
+    } catch (error) {
+      console.error("Error in getUnsortedStudents:", error);
+      return [];
+    }
   }
 
   async addUnsortedStudent(student: InsertScholar): Promise<Scholar> {

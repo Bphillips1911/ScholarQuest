@@ -7,7 +7,7 @@ import NavigationHeader from "@/components/navigation-header";
 import Dashboard from "@/pages/dashboard";
 import Houses from "@/pages/houses";
 import HouseDetail from "@/pages/house-detail";
-import PBIS from "@/pages/pbis";
+import PBIS from "@/pages/pbis-enhanced";
 import Pledge from "@/pages/pledge";
 import ParentLetter from "@/pages/parent-letter";
 import ParentSignup from "@/pages/parent-signup";

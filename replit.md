@@ -1,6 +1,6 @@
 # Overview
 
-This is a House Character Development Program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application includes a comprehensive PBIS (Positive Behavioral Interventions and Supports) system with individual teacher tabs for recognizing MUSTANG traits, photo upload capabilities for capturing memorable moments, and displays program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride.
+This is a House Character Development Program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application includes a comprehensive PBIS (Positive Behavioral Interventions and Supports) system with enhanced dropdown categories for Attendance, Behavior, and Academic recognition, individual teacher tabs for recognizing MUSTANG traits, house sorting generator for balanced student distribution, photo upload capabilities for capturing memorable moments, and displays program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride.
 
 # User Preferences
 
@@ -36,10 +36,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Database Schema Design
 - **Houses Table**: Stores house information, colors, mottos, and point totals
-- **Scholars Table**: Student records linked to houses with individual point tracking
+- **Scholars Table**: Student records linked to houses with individual point tracking, house sorting status
 - **Point Entries Table**: Audit trail for all point awards with reasons and timestamps
-- **PBIS Entries Table**: Records for MUSTANG trait recognition by teachers with points and reasons
+- **PBIS Entries Table**: Enhanced records for MUSTANG trait recognition with categories (attendance, behavior, academic) and subcategories
 - **PBIS Photos Table**: Photo uploads for documenting MUSTANG moments with metadata
+- **Teachers Table**: Role-based teacher authentication with grade-level permissions
+- **Parents Table**: Parent portal access with QR code authentication capabilities
 - **Relationships**: Foreign key constraints ensuring data integrity between tables
 
 ## Authentication and Authorization

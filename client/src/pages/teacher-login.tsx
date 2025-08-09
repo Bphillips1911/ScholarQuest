@@ -127,6 +127,7 @@ export default function TeacherLogin() {
               <p><strong>6th Grade Teacher:</strong> s.johnson@bhsteam.edu</p>
               <p><strong>Unified Arts Teacher:</strong> r.miller@bhsteam.edu</p>
               <p><strong>Administrator:</strong> principal@bhsteam.edu</p>
+              <p><strong>School Counselor:</strong> counselor@bhsteam.edu</p>
               <p><strong>Password for all:</strong> password123</p>
             </div>
           </div>

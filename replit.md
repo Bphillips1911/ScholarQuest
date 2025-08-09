@@ -18,6 +18,7 @@ Preferred communication style: Simple, everyday language.
 ## School Administration
 - Principal: Dr. Phillips
 - Assistant Principal: Dr. Stewart
+- School Counselor: Counselor Kirkland
 
 # System Architecture
 

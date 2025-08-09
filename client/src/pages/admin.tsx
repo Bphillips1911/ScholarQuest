@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye } from "lucide-react";
 import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
@@ -16,6 +18,7 @@ export default function Admin() {
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentId, setNewStudentId] = useState("");
   const [newStudentHouse, setNewStudentHouse] = useState("");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const { toast } = useToast();
 
   const { data: houses } = useQuery<House[]>({
@@ -28,6 +31,10 @@ export default function Admin() {
 
   const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
     queryKey: ["/api/admin/teachers/pending"],
+  });
+
+  const { data: allScholars } = useQuery<Scholar[]>({
+    queryKey: ["/api/scholars"],
   });
 
   const addScholarMutation = useMutation({
@@ -79,6 +86,7 @@ export default function Admin() {
       name: newStudentName,
       studentId: newStudentId,
       houseId,
+      grade: 6, // Default grade, can be made configurable
     });
   };
 
@@ -145,8 +153,8 @@ export default function Admin() {
               data-testid="admin-school-logo"
             />
             <div>
-              <h2 className="text-3xl font-bold text-gray-900" data-testid="admin-title">Admin Dashboard</h2>
-              <p className="text-gray-600">Manage points, scholars, and house activities</p>
+              <h2 className="text-3xl font-bold text-gray-900" data-testid="admin-title">Administration Portal</h2>
+              <p className="text-gray-600">Dr. Phillips - Principal • Dr. Stewart - Assistant Principal</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -177,10 +185,24 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* Add Points Form */}
-        <div className="mb-8">
-          <AddPointsForm />
-        </div>
+        {/* Admin Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="dashboard" className="flex items-center" data-testid="tab-dashboard">
+              <GraduationCap className="mr-2 h-4 w-4" />
+              House Management
+            </TabsTrigger>
+            <TabsTrigger value="students" className="flex items-center" data-testid="tab-students">
+              <Users className="mr-2 h-4 w-4" />
+              Student Portal Information
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard" className="mt-6">
+            {/* Add Points Form */}
+            <div className="mb-8">
+              <AddPointsForm />
+            </div>
 
         {/* Teacher Approval Section */}
         {pendingTeachers && pendingTeachers.length > 0 && (
@@ -337,7 +359,7 @@ export default function Admin() {
                           </div>
                         </div>
                         <span className="text-xs opacity-60" data-testid={`activity-time-${index}`}>
-                          {entry.createdAt ? new Date(entry.createdAt).toLocaleTimeString() : 'Now'}
+                          {entry.createdAt ? new Date(entry.createdAt!).toLocaleTimeString() : 'Now'}
                         </span>
                       </div>
                     );
@@ -404,6 +426,151 @@ export default function Admin() {
             })}
           </div>
         </div>
+            </TabsContent>
+
+            <TabsContent value="students" className="mt-6">
+              <div className="space-y-6">
+                {/* Student Portal Overview */}
+                <Card className="border border-blue-200 bg-blue-50" data-testid="student-overview-card">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold text-blue-900 flex items-center">
+                      <Users className="mr-2 h-5 w-5" />
+                      Student Portal Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600" data-testid="total-students-count">
+                          {allScholars?.length || 0}
+                        </div>
+                        <div className="text-sm text-gray-600">Total Students</div>
+                      </div>
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-2xl font-bold text-green-600" data-testid="students-with-credentials">
+                          {allScholars?.filter(s => s.username).length || 0}
+                        </div>
+                        <div className="text-sm text-gray-600">With Login Credentials</div>
+                      </div>
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-2xl font-bold text-orange-600" data-testid="password-reset-requests">
+                          {allScholars?.filter(s => s.needsPasswordReset).length || 0}
+                        </div>
+                        <div className="text-sm text-gray-600">Password Resets Needed</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Detailed Student Information */}
+                <Card data-testid="detailed-student-info-card">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                      <Eye className="mr-2 h-5 w-5" />
+                      Detailed Student Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {allScholars && allScholars.length > 0 ? (
+                      <div className="space-y-4">
+                        {allScholars.map((scholar) => {
+                          const house = houses?.find(h => h.id === scholar.houseId);
+                          const totalPoints = scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints;
+                          const houseColor = house?.color || "#3B82F6";
+                          
+                          return (
+                            <div key={scholar.id} className="border rounded-lg p-4 hover:bg-gray-50" data-testid={`student-info-${scholar.id}`}>
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-3">
+                                  <div 
+                                    className="w-4 h-4 rounded-full" 
+                                    style={{ backgroundColor: houseColor }}
+                                  ></div>
+                                  <div>
+                                    <h4 className="font-semibold text-gray-900" data-testid={`student-name-${scholar.id}`}>
+                                      {scholar.name}
+                                    </h4>
+                                    <p className="text-sm text-gray-600" data-testid={`student-id-${scholar.id}`}>
+                                      ID: {scholar.studentId} • Grade: {scholar.grade}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                  <Badge variant={scholar.username ? "default" : "secondary"} data-testid={`login-status-${scholar.id}`}>
+                                    {scholar.username ? (
+                                      <div className="flex items-center">
+                                        <Key className="mr-1 h-3 w-3" />
+                                        Has Login
+                                      </div>
+                                    ) : (
+                                      "No Login"
+                                    )}
+                                  </Badge>
+                                  {scholar.needsPasswordReset && (
+                                    <Badge variant="destructive" data-testid={`reset-needed-${scholar.id}`}>
+                                      Reset Needed
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <span className="text-gray-600">House:</span>
+                                  <div className="font-medium" data-testid={`student-house-${scholar.id}`}>
+                                    {house?.name?.replace("House of ", "") || "Unassigned"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Total Points:</span>
+                                  <div className="font-medium text-blue-600" data-testid={`student-total-points-${scholar.id}`}>
+                                    {totalPoints}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Academic:</span>
+                                  <div className="font-medium text-green-600" data-testid={`student-academic-${scholar.id}`}>
+                                    {scholar.academicPoints}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Behavior:</span>
+                                  <div className="font-medium text-purple-600" data-testid={`student-behavior-${scholar.id}`}>
+                                    {scholar.behaviorPoints}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 text-sm">
+                                <div>
+                                  <span className="text-gray-600">Attendance Points:</span>
+                                  <div className="font-medium text-orange-600" data-testid={`student-attendance-${scholar.id}`}>
+                                    {scholar.attendancePoints}
+                                  </div>
+                                </div>
+                                {scholar.username && (
+                                  <div>
+                                    <span className="text-gray-600">Username:</span>
+                                    <div className="font-mono text-sm bg-gray-100 px-2 py-1 rounded" data-testid={`student-username-${scholar.id}`}>
+                                      {scholar.username}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-500 py-8" data-testid="no-students-message">
+                        No students found in the system.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
       </Card>
     </section>
   );

@@ -27,17 +27,13 @@ export default function NavigationHeader() {
     <header className="bg-white shadow-md sticky top-0 z-50" data-testid="navigation-header">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center space-x-4" data-testid="link-home">
+          <Link href="/" className="flex items-center" data-testid="link-home">
             <img 
               src={schoolLogoPath} 
               alt="Bush Hills STEAM Academy" 
               className="h-12 w-auto"
               data-testid="school-logo"
             />
-            <div className="flex flex-col">
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">House Character Development</h1>
-              <p className="text-sm text-gray-600 leading-tight">Bush Hills STEAM Academy</p>
-            </div>
           </Link>
           
           {/* Desktop Navigation */}

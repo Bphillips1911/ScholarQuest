@@ -141,7 +141,7 @@ export default function Admin() {
   return (
     <section data-testid="admin-section">
       <Card className="bg-white rounded-2xl shadow-lg p-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
           <div className="flex items-center">
             <img 
               src={schoolLogoPath} 
@@ -154,7 +154,7 @@ export default function Admin() {
               <p className="text-gray-600">Dr. Phillips - Principal • Dr. Stewart - Assistant Principal</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 justify-start lg:justify-end">
             <Link href="/admin-settings">
               <Button 
                 className="bg-gray-600 text-white hover:bg-gray-700"
@@ -200,9 +200,9 @@ export default function Admin() {
         </div>
 
         {/* Admin Tabs */}
-        <div className="mt-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
-          <TabsList className="grid w-full grid-cols-2 h-auto">
+        <div className="clear-both pt-6 border-t border-gray-200">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 h-auto mb-6">
             <TabsTrigger value="dashboard" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-dashboard">
               <GraduationCap className="mr-1 h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">House Management</span>

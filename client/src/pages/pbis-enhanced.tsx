@@ -66,18 +66,18 @@ const pbisCategories = {
     icon: Star,
     color: "bg-yellow-500",
     subcategories: [
-      { value: "respect", label: "Respect", points: 2 },
-      { value: "integrity", label: "Integrity", points: 3 },
-      { value: "responsibility", label: "Responsibility", points: 2 },
-      { value: "honesty", label: "Honesty", points: 3 },
-      { value: "courteous", label: "Courteous", points: 2 },
-      { value: "compassionate", label: "Compassionate", points: 2 },
-      { value: "self_motivated", label: "Self-Motivated", points: 3 },
-      { value: "humble", label: "Humble", points: 2 },
-      { value: "kind", label: "Kind", points: 2 },
-      { value: "optimistic", label: "Optimistic", points: 2 },
-      { value: "grateful", label: "Grateful", points: 2 },
-      { value: "accountable", label: "Accountable", points: 3 }
+      { value: "respect", label: "Respect - Shows consideration for others, property, and authority", points: 2 },
+      { value: "integrity", label: "Integrity - Acts with honesty and strong moral principles", points: 3 },
+      { value: "responsibility", label: "Responsibility - Takes ownership of actions and duties", points: 2 },
+      { value: "honesty", label: "Honesty - Tells the truth and is genuine in interactions", points: 3 },
+      { value: "courteous", label: "Courteous - Shows politeness and good manners", points: 2 },
+      { value: "compassionate", label: "Compassionate - Shows empathy and care for others", points: 2 },
+      { value: "self_motivated", label: "Self-Motivated - Takes initiative without being asked", points: 3 },
+      { value: "humble", label: "Humble - Shows modesty and willingness to learn from others", points: 2 },
+      { value: "kind", label: "Kind - Shows gentleness and consideration in words and actions", points: 2 },
+      { value: "optimistic", label: "Optimistic - Maintains positive attitude and outlook", points: 2 },
+      { value: "grateful", label: "Grateful - Expresses appreciation and thankfulness", points: 2 },
+      { value: "accountable", label: "Accountable - Accepts responsibility and learns from mistakes", points: 3 }
     ]
   }
 };

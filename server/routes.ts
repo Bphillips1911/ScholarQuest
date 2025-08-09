@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
 import { 
+  sendEmail,
   sendTeacherRegistrationAlert, 
   sendParentRegistrationAlert, 
   sendStudentRegistrationAlert, 

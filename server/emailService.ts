@@ -1,11 +1,17 @@
 import { MailService } from '@sendgrid/mail';
 
 if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
+  console.warn("SENDGRID_API_KEY environment variable not set - email notifications will be disabled");
 }
 
 const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+if (process.env.SENDGRID_API_KEY) {
+  try {
+    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+  } catch (error) {
+    console.warn("SendGrid API key configuration error:", error);
+  }
+}
 
 // Administrator email - update this with your actual email address
 const ADMIN_EMAIL = "BHSAHouses25@gmail.com";
@@ -20,6 +26,12 @@ interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
+  if (!process.env.SENDGRID_API_KEY) {
+    console.log('Email would be sent to:', params.to, 'Subject:', params.subject);
+    console.log('(Email notifications disabled - no SendGrid API key configured)');
+    return false;
+  }
+
   try {
     await mailService.send({
       to: params.to,
@@ -28,6 +40,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       text: params.text || undefined,
       html: params.html || undefined,
     });
+    console.log('Email sent successfully to:', params.to);
     return true;
   } catch (error) {
     console.error('SendGrid email error:', error);

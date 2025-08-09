@@ -104,15 +104,15 @@ const gradeTeachers = {
     { name: "Mr. Shepherd", subject: "Physical Education" },
     { name: "Mr. Worley", subject: "Art" },
     { name: "Ms. Radney", subject: "Choir" },
-    { name: "Ms. Mincey", subject: "Band" }
+    { name: "Mr. Hill", subject: "Band" },
+    { name: "Mrs. Fields-Jones", subject: "Gifted Specialist" }
   ],
   "Administration": [
     { name: "Dr. Phillips", subject: "Principal" },
     { name: "Dr. Stewart", subject: "Assistant Principal" }
   ],
   "Counselor": [
-    { name: "Ms. Johnson", subject: "School Counselor" },
-    { name: "Ms. Davis", subject: "Academic Coach" }
+    { name: "Counselor Kirkland", subject: "School Counselor" }
   ]
 };
 

@@ -149,7 +149,7 @@ export default function Admin() {
               <p className="text-gray-600">Manage points, scholars, and house activities</p>
             </div>
           </div>
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-3">
             <Button 
               onClick={() => window.open("/parent-letter", "_blank")}
               className="bg-blue-600 text-white hover:bg-blue-700"

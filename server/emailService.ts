@@ -15,7 +15,7 @@ if (process.env.SENDGRID_API_KEY) {
 
 // Administrator email - update this with your actual email address
 const ADMIN_EMAIL = "BHSAHouses25@gmail.com";
-const FROM_EMAIL = "noreply@sendgrid.net"; // Use SendGrid's default verified sender
+const FROM_EMAIL = "test@example.com"; // Generic test sender - will need verification
 
 interface EmailParams {
   to: string;
@@ -53,10 +53,13 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     return true;
   } catch (error: any) {
     console.error('❌ SendGrid email error:', error.message || error);
+    console.error('❌ Full error object:', JSON.stringify(error, null, 2));
     
     // Check for common error types
     if (error.code === 403) {
       console.error('💡 Suggestion: Check your SendGrid API key permissions and sender verification');
+      console.error('💡 Make sure API key has "Full Access" not "Restricted Access"');
+      console.error('💡 Verify sender email in SendGrid dashboard under Sender Authentication');
     } else if (error.code === 401) {
       console.error('💡 Suggestion: Your SendGrid API key may be invalid or expired');
     }

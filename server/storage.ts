@@ -76,13 +76,6 @@ export interface IStorage {
   addScholarToParent(parentId: string, scholarId: string): Promise<boolean>;
   getParentScholars(parentId: string): Promise<Scholar[]>;
   
-  // House Sorting
-  getUnsortedStudents(): Promise<Scholar[]>;
-  addUnsortedStudent(student: InsertScholar): Promise<Scholar>;
-  removeUnsortedStudent(studentId: string): Promise<boolean>;
-  sortStudentsIntoHouses(): Promise<{ sortedCount: number }>;
-  resetAllHouses(): Promise<void>;
-  
   // Teacher Authentication
   createTeacherAuth(teacher: InsertTeacherAuth): Promise<TeacherAuth>;
   getTeacherAuthByEmail(email: string): Promise<TeacherAuth | undefined>;
@@ -90,6 +83,13 @@ export interface IStorage {
   createTeacherSession(session: InsertTeacherSession): Promise<TeacherSession>;
   getTeacherSession(token: string): Promise<TeacherSession | undefined>;
   deleteTeacherSession(token: string): Promise<boolean>;
+  
+  // House Sorting
+  getUnsortedStudents(): Promise<Scholar[]>;
+  addUnsortedStudent(student: InsertScholar): Promise<Scholar>;
+  removeUnsortedStudent(studentId: string): Promise<boolean>;
+  sortStudentsIntoHouses(): Promise<{ sortedCount: number }>;
+  resetAllHouses(): Promise<void>;
   
   // Utility
   getHouseStandings(): Promise<House[]>;
@@ -103,6 +103,9 @@ export class MemStorage implements IStorage {
   private pbisEntries: Map<string, PbisEntry>;
   private pbisPhotos: Map<string, PbisPhoto>;
   private parents: Map<string, Parent>;
+  private teacherAuth: Map<string, TeacherAuth>;
+  private teacherSessions: Map<string, TeacherSession>;
+  private parentScholars: Map<string, string[]>; // parentId -> scholarIds
 
   constructor() {
     this.houses = new Map();
@@ -112,11 +115,21 @@ export class MemStorage implements IStorage {
     this.pbisEntries = new Map();
     this.pbisPhotos = new Map();
     this.parents = new Map();
+    this.teacherAuth = new Map();
+    this.teacherSessions = new Map();
+    this.parentScholars = new Map();
     
     // Initialize with the five houses and sample scholars and teachers
     this.initializeHouses();
     this.initializeScholars();
     this.initializeTeachers();
+    
+    // Initialize teacher auth accounts after regular setup
+    setTimeout(() => {
+      this.initializeTeacherAuth().then(() => {
+        console.log("Teacher auth accounts initialized");
+      });
+    }, 100);
   }
 
   private initializeHouses() {
@@ -516,14 +529,126 @@ export class MemStorage implements IStorage {
     return true;
   }
 
+  async addScholarToParent(parentId: string, scholarId: string): Promise<boolean> {
+    const currentScholars = this.parentScholars.get(parentId) || [];
+    if (!currentScholars.includes(scholarId)) {
+      currentScholars.push(scholarId);
+      this.parentScholars.set(parentId, currentScholars);
+    }
+    return true;
+  }
+
   async getParentScholars(parentId: string): Promise<Scholar[]> {
-    const parent = this.parents.get(parentId);
-    if (!parent) return [];
+    const scholarIds = this.parentScholars.get(parentId) || [];
+    const scholars: Scholar[] = [];
+    for (const scholarId of scholarIds) {
+      const scholar = this.scholars.get(scholarId);
+      if (scholar) {
+        scholars.push(scholar);
+      }
+    }
+    return scholars;
+  }
+
+  // Teacher Authentication methods
+  async createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth> {
+    const hashedPassword = await bcrypt.hash(teacherData.password, 10);
     
-    const scholarIds = parent.scholarIds || [];
-    return scholarIds
-      .map(scholarId => this.scholars.get(scholarId))
-      .filter(Boolean) as Scholar[];
+    const teacher: TeacherAuth = {
+      id: randomUUID(),
+      ...teacherData,
+      passwordHash: hashedPassword,
+      isApproved: false, // Requires admin approval
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.teacherAuth.set(teacher.id, teacher);
+    return teacher;
+  }
+
+  async getTeacherAuthByEmail(email: string): Promise<TeacherAuth | undefined> {
+    for (const teacher of this.teacherAuth.values()) {
+      if (teacher.email === email) {
+        return teacher;
+      }
+    }
+    return undefined;
+  }
+
+  async approveTeacher(teacherId: string): Promise<boolean> {
+    const teacher = this.teacherAuth.get(teacherId);
+    if (teacher) {
+      teacher.isApproved = true;
+      teacher.updatedAt = new Date();
+      this.teacherAuth.set(teacherId, teacher);
+      return true;
+    }
+    return false;
+  }
+
+  async createTeacherSession(sessionData: InsertTeacherSession): Promise<TeacherSession> {
+    const session: TeacherSession = {
+      id: randomUUID(),
+      ...sessionData,
+      createdAt: new Date(),
+    };
+    
+    this.teacherSessions.set(session.token, session);
+    return session;
+  }
+
+  async getTeacherSession(token: string): Promise<TeacherSession | undefined> {
+    return this.teacherSessions.get(token);
+  }
+
+  async deleteTeacherSession(token: string): Promise<boolean> {
+    return this.teacherSessions.delete(token);
+  }
+
+
+
+  // Initialize demo teacher authentication accounts
+  private async initializeTeacherAuth() {
+    const demoTeachers = [
+      {
+        email: "s.johnson@bhsteam.edu",
+        name: "Sarah Johnson", 
+        gradeRole: "6th Grade Teacher",
+        subject: "Mathematics",
+        password: "password123"
+      },
+      {
+        email: "r.miller@bhsteam.edu", 
+        name: "Robert Miller",
+        gradeRole: "Unified Arts Teacher",
+        subject: "Art",
+        password: "password123"
+      },
+      {
+        email: "principal@bhsteam.edu",
+        name: "Dr. Phillips",
+        gradeRole: "Administrator", 
+        subject: "Administration",
+        password: "password123"
+      }
+    ];
+
+    for (const teacherData of demoTeachers) {
+      const hashedPassword = await bcrypt.hash(teacherData.password, 10);
+      const teacher: TeacherAuth = {
+        id: randomUUID(),
+        email: teacherData.email,
+        name: teacherData.name,
+        gradeRole: teacherData.gradeRole,
+        subject: teacherData.subject,
+        passwordHash: hashedPassword,
+        isApproved: true, // Pre-approved demo accounts
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.teacherAuth.set(teacher.id, teacher);
+    }
   }
 
   async getUnsortedStudents(): Promise<Scholar[]> {

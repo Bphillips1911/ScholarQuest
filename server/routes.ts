@@ -654,12 +654,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/teacher/login", async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log("Login attempt for:", email);
       
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password required" });
       }
 
       const teacher = await storage.getTeacherAuthByEmail(email);
+      console.log("Found teacher:", teacher ? "yes" : "no");
+      
       if (!teacher) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -669,6 +672,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const isValidPassword = await bcrypt.compare(password, teacher.passwordHash);
+      console.log("Password valid:", isValidPassword);
+      
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }

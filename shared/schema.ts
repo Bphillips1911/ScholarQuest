@@ -95,6 +95,7 @@ export const teacherAuth = pgTable("teacher_auth", {
   passwordHash: varchar("password_hash").notNull(),
   isApproved: boolean("is_approved").default(false),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
   lastLoginAt: timestamp("last_login_at"),
 });
 
@@ -170,7 +171,9 @@ export const insertParentSchema = createInsertSchema(parents).omit({
 
 export const insertTeacherAuthSchema = createInsertSchema(teacherAuth).omit({
   id: true,
+  passwordHash: true,
   createdAt: true,
+  updatedAt: true,
   lastLoginAt: true,
   isApproved: true,
 }).extend({

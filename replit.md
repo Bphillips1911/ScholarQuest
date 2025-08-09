@@ -1,6 +1,6 @@
 # Overview
 
-This is a House Character Development Program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application provides a dashboard for viewing house standings, managing scholars, awarding points, and displaying program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride.
+This is a House Character Development Program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application includes a comprehensive PBIS (Positive Behavioral Interventions and Supports) system with individual teacher tabs for recognizing MUSTANG traits, photo upload capabilities for capturing memorable moments, and displays program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride.
 
 # User Preferences
 
@@ -28,15 +28,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Data Storage
 - **Database**: PostgreSQL configured with Drizzle ORM
-- **Schema**: Three main tables - houses, scholars, and point_entries
+- **Schema**: Five main tables - houses, scholars, point_entries, pbis_entries, and pbis_photos
 - **Database Provider**: Neon Database (serverless PostgreSQL)
-- **Current Implementation**: In-memory storage with predefined house data for development
+- **Current Implementation**: In-memory storage with predefined house data and sample scholars for development
 - **Migration Strategy**: Drizzle-kit for schema migrations
+- **File Storage**: Local file system for photo uploads with multer middleware
 
 ## Database Schema Design
 - **Houses Table**: Stores house information, colors, mottos, and point totals
 - **Scholars Table**: Student records linked to houses with individual point tracking
 - **Point Entries Table**: Audit trail for all point awards with reasons and timestamps
+- **PBIS Entries Table**: Records for MUSTANG trait recognition by teachers with points and reasons
+- **PBIS Photos Table**: Photo uploads for documenting MUSTANG moments with metadata
 - **Relationships**: Foreign key constraints ensuring data integrity between tables
 
 ## Authentication and Authorization

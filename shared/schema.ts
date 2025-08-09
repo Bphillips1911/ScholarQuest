@@ -48,6 +48,15 @@ export const pbisEntries = pgTable("pbis_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const pbisPhotos = pgTable("pbis_photos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  description: text("description"),
+  uploadedBy: text("uploaded_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertHouseSchema = createInsertSchema(houses).omit({
   academicPoints: true,
   attendancePoints: true,
@@ -80,11 +89,18 @@ export const insertPbisEntrySchema = createInsertSchema(pbisEntries).omit({
   mustangTrait: z.enum(["Motivated", "Understanding", "Safe", "Teamwork", "Accountable", "Noble", "Growth"]),
 });
 
+export const insertPbisPhotoSchema = createInsertSchema(pbisPhotos).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;
 export type PointEntry = typeof pointEntries.$inferSelect;
 export type PbisEntry = typeof pbisEntries.$inferSelect;
+export type PbisPhoto = typeof pbisPhotos.$inferSelect;
 export type InsertHouse = z.infer<typeof insertHouseSchema>;
 export type InsertScholar = z.infer<typeof insertScholarSchema>;
 export type InsertPointEntry = z.infer<typeof insertPointEntrySchema>;
 export type InsertPbisEntry = z.infer<typeof insertPbisEntrySchema>;
+export type InsertPbisPhoto = z.infer<typeof insertPbisPhotoSchema>;

@@ -1,4 +1,4 @@
-import { type House, type Scholar, type PointEntry, type PbisEntry, type InsertHouse, type InsertScholar, type InsertPointEntry, type InsertPbisEntry } from "@shared/schema";
+import { type House, type Scholar, type PointEntry, type PbisEntry, type PbisPhoto, type InsertHouse, type InsertScholar, type InsertPointEntry, type InsertPbisEntry, type InsertPbisPhoto } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -25,6 +25,11 @@ export interface IStorage {
   createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry>;
   getAllScholars(): Promise<Scholar[]>;
   
+  // PBIS Photos
+  getPbisPhotos(): Promise<PbisPhoto[]>;
+  createPbisPhoto(photo: InsertPbisPhoto): Promise<PbisPhoto>;
+  deletePbisPhoto(id: string): Promise<boolean>;
+  
   // Utility
   getHouseStandings(): Promise<House[]>;
 }
@@ -34,12 +39,14 @@ export class MemStorage implements IStorage {
   private scholars: Map<string, Scholar>;
   private pointEntries: Map<string, PointEntry>;
   private pbisEntries: Map<string, PbisEntry>;
+  private pbisPhotos: Map<string, PbisPhoto>;
 
   constructor() {
     this.houses = new Map();
     this.scholars = new Map();
     this.pointEntries = new Map();
     this.pbisEntries = new Map();
+    this.pbisPhotos = new Map();
     
     // Initialize with the five houses and sample scholars
     this.initializeHouses();
@@ -271,6 +278,28 @@ export class MemStorage implements IStorage {
 
   async getAllScholars(): Promise<Scholar[]> {
     return Array.from(this.scholars.values());
+  }
+
+  async getPbisPhotos(): Promise<PbisPhoto[]> {
+    return Array.from(this.pbisPhotos.values()).sort((a, b) => 
+      new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+    );
+  }
+
+  async createPbisPhoto(photo: InsertPbisPhoto): Promise<PbisPhoto> {
+    const id = randomUUID();
+    const newPhoto: PbisPhoto = {
+      ...photo,
+      id,
+      description: photo.description || null,
+      createdAt: new Date(),
+    };
+    this.pbisPhotos.set(id, newPhoto);
+    return newPhoto;
+  }
+
+  async deletePbisPhoto(id: string): Promise<boolean> {
+    return this.pbisPhotos.delete(id);
   }
 
   async getHouseStandings(): Promise<House[]> {

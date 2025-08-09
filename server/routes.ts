@@ -1,7 +1,40 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertPointEntrySchema, insertPbisEntrySchema } from "@shared/schema";
+import { insertScholarSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema } from "@shared/schema";
+import multer from "multer";
+import path from "path";
+import fs from "fs/promises";
+
+// Configure multer for file uploads
+const uploadDir = path.join(process.cwd(), 'uploads');
+fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
+
+const storage_multer = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `pbis-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({ 
+  storage: storage_multer,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all houses with standings
@@ -119,6 +152,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch PBIS entries for scholar" });
     }
+  });
+
+  // Photo upload routes
+  // Get all PBIS photos
+  app.get("/api/pbis/photos", async (_req, res) => {
+    try {
+      const photos = await storage.getPbisPhotos();
+      res.json(photos);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch PBIS photos" });
+    }
+  });
+
+  // Upload PBIS photo
+  app.post("/api/pbis/photos", upload.single('photo'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No photo file uploaded" });
+      }
+
+      const photoData = {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        description: req.body.description || undefined,
+        uploadedBy: req.body.uploadedBy || "Unknown User",
+      };
+
+      const validatedData = insertPbisPhotoSchema.parse(photoData);
+      const photo = await storage.createPbisPhoto(validatedData);
+      res.status(201).json(photo);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to upload photo" });
+    }
+  });
+
+  // Delete PBIS photo
+  app.delete("/api/pbis/photos/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deletePbisPhoto(req.params.id);
+      if (deleted) {
+        res.json({ message: "Photo deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Photo not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete photo" });
+    }
+  });
+
+  // Serve uploaded photos
+  app.get("/uploads/:filename", (req, res) => {
+    const filename = req.params.filename;
+    const filepath = path.join(uploadDir, filename);
+    res.sendFile(filepath, (err) => {
+      if (err) {
+        res.status(404).json({ message: "Photo not found" });
+      }
+    });
   });
 
   const httpServer = createServer(app);

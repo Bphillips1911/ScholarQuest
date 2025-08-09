@@ -1,23 +1,13 @@
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Star, Leaf, Mountain, Flame } from "lucide-react";
 import type { House } from "@shared/schema";
 
 interface HouseCardProps {
   house: House;
 }
 
-const iconMap = {
-  "shield-alt": Shield,
-  "star": Star,
-  "leaf": Leaf,
-  "mountain": Mountain,
-  "fire": Flame,
-};
-
 export default function HouseCard({ house }: HouseCardProps) {
-  const Icon = iconMap[house.icon as keyof typeof iconMap] || Shield;
   const totalPoints = house.academicPoints + house.attendancePoints + house.behaviorPoints;
   
   const houseColorClass = {
@@ -57,7 +47,9 @@ export default function HouseCard({ house }: HouseCardProps) {
       <div className={`bg-gradient-to-br ${houseGradientClass} p-6 text-white`}>
         <div className="flex items-center justify-between mb-4">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-            <Icon className="text-3xl" />
+            <span className="house-icon-3d text-white" data-testid={`icon-house-${house.id}`}>
+              {house.icon}
+            </span>
           </div>
           <span className="text-2xl font-bold" data-testid={`text-total-points-${house.id}`}>
             {totalPoints.toLocaleString()}

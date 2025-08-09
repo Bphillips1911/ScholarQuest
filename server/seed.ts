@@ -1,12 +1,19 @@
 import { db } from "./db";
 import { houses, scholars } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export async function seedDatabase() {
   try {
-    // Check if houses already exist
+    // Update house icons even if houses exist
     const existingHouses = await db.select().from(houses);
     if (existingHouses.length > 0) {
-      console.log("Database already seeded");
+      // Update existing houses with new icons
+      await db.update(houses).set({ icon: "🐎" }).where(eq(houses.id, "franklin"));
+      await db.update(houses).set({ icon: "🦉" }).where(eq(houses.id, "courie"));
+      await db.update(houses).set({ icon: "🐺" }).where(eq(houses.id, "west"));
+      await db.update(houses).set({ icon: "🦅" }).where(eq(houses.id, "blackwell"));
+      await db.update(houses).set({ icon: "🦁" }).where(eq(houses.id, "berruguete"));
+      console.log("House icons updated");
       return;
     }
 
@@ -16,7 +23,7 @@ export async function seedDatabase() {
         id: "franklin",
         name: "House of Franklin",
         color: "#3B82F6", // Blue
-        icon: "⚡",
+        icon: "🐎", // Mustang
         motto: "Innovation Through Discovery",
         academicPoints: 0,
         attendancePoints: 0,
@@ -27,7 +34,7 @@ export async function seedDatabase() {
         id: "courie",
         name: "House of Courie",
         color: "#10B981", // Green
-        icon: "🌿",
+        icon: "🦉", // Owl
         motto: "Growth Through Knowledge",
         academicPoints: 0,
         attendancePoints: 0,
@@ -38,7 +45,7 @@ export async function seedDatabase() {
         id: "west",
         name: "House of West",
         color: "#8B5CF6", // Purple
-        icon: "🔬",
+        icon: "🐺", // Wolf
         motto: "Excellence Through Science",
         academicPoints: 0,
         attendancePoints: 0,
@@ -49,7 +56,7 @@ export async function seedDatabase() {
         id: "blackwell",
         name: "House of Blackwell",
         color: "#6B7280", // Gray
-        icon: "⚖️",
+        icon: "🦅", // Falcon
         motto: "Strength Through Unity",
         academicPoints: 0,
         attendancePoints: 0,
@@ -60,7 +67,7 @@ export async function seedDatabase() {
         id: "berruguete",
         name: "House of Berruguete",
         color: "#F59E0B", // Orange
-        icon: "🎨",
+        icon: "🦁", // Lion
         motto: "Beauty Through Creativity",
         academicPoints: 0,
         attendancePoints: 0,

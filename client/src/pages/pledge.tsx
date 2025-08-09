@@ -57,7 +57,7 @@ export default function Pledge() {
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4" data-testid="house-values-grid">
           {houses.map((house) => {
-            const Icon = house.icon;
+            // Use direct emoji icon
             const houseBgLightClass = {
               franklin: "bg-red-50",
               courie: "bg-purple-50", 
@@ -69,7 +69,9 @@ export default function Pledge() {
             return (
               <div key={house.id} className={`text-center p-4 ${houseBgLightClass} rounded-lg`} data-testid={`house-value-${house.id}`}>
                 <div className={`w-12 h-12 ${house.bg} rounded-full flex items-center justify-center mx-auto mb-2`}>
-                  <Icon className="text-white" />
+                  <span className="house-icon-3d text-white" data-testid={`icon-house-${house.id}`}>
+                    {house.icon}
+                  </span>
                 </div>
                 <h4 className={`font-bold ${house.color}`} data-testid={`house-value-name-${house.id}`}>
                   {house.name}

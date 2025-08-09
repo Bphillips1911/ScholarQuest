@@ -81,7 +81,7 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {houses?.map((house, index) => {
-            const Icon = iconMap[house.icon as keyof typeof iconMap] || Shield;
+            // Use direct emoji icon instead of mapping
             const totalPoints = house.academicPoints + house.attendancePoints + house.behaviorPoints;
             
             const houseBgLightClass = {
@@ -115,7 +115,9 @@ export default function Dashboard() {
                 data-testid={`house-standing-${house.id}`}
               >
                 <div className={`w-12 h-12 ${houseBgClass} rounded-full flex items-center justify-center mx-auto mb-3`}>
-                  <Icon className="text-white text-lg" />
+                  <span className="house-icon-3d text-white" data-testid={`icon-house-${house.id}`}>
+                    {house.icon}
+                  </span>
                 </div>
                 <h4 className="font-bold text-gray-900 mb-1" data-testid={`house-name-${house.id}`}>
                   {house.name.replace("House of ", "")}

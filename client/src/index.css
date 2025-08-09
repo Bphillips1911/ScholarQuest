@@ -156,3 +156,44 @@
 .bg-house-berruguete {
   background-color: var(--house-berruguete);
 }
+
+/* 3D House Icon Styling */
+.house-icon-3d {
+  font-size: 2.5rem;
+  text-shadow: 
+    2px 2px 0px rgba(0, 0, 0, 0.3),
+    4px 4px 6px rgba(0, 0, 0, 0.2),
+    0 0 10px rgba(255, 255, 255, 0.1);
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+  transform: perspective(100px) rotateX(10deg) rotateY(5deg);
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.house-icon-3d:hover {
+  transform: perspective(100px) rotateX(15deg) rotateY(10deg) scale(1.1);
+  text-shadow: 
+    3px 3px 0px rgba(0, 0, 0, 0.4),
+    6px 6px 8px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.house-icon-large-3d {
+  font-size: 4rem;
+  text-shadow: 
+    3px 3px 0px rgba(0, 0, 0, 0.3),
+    6px 6px 10px rgba(0, 0, 0, 0.2),
+    0 0 15px rgba(255, 255, 255, 0.1);
+  filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.3));
+  transform: perspective(150px) rotateX(10deg) rotateY(5deg);
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.house-icon-large-3d:hover {
+  transform: perspective(150px) rotateX(15deg) rotateY(10deg) scale(1.05);
+  text-shadow: 
+    4px 4px 0px rgba(0, 0, 0, 0.4),
+    8px 8px 12px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(255, 255, 255, 0.2);
+}

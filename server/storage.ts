@@ -210,7 +210,7 @@ export class MemStorage implements IStorage {
         id: "berruguete",
         name: "House of Berruguete",
         color: "#EA580C",
-        icon: "fire",
+        icon: "lion",
         motto: "Creativity • Passion • Innovation",
         academicPoints: 694,
         attendancePoints: 589,

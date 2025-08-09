@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { Trophy, Plus, Book, Calendar, Heart, Shield, Star, Leaf, Mountain, Flame } from "lucide-react";
 import type { House } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
+import LionIcon from "@/components/icons/Lion";
 
 const iconMap = {
   "shield-alt": Shield,
@@ -12,6 +13,7 @@ const iconMap = {
   "leaf": Leaf,
   "mountain": Mountain,
   "fire": Flame,
+  "lion": LionIcon,
 };
 
 export default function Dashboard() {

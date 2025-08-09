@@ -622,14 +622,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug route to check teacher auth
-  app.get("/api/teacher/debug-auth", async (req, res) => {
+  // Admin routes for teacher management
+  app.get("/api/admin/teachers/pending", async (req, res) => {
     try {
-      // For now return a simple response indicating the system is working
-      res.json({ message: "Teacher auth system initialized" });
+      const pendingTeachers = await storage.getPendingTeachers();
+      res.json(pendingTeachers.map(t => ({
+        id: t.id,
+        name: t.name,
+        email: t.email,
+        gradeRole: t.gradeRole,
+        subject: t.subject,
+        createdAt: t.createdAt
+      })));
     } catch (error) {
-      console.error("Debug auth error:", error);
-      res.status(500).json({ message: "Debug failed" });
+      console.error("Error fetching pending teachers:", error);
+      res.status(500).json({ message: "Failed to fetch pending teachers" });
+    }
+  });
+
+  app.post("/api/admin/teachers/:id/approve", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.approveTeacher(id);
+      
+      if (success) {
+        res.json({ message: "Teacher approved successfully" });
+      } else {
+        res.status(404).json({ message: "Teacher not found" });
+      }
+    } catch (error) {
+      console.error("Error approving teacher:", error);
+      res.status(500).json({ message: "Failed to approve teacher" });
     }
   });
 

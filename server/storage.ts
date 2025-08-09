@@ -79,6 +79,8 @@ export interface IStorage {
   // Teacher Authentication
   createTeacherAuth(teacher: InsertTeacherAuth): Promise<TeacherAuth>;
   getTeacherAuthByEmail(email: string): Promise<TeacherAuth | undefined>;
+  getAllTeacherAuth(): Promise<TeacherAuth[]>;
+  getPendingTeachers(): Promise<TeacherAuth[]>;
   approveTeacher(teacherId: string): Promise<boolean>;
   createTeacherSession(session: InsertTeacherSession): Promise<TeacherSession>;
   getTeacherSession(token: string): Promise<TeacherSession | undefined>;
@@ -574,6 +576,14 @@ export class MemStorage implements IStorage {
       }
     }
     return undefined;
+  }
+
+  async getAllTeacherAuth(): Promise<TeacherAuth[]> {
+    return Array.from(this.teacherAuth.values());
+  }
+
+  async getPendingTeachers(): Promise<TeacherAuth[]> {
+    return Array.from(this.teacherAuth.values()).filter(teacher => !teacher.isApproved);
   }
 
   async approveTeacher(teacherId: string): Promise<boolean> {

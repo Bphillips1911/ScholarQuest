@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
-import { Download, RefreshCw, UserPlus, Plus } from "lucide-react";
-import type { House, Scholar, InsertScholar, PointEntry } from "@shared/schema";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock } from "lucide-react";
+import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function Admin() {
@@ -24,6 +24,10 @@ export default function Admin() {
 
   const { data: pointEntries } = useQuery<PointEntry[]>({
     queryKey: ["/api/points"],
+  });
+
+  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
+    queryKey: ["/api/admin/teachers/pending"],
   });
 
   const addScholarMutation = useMutation({
@@ -104,6 +108,26 @@ export default function Admin() {
     }
   };
 
+  const approveTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      return await apiRequest(`/api/admin/teachers/${teacherId}/approve`, "POST");
+    },
+    onSuccess: () => {
+      toast({
+        title: "Teacher Approved",
+        description: "Teacher account has been approved and can now log in.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve teacher. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Get recent point entries (last 10)
   const recentEntries = pointEntries
     ?.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
@@ -158,6 +182,55 @@ export default function Admin() {
           <AddPointsForm />
         </div>
 
+        {/* Teacher Approval Section */}
+        {pendingTeachers && pendingTeachers.length > 0 && (
+          <div className="mb-8">
+            <Card className="border border-amber-200 bg-amber-50" data-testid="teacher-approval-card">
+              <CardHeader>
+                <CardTitle className="text-xl font-bold text-amber-900 flex items-center">
+                  <Clock className="mr-2 h-5 w-5" />
+                  Pending Teacher Approvals ({pendingTeachers.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {pendingTeachers.map((teacher) => (
+                    <div 
+                      key={teacher.id} 
+                      className="flex items-center justify-between p-4 bg-white rounded-lg border"
+                      data-testid={`pending-teacher-${teacher.id}`}
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900" data-testid={`teacher-name-${teacher.id}`}>
+                          {teacher.name}
+                        </h4>
+                        <p className="text-sm text-gray-600" data-testid={`teacher-email-${teacher.id}`}>
+                          {teacher.email}
+                        </p>
+                        <p className="text-sm text-gray-500" data-testid={`teacher-role-${teacher.id}`}>
+                          {teacher.gradeRole} • {teacher.subject}
+                        </p>
+                        <p className="text-xs text-gray-400" data-testid={`teacher-date-${teacher.id}`}>
+                          Applied: {new Date(teacher.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => approveTeacherMutation.mutate(teacher.id)}
+                        disabled={approveTeacherMutation.isPending}
+                        className="bg-green-600 text-white hover:bg-green-700"
+                        data-testid={`button-approve-${teacher.id}`}
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        {approveTeacherMutation.isPending ? "Approving..." : "Approve"}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Scholar Management and Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Add New Scholar */}
@@ -204,7 +277,7 @@ export default function Admin() {
                       <SelectValue placeholder="Auto-assign" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="" data-testid="option-auto-assign">Auto-assign</SelectItem>
+                      <SelectItem value="auto" data-testid="option-auto-assign">Auto-assign</SelectItem>
                       {houses?.map((house) => (
                         <SelectItem key={house.id} value={house.id} data-testid={`option-house-${house.id}`}>
                           {house.name}

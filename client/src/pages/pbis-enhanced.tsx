@@ -60,6 +60,25 @@ const pbisCategories = {
       { value: "homework_streak", label: "Homework Completion Streak", points: 3 },
       { value: "academic_improvement", label: "Academic Improvement", points: 5 }
     ]
+  },
+  recognition: {
+    label: "Universal Positive Characteristics",
+    icon: Star,
+    color: "bg-yellow-500",
+    subcategories: [
+      { value: "respect", label: "Respect", points: 2 },
+      { value: "integrity", label: "Integrity", points: 3 },
+      { value: "responsibility", label: "Responsibility", points: 2 },
+      { value: "honesty", label: "Honesty", points: 3 },
+      { value: "courteous", label: "Courteous", points: 2 },
+      { value: "compassionate", label: "Compassionate", points: 2 },
+      { value: "self_motivated", label: "Self-Motivated", points: 3 },
+      { value: "humble", label: "Humble", points: 2 },
+      { value: "kind", label: "Kind", points: 2 },
+      { value: "optimistic", label: "Optimistic", points: 2 },
+      { value: "grateful", label: "Grateful", points: 2 },
+      { value: "accountable", label: "Accountable", points: 3 }
+    ]
   }
 };
 

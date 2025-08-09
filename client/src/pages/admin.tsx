@@ -200,7 +200,8 @@ export default function Admin() {
         </div>
 
         {/* Admin Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
+        <div className="mt-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
           <TabsList className="grid w-full grid-cols-2 h-auto">
             <TabsTrigger value="dashboard" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-dashboard">
               <GraduationCap className="mr-1 h-4 w-4 flex-shrink-0" />
@@ -587,6 +588,7 @@ export default function Admin() {
               </div>
             </TabsContent>
           </Tabs>
+        </div>
       </Card>
     </section>
   );

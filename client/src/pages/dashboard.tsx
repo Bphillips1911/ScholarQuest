@@ -6,9 +6,11 @@ import { Trophy, Plus, Book, Calendar, Heart, Shield, Star, Leaf, Mountain, Flam
 import type { House } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 import LionIcon from "@/components/icons/Lion";
+import MustangIcon from "@/components/icons/MustangIcon";
 
 const iconMap = {
   "shield-alt": Shield,
+  "mustang": MustangIcon,
   "star": Star,
   "leaf": Leaf,
   "mountain": Mountain,

@@ -166,7 +166,7 @@ export class MemStorage implements IStorage {
         id: "franklin",
         name: "House of Franklin",
         color: "#DC2626",
-        icon: "shield-alt",
+        icon: "mustang",
         motto: "Leadership • Innovation • Integrity",
         academicPoints: 0,
         attendancePoints: 0,

@@ -6,9 +6,11 @@ import { ArrowLeft, Shield, Star, Leaf, Mountain, Flame } from "lucide-react";
 import { Link } from "wouter";
 import type { House, Scholar } from "@shared/schema";
 import LionIcon from "@/components/icons/Lion";
+import MustangIcon from "@/components/icons/MustangIcon";
 
 const iconMap = {
   "shield-alt": Shield,
+  "mustang": MustangIcon,
   "star": Star,
   "leaf": Leaf,
   "mountain": Mountain,

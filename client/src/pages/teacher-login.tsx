@@ -3,8 +3,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { UserPlus } from "lucide-react";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function TeacherLogin() {
@@ -108,7 +109,19 @@ export default function TeacherLogin() {
             </Button>
           </form>
           
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <div className="text-center pt-4 border-t">
+            <p className="text-sm text-gray-600 mb-3">
+              New to Bush Hills STEAM Academy?
+            </p>
+            <Link href="/teacher-signup">
+              <Button variant="outline" className="w-full mb-4" data-testid="button-signup-link">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Sign Up for Teacher Account
+              </Button>
+            </Link>
+          </div>
+
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-semibold text-blue-900 mb-2">Demo Accounts</h4>
             <div className="text-sm text-blue-700 space-y-1">
               <p><strong>6th Grade Teacher:</strong> s.johnson@bhsteam.edu</p>

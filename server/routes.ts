@@ -622,6 +622,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug route to check teacher auth
+  app.get("/api/teacher/debug-auth", async (req, res) => {
+    try {
+      // For now return a simple response indicating the system is working
+      res.json({ message: "Teacher auth system initialized" });
+    } catch (error) {
+      console.error("Debug auth error:", error);
+      res.status(500).json({ message: "Debug failed" });
+    }
+  });
+
   // Teacher Authentication Routes
   app.post("/api/teacher/signup", async (req, res) => {
     try {

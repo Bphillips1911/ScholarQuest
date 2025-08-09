@@ -31,6 +31,8 @@ Preferred communication style: Simple, everyday language.
   - Page components for main routes (dashboard, houses, admin, etc.)
   - Reusable UI components in the shadcn/ui pattern
   - Custom components for house cards and forms
+- **Responsive Design**: Mobile-first approach with proper tab layouts and button positioning
+- **Admin Interface**: Fixed tab overlap issues with proper spacing and visual separation
 
 ## Backend Architecture
 - **Framework**: Express.js with TypeScript
@@ -99,6 +101,13 @@ Preferred communication style: Simple, everyday language.
 - **Email Templates**: HTML-formatted notifications with school branding and detailed information
 - **Admin Configuration**: Admin settings page (/admin-settings) for email management and testing
 - **Automated Alerts**: Real-time notifications sent when new users register in the system
+
+## Data Export System
+- **Export Formats**: CSV and Excel (.xlsx) formats available from admin portal
+- **Data Included**: Student name, ID, grade level, house assignment, all point categories (academic, attendance, behavior), total points, date added
+- **File Naming**: Automatic date-stamped filenames (bhsa-scholars-YYYY-MM-DD.csv/.xlsx)
+- **Admin Access**: Export buttons in admin panel for instant data download
+- **Spreadsheet Features**: Excel exports include proper column widths and formatting
 
 ## Form Validation
 - **Zod**: Schema validation library

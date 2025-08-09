@@ -15,6 +15,7 @@ import ParentLogin from "@/pages/parent-login";
 import ParentPortal from "@/pages/parent-portal";
 import TeacherLogin from "@/pages/teacher-login";
 import TeacherDashboard from "@/pages/teacher-dashboard";
+import HouseSorting from "@/pages/house-sorting";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
@@ -42,6 +43,7 @@ function Router() {
               <Route path="/pbis" component={PBIS} />
               <Route path="/pledge" component={Pledge} />
               <Route path="/parent-letter" component={ParentLetter} />
+              <Route path="/house-sorting" component={HouseSorting} />
               <Route path="/admin" component={Admin} />
               <Route component={NotFound} />
             </Switch>

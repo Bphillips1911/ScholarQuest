@@ -19,11 +19,14 @@ export const scholars = pgTable("scholars", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   studentId: text("student_id").notNull().unique(),
-  houseId: varchar("house_id").notNull().references(() => houses.id),
+  houseId: varchar("house_id").references(() => houses.id),
   grade: integer("grade").notNull(), // 6, 7, or 8
   academicPoints: integer("academic_points").notNull().default(0),
   attendancePoints: integer("attendance_points").notNull().default(0),
   behaviorPoints: integer("behavior_points").notNull().default(0),
+  isHouseSorted: boolean("is_house_sorted").notNull().default(false),
+  sortingNumber: integer("sorting_number"),
+  addedByTeacher: varchar("added_by_teacher"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

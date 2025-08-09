@@ -13,6 +13,7 @@ export default function NavigationHeader() {
     { path: "/pbis", label: "PBIS" },
     { path: "/pledge", label: "House Pledge" },
     { path: "/parent-letter", label: "Parent Letter" },
+    { path: "/house-sorting", label: "House Sorting" },
     { path: "/teacher/login", label: "Teacher Portal" },
     { path: "/admin", label: "Admin" },
   ];

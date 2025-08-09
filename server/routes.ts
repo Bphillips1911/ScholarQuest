@@ -542,6 +542,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // House Sorting routes
+  // Get unsorted students
+  app.get("/api/sorting/unsorted-students", async (_req, res) => {
+    try {
+      console.log("Getting unsorted students...");
+      const students = await storage.getUnsortedStudents();
+      console.log("Found students:", students.length);
+      res.json(students);
+    } catch (error) {
+      console.error("Error fetching unsorted students:", error);
+      console.error("Stack trace:", error.stack);
+      res.status(500).json({ message: "Failed to fetch unsorted students" });
+    }
+  });
+
+  // Add student to sorting queue
+  app.post("/api/sorting/add-student", async (req, res) => {
+    try {
+      const { name, studentId, grade } = req.body;
+      
+      if (!name || !studentId || !grade) {
+        return res.status(400).json({ message: "Name, student ID, and grade are required" });
+      }
+
+      const studentData = {
+        name: name.trim(),
+        studentId: studentId.trim(),
+        grade: parseInt(grade),
+        addedByTeacher: "Sorting System", // Could be enhanced to track actual teacher
+      };
+
+      const student = await storage.addUnsortedStudent(studentData);
+      res.status(201).json(student);
+    } catch (error) {
+      console.error("Error adding student:", error);
+      if (error instanceof Error && error.message.includes("unique")) {
+        res.status(400).json({ message: "Student ID already exists" });
+      } else {
+        res.status(500).json({ message: "Failed to add student" });
+      }
+    }
+  });
+
+  // Remove student from sorting queue
+  app.delete("/api/sorting/remove-student/:id", async (req, res) => {
+    try {
+      const removed = await storage.removeUnsortedStudent(req.params.id);
+      if (removed) {
+        res.json({ message: "Student removed successfully" });
+      } else {
+        res.status(404).json({ message: "Student not found or already sorted" });
+      }
+    } catch (error) {
+      console.error("Error removing student:", error);
+      res.status(500).json({ message: "Failed to remove student" });
+    }
+  });
+
+  // Sort all unsorted students into houses
+  app.post("/api/sorting/sort-students", async (_req, res) => {
+    try {
+      const result = await storage.sortStudentsIntoHouses();
+      res.json(result);
+    } catch (error) {
+      console.error("Error sorting students:", error);
+      res.status(500).json({ message: "Failed to sort students" });
+    }
+  });
+
+  // Reset all houses (move all students back to unsorted)
+  app.post("/api/sorting/reset-houses", async (_req, res) => {
+    try {
+      await storage.resetAllHouses();
+      res.json({ message: "All houses have been reset" });
+    } catch (error) {
+      console.error("Error resetting houses:", error);
+      res.status(500).json({ message: "Failed to reset houses" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

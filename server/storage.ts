@@ -46,6 +46,13 @@ export interface IStorage {
   addScholarToParent(parentId: string, scholarId: string): Promise<boolean>;
   getParentScholars(parentId: string): Promise<Scholar[]>;
   
+  // House Sorting
+  getUnsortedStudents(): Promise<Scholar[]>;
+  addUnsortedStudent(student: InsertScholar): Promise<Scholar>;
+  removeUnsortedStudent(studentId: string): Promise<boolean>;
+  sortStudentsIntoHouses(): Promise<{ sortedCount: number }>;
+  resetAllHouses(): Promise<void>;
+  
   // Utility
   getHouseStandings(): Promise<House[]>;
 }
@@ -477,6 +484,110 @@ export class MemStorage implements IStorage {
     return scholarIds
       .map(scholarId => this.scholars.get(scholarId))
       .filter(Boolean) as Scholar[];
+  }
+
+  async getUnsortedStudents(): Promise<Scholar[]> {
+    const scholars = Array.from(this.scholars.values());
+    return scholars.filter(scholar => scholar.isHouseSorted === false);
+  }
+
+  async addUnsortedStudent(student: InsertScholar): Promise<Scholar> {
+    const id = randomUUID();
+    const newScholar: Scholar = {
+      ...student,
+      id,
+      houseId: student.houseId || null,
+      academicPoints: 0,
+      attendancePoints: 0,
+      behaviorPoints: 0,
+      isHouseSorted: false,
+      sortingNumber: this.extractSortingNumber(student.studentId),
+      addedByTeacher: student.addedByTeacher || null,
+      createdAt: new Date(),
+    };
+    this.scholars.set(id, newScholar);
+    return newScholar;
+  }
+
+  async removeUnsortedStudent(studentId: string): Promise<boolean> {
+    const scholar = Array.from(this.scholars.values()).find(s => s.id === studentId);
+    if (scholar && !scholar.isHouseSorted) {
+      return this.scholars.delete(studentId);
+    }
+    return false;
+  }
+
+  async sortStudentsIntoHouses(): Promise<{ sortedCount: number }> {
+    const unsortedStudents = await this.getUnsortedStudents();
+    const availableHouses = ["franklin", "courie", "west", "blackwell", "berruguete"];
+    let sortedCount = 0;
+
+    // Shuffle students for random assignment
+    const shuffledStudents = this.shuffleArray([...unsortedStudents]);
+
+    for (const student of shuffledStudents) {
+      // Use a simple round-robin assignment with some randomization
+      const houseIndex = sortedCount % availableHouses.length;
+      const selectedHouseId = availableHouses[houseIndex];
+      
+      // Update student with house assignment
+      const updatedStudent: Scholar = {
+        ...student,
+        houseId: selectedHouseId,
+        isHouseSorted: true,
+      };
+      
+      this.scholars.set(student.id, updatedStudent);
+
+      // Update house member count
+      const house = this.houses.get(selectedHouseId);
+      if (house) {
+        this.houses.set(selectedHouseId, {
+          ...house,
+          memberCount: house.memberCount + 1,
+        });
+      }
+
+      sortedCount++;
+    }
+
+    return { sortedCount };
+  }
+
+  async resetAllHouses(): Promise<void> {
+    // Reset all scholars to unsorted
+    for (const [id, scholar] of this.scholars.entries()) {
+      if (scholar.isHouseSorted) {
+        this.scholars.set(id, {
+          ...scholar,
+          houseId: null,
+          isHouseSorted: false,
+        });
+      }
+    }
+
+    // Reset house member counts
+    for (const [id, house] of this.houses.entries()) {
+      this.houses.set(id, {
+        ...house,
+        memberCount: 0,
+      });
+    }
+  }
+
+  private extractSortingNumber(studentId: string): number | null {
+    // Extract number from student ID like "BH22" or "BH6001"
+    const match = studentId.match(/\d+$/);
+    return match ? parseInt(match[0]) : null;
+  }
+
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
   }
 
   async getHouseStandings(): Promise<House[]> {

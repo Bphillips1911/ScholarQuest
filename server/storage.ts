@@ -50,6 +50,8 @@ export interface IStorage {
   getScholarsByHouse(houseId: string): Promise<Scholar[]>;
   getScholarsByGrade(grade: number): Promise<Scholar[]>;
   getScholar(id: string): Promise<Scholar | undefined>;
+  getScholarByUsername(username: string): Promise<Scholar | undefined>;
+  getScholarByStudentId(studentId: string): Promise<Scholar | undefined>;
   getAllScholars(): Promise<Scholar[]>;
   createScholar(scholar: InsertScholar): Promise<Scholar>;
   updateScholarPoints(scholarId: string, category: string, points: number): Promise<void>;
@@ -57,6 +59,7 @@ export interface IStorage {
   // Teachers
   getTeacher(id: string): Promise<Teacher | undefined>;
   getTeacherByEmail(email: string): Promise<Teacher | undefined>;
+  getTeachersByGrade(grade: number): Promise<Teacher[]>;
   createTeacher(teacher: InsertTeacher): Promise<Teacher>;
   getVisibleScholarsForTeacher(teacherId: string): Promise<Scholar[]>;
   
@@ -96,6 +99,7 @@ export interface IStorage {
   // Student Authentication  
   createStudentCredentials(scholarId: string, teacherId: string): Promise<{ username: string; password: string }>;
   authenticateStudent(username: string, password: string): Promise<Scholar | null>;
+  requestPasswordReset(username: string): Promise<boolean>;
   createStudentSession(session: InsertStudentSession): Promise<StudentSession>;
   getStudentSession(token: string): Promise<StudentSession | undefined>;
   deleteStudentSession(token: string): Promise<boolean>;
@@ -435,12 +439,26 @@ export class MemStorage implements IStorage {
     return Array.from(this.scholars.values()).filter(scholar => scholar.grade === grade);
   }
 
+  async getScholarByUsername(username: string): Promise<Scholar | undefined> {
+    return Array.from(this.scholars.values()).find(scholar => scholar.username === username);
+  }
+
+  async getScholarByStudentId(studentId: string): Promise<Scholar | undefined> {
+    return Array.from(this.scholars.values()).find(scholar => scholar.studentId === studentId);
+  }
+
   async getTeacher(id: string): Promise<Teacher | undefined> {
     return this.teachers.get(id);
   }
 
   async getTeacherByEmail(email: string): Promise<Teacher | undefined> {
     return Array.from(this.teachers.values()).find(teacher => teacher.email === email);
+  }
+
+  async getTeachersByGrade(grade: number): Promise<Teacher[]> {
+    return Array.from(this.teachers.values()).filter(teacher => 
+      teacher.canSeeGrades?.includes(grade) || teacher.role === `${grade}th Grade`
+    );
   }
 
   async createTeacher(teacher: InsertTeacher): Promise<Teacher> {
@@ -718,6 +736,29 @@ export class MemStorage implements IStorage {
       }
     }
     return null;
+  }
+
+  async requestPasswordReset(username: string): Promise<boolean> {
+    const scholar = Array.from(this.scholars.values()).find(s => s.username === username);
+    if (!scholar || !scholar.teacherId) {
+      return false;
+    }
+
+    // Create a password reset request
+    const request: InsertPasswordResetRequest = {
+      teacherId: scholar.teacherId,
+      studentId: scholar.id,
+      studentUsername: username,
+      requestedAt: new Date(),
+    };
+
+    await this.createPasswordResetRequest(request);
+    
+    // Mark scholar as needing password reset
+    scholar.needsPasswordReset = true;
+    this.scholars.set(scholar.id, scholar);
+    
+    return true;
   }
 
   async createStudentSession(sessionData: InsertStudentSession): Promise<StudentSession> {

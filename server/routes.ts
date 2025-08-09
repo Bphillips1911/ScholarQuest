@@ -900,6 +900,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/student/signup", async (req, res) => {
+    try {
+      const { name, studentId, grade, teacherId, username, password } = req.body;
+      
+      // Validate required fields
+      if (!name || !studentId || !grade || !teacherId || !username || !password) {
+        return res.status(400).json({ success: false, message: "All fields are required" });
+      }
+
+      // Check if username already exists
+      const existingUser = await storage.getScholarByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: "Username already exists" });
+      }
+
+      // Check if student ID already exists
+      const existingStudent = await storage.getScholarByStudentId(studentId);
+      if (existingStudent) {
+        return res.status(400).json({ success: false, message: "Student ID already registered" });
+      }
+
+      // Get teacher information
+      const teacher = await storage.getTeacher(teacherId);
+      if (!teacher) {
+        return res.status(400).json({ success: false, message: "Invalid teacher selected" });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Create student account
+      const scholar = await storage.createScholar({
+        name,
+        studentId,
+        grade,
+        teacherId,
+        username,
+        passwordHash,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        isHouseSorted: false,
+        needsPasswordReset: false,
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Account created successfully",
+        student: { 
+          id: scholar.id, 
+          name: scholar.name, 
+          username: scholar.username,
+          teacher: teacher.name
+        } 
+      });
+    } catch (error) {
+      console.error("Student signup error:", error);
+      res.status(500).json({ success: false, message: "Registration failed" });
+    }
+  });
+
+  // Get teachers by grade level
+  app.get("/api/teachers/by-grade/:grade", async (req, res) => {
+    try {
+      const grade = parseInt(req.params.grade);
+      const teachers = await storage.getTeachersByGrade(grade);
+      res.json(teachers);
+    } catch (error) {
+      console.error("Error fetching teachers by grade:", error);
+      res.status(500).json({ message: "Failed to fetch teachers" });
+    }
+  });
+
   app.get("/api/student/dashboard", async (req, res) => {
     try {
       const token = req.headers.authorization?.replace("Bearer ", "");

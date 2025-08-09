@@ -169,6 +169,19 @@ export default function StudentLogin() {
                 <HelpCircle className="mr-2 h-4 w-4" />
                 Forgot Password?
               </Button>
+              
+              <div className="text-center pt-4 border-t">
+                <p className="text-sm text-gray-600">
+                  New student? 
+                  <a 
+                    href="/student-signup" 
+                    className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
+                    data-testid="link-student-signup"
+                  >
+                    Create an account
+                  </a>
+                </p>
+              </div>
             </form>
           ) : (
             <div className="space-y-4">

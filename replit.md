@@ -96,12 +96,14 @@ Preferred communication style: Simple, everyday language.
 - **School Branding**: Consistent use of school identity in navigation, dashboard, admin panel, and parent communications
 
 ## Email Notification System
-- **Service Provider**: SendGrid API for reliable email delivery
-- **Administrator Email**: BHSAHouses25@gmail.com (configurable via admin settings)
+- **Service Provider**: SendGrid API for reliable email delivery (✓ WORKING)
+- **Administrator Email**: BHSAHouses25@gmail.com (verified sender, configured via admin settings)
+- **API Configuration**: Full Access SendGrid API key with verified sender authentication
 - **Notification Types**: Teacher registrations, parent signups, student registrations, password reset requests
 - **Email Templates**: HTML-formatted notifications with school branding and detailed information
 - **Admin Configuration**: Admin settings page (/admin-settings) for email management and testing
 - **Automated Alerts**: Real-time notifications sent when new users register in the system
+- **Delivery Notes**: Initial emails may go to spam folder; users should check spam/promotions tabs
 
 ## Data Export System
 - **Export Formats**: CSV and Excel (.xlsx) formats available from admin portal

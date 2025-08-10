@@ -9,7 +9,7 @@ export default function NavigationHeader() {
 
   const navItems = [
     { path: "/", label: "Dashboard" },
-    { path: "/tutorial", label: "📚 Tutorial Guide", highlight: true },
+    { path: "/tutorial", label: "Tutorial" },
     { path: "/houses", label: "Houses" },
     { path: "/pbis", label: "PBIS" },
     { path: "/monthly-pbis", label: "Monthly Tracking" },
@@ -46,9 +46,7 @@ export default function NavigationHeader() {
                 key={item.path}
                 href={item.path}
                 className={`font-medium transition-colors ${
-                  item.highlight 
-                    ? "text-white bg-blue-600 px-3 py-2 rounded-lg hover:bg-blue-700"
-                    : isActive(item.path)
+                  isActive(item.path)
                     ? "text-blue-600"
                     : "text-gray-600 hover:text-blue-600"
                 }`}

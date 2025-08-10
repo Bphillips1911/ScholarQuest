@@ -247,8 +247,67 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeScholars() {
-    // No default scholars - start with empty scholar list
-    // Teachers will add scholars as needed
+    const sampleScholars = [
+      {
+        name: "Sarah Johnson",
+        gradeLevel: 6,
+        studentId: "BH6001",
+        username: "bh6001sarah",
+        houseId: "franklin"
+      },
+      {
+        name: "Michael Chen",
+        gradeLevel: 7,
+        studentId: "BH7002",
+        username: "bh7002michael",
+        houseId: "courie"
+      },
+      {
+        name: "Emma Williams",
+        gradeLevel: 8,
+        studentId: "BH8003",
+        username: "bh8003emma",
+        houseId: "west"
+      },
+      {
+        name: "David Rodriguez",
+        gradeLevel: 6,
+        studentId: "BH6004",
+        username: "bh6004david",
+        houseId: "blackwell"
+      },
+      {
+        name: "Olivia Thompson",
+        gradeLevel: 7,
+        studentId: "BH7005",
+        username: "bh7005olivia",
+        houseId: "berruguete"
+      }
+    ];
+
+    for (const scholarData of sampleScholars) {
+      const scholar: Scholar = {
+        id: randomUUID(),
+        name: scholarData.name,
+        gradeLevel: scholarData.gradeLevel,
+        studentId: scholarData.studentId,
+        username: scholarData.username,
+        houseId: scholarData.houseId,
+        academicPoints: Math.floor(Math.random() * 50) + 10,
+        attendancePoints: Math.floor(Math.random() * 30) + 5,
+        behaviorPoints: Math.floor(Math.random() * 40) + 8,
+        isHouseSorted: true,
+        addedAt: new Date(),
+      };
+      this.scholars.set(scholar.id, scholar);
+      
+      // Update house member count
+      const house = this.houses.get(scholarData.houseId);
+      if (house) {
+        house.memberCount++;
+        this.houses.set(house.id, house);
+      }
+    }
   }
 
   private async initializeTeachers() {

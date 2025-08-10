@@ -56,10 +56,7 @@ export default function HouseSorting() {
   // Add student mutation
   const addStudentMutation = useMutation({
     mutationFn: async (studentData: any) => {
-      return await apiRequest("/api/sorting/add-student", {
-        method: "POST",
-        body: JSON.stringify(studentData),
-      });
+      return await apiRequest("POST", "/api/sorting/add-student", studentData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sorting/unsorted-students"] });
@@ -83,9 +80,7 @@ export default function HouseSorting() {
   // Remove student mutation
   const removeStudentMutation = useMutation({
     mutationFn: async (studentId: string) => {
-      return await apiRequest(`/api/sorting/remove-student/${studentId}`, {
-        method: "DELETE",
-      });
+      return await apiRequest("DELETE", `/api/sorting/remove-student/${studentId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sorting/unsorted-students"] });
@@ -106,9 +101,7 @@ export default function HouseSorting() {
   // Sort students mutation
   const sortStudentsMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/sorting/sort-students", {
-        method: "POST",
-      });
+      return await apiRequest("POST", "/api/sorting/sort-students");
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sorting/unsorted-students"] });
@@ -132,9 +125,7 @@ export default function HouseSorting() {
   // Reset all houses mutation
   const resetHousesMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/sorting/reset-houses", {
-        method: "POST",
-      });
+      return await apiRequest("POST", "/api/sorting/reset-houses");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sorting/unsorted-students"] });

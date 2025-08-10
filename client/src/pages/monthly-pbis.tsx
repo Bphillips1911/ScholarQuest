@@ -138,7 +138,7 @@ export default function MonthlyPBIS() {
   const getClassData = () => {
     let classStudents = filteredScholars;
     
-    if (selectedGrade) {
+    if (selectedGrade && selectedGrade !== "all") {
       classStudents = classStudents.filter(scholar => scholar.grade.toString() === selectedGrade);
     }
     
@@ -209,7 +209,7 @@ export default function MonthlyPBIS() {
       doc.setFontSize(16);
       doc.text(`Class PBIS Report - ${monthName} ${selectedYear}`, 14, 22);
       doc.setFontSize(10);
-      doc.text(`Grade: ${selectedGrade || "All Grades"}`, 14, 30);
+      doc.text(`Grade: ${selectedGrade === "all" || !selectedGrade ? "All Grades" : `${selectedGrade}th Grade`}`, 14, 30);
       doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 36);
       
       const tableData = studentData.map((student: any) => [
@@ -302,7 +302,7 @@ export default function MonthlyPBIS() {
           text: `Class PBIS Report - ${monthName} ${selectedYear}`,
           heading: docx.HeadingLevel.HEADING_1
         }),
-        new docx.Paragraph(`Grade: ${selectedGrade || "All Grades"}`),
+        new docx.Paragraph(`Grade: ${selectedGrade === "all" || !selectedGrade ? "All Grades" : `${selectedGrade}th Grade`}`),
         new docx.Paragraph(`Generated: ${new Date().toLocaleDateString()}`),
         new docx.Paragraph(""),
         new docx.Table({
@@ -363,7 +363,10 @@ export default function MonthlyPBIS() {
           new docx.Paragraph({
             text: "PBIS Entries:",
             heading: docx.HeadingLevel.HEADING_2
-          }),
+          })
+        );
+        
+        docContent.push(
           new docx.Table({
             rows: [
               new docx.TableRow({
@@ -409,12 +412,12 @@ export default function MonthlyPBIS() {
 
   // Print functions
   const handlePrint = useReactToPrint({
-    content: () => printComponentRef.current,
+    contentRef: printComponentRef,
     documentTitle: `Individual_PBIS_Report_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}`,
   });
 
   const handleClassPrint = useReactToPrint({
-    content: () => classPrintRef.current,
+    contentRef: classPrintRef,
     documentTitle: `Class_PBIS_Report_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}`,
   });
 
@@ -571,7 +574,7 @@ export default function MonthlyPBIS() {
                       <SelectValue placeholder="Filter by Grade" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Grades</SelectItem>
+                      <SelectItem value="all">All Grades</SelectItem>
                       <SelectItem value="6">6th Grade</SelectItem>
                       <SelectItem value="7">7th Grade</SelectItem>
                       <SelectItem value="8">8th Grade</SelectItem>
@@ -695,7 +698,7 @@ export default function MonthlyPBIS() {
                       <SelectValue placeholder="Select Grade" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Grades</SelectItem>
+                      <SelectItem value="all">All Grades</SelectItem>
                       <SelectItem value="6">6th Grade</SelectItem>
                       <SelectItem value="7">7th Grade</SelectItem>
                       <SelectItem value="8">8th Grade</SelectItem>
@@ -716,7 +719,7 @@ export default function MonthlyPBIS() {
                 <div className="print:block hidden mb-6">
                   <h1 className="text-2xl font-bold text-center">Bush Hills STEAM Academy</h1>
                   <h2 className="text-xl font-semibold text-center">Class PBIS Report - {selectedMonthName} {selectedYear}</h2>
-                  <p className="text-center text-gray-600">Grade: {selectedGrade || "All Grades"}</p>
+                  <p className="text-center text-gray-600">Grade: {selectedGrade === "all" || !selectedGrade ? "All Grades" : `${selectedGrade}th Grade`}</p>
                   <p className="text-center text-gray-600">Generated: {new Date().toLocaleDateString()}</p>
                 </div>
 
@@ -895,7 +898,7 @@ export default function MonthlyPBIS() {
                           <SelectValue placeholder="Select grade level" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Grades</SelectItem>
+                          <SelectItem value="all">All Grades</SelectItem>
                           <SelectItem value="6">6th Grade</SelectItem>
                           <SelectItem value="7">7th Grade</SelectItem>
                           <SelectItem value="8">8th Grade</SelectItem>
@@ -1013,7 +1016,7 @@ export default function MonthlyPBIS() {
                         <tbody>
                           {studentData.entries.map((entry) => (
                             <tr key={entry.id}>
-                              <td className="border p-2">{new Date(entry.createdAt).toLocaleDateString()}</td>
+                              <td className="border p-2">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'N/A'}</td>
                               <td className={`border p-2 font-medium ${entry.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {entry.points >= 0 ? '+' : ''}{entry.points}
                               </td>

@@ -69,6 +69,14 @@ export interface IStorage {
   createTeacher(teacher: InsertTeacher): Promise<Teacher>;
   getVisibleScholarsForTeacher(teacherId: string): Promise<Scholar[]>;
   
+  // Teacher Authentication
+  authenticateTeacher(email: string, password: string): Promise<TeacherAuth | null>;
+  getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null>;
+  getTeacherAuthById(id: string): Promise<TeacherAuth | null>;
+  createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth>;
+  createTeacherSession(sessionData: InsertTeacherSession): Promise<TeacherSession>;
+  getTeacherSession(token: string): Promise<TeacherSession | undefined>;
+  
   // Point Entries
   getPointEntries(): Promise<PointEntry[]>;
   getPointEntriesByHouse(houseId: string): Promise<PointEntry[]>;
@@ -78,7 +86,6 @@ export interface IStorage {
   getPbisEntries(): Promise<PbisEntry[]>;
   getPbisEntriesByScholar(scholarId: string): Promise<PbisEntry[]>;
   createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry>;
-  getAllScholars(): Promise<Scholar[]>;
   
   // PBIS Photos
   getPbisPhotos(): Promise<PbisPhoto[]>;
@@ -91,16 +98,25 @@ export interface IStorage {
   createParent(parent: InsertParent): Promise<Parent>;
   addScholarToParent(parentId: string, scholarId: string): Promise<boolean>;
   getParentScholars(parentId: string): Promise<Scholar[]>;
+  getAllParents(): Promise<Parent[]>;
+  addScholarToParentByUsername(parentId: string, studentUsername: string): Promise<Scholar | null>;
   
-  // Teacher Authentication
+  // Parent-Teacher Messaging
+  createParentTeacherMessage(messageData: any): Promise<any>;
+  getMessagesByParent(parentId: string): Promise<any[]>;
+  getMessagesByTeacher(teacherId: string): Promise<any[]>;
+  
+  // Teacher Authentication  
+  authenticateTeacher(email: string, password: string): Promise<TeacherAuth | null>;
+  getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null>;
+  getTeacherAuthById(id: string): Promise<TeacherAuth | null>;
   createTeacherAuth(teacher: InsertTeacherAuth): Promise<TeacherAuth>;
-  getTeacherAuthByEmail(email: string): Promise<TeacherAuth | undefined>;
-  getAllTeacherAuth(): Promise<TeacherAuth[]>;
-  getPendingTeachers(): Promise<TeacherAuth[]>;
-  approveTeacher(teacherId: string): Promise<boolean>;
   createTeacherSession(session: InsertTeacherSession): Promise<TeacherSession>;
   getTeacherSession(token: string): Promise<TeacherSession | undefined>;
   deleteTeacherSession(token: string): Promise<boolean>;
+  getAllTeacherAuth(): Promise<TeacherAuth[]>;
+  getPendingTeachers(): Promise<TeacherAuth[]>;
+  approveTeacher(teacherId: string): Promise<boolean>;
 
   // Student Authentication  
   createStudentCredentials(scholarId: string, teacherId: string): Promise<{ username: string; password: string }>;
@@ -176,7 +192,6 @@ export class MemStorage implements IStorage {
     setTimeout(() => {
       this.initializeTeacherAuth().then(() => {
         console.log("Teacher auth accounts initialized");
-        this.createDemoStudentCredentials();
         return this.initializeAdministrators();
       }).then(() => {
         console.log("Administrator accounts initialized");
@@ -1503,4 +1518,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();

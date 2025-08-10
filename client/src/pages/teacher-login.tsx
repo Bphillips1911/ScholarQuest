@@ -20,7 +20,7 @@ export default function TeacherLogin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/teacher/login", {
+      const response = await fetch("/api/teacher-auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

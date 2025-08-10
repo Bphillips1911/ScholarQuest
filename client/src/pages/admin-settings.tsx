@@ -170,59 +170,7 @@ export default function AdminSettings() {
           </CardContent>
         </Card>
 
-        {/* SendGrid Configuration Help */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-orange-500" />
-              SendGrid Configuration Status
-            </CardTitle>
-            <CardDescription>
-              Current email service configuration and troubleshooting.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h4 className="font-medium text-yellow-800 mb-2">Current Status: Configuration Issue</h4>
-                <p className="text-sm text-yellow-700 mb-3">
-                  The SendGrid API key appears to have permission issues. This is common with new accounts or restricted API keys.
-                </p>
-                <div className="space-y-2 text-sm">
-                  <p className="font-medium text-yellow-800">To fix this:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-yellow-700">
-                    <li>Log into your SendGrid account</li>
-                    <li>Go to Settings → API Keys</li>
-                    <li>Create a new API key with "Full Access" permissions</li>
-                    <li>Verify your sender email domain in SendGrid</li>
-                    <li>Update your Replit secrets with the new API key</li>
-                  </ol>
-                </div>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">API Key Status:</span>
-                  <span className="text-red-600 font-medium">Permission Error (403)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Sender Domain:</span>
-                  <span className="text-red-600 font-medium">Not Verified</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Test Emails:</span>
-                  <span className="text-red-600 font-medium">Failing</span>
-                </div>
-              </div>
 
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                <p className="text-sm text-blue-700">
-                  <strong>Note:</strong> Email notifications will be logged to server console until SendGrid is properly configured.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* System Information */}
         <Card>

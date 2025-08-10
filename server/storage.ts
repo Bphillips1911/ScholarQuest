@@ -1202,6 +1202,62 @@ export class MemStorage implements IStorage {
     return scholar;
   }
 
+  // Teacher Authentication Methods
+  async authenticateTeacher(email: string, password: string): Promise<TeacherAuth | null> {
+    for (const teacher of this.teacherAuth.values()) {
+      if (teacher.email === email && teacher.isApproved) {
+        const isValid = await bcrypt.compare(password, teacher.passwordHash);
+        if (isValid) {
+          return teacher;
+        }
+      }
+    }
+    return null;
+  }
+
+  async getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null> {
+    for (const teacher of this.teacherAuth.values()) {
+      if (teacher.email === email) {
+        return teacher;
+      }
+    }
+    return null;
+  }
+
+  async getTeacherAuthById(id: string): Promise<TeacherAuth | null> {
+    return this.teacherAuth.get(id) || null;
+  }
+
+  async createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth> {
+    const hashedPassword = await bcrypt.hash(teacherData.password, 10);
+    const teacher: TeacherAuth = {
+      id: randomUUID(),
+      ...teacherData,
+      passwordHash: hashedPassword,
+      isApproved: false, // Requires admin approval
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.teacherAuth.set(teacher.id, teacher);
+    return teacher;
+  }
+
+  async createTeacherSession(sessionData: InsertTeacherSession): Promise<TeacherSession> {
+    const session: TeacherSession = {
+      id: randomUUID(),
+      ...sessionData,
+      createdAt: new Date(),
+    };
+    
+    this.teacherSessions.set(session.token, session);
+    return session;
+  }
+
+  async getTeacherSession(token: string): Promise<TeacherSession | undefined> {
+    return this.teacherSessions.get(token);
+  }
+
   async markMessageAsRead(messageId: string): Promise<boolean> {
     const message = this.parentTeacherMessages.get(messageId);
     if (!message) return false;

@@ -1614,6 +1614,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Teacher Authentication Routes
+  app.post("/api/teacher-auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      const teacher = await storage.authenticateTeacher(email, password);
+      
+      if (!teacher) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Generate session token
+      const token = jwt.sign(
+        { teacherId: teacher.id, email: teacher.email },
+        process.env.JWT_SECRET || "fallback_secret",
+        { expiresIn: "8h" }
+      );
+
+      // Create session record
+      await storage.createTeacherSession({
+        teacherId: teacher.id,
+        token,
+        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000), // 8 hours
+      });
+
+      res.json({
+        success: true,
+        teacher: {
+          id: teacher.id,
+          name: teacher.name,
+          email: teacher.email,
+          gradeRole: teacher.gradeRole,
+          subject: teacher.subject,
+          canSeeGrades: teacher.gradeRole.includes("6th") ? [6] : 
+                       teacher.gradeRole.includes("7th") ? [7] :
+                       teacher.gradeRole.includes("8th") ? [8] : [6, 7, 8]
+        },
+        token
+      });
+    } catch (error) {
+      console.error("Teacher login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post("/api/teacher-auth/register", async (req, res) => {
+    try {
+      const { firstName, lastName, email, password, role, subject, canSeeGrades } = req.body;
+      
+      if (!firstName || !lastName || !email || !password || !role) {
+        return res.status(400).json({ message: "All required fields must be provided" });
+      }
+
+      // Check if teacher already exists
+      const existingTeacher = await storage.getTeacherAuthByEmail(email);
+      if (existingTeacher) {
+        return res.status(409).json({ message: "Teacher with this email already exists" });
+      }
+
+      const teacherData = {
+        name: `${firstName} ${lastName}`,
+        email,
+        password,
+        gradeRole: role,
+        subject: subject || ""
+      };
+
+      const newTeacher = await storage.createTeacherAuth(teacherData);
+      
+      // Send notification email to administrators
+      const { sendTeacherRegistrationNotification } = require("./emailService");
+      await sendTeacherRegistrationNotification({
+        teacherName: newTeacher.name,
+        teacherEmail: newTeacher.email,
+        gradeRole: newTeacher.gradeRole,
+        subject: newTeacher.subject
+      });
+
+      res.status(201).json({
+        success: true,
+        message: "Registration submitted successfully. Your account will be activated once approved by administration."
+      });
+    } catch (error) {
+      console.error("Teacher registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

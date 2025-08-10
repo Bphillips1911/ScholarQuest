@@ -187,6 +187,7 @@ export class MemStorage implements IStorage {
     this.initializeHouses();
     this.initializeScholars();
     this.initializeTeachers();
+    this.initializeParents();
     
     // Initialize teacher auth accounts after regular setup
     setTimeout(() => {
@@ -882,6 +883,42 @@ export class MemStorage implements IStorage {
     }
 
     return true;
+  }
+
+  private initializeParents() {
+    const sampleParents = [
+      {
+        email: "parent.johnson@example.com",
+        firstName: "Jennifer",
+        lastName: "Johnson", 
+        phone: "(555) 123-4567",
+        scholarIds: [] // Will be populated when parents link students
+      },
+      {
+        email: "parent.chen@example.com", 
+        firstName: "David",
+        lastName: "Chen",
+        phone: "(555) 234-5678",
+        scholarIds: []
+      },
+      {
+        email: "parent.williams@example.com",
+        firstName: "Lisa",
+        lastName: "Williams", 
+        phone: "(555) 345-6789",
+        scholarIds: []
+      }
+    ];
+
+    sampleParents.forEach(parentData => {
+      const parent: Parent = {
+        id: randomUUID(),
+        ...parentData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.parents.set(parent.id, parent);
+    });
   }
 
   // Initialize demo teacher authentication accounts

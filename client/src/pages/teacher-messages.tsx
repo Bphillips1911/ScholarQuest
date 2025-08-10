@@ -131,10 +131,10 @@ export default function TeacherMessages() {
       return;
     }
 
-    if (messageForm.message.length < 150) {
+    if (messageForm.message.length < 10) {
       toast({
         title: "Message Too Short",
-        description: "Teacher messages must be at least 150 characters long to ensure detailed communication.",
+        description: "Please enter a message with at least 10 characters.",
         variant: "destructive",
       });
       return;
@@ -160,7 +160,7 @@ export default function TeacherMessages() {
           Parent Communication
         </h1>
         <p className="text-gray-600">
-          Send detailed messages to parents about student progress and behavior.
+          Send messages to parents about student progress and behavior.
         </p>
       </div>
 
@@ -210,16 +210,16 @@ export default function TeacherMessages() {
                       id="message"
                       value={messageForm.message}
                       onChange={(e) => setMessageForm(prev => ({...prev, message: e.target.value}))}
-                      placeholder="Write a detailed message to the parent (minimum 150 characters)..."
+                      placeholder="Write your message to the parent..."
                       rows={6}
                       className="resize-none"
                       data-testid="textarea-message"
                     />
                     <div className="flex justify-between items-center mt-2">
-                      <span className={`text-sm ${messageForm.message.length >= 150 ? 'text-green-600' : 'text-red-600'}`}>
-                        {messageForm.message.length}/150 characters minimum
+                      <span className={`text-sm ${messageForm.message.length >= 10 ? 'text-green-600' : 'text-gray-500'}`}>
+                        {messageForm.message.length} characters
                       </span>
-                      {messageForm.message.length >= 150 && (
+                      {messageForm.message.length >= 10 && (
                         <CheckCircle className="h-4 w-4 text-green-600" />
                       )}
                     </div>
@@ -238,7 +238,7 @@ export default function TeacherMessages() {
                   <div className="flex gap-2">
                     <Button
                       onClick={handleSendMessage}
-                      disabled={sendMessageMutation.isPending || messageForm.message.length < 150}
+                      disabled={sendMessageMutation.isPending || messageForm.message.length < 10}
                       className="flex-1"
                       data-testid="button-send-message"
                     >
@@ -264,7 +264,7 @@ export default function TeacherMessages() {
                   <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <p>Select a student to send a message to their parent</p>
                   <p className="text-sm mt-2">
-                    All messages require a minimum of 150 characters for detailed communication
+                    All messages require a minimum of 10 characters
                   </p>
                 </div>
               )}

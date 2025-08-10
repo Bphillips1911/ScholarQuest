@@ -404,7 +404,7 @@ export default function ParentPortal() {
                         <p className="font-medium">No messages yet</p>
                         <p className="text-sm">When teachers send messages about {scholarDetail.scholar.name}, they will appear here.</p>
                         <p className="text-xs text-blue-600 mt-2">
-                          ✓ Teachers are required to send messages with at least 150 characters
+                          ✓ Teachers can send messages of any length (minimum 10 characters)
                         </p>
                       </div>
                     </div>

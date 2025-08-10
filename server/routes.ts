@@ -1503,10 +1503,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const messageData = insertParentTeacherMessageSchema.parse(req.body);
       
-      // Validate minimum character requirement for teacher messages
-      if (messageData.senderType === 'teacher' && messageData.message.length < 150) {
+      // Allow messages of any reasonable length (minimum 10 characters for basic validation)
+      if (messageData.message.length < 10) {
         return res.status(400).json({ 
-          error: "Teacher messages must be at least 150 characters long" 
+          error: "Message must be at least 10 characters long" 
         });
       }
       

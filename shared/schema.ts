@@ -100,7 +100,7 @@ export const parentTeacherMessages = pgTable("parent_teacher_messages", {
   scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
   senderType: varchar("sender_type").notNull(), // 'parent' or 'teacher'
   subject: text("subject").notNull(),
-  message: text("message").notNull(), // Minimum 150 characters for teachers
+  message: text("message").notNull(), // Minimum 10 characters for basic validation
   isRead: boolean("is_read").default(false),
   threadId: varchar("thread_id"), // For grouping related messages
   createdAt: timestamp("created_at").defaultNow(),

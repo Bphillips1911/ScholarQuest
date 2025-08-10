@@ -19,10 +19,8 @@ export default function StudentLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      return apiRequest("/api/student/login", {
-        method: "POST",
-        body: JSON.stringify(credentials),
-      });
+      const response = await apiRequest("POST", "/api/student/login", credentials);
+      return response.json();
     },
     onSuccess: (data: any) => {
       // Store token and student info

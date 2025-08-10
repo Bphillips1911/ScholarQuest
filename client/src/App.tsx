@@ -27,6 +27,7 @@ import HouseSorting from "@/pages/house-sorting";
 import Admin from "@/pages/admin";
 import AdminSettings from "@/pages/admin-settings";
 import EmailTroubleshooting from "@/pages/email-troubleshooting";
+import QRGenerator from "@/pages/qr-generator";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -64,7 +65,8 @@ function Router() {
               <Route path="/house-sorting" component={HouseSorting} />
               <Route path="/admin" component={Admin} />
               <Route path="/admin-settings" component={AdminSettings} />
-        <Route path="/email-troubleshooting" component={EmailTroubleshooting} />
+              <Route path="/email-troubleshooting" component={EmailTroubleshooting} />
+              <Route path="/qr-generator" component={QRGenerator} />
               <Route component={NotFound} />
             </Switch>
           </main>

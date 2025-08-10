@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet, QrCode } from "lucide-react";
 import { Link } from "wouter";
 import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -187,6 +187,16 @@ export default function Admin() {
             >
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Export Excel
+            </Button>
+            <Button 
+              asChild 
+              className="bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="button-qr-generator"
+            >
+              <Link href="/qr-generator">
+                <QrCode className="mr-2 h-4 w-4" />
+                Student QR Code
+              </Link>
             </Button>
             <Button 
               onClick={handleResetPoints}

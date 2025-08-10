@@ -934,6 +934,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Student Authentication Routes
+  // Student profile route (requires authentication)
+  app.get("/api/student/profile", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as any;
+      const student = await storage.getScholar(decoded.studentId);
+      
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      res.json(student);
+    } catch (error) {
+      console.error("Student profile error:", error);
+      res.status(401).json({ message: "Invalid token" });
+    }
+  });
+
   app.post("/api/student/login", async (req, res) => {
     try {
       const { username, password } = req.body;

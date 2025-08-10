@@ -1,283 +1,322 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { LogOut, Trophy, Star, Calendar, BookOpen, Users, Award } from "lucide-react";
-import type { Scholar, House, PbisEntry } from "@shared/schema";
-import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { apiRequest } from "@/lib/queryClient";
+import { 
+  Trophy, 
+  Star, 
+  Calendar, 
+  Users, 
+  Award,
+  LogOut,
+  Home,
+  GraduationCap,
+  Target,
+  BookOpen,
+  Clock,
+  Heart
+} from "lucide-react";
+import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
 
 interface StudentData {
-  student: Scholar;
-  house: House;
-  pbisEntries: PbisEntry[];
+  id: string;
+  name: string;
+  username: string;
+}
+
+interface ScholarData {
+  id: string;
+  name: string;
+  studentId: string;
+  username: string;
+  houseId: string;
+  grade: number;
+  academicPoints: number;
+  attendancePoints: number;
+  behaviorPoints: number;
+  isHouseSorted: boolean;
+  createdAt: string;
+}
+
+interface HouseData {
+  id: string;
+  name: string;
+  colors: string[];
+  motto: string;
   totalPoints: number;
-  rank: number;
-  totalStudents: number;
+}
+
+interface PBISEntry {
+  id: string;
+  scholarId: string;
+  teacherName: string;
+  points: number;
+  reason: string;
+  mustangTrait: string;
+  category: string;
+  subcategory: string;
+  createdAt: string;
 }
 
 export default function StudentDashboard() {
-  const [studentData, setStudentData] = useState<any>(null);
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
-    const data = localStorage.getItem("student_data");
-    if (data) {
-      setStudentData(JSON.parse(data));
-    } else {
-      window.location.href = "/student-login";
+    const token = localStorage.getItem("studentToken");
+    const student = localStorage.getItem("studentData");
+    
+    if (!token || !student) {
+      setLocation("/student-login");
+      return;
     }
-  }, []);
+    
+    try {
+      setStudentData(JSON.parse(student));
+    } catch (error) {
+      console.error("Error parsing student data:", error);
+      setLocation("/student-login");
+    }
+  }, [setLocation]);
 
-  const { data: dashboardData } = useQuery<StudentData>({
-    queryKey: ["/api/student/dashboard"],
-    retry: false,
+  // Fetch scholar details with authentication
+  const { data: scholarData, isLoading: scholarLoading } = useQuery({
+    queryKey: ["/api/student/profile"],
+    enabled: !!studentData,
+    retry: 1,
+  });
+
+  // Fetch houses data
+  const { data: houses } = useQuery({
+    queryKey: ["/api/houses"],
+    enabled: !!studentData,
+  });
+
+  // Fetch PBIS entries for this student
+  const { data: pbisEntries } = useQuery({
+    queryKey: ["/api/pbis-entries", studentData?.id],
+    enabled: !!studentData?.id,
   });
 
   const handleLogout = () => {
-    localStorage.removeItem("student_token");
-    localStorage.removeItem("student_data");
-    window.location.href = "/student-login";
+    localStorage.removeItem("studentToken");
+    localStorage.removeItem("studentData");
+    setLocation("/student-login");
   };
 
-  if (!studentData || !dashboardData) {
+  if (!studentData) {
     return (
-      <section className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
-        </div>
-      </section>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
 
-  const { student, house, pbisEntries, totalPoints, rank, totalStudents } = dashboardData;
+  const scholar: ScholarData | undefined = scholarData;
+  const currentHouse = houses?.find((h: HouseData) => h.id === scholar?.houseId);
+  const recentPBIS = (pbisEntries || []).slice(0, 5);
 
-  const houseColorClass = {
-    franklin: "from-red-500 to-red-700",
-    courie: "from-blue-500 to-blue-700", 
-    west: "from-green-500 to-green-700",
-    blackwell: "from-purple-500 to-purple-700",
-    berruguete: "from-yellow-500 to-yellow-700",
-  }[house.id] || "from-gray-500 to-gray-700";
+  // Calculate total points
+  const totalPoints = (scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0);
+  const totalPBISPoints = (pbisEntries || []).reduce((sum: number, entry: PBISEntry) => sum + entry.points, 0);
 
-  const mustangTraits = [
-    "Make good choices",
-    "Use kind words", 
-    "Show school pride",
-    "Tolerant of others",
-    "Aim for excellence",
-    "Need to be responsible",
-    "Give 100% everyday"
-  ];
-
-  const traitCounts = mustangTraits.reduce((acc, trait) => {
-    acc[trait] = pbisEntries.filter(entry => entry.mustangTrait === trait).length;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const categoryPoints = {
-    academic: student.academicPoints,
-    attendance: student.attendancePoints,
-    behavior: student.behaviorPoints,
+  // MUSTANG trait definitions
+  const mustangTraits = {
+    "M": "Make good choices",
+    "U": "Use kind words", 
+    "S": "Show school pride",
+    "T": "Tolerant of others",
+    "A": "Aim for excellence",
+    "N": "Need to be responsible",
+    "G": "Give 100% everyday"
   };
 
-  const maxCategoryPoints = Math.max(...Object.values(categoryPoints));
-
   return (
-    <section className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4" data-testid="student-dashboard-section">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <Card className="bg-white/90 backdrop-blur-sm shadow-xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <img 
-                  src={schoolLogoPath} 
-                  alt="Bush Hills STEAM Academy" 
-                  className="h-12 w-auto school-logo-3d"
-                  data-testid="dashboard-school-logo"
-                />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900" data-testid="student-name">
-                    Welcome, {student.name}!
-                  </h1>
-                  <p className="text-gray-600">Grade {student.grade} • Student ID: {student.studentId}</p>
-                </div>
-              </div>
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                className="text-gray-600 hover:text-gray-800"
-                data-testid="button-logout"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* House Card */}
-        <Card className="bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden" data-testid="house-card">
-          <div className={`bg-gradient-to-r ${houseColorClass} p-6 text-white`}>
-            <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <img 
+                src={logoPath} 
+                alt="BHSA Mustangs Logo" 
+                className="w-12 h-12 object-contain"
+              />
               <div>
-                <h2 className="text-3xl font-bold" data-testid="house-name">
-                  {house.name}
-                </h2>
-                <p className="text-xl opacity-90" data-testid="house-motto">
-                  "{house.motto}"
-                </p>
-              </div>
-              <div className="text-6xl opacity-20">
-                {house.icon}
+                <h1 className="text-2xl font-bold text-gray-800">Student Portal</h1>
+                <p className="text-gray-600 text-sm">Bush Hills STEAM Academy</p>
               </div>
             </div>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="flex items-center space-x-2"
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </Button>
           </div>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900" data-testid="student-total-points">
-                  {totalPoints}
-                </div>
-                <div className="text-sm text-gray-600">Your Total Points</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900" data-testid="student-rank">
-                  #{rank}
-                </div>
-                <div className="text-sm text-gray-600">Your Rank</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900" data-testid="total-students">
-                  {totalStudents}
-                </div>
-                <div className="text-sm text-gray-600">Total Students</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Points Breakdown */}
-          <Card className="bg-white/90 backdrop-blur-sm shadow-xl" data-testid="points-breakdown-card">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Trophy className="mr-2 h-5 w-5 text-yellow-600" />
-                Points Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {Object.entries(categoryPoints).map(([category, points]) => (
-                <div key={category} className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="capitalize font-medium text-gray-700">
-                      {category === 'academic' && <BookOpen className="inline mr-1 h-4 w-4" />}
-                      {category === 'attendance' && <Calendar className="inline mr-1 h-4 w-4" />}
-                      {category === 'behavior' && <Star className="inline mr-1 h-4 w-4" />}
-                      {category}
-                    </span>
-                    <span className="font-bold text-gray-900" data-testid={`points-${category}`}>
-                      {points} pts
-                    </span>
-                  </div>
-                  <Progress 
-                    value={maxCategoryPoints > 0 ? (points / maxCategoryPoints) * 100 : 0} 
-                    className="h-2"
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* MUSTANG Traits */}
-          <Card className="bg-white/90 backdrop-blur-sm shadow-xl" data-testid="mustang-traits-card">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Award className="mr-2 h-5 w-5 text-blue-600" />
-                MUSTANG Traits Earned
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-3">
-                {mustangTraits.map((trait) => (
-                  <div key={trait} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className="font-bold text-xs">
-                        {trait[0]}
-                      </Badge>
-                      <span className="text-sm font-medium text-gray-700">
-                        {trait}
-                      </span>
-                    </div>
-                    <Badge 
-                      variant="secondary" 
-                      className="bg-blue-100 text-blue-800"
-                      data-testid={`trait-count-${trait.split(' ')[0].toLowerCase()}`}
-                    >
-                      {traitCounts[trait] || 0}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2" data-testid="welcome-message">
+            Welcome back, {studentData.name}!
+          </h2>
+          <p className="text-gray-600">
+            {scholar ? `Grade ${scholar.grade} • ${scholar.username}` : "Loading your information..."}
+          </p>
         </div>
 
-        {/* Recent PBIS Entries */}
-        <Card className="bg-white/90 backdrop-blur-sm shadow-xl" data-testid="recent-pbis-card">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="mr-2 h-5 w-5 text-green-600" />
-              Recent PBIS Recognition ({pbisEntries.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 max-h-64 overflow-y-auto">
-              {pbisEntries.length > 0 ? (
-                pbisEntries.slice(0, 10).map((entry, index) => (
-                  <div 
-                    key={entry.id} 
-                    className="flex items-center justify-between p-4 bg-green-50 rounded-lg border"
-                    data-testid={`pbis-entry-${index}`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Badge className="bg-green-600 text-white">
-                        {entry.mustangTrait[0]}
-                      </Badge>
-                      <div>
-                        <p className="font-medium text-gray-900" data-testid={`pbis-trait-${index}`}>
-                          {entry.mustangTrait}
-                        </p>
-                        <p className="text-sm text-gray-600" data-testid={`pbis-details-${index}`}>
-                          {entry.category.charAt(0).toUpperCase() + entry.category.slice(1)} • {entry.subcategory}
-                        </p>
-                        <p className="text-xs text-gray-500" data-testid={`pbis-teacher-${index}`}>
-                          Recognized by {entry.teacherName} ({entry.teacherRole})
-                        </p>
-                      </div>
+        {scholarLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your points and achievements...</p>
+          </div>
+        ) : !scholar ? (
+          <Alert className="mb-6">
+            <AlertDescription>
+              Unable to load your student information. Please contact your teacher if this persists.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {/* House Information */}
+            {currentHouse && (
+              <Card className="col-span-1 md:col-span-2 lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Home className="mr-2 h-5 w-5 text-purple-600" />
+                    Your House
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center space-y-3">
+                    <div className="text-2xl font-bold text-gray-800">{currentHouse.name}</div>
+                    <div className="text-sm text-gray-600 italic">"{currentHouse.motto}"</div>
+                    <div className="flex justify-center space-x-2">
+                      {currentHouse.colors.map((color, index) => (
+                        <div 
+                          key={index}
+                          className="w-6 h-6 rounded-full border border-gray-300"
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-green-600" data-testid={`pbis-points-${index}`}>
-                        +{entry.points}
-                      </div>
-                      <div className="text-xs text-gray-500" data-testid={`pbis-date-${index}`}>
-                        {new Date(entry.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
+                    <Badge variant="secondary" className="text-sm">
+                      <Trophy className="mr-1 h-3 w-3" />
+                      House Total: {currentHouse.totalPoints} points
+                    </Badge>
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-500 py-8" data-testid="no-pbis-message">
-                  <Award className="mx-auto h-12 w-12 text-gray-300 mb-2" />
-                  <p>No PBIS recognition yet. Keep up the great work!</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Personal Points Summary */}
+            <Card className="col-span-1 md:col-span-2 lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Target className="mr-2 h-5 w-5 text-blue-600" />
+                  Your Points Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <BookOpen className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-blue-800">{scholar.academicPoints}</div>
+                    <div className="text-sm text-blue-600">Academic</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <Clock className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-green-800">{scholar.attendancePoints}</div>
+                    <div className="text-sm text-green-600">Attendance</div>
+                  </div>
+                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                    <Heart className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-purple-800">{scholar.behaviorPoints}</div>
+                    <div className="text-sm text-purple-600">Behavior</div>
+                  </div>
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                    <Trophy className="h-6 w-6 text-yellow-600 mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-yellow-800">{totalPoints}</div>
+                    <div className="text-sm text-yellow-600">Total Points</div>
+                  </div>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+
+            {/* PBIS Recognition */}
+            <Card className="col-span-1 md:col-span-2 lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Award className="mr-2 h-5 w-5 text-green-600" />
+                  MUSTANG Traits Recognition
+                  <Badge variant="secondary" className="ml-2">{totalPBISPoints} PBIS Points</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentPBIS.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentPBIS.map((entry: PBISEntry) => (
+                      <div key={entry.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                            <Star className="h-4 w-4 text-green-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <Badge variant="outline" className="text-xs">
+                              {entry.mustangTrait} - {mustangTraits[entry.mustangTrait as keyof typeof mustangTraits]}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              +{entry.points} point{entry.points !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-800 mb-1">{entry.reason}</p>
+                          <div className="flex items-center text-xs text-gray-500 space-x-2">
+                            <span>{entry.teacherName}</span>
+                            <span>•</span>
+                            <span>{entry.category.charAt(0).toUpperCase() + entry.category.slice(1)}</span>
+                            <span>•</span>
+                            <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {(pbisEntries || []).length > 5 && (
+                      <div className="text-center pt-4">
+                        <p className="text-sm text-gray-600">
+                          Showing latest 5 recognitions out of {(pbisEntries || []).length} total
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Award className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p>No PBIS recognitions yet</p>
+                    <p className="text-sm mt-1">Keep demonstrating MUSTANG traits to earn recognition!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+          </div>
+        )}
       </div>
-    </section>
+    </div>
   );
 }

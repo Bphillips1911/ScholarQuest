@@ -15,9 +15,9 @@ export async function apiRequest(
   const headers: HeadersInit = data ? { "Content-Type": "application/json" } : {};
   
   // Add authorization header for student requests
-  const token = localStorage.getItem("student_token");
-  if (url.startsWith('/api/student/') && token) {
-    headers.Authorization = `Bearer ${token}`;
+  const studentToken = localStorage.getItem("studentToken");
+  if (url.startsWith('/api/student/') && studentToken) {
+    headers.Authorization = `Bearer ${studentToken}`;
   }
   
   const res = await fetch(url, {
@@ -41,9 +41,9 @@ export const getQueryFn: <T>(options: {
     const headers: HeadersInit = {};
     
     // Add authorization header for student requests
-    const token = localStorage.getItem("student_token");
-    if (url === '/api/student/dashboard' && token) {
-      headers.Authorization = `Bearer ${token}`;
+    const studentToken = localStorage.getItem("studentToken");
+    if (url.includes('/api/student/') && studentToken) {
+      headers.Authorization = `Bearer ${studentToken}`;
     }
     
     const res = await fetch(url, {

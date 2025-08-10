@@ -302,12 +302,17 @@ export class MemStorage implements IStorage {
     ];
 
     for (const scholarData of sampleScholars) {
+      // Generate a simple password for demo students
+      const password = "student123";
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
       const scholar: Scholar = {
         id: randomUUID(),
         name: scholarData.name,
         gradeLevel: scholarData.gradeLevel,
         studentId: scholarData.studentId,
         username: scholarData.username,
+        passwordHash: hashedPassword,
         houseId: scholarData.houseId,
         academicPoints: Math.floor(Math.random() * 50) + 10,
         attendancePoints: Math.floor(Math.random() * 30) + 5,

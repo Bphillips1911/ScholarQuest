@@ -843,8 +843,35 @@ export default function MonthlyPBIS() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              const studentData = selectedMonthData.find(s => s.scholar.id === selectedStudent);
-                              if (studentData) exportToPDF(studentData);
+                              const scholar = scholars.find(s => s.id === selectedStudent);
+                              if (!scholar) return;
+                              
+                              const entries = pbisEntries.filter(entry => {
+                                const entryDate = entry.createdAt ? new Date(entry.createdAt) : new Date();
+                                return (
+                                  entry.scholarId === selectedStudent &&
+                                  entryDate.getMonth() + 1 === selectedMonth &&
+                                  entryDate.getFullYear() === selectedYear
+                                );
+                              });
+
+                              const positivePoints = entries
+                                .filter(entry => (entry as any).entryType === "positive" || entry.points > 0)
+                                .reduce((sum, entry) => sum + Math.abs(entry.points), 0);
+
+                              const negativePoints = entries
+                                .filter(entry => (entry as any).entryType === "negative" || entry.points < 0)
+                                .reduce((sum, entry) => sum + Math.abs(entry.points), 0);
+
+                              const studentData = {
+                                scholar,
+                                entries,
+                                positivePoints,
+                                negativePoints,
+                                netPoints: positivePoints - negativePoints,
+                              };
+                              
+                              exportToPDF(studentData);
                             }}
                             className="flex items-center gap-2"
                           >
@@ -855,8 +882,35 @@ export default function MonthlyPBIS() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              const studentData = selectedMonthData.find(s => s.scholar.id === selectedStudent);
-                              if (studentData) exportToWord(studentData);
+                              const scholar = scholars.find(s => s.id === selectedStudent);
+                              if (!scholar) return;
+                              
+                              const entries = pbisEntries.filter(entry => {
+                                const entryDate = entry.createdAt ? new Date(entry.createdAt) : new Date();
+                                return (
+                                  entry.scholarId === selectedStudent &&
+                                  entryDate.getMonth() + 1 === selectedMonth &&
+                                  entryDate.getFullYear() === selectedYear
+                                );
+                              });
+
+                              const positivePoints = entries
+                                .filter(entry => (entry as any).entryType === "positive" || entry.points > 0)
+                                .reduce((sum, entry) => sum + Math.abs(entry.points), 0);
+
+                              const negativePoints = entries
+                                .filter(entry => (entry as any).entryType === "negative" || entry.points < 0)
+                                .reduce((sum, entry) => sum + Math.abs(entry.points), 0);
+
+                              const studentData = {
+                                scholar,
+                                entries,
+                                positivePoints,
+                                negativePoints,
+                                netPoints: positivePoints - negativePoints,
+                              };
+                              
+                              exportToWord(studentData);
                             }}
                             className="flex items-center gap-2"
                           >
@@ -880,6 +934,15 @@ export default function MonthlyPBIS() {
                           >
                             <FileSpreadsheet className="h-4 w-4" />
                             Excel
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePrint}
+                            className="flex items-center gap-2 col-span-2"
+                          >
+                            <Printer className="h-4 w-4" />
+                            Print Report
                           </Button>
                         </div>
                       )}
@@ -960,7 +1023,7 @@ export default function MonthlyPBIS() {
 
       {/* Hidden print component for individual students */}
       <div ref={printComponentRef} className="hidden print:block print:p-6">
-        {selectedStudent && selectedMonthData.find(s => s.scholar.id === selectedStudent) && (
+        {selectedStudent && (
           <div>
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold">Bush Hills STEAM Academy</h1>
@@ -970,8 +1033,33 @@ export default function MonthlyPBIS() {
             </div>
             
             {(() => {
-              const studentData = selectedMonthData.find(s => s.scholar.id === selectedStudent);
-              if (!studentData) return null;
+              const scholar = scholars.find(s => s.id === selectedStudent);
+              if (!scholar) return null;
+              
+              const entries = pbisEntries.filter(entry => {
+                const entryDate = entry.createdAt ? new Date(entry.createdAt) : new Date();
+                return (
+                  entry.scholarId === selectedStudent &&
+                  entryDate.getMonth() + 1 === selectedMonth &&
+                  entryDate.getFullYear() === selectedYear
+                );
+              });
+
+              const positivePoints = entries
+                .filter(entry => (entry as any).entryType === "positive" || entry.points > 0)
+                .reduce((sum, entry) => sum + Math.abs(entry.points), 0);
+
+              const negativePoints = entries
+                .filter(entry => (entry as any).entryType === "negative" || entry.points < 0)
+                .reduce((sum, entry) => sum + Math.abs(entry.points), 0);
+
+              const studentData = {
+                scholar,
+                entries,
+                positivePoints,
+                negativePoints,
+                netPoints: positivePoints - negativePoints,
+              };
               
               return (
                 <div>

@@ -606,6 +606,16 @@ export class MemStorage implements IStorage {
     return scholars;
   }
 
+  async getParentsByScholarId(scholarId: string): Promise<Parent[]> {
+    const parents: Parent[] = [];
+    for (const parent of this.parents.values()) {
+      if (parent.scholarIds && parent.scholarIds.includes(scholarId)) {
+        parents.push(parent);
+      }
+    }
+    return parents;
+  }
+
   // Teacher Authentication methods
   async createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth> {
     const hashedPassword = await bcrypt.hash(teacherData.password, 10);

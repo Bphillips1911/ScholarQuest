@@ -298,3 +298,121 @@ export async function sendPasswordResetAlert(request: {
     text
   });
 }
+
+// Parent PBIS Point Notification
+export async function sendParentPbisNotification(notificationData: {
+  parentEmail: string;
+  parentName: string;
+  studentName: string;
+  teacherName: string;
+  points: number;
+  mustangTrait: string;
+  category: string;
+  subcategory: string;
+  reason?: string;
+  entryType: 'positive' | 'negative';
+}): Promise<boolean> {
+  const isPositive = notificationData.entryType === 'positive';
+  const pointsText = isPositive ? `+${notificationData.points}` : `${notificationData.points}`;
+  const subject = `${isPositive ? '🌟 Positive' : '⚠️ Behavior'} PBIS Update - ${notificationData.studentName}`;
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="color: #1f2937;">Bush Hills STEAM Academy</h2>
+      </div>
+      
+      <h2 style="color: #1f2937; text-align: center;">
+        PBIS ${isPositive ? 'Recognition' : 'Alert'}
+      </h2>
+      
+      <div style="background-color: ${isPositive ? '#f0f9ff' : '#fef2f2'}; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${isPositive ? '#3b82f6' : '#ef4444'};">
+        <h3 style="color: ${isPositive ? '#1e40af' : '#dc2626'}; margin-top: 0;">
+          ${isPositive ? '🌟 Positive Recognition' : '⚠️ Behavior Notice'}
+        </h3>
+        <p><strong>Student:</strong> ${notificationData.studentName}</p>
+        <p><strong>Teacher:</strong> ${notificationData.teacherName}</p>
+        <p><strong>Points:</strong> <span style="font-size: 18px; font-weight: bold; color: ${isPositive ? '#059669' : '#dc2626'};">${pointsText}</span></p>
+        <p><strong>MUSTANG Trait:</strong> ${notificationData.mustangTrait}</p>
+        <p><strong>Category:</strong> ${notificationData.category}</p>
+        <p><strong>Details:</strong> ${notificationData.subcategory}</p>
+        ${notificationData.reason ? `<p><strong>Additional Notes:</strong> ${notificationData.reason}</p>` : ''}
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })}</p>
+      </div>
+      
+      ${isPositive ? `
+      <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e;">
+        <p style="margin: 0; color: #15803d;">
+          <strong>Great job!</strong> Your child is demonstrating excellent character and academic growth. Keep encouraging these positive behaviors at home!
+        </p>
+      </div>
+      ` : `
+      <div style="background-color: #fffbeb; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0; color: #92400e;">
+          <strong>Parent Support Needed:</strong> This is an opportunity to discuss expectations and work together to help your child make better choices.
+        </p>
+      </div>
+      `}
+      
+      <div style="margin-top: 30px; padding: 20px; background-color: #f9fafb; border-radius: 8px;">
+        <h4 style="color: #374151; margin-top: 0;">MUSTANG Trait Definition:</h4>
+        <p style="margin: 0; color: #6b7280; font-style: italic;">${getMustangTraitDefinition(notificationData.mustangTrait)}</p>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+        You can view your child's complete progress in the Parent Portal at any time.<br />
+        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+      </p>
+    </div>
+  `;
+  
+  const text = `
+    Bush Hills STEAM Academy - PBIS ${isPositive ? 'Recognition' : 'Alert'}
+    
+    ${isPositive ? '🌟 Positive Recognition' : '⚠️ Behavior Notice'}
+    
+    Student: ${notificationData.studentName}
+    Teacher: ${notificationData.teacherName}
+    Points: ${pointsText}
+    MUSTANG Trait: ${notificationData.mustangTrait}
+    Category: ${notificationData.category}
+    Details: ${notificationData.subcategory}
+    ${notificationData.reason ? `Additional Notes: ${notificationData.reason}` : ''}
+    Date: ${new Date().toLocaleDateString()}
+    
+    MUSTANG Trait Definition: ${getMustangTraitDefinition(notificationData.mustangTrait)}
+    
+    ${isPositive ? 
+      'Great job! Your child is demonstrating excellent character and academic growth. Keep encouraging these positive behaviors at home!' :
+      'Parent Support Needed: This is an opportunity to discuss expectations and work together to help your child make better choices.'
+    }
+    
+    You can view your child's complete progress in the Parent Portal at any time.
+  `;
+
+  return await sendEmail({
+    to: notificationData.parentEmail,
+    from: FROM_EMAIL,
+    subject,
+    html,
+    text
+  });
+}
+
+function getMustangTraitDefinition(trait: string): string {
+  const definitions = {
+    "Make good choices": "Students demonstrate good decision-making skills and think before acting.",
+    "Use kind words": "Students speak respectfully and considerately to others.",
+    "Show school pride": "Students demonstrate respect for their school community and traditions.",
+    "Tolerant of others": "Students show acceptance and respect for diversity and differences.",
+    "Aim for excellence": "Students strive to do their best work and continuously improve.",
+    "Need to be responsible": "Students take ownership of their actions and commitments.",
+    "Give 100% everyday": "Students bring their best effort and enthusiasm to all activities."
+  };
+  return definitions[trait] || trait;
+}

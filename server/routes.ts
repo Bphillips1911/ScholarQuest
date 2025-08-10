@@ -15,7 +15,8 @@ import {
   sendTeacherRegistrationAlert, 
   sendParentRegistrationAlert, 
   sendStudentRegistrationAlert, 
-  sendPasswordResetAlert 
+  sendPasswordResetAlert,
+  sendParentPbisNotification
 } from "./emailService";
 
 // Configure multer for file uploads
@@ -141,6 +142,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPbisEntrySchema.parse(req.body);
       const entry = await storage.createPbisEntry(validatedData);
+      
+      // Send parent notification after successful PBIS entry creation
+      try {
+        const scholar = await storage.getScholar(entry.scholarId);
+        if (scholar) {
+          const parents = await storage.getParentsByScholarId(entry.scholarId);
+          
+          // Send notification to all parents linked to this scholar
+          for (const parent of parents) {
+            await sendParentPbisNotification({
+              parentEmail: parent.email,
+              parentName: `${parent.firstName} ${parent.lastName}`,
+              studentName: `${scholar.firstName} ${scholar.lastName}`,
+              teacherName: entry.teacherName,
+              points: entry.points,
+              mustangTrait: entry.mustangTrait,
+              category: entry.category,
+              subcategory: entry.subcategory,
+              reason: entry.reason || undefined,
+              entryType: entry.entryType || 'positive'
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error("Failed to send parent notification:", emailError);
+        // Continue with successful response even if email fails
+      }
+      
       res.status(201).json(entry);
     } catch (error) {
       res.status(400).json({ message: "Invalid PBIS entry data" });

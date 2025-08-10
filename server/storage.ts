@@ -489,15 +489,43 @@ export class MemStorage implements IStorage {
 
   async createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry> {
     const id = randomUUID();
+    const now = new Date();
     const newEntry: PbisEntry = {
       ...entry,
       id,
       reason: entry.reason || null,
       category: entry.category || "behavior",
       subcategory: entry.subcategory || "positive_attitude",
-      createdAt: new Date(),
+      month: entry.month || now.getMonth() + 1,
+      year: entry.year || now.getFullYear(),
+      entryType: entry.entryType || "positive",
+      createdAt: now,
     };
     this.pbisEntries.set(id, newEntry);
+    
+    // Update scholar points based on category and entry type
+    const scholar = this.scholars.get(entry.scholarId);
+    if (scholar) {
+      const pointsToAdd = newEntry.entryType === "positive" ? entry.points : -entry.points;
+      switch (entry.category) {
+        case 'academic':
+          scholar.academicPoints += pointsToAdd;
+          break;
+        case 'attendance':
+          scholar.attendancePoints += pointsToAdd;
+          break;
+        case 'behavior':
+          scholar.behaviorPoints += pointsToAdd;
+          break;
+      }
+      this.scholars.set(entry.scholarId, scholar);
+      
+      // Update house points
+      if (scholar.houseId) {
+        await this.updateHousePoints(scholar.houseId, entry.category, pointsToAdd);
+      }
+    }
+    
     return newEntry;
   }
 

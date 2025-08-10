@@ -66,6 +66,9 @@ export const pbisEntries = pgTable("pbis_entries", {
   mustangTrait: text("mustang_trait").notNull(), // M-Motivated, U-Understanding, S-Safe, T-Teamwork, A-Accountable, N-Noble, G-Growth
   category: text("category").notNull(), // 'attendance', 'behavior', 'academic'
   subcategory: text("subcategory").notNull(), // Specific reason within each category
+  month: integer("month").notNull(), // 1-12 for tracking monthly data
+  year: integer("year").notNull(), // Year for tracking
+  entryType: text("entry_type").notNull().default("positive"), // 'positive' or 'negative' 
   createdAt: timestamp("created_at").defaultNow(),
 });
 

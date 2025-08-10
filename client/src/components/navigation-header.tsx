@@ -11,6 +11,7 @@ export default function NavigationHeader() {
     { path: "/", label: "Dashboard" },
     { path: "/houses", label: "Houses" },
     { path: "/pbis", label: "PBIS" },
+    { path: "/monthly-pbis", label: "Monthly Tracking" },
     { path: "/pledge", label: "House Pledge" },
     { path: "/parent-letter", label: "Parent Letter" },
     { path: "/house-sorting", label: "House Sorting" },

@@ -795,7 +795,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid token" });
       }
 
-      const teacher = await storage.getTeacherAuth(session.teacherId);
+      const teachers = await storage.getAllTeacherAuth();
+      const teacher = teachers.find(t => t.id === session.teacherId);
       if (!teacher || !teacher.isApproved) {
         return res.status(401).json({ message: "Teacher not approved" });
       }
@@ -836,7 +837,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid token" });
       }
 
-      const teacher = await storage.getTeacherAuth(session.teacherId);
+      const teachers = await storage.getAllTeacherAuth();
+      const teacher = teachers.find(t => t.id === session.teacherId);
       if (!teacher || !teacher.isApproved) {
         return res.status(401).json({ message: "Teacher not approved" });
       }
@@ -872,7 +874,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid token" });
       }
 
-      const teacher = await storage.getTeacherAuth(session.teacherId);
+      const teachers = await storage.getAllTeacherAuth();
+      const teacher = teachers.find(t => t.id === session.teacherId);
       if (!teacher || !teacher.isApproved) {
         return res.status(401).json({ message: "Teacher not approved" });
       }
@@ -1115,6 +1118,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Forgot password error:", error);
       res.status(500).json({ message: "Failed to send reset request" });
+    }
+  });
+
+  // Export individual student PBIS data by month
+  app.get("/api/export/student/:studentId", async (req, res) => {
+    try {
+      const { studentId } = req.params;
+      const { format, month, year } = req.query;
+      
+      const scholar = await storage.getScholar(studentId);
+      if (!scholar) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      const allEntries = await storage.getPbisEntriesByScholar(studentId);
+      
+      // Filter by month and year if provided
+      let filteredEntries = allEntries;
+      if (month && year) {
+        filteredEntries = allEntries.filter(entry => {
+          const entryDate = new Date(entry.createdAt);
+          return entryDate.getMonth() + 1 === parseInt(month as string) && 
+                 entryDate.getFullYear() === parseInt(year as string);
+        });
+      }
+
+      // Calculate totals - handle missing entryType field
+      const positivePoints = filteredEntries
+        .filter(entry => (entry as any).entryType === "positive" || entry.points > 0)
+        .reduce((sum, entry) => sum + Math.abs(entry.points), 0);
+      
+      const negativePoints = filteredEntries
+        .filter(entry => (entry as any).entryType === "negative" || entry.points < 0)
+        .reduce((sum, entry) => sum + Math.abs(entry.points), 0);
+
+      const netPoints = positivePoints - negativePoints;
+
+      // Prepare data for export
+      const exportData = [
+        {
+          'Student Name': scholar.name,
+          'Student ID': scholar.studentId,
+          'Grade': scholar.grade,
+          'House': scholar.houseId || 'Unassigned',
+          'Report Period': month && year ? `${month}/${year}` : 'All Time',
+          'Total Positive Points': positivePoints,
+          'Total Negative Points': negativePoints,
+          'Net Points': netPoints,
+          'Total Entries': filteredEntries.length,
+          'Generated': new Date().toLocaleDateString()
+        },
+        {}, // Empty row for separation
+        {
+          'Date': 'Date',
+          'Type': 'Type',
+          'Points': 'Points',
+          'Category': 'Category',
+          'Subcategory': 'Subcategory',
+          'MUSTANG Trait': 'MUSTANG Trait',
+          'Teacher': 'Teacher',
+          'Reason': 'Reason'
+        },
+        ...filteredEntries.map(entry => ({
+          'Date': new Date(entry.createdAt).toLocaleDateString(),
+          'Type': entry.points >= 0 ? 'Positive' : 'Negative',
+          'Points': entry.points >= 0 ? `+${entry.points}` : `${entry.points}`,
+          'Category': entry.category,
+          'Subcategory': entry.subcategory,
+          'MUSTANG Trait': entry.mustangTrait,
+          'Teacher': entry.teacherName,
+          'Reason': entry.reason || ''
+        }))
+      ];
+
+      if (format === 'csv') {
+        const csvData = stringify(exportData, { 
+          header: true,
+          columns: Object.keys(exportData[0] || {})
+        });
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${scholar.name.replace(/\s+/g, '_')}_PBIS_Report.csv"`);
+        res.send(csvData);
+        
+      } else if (format === 'excel') {
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        
+        // Set column widths
+        worksheet['!cols'] = [
+          { width: 20 }, // Student Name
+          { width: 12 }, // Student ID
+          { width: 8 },  // Grade
+          { width: 12 }, // House
+          { width: 15 }, // Report Period
+          { width: 18 }, // Total Positive Points
+          { width: 18 }, // Total Negative Points
+          { width: 12 }, // Net Points
+          { width: 15 }, // Total Entries
+          { width: 12 }  // Generated
+        ];
+        
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'PBIS Report');
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${scholar.name.replace(/\s+/g, '_')}_PBIS_Report.xlsx"`);
+        res.send(buffer);
+        
+      } else {
+        res.status(400).json({ message: 'Invalid format. Use "csv" or "excel"' });
+      }
+      
+    } catch (error) {
+      console.error('Individual student export error:', error);
+      res.status(500).json({ message: 'Failed to export student data' });
     }
   });
 

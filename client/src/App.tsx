@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Houses from "@/pages/houses";
 import HouseDetail from "@/pages/house-detail";
 import PBIS from "@/pages/pbis-enhanced";
+import MonthlyPBIS from "@/pages/monthly-pbis";
 import Pledge from "@/pages/pledge";
 import ParentLetter from "@/pages/parent-letter";
 import ParentSignup from "@/pages/parent-signup";
@@ -55,6 +56,7 @@ function Router() {
               <Route path="/houses" component={Houses} />
               <Route path="/houses/:id" component={HouseDetail} />
               <Route path="/pbis" component={PBIS} />
+              <Route path="/monthly-pbis" component={MonthlyPBIS} />
               <Route path="/pledge" component={Pledge} />
               <Route path="/parent-letter" component={ParentLetter} />
               <Route path="/house-sorting" component={HouseSorting} />

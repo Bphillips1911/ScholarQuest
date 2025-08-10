@@ -35,7 +35,7 @@ interface ScholarData {
   studentId: string;
   username: string;
   houseId: string;
-  grade: number;
+  gradeLevel: number;
   academicPoints: number;
   attendancePoints: number;
   behaviorPoints: number;
@@ -117,13 +117,13 @@ export default function StudentDashboard() {
     );
   }
 
-  const scholar: ScholarData | undefined = scholarData;
-  const currentHouse = houses?.find((h: HouseData) => h.id === scholar?.houseId);
-  const recentPBIS = (pbisEntries || []).slice(0, 5);
+  const scholar: ScholarData | undefined = scholarData as ScholarData;
+  const currentHouse = houses ? houses.find((h: HouseData) => h.id === scholar?.houseId) : undefined;
+  const recentPBIS = pbisEntries ? pbisEntries.slice(0, 5) : [];
 
   // Calculate total points
   const totalPoints = (scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0);
-  const totalPBISPoints = (pbisEntries || []).reduce((sum: number, entry: PBISEntry) => sum + entry.points, 0);
+  const totalPBISPoints = pbisEntries ? pbisEntries.reduce((sum: number, entry: PBISEntry) => sum + entry.points, 0) : 0;
 
   // MUSTANG trait definitions
   const mustangTraits = {
@@ -134,6 +134,20 @@ export default function StudentDashboard() {
     "A": "Aim for excellence",
     "N": "Need to be responsible",
     "G": "Give 100% everyday"
+  };
+
+  // Helper function to get colors for MUSTANG traits
+  const getRandomColor = (letter: string, index: number): string => {
+    const colors = [
+      "#3B82F6", // blue
+      "#10B981", // emerald
+      "#F59E0B", // amber
+      "#EF4444", // red
+      "#8B5CF6", // violet
+      "#06B6D4", // cyan
+      "#84CC16"  // lime
+    ];
+    return colors[index % colors.length];
   };
 
   return (
@@ -173,7 +187,7 @@ export default function StudentDashboard() {
             Welcome back, {studentData.name}!
           </h2>
           <p className="text-gray-600">
-            {scholar ? `Grade ${scholar.grade} • ${scholar.username}` : "Loading your information..."}
+            {scholar ? `Grade ${scholar.gradeLevel} • ${scholar.username}` : "Loading your information..."}
           </p>
         </div>
 
@@ -205,17 +219,16 @@ export default function StudentDashboard() {
                     <div className="text-2xl font-bold text-gray-800">{currentHouse.name}</div>
                     <div className="text-sm text-gray-600 italic">"{currentHouse.motto}"</div>
                     <div className="flex justify-center space-x-2">
-                      {currentHouse.colors.map((color, index) => (
+                      {currentHouse.color && (
                         <div 
-                          key={index}
                           className="w-6 h-6 rounded-full border border-gray-300"
-                          style={{ backgroundColor: color }}
+                          style={{ backgroundColor: currentHouse.color }}
                         />
-                      ))}
+                      )}
                     </div>
                     <Badge variant="secondary" className="text-sm">
                       <Trophy className="mr-1 h-3 w-3" />
-                      House Total: {currentHouse.totalPoints} points
+                      House Total: {(currentHouse.academicPoints || 0) + (currentHouse.attendancePoints || 0) + (currentHouse.behaviorPoints || 0)} points
                     </Badge>
                   </div>
                 </CardContent>
@@ -266,7 +279,7 @@ export default function StudentDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {recentPBIS.length > 0 ? (
+                {recentPBIS && recentPBIS.length > 0 ? (
                   <div className="space-y-4">
                     {recentPBIS.map((entry: PBISEntry) => (
                       <div key={entry.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
@@ -296,10 +309,10 @@ export default function StudentDashboard() {
                       </div>
                     ))}
                     
-                    {(pbisEntries || []).length > 5 && (
+                    {pbisEntries && pbisEntries.length > 5 && (
                       <div className="text-center pt-4">
                         <p className="text-sm text-gray-600">
-                          Showing latest 5 recognitions out of {(pbisEntries || []).length} total
+                          Showing latest 5 recognitions out of {pbisEntries.length} total
                         </p>
                       </div>
                     )}

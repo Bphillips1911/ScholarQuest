@@ -1496,6 +1496,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Parent-Teacher Messaging Routes
+  
+  // Create a new message
+  app.post("/api/parent-teacher-messages", async (req, res) => {
+    try {
+      const messageData = insertParentTeacherMessageSchema.parse(req.body);
+      
+      // Validate minimum character requirement for teacher messages
+      if (messageData.senderType === 'teacher' && messageData.message.length < 150) {
+        return res.status(400).json({ 
+          error: "Teacher messages must be at least 150 characters long" 
+        });
+      }
+      
+      const message = await storage.createParentTeacherMessage(messageData);
+      
+      // Send email notifications
+      const [parent, teacher, scholar] = await Promise.all([
+        storage.getParent(messageData.parentId),
+        storage.getTeacherAuthById ? storage.getTeacherAuthById(messageData.teacherId) : null,
+        storage.getScholar(messageData.scholarId)
+      ]);
+      
+      if (parent && teacher && scholar) {
+        if (messageData.senderType === 'teacher') {
+          const { sendTeacherMessageNotification } = require("./emailService");
+          await sendTeacherMessageNotification({
+            parentEmail: parent.email,
+            parentName: `${parent.firstName} ${parent.lastName}`,
+            teacherName: teacher.name,
+            studentName: scholar.name,
+            subject: messageData.subject,
+            message: messageData.message
+          });
+        } else {
+          const { sendParentReplyNotification } = require("./emailService");
+          await sendParentReplyNotification({
+            teacherEmail: teacher.email,
+            teacherName: teacher.name,
+            parentName: `${parent.firstName} ${parent.lastName}`,
+            studentName: scholar.name,
+            subject: messageData.subject,
+            message: messageData.message
+          });
+        }
+      }
+      
+      res.json(message);
+    } catch (error) {
+      console.error("Error creating message:", error);
+      res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  // Get messages for a parent
+  app.get("/api/parent-teacher-messages/parent/:parentId", async (req, res) => {
+    try {
+      const { parentId } = req.params;
+      const messages = await storage.getMessagesByParent(parentId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching parent messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // Add scholar to parent by username
+  app.post("/api/parents/:parentId/add-scholar-by-username", async (req, res) => {
+    try {
+      const { parentId } = req.params;
+      const { studentUsername } = req.body;
+      
+      if (!studentUsername) {
+        return res.status(400).json({ error: "Student username is required" });
+      }
+      
+      const scholar = await storage.addScholarToParentByUsername(parentId, studentUsername);
+      
+      if (scholar) {
+        res.json({ 
+          success: true, 
+          scholar,
+          message: `Successfully linked ${scholar.name} to your account` 
+        });
+      } else {
+        res.status(404).json({ 
+          error: "Student not found with that username" 
+        });
+      }
+    } catch (error) {
+      console.error("Error adding scholar by username:", error);
+      res.status(500).json({ error: "Failed to add scholar" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

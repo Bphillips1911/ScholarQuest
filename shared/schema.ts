@@ -93,6 +93,19 @@ export const parents = pgTable("parents", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const parentTeacherMessages = pgTable("parent_teacher_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentId: varchar("parent_id").notNull().references(() => parents.id),
+  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  senderType: varchar("sender_type").notNull(), // 'parent' or 'teacher'
+  subject: text("subject").notNull(),
+  message: text("message").notNull(), // Minimum 150 characters for teachers
+  isRead: boolean("is_read").default(false),
+  threadId: varchar("thread_id"), // For grouping related messages
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const teacherAuth = pgTable("teacher_auth", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").notNull().unique(),
@@ -289,6 +302,20 @@ export const insertPasswordResetRequestSchema = createInsertSchema(passwordReset
   createdAt: true,
   status: true,
 });
+
+export const insertParentTeacherMessageSchema = createInsertSchema(parentTeacherMessages).omit({
+  id: true,
+  isRead: true,
+  createdAt: true,
+}).extend({
+  senderType: z.enum(["parent", "teacher"]),
+  subject: z.string().min(1).max(200),
+  message: z.string().min(10).max(2000),
+  threadId: z.string().optional(),
+});
+
+export type ParentTeacherMessage = typeof parentTeacherMessages.$inferSelect;
+export type InsertParentTeacherMessage = z.infer<typeof insertParentTeacherMessageSchema>;
 
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;

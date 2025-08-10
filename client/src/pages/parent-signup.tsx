@@ -248,11 +248,12 @@ export default function ParentSignup() {
           </form>
 
           <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-200">
-            <h4 className="font-semibold text-green-800 mb-2">Parent Notification System</h4>
+            <h4 className="font-semibold text-green-800 mb-2">Parent Communication System</h4>
             <div className="text-sm text-green-700 space-y-1">
               <p>✓ <strong>Real-time alerts</strong> when your child receives PBIS points</p>
               <p>✓ <strong>Both positive and negative</strong> behavior notifications</p>
-              <p>✓ <strong>Detailed reports</strong> with teacher comments and MUSTANG traits</p>
+              <p>✓ <strong>Teacher messaging</strong> with bi-directional communication</p>
+              <p>✓ <strong>Username-based child tracking</strong> for secure access</p>
               <p>✓ <strong>24/7 access</strong> to your child's progress through the parent portal</p>
             </div>
           </div>

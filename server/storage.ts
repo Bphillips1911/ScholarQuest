@@ -148,6 +148,7 @@ export class MemStorage implements IStorage {
   private administrators: Map<string, Administrator>;
   private adminSessions: Map<string, AdminSession>;
   private parentScholars: Map<string, string[]>; // parentId -> scholarIds
+  private parentTeacherMessages: Map<string, ParentTeacherMessage>;
 
   constructor() {
     this.houses = new Map();
@@ -164,6 +165,7 @@ export class MemStorage implements IStorage {
     this.administrators = new Map();
     this.adminSessions = new Map();
     this.parentScholars = new Map();
+    this.parentTeacherMessages = new Map();
     
     // Initialize with the five houses and sample scholars and teachers
     this.initializeHouses();
@@ -616,6 +618,24 @@ export class MemStorage implements IStorage {
     return parents;
   }
 
+  async addScholarToParentByUsername(parentId: string, studentUsername: string): Promise<Scholar | null> {
+    const scholar = Array.from(this.scholars.values()).find(s => s.username === studentUsername);
+    if (!scholar) return null;
+
+    const parent = this.parents.get(parentId);
+    if (!parent) return null;
+
+    const scholarIds = parent.scholarIds || [];
+    if (!scholarIds.includes(scholar.id)) {
+      const updatedParent = {
+        ...parent,
+        scholarIds: [...scholarIds, scholar.id],
+      };
+      this.parents.set(parentId, updatedParent);
+    }
+    return scholar;
+  }
+
   // Teacher Authentication methods
   async createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth> {
     const hashedPassword = await bcrypt.hash(teacherData.password, 10);
@@ -1055,6 +1075,70 @@ export class MemStorage implements IStorage {
       const totalB = b.academicPoints + b.attendancePoints + b.behaviorPoints;
       return totalB - totalA;
     });
+  }
+
+  // Parent-Teacher Messaging
+  async createParentTeacherMessage(messageData: InsertParentTeacherMessage): Promise<ParentTeacherMessage> {
+    const message: ParentTeacherMessage = {
+      id: randomUUID(),
+      ...messageData,
+      isRead: false,
+      createdAt: new Date(),
+    };
+    
+    this.parentTeacherMessages.set(message.id, message);
+    return message;
+  }
+
+  async getMessagesByScholar(scholarId: string): Promise<ParentTeacherMessage[]> {
+    return Array.from(this.parentTeacherMessages.values())
+      .filter(message => message.scholarId === scholarId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getMessagesByParent(parentId: string): Promise<ParentTeacherMessage[]> {
+    return Array.from(this.parentTeacherMessages.values())
+      .filter(message => message.parentId === parentId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getMessagesByTeacher(teacherId: string): Promise<ParentTeacherMessage[]> {
+    return Array.from(this.parentTeacherMessages.values())
+      .filter(message => message.teacherId === teacherId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getMessagesByThread(threadId: string): Promise<ParentTeacherMessage[]> {
+    return Array.from(this.parentTeacherMessages.values())
+      .filter(message => message.threadId === threadId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()); // Chronological order for thread
+  }
+
+  async markMessageAsRead(messageId: string): Promise<boolean> {
+    const message = this.parentTeacherMessages.get(messageId);
+    if (!message) return false;
+
+    message.isRead = true;
+    this.parentTeacherMessages.set(messageId, message);
+    return true;
+  }
+
+  async getUnreadMessagesCount(userId: string, userType: 'parent' | 'teacher'): Promise<number> {
+    const messages = Array.from(this.parentTeacherMessages.values());
+    
+    if (userType === 'parent') {
+      return messages.filter(message => 
+        message.parentId === userId && 
+        !message.isRead && 
+        message.senderType === 'teacher'
+      ).length;
+    } else {
+      return messages.filter(message => 
+        message.teacherId === userId && 
+        !message.isRead && 
+        message.senderType === 'parent'
+      ).length;
+    }
   }
 }
 

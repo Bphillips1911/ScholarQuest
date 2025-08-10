@@ -75,24 +75,28 @@ export default function ParentPortal() {
   });
 
   const addScholarMutation = useMutation({
-    mutationFn: async (studentId: string) => {
-      const response = await fetch("/api/parent/add-scholar", {
+    mutationFn: async (studentUsername: string) => {
+      if (!parentData?.id) throw new Error("Parent ID not found");
+      
+      const response = await fetch(`/api/parents/${parentData.id}/add-scholar-by-username`, {
         method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ studentId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ studentUsername }),
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message);
+        throw new Error(errorData.error || "Failed to add scholar");
       }
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Scholar Added",
-        description: "Scholar has been successfully added to your account.",
+        description: data.message || "Scholar has been successfully added to your account.",
       });
       setStudentIdInput("");
       setShowAddScholar(false);
@@ -117,7 +121,7 @@ export default function ParentPortal() {
     if (!studentIdInput.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please enter a student ID.",
+        description: "Please enter a student username.",
         variant: "destructive",
       });
       return;
@@ -212,17 +216,20 @@ export default function ParentPortal() {
             <CardContent>
               {showAddScholar && (
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg" data-testid="add-scholar-form">
-                  <Label htmlFor="studentId" className="text-sm font-medium text-gray-700 mb-2">
-                    Enter Student ID
+                  <Label htmlFor="studentUsername" className="text-sm font-medium text-gray-700 mb-2">
+                    Enter Student Username
                   </Label>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Use your child's unique system-generated username (e.g., bh6001sarah)
+                  </p>
                   <div className="flex gap-2">
                     <Input
-                      id="studentId"
+                      id="studentUsername"
                       type="text"
-                      placeholder="e.g., BH6001"
+                      placeholder="e.g., bh6001sarah"
                       value={studentIdInput}
                       onChange={(e) => setStudentIdInput(e.target.value)}
-                      data-testid="input-student-id"
+                      data-testid="input-student-username"
                     />
                     <Button
                       onClick={handleAddScholar}
@@ -366,6 +373,40 @@ export default function ParentPortal() {
                           <p className="text-sm">Recognition will appear here when teachers award points.</p>
                         </div>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Teacher Messages */}
+                <Card data-testid="teacher-messages-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-gray-900 flex items-center">
+                      <MessageCircle className="mr-2 h-5 w-5 text-blue-600" />
+                      Messages from Teachers
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 className="font-medium text-blue-900 mb-2">📨 Communication Hub</h4>
+                        <p className="text-sm text-blue-700 mb-3">
+                          Teachers can send you detailed messages about {scholarDetail.scholar.name}'s progress, behavior, and achievements. 
+                          You can reply directly through this system, and teachers will receive email notifications.
+                        </p>
+                        <div className="flex items-center text-xs text-blue-600">
+                          <Clock className="h-3 w-3 mr-1" />
+                          <span>Messages will appear here when teachers send them</span>
+                        </div>
+                      </div>
+                      
+                      <div className="text-center text-gray-500 py-6">
+                        <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                        <p className="font-medium">No messages yet</p>
+                        <p className="text-sm">When teachers send messages about {scholarDetail.scholar.name}, they will appear here.</p>
+                        <p className="text-xs text-blue-600 mt-2">
+                          ✓ Teachers are required to send messages with at least 150 characters
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

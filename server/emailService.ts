@@ -416,3 +416,161 @@ function getMustangTraitDefinition(trait: string): string {
   };
   return definitions[trait] || trait;
 }
+
+// Teacher Message Notification to Parents
+export async function sendTeacherMessageNotification(messageData: {
+  parentEmail: string;
+  parentName: string;
+  teacherName: string;
+  studentName: string;
+  subject: string;
+  message: string;
+}): Promise<boolean> {
+  const subject = `📨 Message from ${messageData.teacherName} about ${messageData.studentName}`;
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="color: #1f2937;">Bush Hills STEAM Academy</h2>
+      </div>
+      
+      <h2 style="color: #1f2937; text-align: center;">
+        Teacher Message
+      </h2>
+      
+      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+        <h3 style="color: #1e40af; margin-top: 0;">📨 New Message</h3>
+        <p><strong>From:</strong> ${messageData.teacherName}</p>
+        <p><strong>About:</strong> ${messageData.studentName}</p>
+        <p><strong>Subject:</strong> ${messageData.subject}</p>
+        <div style="margin-top: 15px; padding: 15px; background-color: white; border-radius: 6px;">
+          <h4 style="margin-top: 0; color: #374151;">Message:</h4>
+          <p style="line-height: 1.6; color: #4b5563;">${messageData.message}</p>
+        </div>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })}</p>
+      </div>
+      
+      <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e;">
+        <p style="margin: 0; color: #15803d;">
+          <strong>Reply Available:</strong> You can respond to this message through the Parent Portal. Your teacher will receive an email notification when you reply.
+        </p>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+        You can view and respond to messages in the Parent Portal at any time.<br />
+        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+      </p>
+    </div>
+  `;
+  
+  const text = `
+    Bush Hills STEAM Academy - Teacher Message
+    
+    📨 New Message
+    
+    From: ${messageData.teacherName}
+    About: ${messageData.studentName}
+    Subject: ${messageData.subject}
+    
+    Message:
+    ${messageData.message}
+    
+    Date: ${new Date().toLocaleDateString()}
+    
+    Reply Available: You can respond to this message through the Parent Portal. Your teacher will receive an email notification when you reply.
+    
+    You can view and respond to messages in the Parent Portal at any time.
+  `;
+
+  return await sendEmail({
+    to: messageData.parentEmail,
+    from: FROM_EMAIL,
+    subject,
+    html,
+    text
+  });
+}
+
+// Parent Reply Notification to Teachers
+export async function sendParentReplyNotification(replyData: {
+  teacherEmail: string;
+  teacherName: string;
+  parentName: string;
+  studentName: string;
+  subject: string;
+  message: string;
+}): Promise<boolean> {
+  const subject = `💬 Parent Reply from ${replyData.parentName} about ${replyData.studentName}`;
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="color: #1f2937;">Bush Hills STEAM Academy</h2>
+      </div>
+      
+      <h2 style="color: #1f2937; text-align: center;">
+        Parent Reply
+      </h2>
+      
+      <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+        <h3 style="color: #92400e; margin-top: 0;">💬 Parent Response</h3>
+        <p><strong>From:</strong> ${replyData.parentName}</p>
+        <p><strong>About:</strong> ${replyData.studentName}</p>
+        <p><strong>Subject:</strong> ${replyData.subject}</p>
+        <div style="margin-top: 15px; padding: 15px; background-color: white; border-radius: 6px;">
+          <h4 style="margin-top: 0; color: #374151;">Message:</h4>
+          <p style="line-height: 1.6; color: #4b5563;">${replyData.message}</p>
+        </div>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })}</p>
+      </div>
+      
+      <div style="background-color: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+        <p style="margin: 0; color: #1e40af;">
+          <strong>Continue Conversation:</strong> You can reply to this message through the Teacher Portal messaging system.
+        </p>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+        You can view and manage all parent communications through the Teacher Portal.<br />
+        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+      </p>
+    </div>
+  `;
+  
+  const text = `
+    Bush Hills STEAM Academy - Parent Reply
+    
+    💬 Parent Response
+    
+    From: ${replyData.parentName}
+    About: ${replyData.studentName}
+    Subject: ${replyData.subject}
+    
+    Message:
+    ${replyData.message}
+    
+    Date: ${new Date().toLocaleDateString()}
+    
+    Continue Conversation: You can reply to this message through the Teacher Portal messaging system.
+    
+    You can view and manage all parent communications through the Teacher Portal.
+  `;
+
+  return await sendEmail({
+    to: replyData.teacherEmail,
+    from: FROM_EMAIL,
+    subject,
+    html,
+    text
+  });
+}

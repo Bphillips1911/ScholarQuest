@@ -49,7 +49,7 @@ export default function Dashboard() {
                 data-testid="hero-school-logo"
               />
               <div>
-                <h2 className="text-4xl font-bold mb-2">Welcome to House Character Development</h2>
+                <h2 className="text-4xl font-bold mb-2">Bush Hills STEAM Academy PBIS House of Champions</h2>
                 <p className="text-blue-100 font-medium">Bush Hills STEAM Academy</p>
               </div>
             </div>

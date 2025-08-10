@@ -131,6 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const entries = await storage.getPbisEntries();
       res.json(entries);
     } catch (error) {
+      console.error("PBIS API Error:", error);
       res.status(500).json({ message: "Failed to fetch PBIS entries" });
     }
   });

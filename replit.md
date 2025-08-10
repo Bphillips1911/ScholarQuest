@@ -1,6 +1,6 @@
 # Overview
 
-This is a House Character Development Program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application includes a comprehensive PBIS (Positive Behavioral Interventions and Supports) system with enhanced dropdown categories for Attendance, Behavior, and Academic recognition, individual teacher tabs for recognizing MUSTANG traits, house sorting generator for balanced student distribution, photo upload capabilities for capturing memorable moments, and displays program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride.
+This is a House Character Development Program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application includes a comprehensive PBIS (Positive Behavioral Interventions and Supports) system with enhanced dropdown categories for Attendance, Behavior, and Academic recognition, individual teacher tabs for recognizing MUSTANG traits, house sorting generator for balanced student distribution, photo upload capabilities for capturing memorable moments, and displays program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride. The system now includes comprehensive administrator authentication allowing school leadership (Principal, Assistant Principal, and Counselor) full platform access with role-based permissions.
 
 # User Preferences
 
@@ -58,11 +58,19 @@ Preferred communication style: Simple, everyday language.
 - **PBIS Photos Table**: Photo uploads for documenting MUSTANG moments with metadata
 - **Teachers Table**: Role-based teacher authentication with grade-level permissions
 - **Parents Table**: Parent portal access with QR code authentication capabilities
+- **Administrators Table**: School leadership authentication with role-based permissions (Principal, Assistant Principal, Counselor)
+- **Admin Sessions Table**: JWT session management for administrator authentication
 - **Relationships**: Foreign key constraints ensuring data integrity between tables
 
 ## Authentication and Authorization
-- **Current State**: No authentication implemented
-- **Future Consideration**: Session-based authentication anticipated based on connect-pg-simple dependency
+- **Administrator Authentication**: Full authentication system for school leadership with JWT session tokens
+  - Principal: Dr. Phillips (dr.phillips@bhsteam.edu) - Full platform access including admin settings
+  - Assistant Principal: Dr. Stewart (dr.stewart@bhsteam.edu) - Full platform access except admin settings  
+  - Counselor: Counselor Kirkland (counselor.kirkland@bhsteam.edu) - Student management and reports access
+  - Default password: BHSAAdmin2025! (should be changed after first login)
+- **Teacher Authentication**: Existing teacher authentication system with grade-level permissions
+- **Session Management**: JWT-based sessions with secure token storage and validation
+- **Role-based Permissions**: Different access levels based on administrative role
 
 ## Development Environment
 - **Hot Reload**: Vite dev server with Express middleware integration

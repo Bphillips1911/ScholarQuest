@@ -127,6 +127,27 @@ export const passwordResetRequests = pgTable("password_reset_requests", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const administrators = pgTable("administrators", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull().unique(),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
+  title: varchar("title").notNull(), // 'Principal', 'Assistant Principal', 'Counselor'
+  passwordHash: varchar("password_hash").notNull(),
+  isActive: boolean("is_active").default(true),
+  permissions: text("permissions").array().default([]), // Array of permissions: ['view_all', 'manage_teachers', 'manage_students', 'manage_houses', 'view_reports']
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
+});
+
+export const adminSessions = pgTable("admin_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  adminId: varchar("admin_id").notNull().references(() => administrators.id),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertHouseSchema = createInsertSchema(houses).omit({
   academicPoints: true,
   attendancePoints: true,
@@ -172,6 +193,53 @@ export const insertPbisEntrySchema = createInsertSchema(pbisEntries).omit({
   category: z.enum(["attendance", "behavior", "academic", "recognition", "negative_behavior"]),
   subcategory: z.string().min(1),
 });
+
+export const insertAdministratorSchema = createInsertSchema(administrators).omit({
+  id: true,
+  passwordHash: true,
+  createdAt: true,
+  lastLoginAt: true,
+}).extend({
+  email: z.string().email(),
+  password: z.string().min(8),
+  title: z.enum(["Principal", "Assistant Principal", "Counselor"]),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+});
+
+export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Type exports
+export type House = typeof houses.$inferSelect;
+export type Scholar = typeof scholars.$inferSelect;
+export type Teacher = typeof teachers.$inferSelect;
+export type PointEntry = typeof pointEntries.$inferSelect;
+export type PbisEntry = typeof pbisEntries.$inferSelect;
+export type PbisPhoto = typeof pbisPhotos.$inferSelect;
+export type Parent = typeof parents.$inferSelect;
+export type TeacherAuth = typeof teacherAuth.$inferSelect;
+export type TeacherSession = typeof teacherSessions.$inferSelect;
+export type StudentSession = typeof studentSessions.$inferSelect;
+export type PasswordResetRequest = typeof passwordResetRequests.$inferSelect;
+export type Administrator = typeof administrators.$inferSelect;
+export type AdminSession = typeof adminSessions.$inferSelect;
+
+export type InsertHouse = typeof houses.$inferInsert;
+export type InsertScholar = typeof scholars.$inferInsert;
+export type InsertTeacher = typeof teachers.$inferInsert;
+export type InsertPointEntry = typeof pointEntries.$inferInsert;
+export type InsertPbisEntry = typeof pbisEntries.$inferInsert;
+export type InsertPbisPhoto = typeof pbisPhotos.$inferInsert;
+export type InsertParent = typeof parents.$inferInsert;
+export type InsertTeacherAuth = typeof teacherAuth.$inferInsert;
+export type InsertTeacherSession = typeof teacherSessions.$inferInsert;
+export type InsertStudentSession = typeof studentSessions.$inferInsert;
+export type InsertPasswordResetRequest = typeof passwordResetRequests.$inferInsert;
+export type InsertAdministrator = typeof administrators.$inferInsert;
+export type InsertAdminSession = typeof adminSessions.$inferInsert;
 
 export const insertPbisPhotoSchema = createInsertSchema(pbisPhotos).omit({
   id: true,

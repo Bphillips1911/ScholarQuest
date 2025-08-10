@@ -10,6 +10,8 @@ import {
   type TeacherSession,
   type StudentSession,
   type PasswordResetRequest,
+  type Administrator,
+  type AdminSession,
   type InsertHouse, 
   type InsertScholar, 
   type InsertTeacher, 
@@ -21,6 +23,8 @@ import {
   type InsertTeacherSession,
   type InsertStudentSession,
   type InsertPasswordResetRequest,
+  type InsertAdministrator,
+  type InsertAdminSession,
   houses, 
   scholars, 
   teachers, 
@@ -31,7 +35,9 @@ import {
   teacherAuth,
   teacherSessions,
   studentSessions,
-  passwordResetRequests
+  passwordResetRequests,
+  administrators,
+  adminSessions
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -107,6 +113,15 @@ export interface IStorage {
   getPasswordResetRequests(teacherId: string): Promise<PasswordResetRequest[]>;
   resetStudentPassword(studentId: string, newPassword: string): Promise<boolean>;
   
+  // Administrator Authentication
+  createAdministrator(admin: InsertAdministrator): Promise<Administrator>;
+  getAdministratorByEmail(email: string): Promise<Administrator | undefined>;
+  authenticateAdmin(email: string, password: string): Promise<Administrator | null>;
+  createAdminSession(session: InsertAdminSession): Promise<AdminSession>;
+  getAdminSession(token: string): Promise<AdminSession | undefined>;
+  deleteAdminSession(token: string): Promise<boolean>;
+  getAllAdministrators(): Promise<Administrator[]>;
+  
   // House Sorting
   getUnsortedStudents(): Promise<Scholar[]>;
   addUnsortedStudent(student: InsertScholar): Promise<Scholar>;
@@ -130,6 +145,8 @@ export class MemStorage implements IStorage {
   private teacherSessions: Map<string, TeacherSession>;
   private studentSessions: Map<string, StudentSession>;
   private passwordResetRequests: Map<string, PasswordResetRequest>;
+  private administrators: Map<string, Administrator>;
+  private adminSessions: Map<string, AdminSession>;
   private parentScholars: Map<string, string[]>; // parentId -> scholarIds
 
   constructor() {
@@ -144,6 +161,8 @@ export class MemStorage implements IStorage {
     this.teacherSessions = new Map();
     this.studentSessions = new Map();
     this.passwordResetRequests = new Map();
+    this.administrators = new Map();
+    this.adminSessions = new Map();
     this.parentScholars = new Map();
     
     // Initialize with the five houses and sample scholars and teachers
@@ -156,6 +175,9 @@ export class MemStorage implements IStorage {
       this.initializeTeacherAuth().then(() => {
         console.log("Teacher auth accounts initialized");
         this.createDemoStudentCredentials();
+        return this.initializeAdministrators();
+      }).then(() => {
+        console.log("Administrator accounts initialized");
       });
     }, 100);
   }
@@ -747,13 +769,6 @@ export class MemStorage implements IStorage {
         gradeRole: "Unified Arts Teacher",
         subject: "Art",
         password: defaultPassword
-      },
-      {
-        email: "principal@bhsteam.edu",
-        name: "Dr. Phillips",
-        gradeRole: "Administrator", 
-        subject: "Administration",
-        password: defaultPassword
       }
     ];
 
@@ -772,6 +787,118 @@ export class MemStorage implements IStorage {
       };
       this.teacherAuth.set(teacher.id, teacher);
     }
+  }
+
+  // Initialize administrator accounts
+  private async initializeAdministrators() {
+    const defaultPassword = process.env.ADMIN_PASSWORD || "BHSAAdmin2025!";
+    const administrators = [
+      {
+        email: "dr.phillips@bhsteam.edu",
+        firstName: "Dr.",
+        lastName: "Phillips",
+        title: "Principal",
+        password: defaultPassword,
+        permissions: ["view_all", "manage_teachers", "manage_students", "manage_houses", "view_reports", "admin_settings"]
+      },
+      {
+        email: "dr.stewart@bhsteam.edu",
+        firstName: "Dr.",
+        lastName: "Stewart", 
+        title: "Assistant Principal",
+        password: defaultPassword,
+        permissions: ["view_all", "manage_teachers", "manage_students", "manage_houses", "view_reports"]
+      },
+      {
+        email: "counselor.kirkland@bhsteam.edu",
+        firstName: "Counselor",
+        lastName: "Kirkland",
+        title: "Counselor",
+        password: defaultPassword,
+        permissions: ["view_all", "manage_students", "view_reports"]
+      }
+    ];
+
+    for (const adminData of administrators) {
+      const hashedPassword = await bcrypt.hash(adminData.password, 10);
+      const admin: Administrator = {
+        id: randomUUID(),
+        email: adminData.email,
+        firstName: adminData.firstName,
+        lastName: adminData.lastName,
+        title: adminData.title as "Principal" | "Assistant Principal" | "Counselor",
+        passwordHash: hashedPassword,
+        isActive: true,
+        permissions: adminData.permissions,
+        createdAt: new Date(),
+      };
+      this.administrators.set(admin.id, admin);
+    }
+  }
+
+  // Administrator Authentication Methods
+  async createAdministrator(adminData: InsertAdministrator): Promise<Administrator> {
+    const hashedPassword = await bcrypt.hash(adminData.password, 10);
+    
+    const admin: Administrator = {
+      id: randomUUID(),
+      ...adminData,
+      passwordHash: hashedPassword,
+      permissions: adminData.permissions || ["view_all"],
+      createdAt: new Date(),
+    };
+    
+    this.administrators.set(admin.id, admin);
+    return admin;
+  }
+
+  async getAdministratorByEmail(email: string): Promise<Administrator | undefined> {
+    for (const admin of this.administrators.values()) {
+      if (admin.email === email) {
+        return admin;
+      }
+    }
+    return undefined;
+  }
+
+  async authenticateAdmin(email: string, password: string): Promise<Administrator | null> {
+    const admin = await this.getAdministratorByEmail(email);
+    if (!admin || !admin.isActive) {
+      return null;
+    }
+
+    const isValid = await bcrypt.compare(password, admin.passwordHash);
+    if (isValid) {
+      // Update last login time
+      admin.lastLoginAt = new Date();
+      this.administrators.set(admin.id, admin);
+      return admin;
+    }
+
+    return null;
+  }
+
+  async createAdminSession(sessionData: InsertAdminSession): Promise<AdminSession> {
+    const session: AdminSession = {
+      id: randomUUID(),
+      ...sessionData,
+      createdAt: new Date(),
+    };
+    
+    this.adminSessions.set(session.token, session);
+    return session;
+  }
+
+  async getAdminSession(token: string): Promise<AdminSession | undefined> {
+    return this.adminSessions.get(token);
+  }
+
+  async deleteAdminSession(token: string): Promise<boolean> {
+    return this.adminSessions.delete(token);
+  }
+
+  async getAllAdministrators(): Promise<Administrator[]> {
+    return Array.from(this.administrators.values());
   }
 
   async getUnsortedStudents(): Promise<Scholar[]> {

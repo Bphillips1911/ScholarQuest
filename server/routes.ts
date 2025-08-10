@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema } from "@shared/schema";
+import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -1194,6 +1194,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to export scholar data' });
     }
   });
+
+  // Administrator Authentication Routes
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      const admin = await storage.authenticateAdmin(email, password);
+      
+      if (!admin) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Generate session token
+      const token = jwt.sign(
+        { adminId: admin.id, title: admin.title },
+        process.env.JWT_SECRET || "fallback_secret",
+        { expiresIn: "24h" }
+      );
+
+      // Create session record
+      await storage.createAdminSession({
+        adminId: admin.id,
+        token,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      });
+
+      res.json({
+        message: "Login successful",
+        token,
+        admin: {
+          id: admin.id,
+          email: admin.email,
+          firstName: admin.firstName,
+          lastName: admin.lastName,
+          title: admin.title,
+          permissions: admin.permissions,
+        },
+      });
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Administrator signup route (for creating new admin accounts)
+  app.post("/api/admin/signup", async (req, res) => {
+    try {
+      const validatedData = insertAdministratorSchema.parse(req.body);
+      
+      // Check if admin already exists
+      const existingAdmin = await storage.getAdministratorByEmail(validatedData.email);
+      if (existingAdmin) {
+        return res.status(400).json({ message: "Administrator already exists with this email" });
+      }
+
+      const admin = await storage.createAdministrator(validatedData);
+      
+      res.status(201).json({
+        message: "Administrator account created successfully",
+        admin: {
+          id: admin.id,
+          email: admin.email,
+          firstName: admin.firstName,
+          lastName: admin.lastName,
+          title: admin.title,
+        },
+      });
+    } catch (error) {
+      console.error("Admin signup error:", error);
+      res.status(400).json({ message: "Invalid registration data" });
+    }
+  });
+
+  // Administrator middleware
+  const authenticateAdmin = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
+      const session = await storage.getAdminSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+      
+      const admin = await storage.getAdministratorByEmail(decoded.email);
+      if (!admin) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      req.admin = admin;
+      next();
+    } catch (error) {
+      res.status(401).json({ message: "Invalid token" });
+    }
+  };
 
   // Admin email test endpoint
   app.post("/api/admin/test-email", async (req, res) => {

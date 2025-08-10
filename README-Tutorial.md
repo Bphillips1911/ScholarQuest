@@ -1,5 +1,7 @@
 # Bush Hills STEAM Academy PBIS House of Champions - Tutorial Guide
 
+![Bush Hills STEAM Academy Mustang Logo](attached_assets/_BHSA%20Mustang%201_1754780382943.png)
+
 ## Live Demo Access
 
 The application is currently running and accessible through your Replit environment. Here's how to access and demonstrate all features:
@@ -34,6 +36,7 @@ The application is currently running and accessible through your Replit environm
 
 ### 🎬 Video Production Assets
 
+- **Official Logo**: `attached_assets/_BHSA Mustang 1_1754780382943.png` (Bush Hills STEAM Academy Mustang)
 - **Thumbnail**: `attached_assets/generated_images/PBIS_app_tutorial_thumbnail_3d985a18.png`
 - **Script**: Complete 9-minute tutorial script with timestamps
 - **Interactive Guide**: HTML tutorial guide with live demo instructions

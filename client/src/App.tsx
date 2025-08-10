@@ -28,6 +28,7 @@ import Admin from "@/pages/admin";
 import AdminSettings from "@/pages/admin-settings";
 import EmailTroubleshooting from "@/pages/email-troubleshooting";
 import QRGenerator from "@/pages/qr-generator";
+import Tutorial from "@/pages/tutorial";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -67,6 +68,7 @@ function Router() {
               <Route path="/admin-settings" component={AdminSettings} />
               <Route path="/email-troubleshooting" component={EmailTroubleshooting} />
               <Route path="/qr-generator" component={QRGenerator} />
+              <Route path="/tutorial" component={Tutorial} />
               <Route component={NotFound} />
             </Switch>
           </main>

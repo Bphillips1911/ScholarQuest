@@ -22,6 +22,7 @@ import StudentLogin from "@/pages/student-login";
 import StudentSignup from "@/pages/student-signup";
 import StudentDashboard from "@/pages/student-dashboard";
 import TeacherDashboard from "@/pages/teacher-dashboard";
+import TeacherMessages from "@/pages/teacher-messages";
 import HouseSorting from "@/pages/house-sorting";
 import Admin from "@/pages/admin";
 import AdminSettings from "@/pages/admin-settings";
@@ -46,6 +47,7 @@ function Router() {
         <Route path="/student-signup" component={StudentSignup} />
         <Route path="/student-dashboard" component={StudentDashboard} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
+        <Route path="/teacher-messages" component={TeacherMessages} />
         
         {/* Main app routes with navigation */}
         <Route>

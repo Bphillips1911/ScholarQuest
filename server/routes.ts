@@ -1562,6 +1562,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get messages for a teacher
+  app.get("/api/parent-teacher-messages/teacher/:teacherId", async (req, res) => {
+    try {
+      const { teacherId } = req.params;
+      const messages = await storage.getMessagesByTeacher(teacherId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching teacher messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // Get all parents (for teacher messaging interface)
+  app.get("/api/parents", async (req, res) => {
+    try {
+      const parents = await storage.getAllParents();
+      res.json(parents);
+    } catch (error) {
+      console.error("Error fetching parents:", error);
+      res.status(500).json({ error: "Failed to fetch parents" });
+    }
+  });
+
   // Add scholar to parent by username
   app.post("/api/parents/:parentId/add-scholar-by-username", async (req, res) => {
     try {

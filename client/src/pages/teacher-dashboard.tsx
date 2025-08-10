@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle } from "lucide-react";
 
 interface Teacher {
   id: string;
@@ -287,6 +287,15 @@ export default function TeacherDashboard() {
             >
               <Award className="h-4 w-4" />
               Award MUSTANG Points
+            </Button>
+            <Button
+              onClick={() => setLocation("/teacher-messages")}
+              variant="outline"
+              className="flex items-center gap-2"
+              data-testid="button-parent-messages"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Parent Messages
             </Button>
           </div>
         )}

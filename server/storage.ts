@@ -1173,6 +1173,35 @@ export class MemStorage implements IStorage {
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()); // Chronological order for thread
   }
 
+  async getAllParents(): Promise<Parent[]> {
+    return Array.from(this.parents.values());
+  }
+
+  async addScholarToParentByUsername(parentId: string, studentUsername: string): Promise<Scholar | null> {
+    const scholar = Array.from(this.scholars.values()).find(s => s.username === studentUsername);
+    
+    if (!scholar) {
+      return null;
+    }
+    
+    const parent = this.parents.get(parentId);
+    if (!parent) {
+      return null;
+    }
+    
+    // Add scholar ID to parent's scholarIds array
+    if (!parent.scholarIds) {
+      parent.scholarIds = [];
+    }
+    
+    if (!parent.scholarIds.includes(scholar.id)) {
+      parent.scholarIds.push(scholar.id);
+      this.parents.set(parentId, parent);
+    }
+    
+    return scholar;
+  }
+
   async markMessageAsRead(messageId: string): Promise<boolean> {
     const message = this.parentTeacherMessages.get(messageId);
     if (!message) return false;

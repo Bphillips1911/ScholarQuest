@@ -148,10 +148,13 @@ export default function AdminSignup() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="your.email@bhsteam.edu"
+                placeholder="admin@email.com or personal@email.com"
                 required
                 data-testid="input-email"
               />
+              <p className="text-xs text-gray-500">
+                You can use your school email or personal email address. You'll receive all notifications at this address.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -194,14 +197,22 @@ export default function AdminSignup() {
               />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-              data-testid="button-create-account"
-            >
-              {isLoading ? "Creating Account..." : "Create Administrator Account"}
-            </Button>
+            <div className="space-y-3">
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>Email Policy:</strong> You can use any email address (school or personal). All notifications including login alerts, system updates, and administrative communications will be sent to this address.
+                </p>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+                data-testid="button-create-account"
+              >
+                {isLoading ? "Creating Account..." : "Create Administrator Account"}
+              </Button>
+            </div>
           </form>
 
           <div className="mt-4 text-center">

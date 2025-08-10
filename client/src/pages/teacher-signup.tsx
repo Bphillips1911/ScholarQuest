@@ -130,6 +130,9 @@ export default function TeacherSignup() {
                         data-testid="input-email"
                       />
                     </FormControl>
+                    <p className="text-xs text-gray-500">
+                      You can use your school email or personal email address. You'll receive all notifications at this address.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -219,6 +222,8 @@ export default function TeacherSignup() {
               <Alert>
                 <GraduationCap className="h-4 w-4" />
                 <AlertDescription>
+                  <strong>Email Policy:</strong> You can use any email address (school or personal). All notifications including account approval, student updates, and system alerts will be sent to this address.
+                  <br /><br />
                   Your account will require approval from school administration before you can access the teacher portal.
                 </AlertDescription>
               </Alert>

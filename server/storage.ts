@@ -117,6 +117,8 @@ export interface IStorage {
   getAllTeacherAuth(): Promise<TeacherAuth[]>;
   getPendingTeachers(): Promise<TeacherAuth[]>;
   approveTeacher(teacherId: string): Promise<boolean>;
+  requestTeacherPasswordReset(email: string): Promise<boolean>;
+  resetTeacherPassword(teacherId: string, newPassword: string): Promise<boolean>;
 
   // Student Authentication  
   createStudentCredentials(scholarId: string, teacherId: string): Promise<{ username: string; password: string }>;
@@ -778,6 +780,31 @@ export class MemStorage implements IStorage {
 
   async deleteTeacherSession(token: string): Promise<boolean> {
     return this.teacherSessions.delete(token);
+  }
+
+  async requestTeacherPasswordReset(email: string): Promise<boolean> {
+    const teacher = await this.getTeacherAuthByEmail(email);
+    if (!teacher) {
+      // Return true even if teacher doesn't exist for security reasons
+      return true;
+    }
+    
+    // Mark that a password reset was requested
+    teacher.updatedAt = new Date();
+    this.teacherAuth.set(teacher.id, teacher);
+    
+    return true;
+  }
+
+  async resetTeacherPassword(teacherId: string, newPassword: string): Promise<boolean> {
+    const teacher = this.teacherAuth.get(teacherId);
+    if (!teacher) return false;
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    teacher.passwordHash = hashedPassword;
+    teacher.updatedAt = new Date();
+    this.teacherAuth.set(teacherId, teacher);
+    return true;
   }
 
   // Student Authentication methods

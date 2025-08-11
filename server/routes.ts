@@ -16,7 +16,8 @@ import {
   sendParentRegistrationAlert, 
   sendStudentRegistrationAlert, 
   sendPasswordResetAlert,
-  sendParentPbisNotification
+  sendParentPbisNotification,
+  sendTeacherPasswordResetAlert
 } from "./emailService";
 
 // Configure multer for file uploads
@@ -751,6 +752,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Teacher signup error:", error);
       res.status(400).json({ message: "Invalid registration data" });
+    }
+  });
+
+  // Teacher Password Reset Route
+  app.post("/api/teacher/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email address is required" });
+      }
+
+      // Check if teacher exists (but don't reveal if they exist or not for security)
+      const teacher = await storage.getTeacherAuthByEmail(email);
+      
+      if (teacher) {
+        // Send email notification to administrator
+        try {
+          await sendTeacherPasswordResetAlert({
+            name: teacher.name,
+            email: teacher.email,
+            gradeRole: teacher.gradeRole,
+          });
+        } catch (emailError) {
+          console.error("Failed to send teacher password reset email:", emailError);
+          // Continue with request even if email fails
+        }
+      }
+
+      // Always return success for security reasons
+      res.json({ 
+        message: "If your email address is registered, you will receive password reset instructions shortly." 
+      });
+    } catch (error) {
+      console.error("Teacher password reset error:", error);
+      res.status(500).json({ message: "Unable to process password reset request" });
     }
   });
 

@@ -108,6 +108,14 @@ export default function TeacherLogin() {
               {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
+
+          <div className="text-center pt-4">
+            <Link href="/teacher-forgot-password">
+              <Button variant="link" className="text-sm text-blue-600 p-0" data-testid="link-forgot-password">
+                Forgot your password?
+              </Button>
+            </Link>
+          </div>
           
           <div className="text-center pt-4 border-t">
             <p className="text-sm text-gray-600 mb-3">

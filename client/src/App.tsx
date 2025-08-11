@@ -16,6 +16,7 @@ import ParentLogin from "@/pages/parent-login";
 import ParentPortal from "@/pages/parent-portal";
 import TeacherLogin from "@/pages/teacher-login";
 import TeacherSignup from "@/pages/teacher-signup";
+import TeacherForgotPassword from "@/pages/teacher-forgot-password";
 import AdminLogin from "@/pages/admin-login";
 import AdminSignup from "@/pages/admin-signup";
 import StudentLogin from "@/pages/student-login";
@@ -43,6 +44,7 @@ function Router() {
         {/* Authentication routes without navigation */}
         <Route path="/teacher-login" component={TeacherLogin} />
         <Route path="/teacher-signup" component={TeacherSignup} />
+        <Route path="/teacher-forgot-password" component={TeacherForgotPassword} />
         <Route path="/admin-login" component={AdminLogin} />
         <Route path="/admin-signup" component={AdminSignup} />
         <Route path="/student-login" component={StudentLogin} />

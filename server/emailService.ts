@@ -299,6 +299,59 @@ export async function sendPasswordResetAlert(request: {
   });
 }
 
+// Teacher Password Reset Alert
+export async function sendTeacherPasswordResetAlert(teacher: {
+  name: string;
+  email: string;
+  gradeRole: string;
+}): Promise<boolean> {
+  const subject = `Teacher Password Reset Request - ${teacher.name}`;
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #1f2937;">Bush Hills STEAM Academy - Teacher Password Reset Request</h2>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="color: #374151; margin-top: 0;">Reset Request Details</h3>
+        <p><strong>Teacher:</strong> ${teacher.name}</p>
+        <p><strong>Email:</strong> ${teacher.email}</p>
+        <p><strong>Role:</strong> ${teacher.gradeRole}</p>
+        <p><strong>Requested:</strong> ${new Date().toLocaleString()}</p>
+      </div>
+      
+      <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0; color: #92400e;">
+          <strong>Action Required:</strong> A teacher has requested a password reset. Please contact them directly to assist with password recovery or provide them with new login credentials.
+        </p>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+      </p>
+    </div>
+  `;
+  
+  const text = `
+    Bush Hills STEAM Academy - Teacher Password Reset Request
+    
+    Reset Request Details:
+    Teacher: ${teacher.name}
+    Email: ${teacher.email}
+    Role: ${teacher.gradeRole}
+    Requested: ${new Date().toLocaleString()}
+    
+    Action Required: A teacher has requested a password reset. Please contact them directly to assist with password recovery.
+  `;
+
+  return await sendEmail({
+    to: ADMIN_EMAIL,
+    from: FROM_EMAIL,
+    subject,
+    html,
+    text
+  });
+}
+
 // Parent PBIS Point Notification
 export async function sendParentPbisNotification(notificationData: {
   parentEmail: string;

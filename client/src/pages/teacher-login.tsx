@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLocation, Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus } from "lucide-react";
+import { UserPlus, QrCode } from "lucide-react";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function TeacherLogin() {
@@ -122,9 +122,16 @@ export default function TeacherLogin() {
               New to Bush Hills STEAM Academy?
             </p>
             <Link href="/teacher-signup">
-              <Button variant="outline" className="w-full mb-4" data-testid="button-signup-link">
+              <Button variant="outline" className="w-full mb-3" data-testid="button-signup-link">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Sign Up for Teacher Account
+              </Button>
+            </Link>
+            
+            <Link href="/teacher-qr-access">
+              <Button variant="outline" className="w-full mb-4" data-testid="button-qr-access">
+                <QrCode className="mr-2 h-4 w-4" />
+                Generate QR Codes for Easy Access
               </Button>
             </Link>
           </div>

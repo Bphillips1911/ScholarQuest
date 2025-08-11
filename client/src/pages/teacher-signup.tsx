@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertTeacherAuthSchema, type TeacherSignup } from "@shared/schema";
 import { Link } from "wouter";
-import { UserPlus, GraduationCap, CheckCircle } from "lucide-react";
+import { UserPlus, GraduationCap, CheckCircle, ArrowLeft, QrCode } from "lucide-react";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function TeacherSignup() {
@@ -237,10 +237,19 @@ export default function TeacherSignup() {
                 {signupMutation.isPending ? "Creating Account..." : "Create Teacher Account"}
               </Button>
 
-              <div className="text-center text-sm text-gray-600">
-                Already have an account?{" "}
-                <Link href="/teacher-login" className="text-blue-600 hover:underline">
-                  Sign in here
+              <div className="text-center space-y-3">
+                <div className="text-sm text-gray-600">
+                  Already have an account?{" "}
+                  <Link href="/teacher-login" className="text-blue-600 hover:underline">
+                    Sign in here
+                  </Link>
+                </div>
+                
+                <Link href="/teacher-qr-access">
+                  <Button variant="outline" className="w-full" data-testid="button-qr-access">
+                    <QrCode className="mr-2 h-4 w-4" />
+                    Generate QR Codes for Easy Access
+                  </Button>
                 </Link>
               </div>
             </form>

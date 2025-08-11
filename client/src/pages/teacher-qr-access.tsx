@@ -17,33 +17,49 @@ export default function TeacherQRAccess() {
       // Get current domain/host
       const baseUrl = window.location.origin;
       
-      // Generate QR codes for both login and signup
-      const [loginResponse, signupResponse] = await Promise.all([
-        fetch("/api/qr/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: `${baseUrl}/teacher-login`,
-            filename: "teacher-login-qr"
-          })
-        }),
-        fetch("/api/qr/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: `${baseUrl}/teacher-signup`,
-            filename: "teacher-signup-qr"
-          })
+      // Generate QR codes for both login and signup using separate calls
+      const loginResponse = await fetch("/api/qr/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: `${baseUrl}/teacher-login`,
+          filename: "teacher-login-qr"
         })
-      ]);
+      });
 
-      const [loginData, signupData] = await Promise.all([
-        loginResponse.json(),
-        signupResponse.json()
-      ]);
+      console.log("Login response status:", loginResponse.status);
+      console.log("Login response headers:", loginResponse.headers.get('content-type'));
 
+      if (!loginResponse.ok) {
+        const errorText = await loginResponse.text();
+        console.error("Login QR error:", errorText);
+        throw new Error(`Login QR failed: ${loginResponse.status}`);
+      }
+
+      const loginData = await loginResponse.json();
       if (loginData.qrCode) setLoginQR(loginData.qrCode);
+
+      // Generate signup QR
+      const signupResponse = await fetch("/api/qr/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: `${baseUrl}/teacher-signup`,
+          filename: "teacher-signup-qr"
+        })
+      });
+
+      console.log("Signup response status:", signupResponse.status);
+      
+      if (!signupResponse.ok) {
+        const errorText = await signupResponse.text();
+        console.error("Signup QR error:", errorText);
+        throw new Error(`Signup QR failed: ${signupResponse.status}`);
+      }
+
+      const signupData = await signupResponse.json();
       if (signupData.qrCode) setSignupQR(signupData.qrCode);
+
     } catch (error) {
       console.error("Failed to generate QR codes:", error);
     } finally {

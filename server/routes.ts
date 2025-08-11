@@ -288,6 +288,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // General QR Code Generation API
+  app.post("/api/qr/generate", async (req, res) => {
+    try {
+      const { text, filename } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ message: "Text parameter is required" });
+      }
+      
+      const qrCodeImage = await QRCode.toDataURL(text, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      res.json({ 
+        qrCode: qrCodeImage, 
+        url: text,
+        filename: filename || 'qr-code'
+      });
+    } catch (error) {
+      console.error("QR generation error:", error);
+      res.status(500).json({ message: "Failed to generate QR code" });
+    }
+  });
+
   // Parent registration
   app.post("/api/parent/register", async (req, res) => {
     try {

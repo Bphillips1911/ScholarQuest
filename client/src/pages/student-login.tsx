@@ -19,10 +19,19 @@ export default function StudentLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      const response = await apiRequest("POST", "/api/student/login", credentials);
-      return response.json();
+      console.log("Attempting login with:", credentials.username);
+      try {
+        const response = await apiRequest("POST", "/api/student/login", credentials);
+        const data = await response.json();
+        console.log("Login response:", data);
+        return data;
+      } catch (error) {
+        console.error("Login API error:", error);
+        throw error;
+      }
     },
     onSuccess: (data: any) => {
+      console.log("Login successful:", data);
       // Store token and student info
       localStorage.setItem("studentToken", data.token);
       localStorage.setItem("studentData", JSON.stringify(data.student));
@@ -36,6 +45,7 @@ export default function StudentLogin() {
       setLocation("/student-dashboard");
     },
     onError: (error: any) => {
+      console.error("Login mutation error:", error);
       toast({
         title: "Login Failed",
         description: error.message || "Please check your username and password.",

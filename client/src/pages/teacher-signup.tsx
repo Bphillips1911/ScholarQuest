@@ -33,7 +33,7 @@ export default function TeacherSignup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: InsertTeacherAuth) => {
-      return await apiRequest("/api/teacher/signup", "POST", data);
+      return await apiRequest("POST", "/api/teacher/signup", data);
     },
     onSuccess: () => {
       setIsSubmitted(true);

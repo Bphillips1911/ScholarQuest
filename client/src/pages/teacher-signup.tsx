@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { insertTeacherAuthSchema, type InsertTeacherAuth } from "@shared/schema";
+import { insertTeacherAuthSchema, type TeacherSignup } from "@shared/schema";
 import { Link } from "wouter";
 import { UserPlus, GraduationCap, CheckCircle } from "lucide-react";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -20,19 +20,19 @@ export default function TeacherSignup() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<InsertTeacherAuth>({
+  const form = useForm<TeacherSignup>({
     resolver: zodResolver(insertTeacherAuthSchema),
     defaultValues: {
       email: "",
       name: "",
       subject: "",
-      gradeRole: "6th Grade",
+      gradeRole: "6th Grade" as const,
       password: "",
     },
   });
 
   const signupMutation = useMutation({
-    mutationFn: async (data: InsertTeacherAuth) => {
+    mutationFn: async (data: TeacherSignup) => {
       return await apiRequest("POST", "/api/teacher/signup", data);
     },
     onSuccess: () => {
@@ -51,7 +51,7 @@ export default function TeacherSignup() {
     },
   });
 
-  const onSubmit = (data: InsertTeacherAuth) => {
+  const onSubmit = (data: TeacherSignup) => {
     signupMutation.mutate(data);
   };
 

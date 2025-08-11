@@ -287,6 +287,8 @@ export const insertTeacherAuthSchema = createInsertSchema(teacherAuth).omit({
   subject: z.string().optional(),
 });
 
+export type TeacherSignup = z.infer<typeof insertTeacherAuthSchema>;
+
 export const insertTeacherSessionSchema = createInsertSchema(teacherSessions).omit({
   id: true,
   createdAt: true,

@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { House } from "@shared/schema";
+import falconIcon from "@assets/generated_images/Falcon_house_icon_9b9ebc40.png";
 
 interface HouseCardProps {
   house: House;
@@ -47,9 +48,18 @@ export default function HouseCard({ house }: HouseCardProps) {
       <div className={`bg-gradient-to-br ${houseGradientClass} p-6 text-white`}>
         <div className="flex items-center justify-between mb-4">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="house-icon-3d text-white" data-testid={`icon-house-${house.id}`}>
-              {house.icon}
-            </span>
+            {house.id === "courie" && house.icon === "falcon" ? (
+              <img 
+                src={falconIcon} 
+                alt="Falcon" 
+                className="w-12 h-12 object-contain filter brightness-0 invert" 
+                data-testid={`icon-house-${house.id}`}
+              />
+            ) : (
+              <span className="house-icon-3d text-white" data-testid={`icon-house-${house.id}`}>
+                {house.icon}
+              </span>
+            )}
           </div>
           <span className="text-2xl font-bold" data-testid={`text-total-points-${house.id}`}>
             {totalPoints.toLocaleString()}

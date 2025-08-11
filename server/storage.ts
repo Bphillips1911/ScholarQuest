@@ -217,7 +217,7 @@ export class MemStorage implements IStorage {
         id: "courie",
         name: "House of Courie",
         color: "#7C3AED",
-        icon: "star",
+        icon: "falcon",
         motto: "Courage • Determination • Excellence",
         academicPoints: 0,
         attendancePoints: 0,

@@ -47,6 +47,27 @@ export default function Admin() {
     }
   }, [setLocation]);
 
+  // Fetch data hooks - must be called before any early returns
+  const { data: houses } = useQuery<House[]>({
+    queryKey: ["/api/houses"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: pointEntries } = useQuery<PointEntry[]>({
+    queryKey: ["/api/points"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
+    queryKey: ["/api/admin/teachers/pending"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: allScholars } = useQuery<Scholar[]>({
+    queryKey: ["/api/scholars"],
+    enabled: isAuthenticated,
+  });
+
   // Show loading while checking authentication
   if (!isAuthenticated) {
     return <div className="min-h-screen flex items-center justify-center">
@@ -68,22 +89,6 @@ export default function Admin() {
     });
     setLocation("/admin-login");
   };
-
-  const { data: houses } = useQuery<House[]>({
-    queryKey: ["/api/houses"],
-  });
-
-  const { data: pointEntries } = useQuery<PointEntry[]>({
-    queryKey: ["/api/points"],
-  });
-
-  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
-    queryKey: ["/api/admin/teachers/pending"],
-  });
-
-  const { data: allScholars } = useQuery<Scholar[]>({
-    queryKey: ["/api/scholars"],
-  });
 
   const addScholarMutation = useMutation({
     mutationFn: async (data: InsertScholar) => {

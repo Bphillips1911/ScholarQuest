@@ -55,8 +55,7 @@ function Router() {
         <Route path="/student-dashboard" component={StudentDashboard} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
-        <Route path="/admin" component={AdminTest} />
-        <Route path="/admin-full" component={Admin} />
+        <Route path="/admin" component={Admin} />
         <Route path="/admin-settings" component={AdminSettings} />
         
         {/* Main app routes with navigation */}

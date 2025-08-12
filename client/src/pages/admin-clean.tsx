@@ -346,7 +346,7 @@ export default function AdminClean() {
                             {teacher.gradeRole} • {teacher.subject}
                           </p>
                           <p className="text-xs text-gray-400">
-                            Applied: {new Date(teacher.createdAt).toLocaleDateString()}
+                            Applied: {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'N/A'}
                           </p>
                         </div>
                         <Button

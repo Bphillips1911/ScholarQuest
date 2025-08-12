@@ -38,8 +38,12 @@ export default function AdminLogin() {
           description: `Welcome back, ${data.admin.firstName} ${data.admin.lastName}!`,
         });
         
-        // Redirect to admin dashboard
-        setLocation("/admin");
+        // Force redirect to admin dashboard with a delay to ensure localStorage is set
+        setTimeout(() => {
+          console.log("Redirecting to /admin...");
+          setLocation("/admin");
+          window.location.href = "/admin";
+        }, 100);
       } else {
         const error = await response.json();
         toast({

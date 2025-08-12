@@ -18,7 +18,6 @@ export default function NavigationHeader() {
     { path: "/house-sorting", label: "House Sorting" },
     { path: "/teacher-login", label: "Teacher Portal" },
     { path: "/admin-login", label: "Admin Login" },
-    { path: "/admin", label: "Admin" },
   ];
 
   const isActive = (path: string) => {

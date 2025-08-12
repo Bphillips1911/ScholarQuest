@@ -178,7 +178,7 @@ export default function AdminClean() {
                     style={{ backgroundColor: house.color }}
                   ></div>
                   <h3 className="font-semibold">{house.name.replace("House of ", "")}</h3>
-                  <p className="text-2xl font-bold text-blue-600">{house.totalPoints}</p>
+                  <p className="text-2xl font-bold text-blue-600">{house.academicPoints + house.attendancePoints + house.behaviorPoints}</p>
                   <p className="text-sm text-gray-600">points</p>
                 </div>
               ))}

@@ -202,7 +202,7 @@ export default function AdminClean() {
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => setLocation("/house-sorting")}
+                onClick={() => setLocation("/admin-sorting")}
                 className="h-20 flex flex-col items-center justify-center"
               >
                 <GraduationCap className="h-6 w-6 mb-2" />
@@ -210,7 +210,7 @@ export default function AdminClean() {
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => setLocation("/pbis-enhanced")}
+                onClick={() => setLocation("/admin-pbis")}
                 className="h-20 flex flex-col items-center justify-center"
               >
                 <Award className="h-6 w-6 mb-2" />

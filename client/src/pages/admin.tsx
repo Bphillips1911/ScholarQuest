@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,18 +24,44 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Check if admin is logged in
-  const adminToken = localStorage.getItem("adminToken");
-  const adminData = localStorage.getItem("adminData") ? JSON.parse(localStorage.getItem("adminData") || "{}") : null;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminData, setAdminData] = useState<any>(null);
 
-  // Redirect if not authenticated
-  if (!adminToken || !adminData) {
-    setLocation("/admin-login");
-    return null;
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    const data = localStorage.getItem("adminData");
+    
+    if (token && data) {
+      try {
+        const parsedData = JSON.parse(data);
+        setAdminData(parsedData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // Invalid data, redirect to login
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminData");
+        setLocation("/admin-login");
+      }
+    } else {
+      setLocation("/admin-login");
+    }
+  }, [setLocation]);
+
+  // Show loading while checking authentication
+  if (!isAuthenticated) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading admin dashboard...</p>
+      </div>
+    </div>;
   }
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminData");
+    setIsAuthenticated(false);
+    setAdminData(null);
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",

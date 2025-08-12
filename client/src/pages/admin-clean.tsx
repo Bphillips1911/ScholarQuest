@@ -160,6 +160,8 @@ export default function AdminClean() {
                 <p className="text-sm text-gray-600">
                   Welcome, {adminData?.firstName} {adminData?.lastName} ({adminData?.title})
                 </p>
+                {/* Debug info */}
+                <p className="text-xs text-blue-600">Active Tab: {activeTab}</p>
               </div>
             </div>
             <Button 
@@ -257,7 +259,10 @@ export default function AdminClean() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Button 
-                onClick={() => setActiveTab("students")}
+                onClick={() => {
+                  console.log("Setting activeTab to students");
+                  setActiveTab("students");
+                }}
                 className="h-20 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Users className="h-6 w-6 mb-2" />
@@ -294,7 +299,7 @@ export default function AdminClean() {
 
       {/* Student Management Modal/Tab */}
       {activeTab === "students" && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Manage Students</h2>

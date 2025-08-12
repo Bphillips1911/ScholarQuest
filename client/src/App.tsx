@@ -54,6 +54,8 @@ function Router() {
         <Route path="/student-dashboard" component={StudentDashboard} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/admin-settings" component={AdminSettings} />
         
         {/* Main app routes with navigation */}
         <Route>
@@ -68,8 +70,6 @@ function Router() {
               <Route path="/pledge" component={Pledge} />
               <Route path="/parent-letter" component={ParentLetter} />
               <Route path="/house-sorting" component={HouseSorting} />
-              <Route path="/admin" component={Admin} />
-              <Route path="/admin-settings" component={AdminSettings} />
               <Route path="/email-troubleshooting" component={EmailTroubleshooting} />
               <Route path="/qr-generator" component={QRGenerator} />
               <Route path="/tutorial" component={Tutorial} />

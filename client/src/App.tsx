@@ -28,6 +28,7 @@ import TeacherMessages from "@/pages/teacher-messages";
 import HouseSorting from "@/pages/house-sorting";
 import Admin from "@/pages/admin";
 import AdminSettings from "@/pages/admin-settings";
+import AdminTest from "@/pages/admin-test";
 import EmailTroubleshooting from "@/pages/email-troubleshooting";
 import QRGenerator from "@/pages/qr-generator";
 import Tutorial from "@/pages/tutorial";
@@ -54,7 +55,8 @@ function Router() {
         <Route path="/student-dashboard" component={StudentDashboard} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
-        <Route path="/admin" component={Admin} />
+        <Route path="/admin" component={AdminTest} />
+        <Route path="/admin-full" component={Admin} />
         <Route path="/admin-settings" component={AdminSettings} />
         
         {/* Main app routes with navigation */}

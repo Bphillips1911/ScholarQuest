@@ -56,16 +56,16 @@ export default function AdminClean() {
     enabled: isAuthenticated,
   });
 
-  // Add scholar mutation
+  // Add scholar mutation with auto-generated username
   const addScholarMutation = useMutation({
     mutationFn: async (data: InsertScholar) => {
-      const response = await apiRequest("POST", "/api/scholars", data);
+      const response = await apiRequest("POST", "/api/admin/scholars", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Scholar Added",
-        description: "New scholar has been successfully added to the house.",
+        title: "Student Added Successfully",
+        description: `Username auto-generated: ${data.generatedUsername}`,
       });
       setNewStudentName("");
       setNewStudentId("");
@@ -76,7 +76,7 @@ export default function AdminClean() {
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to add scholar. Please try again.",
+        description: "Failed to add student. Please try again.",
         variant: "destructive",
       });
     },
@@ -319,6 +319,9 @@ export default function AdminClean() {
                   <UserPlus className="h-5 w-5" />
                   Add New Student
                 </CardTitle>
+                <p className="text-sm text-gray-600 mt-2">
+                  ✨ Usernames are automatically generated from student name and ID
+                </p>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAddScholar} className="space-y-4">
@@ -360,13 +363,18 @@ export default function AdminClean() {
                       </Select>
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full md:w-auto"
-                    disabled={addScholarMutation.isPending}
-                  >
-                    {addScholarMutation.isPending ? "Adding..." : "Add Student"}
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button 
+                      type="submit" 
+                      className="w-full md:w-auto"
+                      disabled={addScholarMutation.isPending}
+                    >
+                      {addScholarMutation.isPending ? "Adding Student..." : "Add Student (Auto-Generate Username)"}
+                    </Button>
+                    <p className="text-xs text-gray-500">
+                      System will create a unique username like "johsmi123" from John Smith + Student ID
+                    </p>
+                  </div>
                 </form>
               </CardContent>
             </Card>

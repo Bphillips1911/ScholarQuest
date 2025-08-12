@@ -95,6 +95,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new scholar with auto-generated username (for admin use)
+  app.post("/api/admin/scholars", async (req, res) => {
+    try {
+      // Ensure username field is cleared to trigger auto-generation
+      const scholarData = {
+        ...req.body,
+        username: undefined // Force username generation
+      };
+      
+      const validatedData = insertScholarSchema.parse(scholarData);
+      const scholar = await storage.createScholar(validatedData);
+      
+      res.status(201).json({
+        message: "Student created successfully with auto-generated username",
+        scholar: scholar,
+        generatedUsername: scholar.username
+      });
+    } catch (error) {
+      console.error("Admin scholar creation error:", error);
+      res.status(400).json({ message: "Invalid scholar data" });
+    }
+  });
+
   // Add points
   app.post("/api/points", async (req, res) => {
     try {

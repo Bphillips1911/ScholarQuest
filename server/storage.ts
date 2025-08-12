@@ -45,6 +45,32 @@ import jwt from "jsonwebtoken";
 import { eq, desc, sql } from "drizzle-orm";
 import { db } from "./db";
 
+// Username generation utility for students
+function generateStudentUsername(firstName: string, lastName: string, studentId: string): string {
+  // Clean and format the names
+  const cleanFirst = firstName.toLowerCase().replace(/[^a-z]/g, '').substring(0, 3);
+  const cleanLast = lastName.toLowerCase().replace(/[^a-z]/g, '').substring(0, 3);
+  const idSuffix = studentId.replace(/[^0-9]/g, '').substring(-3); // Last 3 digits of student ID
+  
+  // Format: firstlast123 (e.g., johsmi789 for John Smith with ID ending in 789)
+  return `${cleanFirst}${cleanLast}${idSuffix}`;
+}
+
+// Function to ensure username uniqueness
+async function generateUniqueUsername(firstName: string, lastName: string, studentId: string): Promise<string> {
+  let baseUsername = generateStudentUsername(firstName, lastName, studentId);
+  let username = baseUsername;
+  let counter = 1;
+  
+  // Check if username exists and add number suffix if needed
+  while (await db.select().from(scholars).where(eq(scholars.username, username)).then(result => result.length > 0)) {
+    username = `${baseUsername}${counter}`;
+    counter++;
+  }
+  
+  return username;
+}
+
 export interface IStorage {
   // Houses
   getHouses(): Promise<House[]>;
@@ -433,9 +459,20 @@ export class MemStorage implements IStorage {
 
   async createScholar(scholar: InsertScholar): Promise<Scholar> {
     const id = randomUUID();
+    
+    // Generate unique username if not provided
+    let username = scholar.username;
+    if (!username && scholar.name && scholar.studentId) {
+      const nameParts = scholar.name.split(' ');
+      const firstName = nameParts[0] || 'student';
+      const lastName = nameParts[1] || 'user';
+      username = await generateUniqueUsername(firstName, lastName, scholar.studentId);
+    }
+    
     const newScholar: Scholar = {
       ...scholar,
       id,
+      username,
       academicPoints: 0,
       attendancePoints: 0,
       behaviorPoints: 0,

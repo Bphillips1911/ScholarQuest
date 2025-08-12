@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, User, Shield, Users, GraduationCap, Award, UserPlus, Eye, Download, QrCode, Settings, FileText, Calendar, Key, Clock, CheckCircle } from "lucide-react";
+import { LogOut, User, Shield, Users, GraduationCap, Award, UserPlus, Eye, Download, QrCode, Settings, FileText, Calendar, Key, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import type { House, Scholar, InsertScholar, TeacherAuth } from "@shared/schema";
@@ -319,13 +319,64 @@ export default function AdminClean() {
               </CardContent>
             </Card>
 
-            {/* Debug Info */}
-            <Card className="border border-blue-200 bg-blue-50 mb-4">
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-2">Debug Information:</h3>
-                <p className="text-sm">Authenticated: {isAuthenticated ? 'YES' : 'NO'}</p>
-                <p className="text-sm">Pending Teachers Data: {pendingTeachers ? JSON.stringify(pendingTeachers) : 'null'}</p>
-                <p className="text-sm">Pending Teachers Count: {pendingTeachers?.length || 0}</p>
+            {/* Always Show Teacher Approval Section for Testing */}
+            <Card className="border border-amber-200 bg-amber-50 mb-8">
+              <CardHeader>
+                <CardTitle className="text-xl font-bold text-amber-900 flex items-center">
+                  <AlertTriangle className="mr-2 h-5 w-5" />
+                  Teacher Registration Approvals
+                </CardTitle>
+                <CardDescription>
+                  Review and approve teacher registration requests
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-600 mb-4">
+                    <p>Debug Info:</p>
+                    <p>• Authenticated: {isAuthenticated ? 'YES' : 'NO'}</p>
+                    <p>• Pending Teachers: {pendingTeachers?.length || 0}</p>
+                    <p>• Data: {JSON.stringify(pendingTeachers)}</p>
+                  </div>
+                  
+                  {pendingTeachers && pendingTeachers.length > 0 ? (
+                    pendingTeachers.map((teacher) => (
+                      <div 
+                        key={teacher.id} 
+                        className="flex items-center justify-between p-4 bg-white rounded-lg border"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">
+                            {teacher.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {teacher.email}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {teacher.gradeRole} • {teacher.subject}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Applied: {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => approveTeacherMutation.mutate(teacher.id)}
+                          disabled={approveTeacherMutation.isPending}
+                          className="bg-green-600 text-white hover:bg-green-700"
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          {approveTeacherMutation.isPending ? "Approving..." : "Approve"}
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <AlertTriangle className="mx-auto h-8 w-8 mb-2" />
+                      <p>No pending teacher registrations</p>
+                      <p className="text-sm">Teachers can register at /teacher-signup</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 

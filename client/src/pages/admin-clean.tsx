@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, User, Shield, Users, GraduationCap, Award, UserPlus, Eye, Download, QrCode, Settings, FileText, Calendar, Key } from "lucide-react";
+import { LogOut, User, Shield, Users, GraduationCap, Award, UserPlus, Eye, Download, QrCode, Settings, FileText, Calendar, Key, Clock, CheckCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
-import type { House, Scholar, InsertScholar } from "@shared/schema";
+import type { House, Scholar, InsertScholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function AdminClean() {
@@ -57,6 +57,12 @@ export default function AdminClean() {
     enabled: isAuthenticated,
   });
 
+  // Pending teachers query
+  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
+    queryKey: ["/api/admin/teachers/pending"],
+    enabled: isAuthenticated,
+  });
+
   // Add scholar mutation with auto-generated username
   const addScholarMutation = useMutation({
     mutationFn: async (data: InsertScholar) => {
@@ -78,6 +84,28 @@ export default function AdminClean() {
       toast({
         title: "Error",
         description: "Failed to add student. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Teacher approval mutation
+  const approveTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      const response = await apiRequest("POST", `/api/admin/teachers/${teacherId}/approve`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Teacher Approved",
+        description: "Teacher account has been approved successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
+    },
+    onError: () => {
+      toast({
+        title: "Approval Failed",
+        description: "Failed to approve teacher. Please try again.",
         variant: "destructive",
       });
     },
@@ -290,6 +318,51 @@ export default function AdminClean() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Teacher Approval Section */}
+            {pendingTeachers && pendingTeachers.length > 0 && (
+              <Card className="border border-amber-200 bg-amber-50 mb-8">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-amber-900 flex items-center">
+                    <Clock className="mr-2 h-5 w-5" />
+                    Pending Teacher Approvals ({pendingTeachers.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {pendingTeachers.map((teacher) => (
+                      <div 
+                        key={teacher.id} 
+                        className="flex items-center justify-between p-4 bg-white rounded-lg border"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">
+                            {teacher.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {teacher.email}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {teacher.gradeRole} • {teacher.subject}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Applied: {new Date(teacher.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => approveTeacherMutation.mutate(teacher.id)}
+                          disabled={approveTeacherMutation.isPending}
+                          className="bg-green-600 text-white hover:bg-green-700"
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          {approveTeacherMutation.isPending ? "Approving..." : "Approve"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="students" className="mt-6">

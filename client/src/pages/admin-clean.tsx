@@ -319,6 +319,16 @@ export default function AdminClean() {
               </CardContent>
             </Card>
 
+            {/* Debug Info */}
+            <Card className="border border-blue-200 bg-blue-50 mb-4">
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">Debug Information:</h3>
+                <p className="text-sm">Authenticated: {isAuthenticated ? 'YES' : 'NO'}</p>
+                <p className="text-sm">Pending Teachers Data: {pendingTeachers ? JSON.stringify(pendingTeachers) : 'null'}</p>
+                <p className="text-sm">Pending Teachers Count: {pendingTeachers?.length || 0}</p>
+              </CardContent>
+            </Card>
+
             {/* Teacher Approval Section */}
             {pendingTeachers && pendingTeachers.length > 0 && (
               <Card className="border border-amber-200 bg-amber-50 mb-8">

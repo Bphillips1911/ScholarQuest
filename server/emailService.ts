@@ -103,7 +103,7 @@ export async function sendTeacherRegistrationAlert(teacher: {
       </div>
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
       </p>
     </div>
   `;
@@ -156,7 +156,7 @@ export async function sendParentRegistrationAlert(parent: {
       </div>
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
       </p>
     </div>
   `;
@@ -214,7 +214,7 @@ export async function sendStudentRegistrationAlert(student: {
       </div>
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
       </p>
     </div>
   `;
@@ -272,7 +272,7 @@ export async function sendPasswordResetAlert(request: {
       </div>
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
       </p>
     </div>
   `;
@@ -326,7 +326,7 @@ export async function sendTeacherPasswordResetAlert(teacher: {
       </div>
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
       </p>
     </div>
   `;
@@ -419,7 +419,7 @@ export async function sendParentPbisNotification(notificationData: {
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
         You can view your child's complete progress in the Parent Portal at any time.<br />
-        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
       </p>
     </div>
   `;
@@ -516,7 +516,7 @@ export async function sendTeacherMessageNotification(messageData: {
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
         You can view and respond to messages in the Parent Portal at any time.<br />
-        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
       </p>
     </div>
   `;
@@ -595,7 +595,7 @@ export async function sendParentReplyNotification(replyData: {
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
         You can view and manage all parent communications through the Teacher Portal.<br />
-        This is an automated notification from the Bush Hills STEAM Academy House Character Development Program.
+        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
       </p>
     </div>
   `;

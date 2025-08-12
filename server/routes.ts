@@ -1595,7 +1595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <hr style="margin: 20px 0; border: 1px solid #e5e7eb;">
             <p style="color: #059669; font-weight: bold;">✅ If you received this email, your notification system is properly configured!</p>
             <p style="color: #6b7280; font-size: 12px;">
-              This email was sent from the Bush Hills STEAM Academy House Character Development Program.
+              This email was sent from the Bush Hills STEAM Academy PBIS House of Champions.
             </p>
           </div>
         `,

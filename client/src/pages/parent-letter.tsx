@@ -57,7 +57,7 @@ export default function ParentLetter() {
               Bush Hills STEAM Academy
             </CardTitle>
             <p className="text-lg text-gray-600">
-              House Character Development Program - Parent Portal
+              PBIS House of Champions - Parent Portal
             </p>
           </CardHeader>
           

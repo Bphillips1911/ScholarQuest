@@ -1,8 +1,14 @@
 # Overview
 
-This is a House Character Development Program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application includes a comprehensive PBIS (Positive Behavioral Interventions and Supports) system with enhanced dropdown categories for Attendance, Behavior, and Academic recognition, individual teacher tabs for recognizing MUSTANG traits, house sorting generator for balanced student distribution, photo upload capabilities for capturing memorable moments, and displays program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride. The system now includes comprehensive administrator authentication allowing school leadership (Principal, Assistant Principal, and Counselor) full platform access with role-based permissions.
+This is a PBIS House of Champions program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application includes a comprehensive PBIS (Positive Behavioral Interventions and Supports) system with enhanced dropdown categories for Attendance, Behavior, and Academic recognition, individual teacher tabs for recognizing MUSTANG traits, house sorting generator for balanced student distribution, photo upload capabilities for capturing memorable moments, and displays program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride. The system now includes comprehensive administrator authentication allowing school leadership (Principal, Assistant Principal, and Counselor) full platform access with role-based permissions.
 
-## Latest Enhancement: Admin Authentication System Fully Working
+## Latest Updates
+### Program Title Updated (January 12, 2025)
+- Changed program name from "House Character Development Program" to "PBIS House of Champions"
+- Updated all email templates and notifications to use new program title
+- Maintained consistent branding across teacher and admin interfaces
+
+### Admin Authentication System Fully Working
 The administrator authentication system is now completely operational:
 - Admin login and routing issues resolved (January 12, 2025)
 - Authentication properly redirects to dedicated admin dashboard

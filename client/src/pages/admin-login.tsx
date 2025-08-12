@@ -80,7 +80,7 @@ export default function AdminLogin() {
           </CardTitle>
           <CardDescription>
             Bush Hills STEAM Academy<br />
-            House Character Development Program
+            PBIS House of Champions
           </CardDescription>
         </CardHeader>
         <CardContent>

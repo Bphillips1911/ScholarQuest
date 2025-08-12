@@ -142,7 +142,7 @@ export default function StudentSignup() {
           <CardTitle className="text-2xl font-bold text-gray-900" data-testid="student-signup-title">
             Student Registration
           </CardTitle>
-          <p className="text-gray-600">Join the House Character Development Program</p>
+          <p className="text-gray-600">Join the PBIS House of Champions</p>
         </CardHeader>
 
         <CardContent className="space-y-6">

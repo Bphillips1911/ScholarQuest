@@ -3,6 +3,14 @@
 This is a PBIS House of Champions program web application for Bush Hills STEAM Academy middle school. The system manages a house points system where students are assigned to one of five houses (Franklin, Courie, West, Blackwell, and Berruguete) and earn points in three categories: academic excellence, attendance, and behavior. The application includes a comprehensive PBIS (Positive Behavioral Interventions and Supports) system with enhanced dropdown categories for Attendance, Behavior, and Academic recognition, individual teacher tabs for recognizing MUSTANG traits, house sorting generator for balanced student distribution, photo upload capabilities for capturing memorable moments, and displays program information to parents. The app features the official BHSA Mustangs Crest logo to show school connection and pride. The system now includes comprehensive administrator authentication allowing school leadership (Principal, Assistant Principal, and Counselor) full platform access with role-based permissions.
 
 ## Latest Updates
+### Automatic Username Generation System Complete (January 12, 2025)
+- Implemented automatic username generation for admin-created students
+- Username format: first3chars + last3chars + studentID digits (e.g., "emijoh025" for Emily Johnson BH7025)
+- New API endpoint /api/admin/scholars with auto-generation functionality
+- Enhanced admin interface with clear messaging about username creation
+- System generates unique usernames to prevent conflicts
+- Successfully tested and confirmed working end-to-end
+
 ### Program Title Updated (January 12, 2025)
 - Changed program name from "House Character Development Program" to "PBIS House of Champions"
 - Updated all email templates and notifications to use new program title
@@ -68,7 +76,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Database Schema Design
 - **Houses Table**: Stores house information, colors, mottos, and point totals
-- **Scholars Table**: Student records linked to houses with individual point tracking, house sorting status, unique system-generated usernames
+- **Scholars Table**: Student records linked to houses with individual point tracking, house sorting status, automatic system-generated usernames (format: first3+last3+IDdigits)
 - **Point Entries Table**: Audit trail for all point awards with reasons and timestamps
 - **PBIS Entries Table**: Enhanced records for MUSTANG trait recognition with categories (attendance, behavior, academic) and subcategories
 - **PBIS Photos Table**: Photo uploads for documenting MUSTANG moments with metadata

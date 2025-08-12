@@ -31,6 +31,7 @@ import AdminClean from "@/pages/admin-clean";
 import AdminSettings from "@/pages/admin-settings";
 import EmailTroubleshooting from "@/pages/email-troubleshooting";
 import QRGenerator from "@/pages/qr-generator";
+import AdminQR from "@/pages/admin-qr";
 import Tutorial from "@/pages/tutorial";
 import NotFound from "@/pages/not-found";
 
@@ -60,6 +61,7 @@ function Router() {
         <Route path="/admin-settings" component={AdminSettings} />
         <Route path="/admin-pbis" component={PBIS} />
         <Route path="/admin-sorting" component={HouseSorting} />
+        <Route path="/admin-qr" component={AdminQR} />
         
         {/* Main app routes with navigation */}
         <Route>

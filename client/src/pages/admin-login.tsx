@@ -38,8 +38,8 @@ export default function AdminLogin() {
           description: `Welcome back, ${data.admin.firstName} ${data.admin.lastName}!`,
         });
         
-        // Redirect to main dashboard with admin access
-        setLocation("/");
+        // Redirect to admin dashboard
+        setLocation("/admin");
       } else {
         const error = await response.json();
         toast({

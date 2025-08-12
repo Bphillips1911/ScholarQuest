@@ -1492,6 +1492,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const admin = await storage.createAdministrator(validatedData);
       
+      // Send email notification to the new administrator
+      try {
+        const { sendAdminRegistrationConfirmation } = require("./emailService");
+        await sendAdminRegistrationConfirmation({
+          firstName: admin.firstName,
+          lastName: admin.lastName,
+          email: admin.email,
+          title: admin.title,
+        });
+      } catch (emailError) {
+        console.error("Failed to send admin registration email:", emailError);
+        // Continue with registration even if email fails
+      }
+      
       res.status(201).json({
         message: "Administrator account created successfully",
         admin: {

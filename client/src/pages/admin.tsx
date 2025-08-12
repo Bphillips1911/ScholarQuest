@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet, QrCode } from "lucide-react";
-import { Link } from "wouter";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet, QrCode, LogOut, User } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
@@ -20,7 +20,28 @@ export default function Admin() {
   const [newStudentId, setNewStudentId] = useState("");
   const [newStudentHouse, setNewStudentHouse] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Check if admin is logged in
+  const adminToken = localStorage.getItem("adminToken");
+  const adminData = localStorage.getItem("adminData") ? JSON.parse(localStorage.getItem("adminData") || "{}") : null;
+
+  // Redirect if not authenticated
+  if (!adminToken || !adminData) {
+    setLocation("/admin-login");
+    return null;
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminData");
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+    setLocation("/admin-login");
+  };
 
   const { data: houses } = useQuery<House[]>({
     queryKey: ["/api/houses"],
@@ -151,10 +172,19 @@ export default function Admin() {
             />
             <div>
               <h2 className="text-3xl font-bold text-gray-900" data-testid="admin-title">Administration Portal</h2>
-              <p className="text-gray-600">Dr. Phillips - Principal • Dr. Stewart - Assistant Principal</p>
+              <p className="text-gray-600">Welcome, {adminData?.firstName} {adminData?.lastName} ({adminData?.title})</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 justify-start lg:justify-end">
+            <Button 
+              onClick={handleLogout}
+              variant="outline"
+              className="flex items-center gap-2"
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
             <Link href="/admin-settings">
               <Button 
                 className="bg-gray-600 text-white hover:bg-gray-700"

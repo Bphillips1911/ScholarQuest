@@ -2,15 +2,23 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, User, Shield, Users, GraduationCap, Award } from "lucide-react";
+import { LogOut, User, Shield, Users, GraduationCap, Award, UserPlus, Eye } from "lucide-react";
 import { useLocation } from "wouter";
-import type { House, Scholar } from "@shared/schema";
+import type { House, Scholar, InsertScholar } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function AdminClean() {
   const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [newStudentName, setNewStudentName] = useState("");
+  const [newStudentId, setNewStudentId] = useState("");
+  const [newStudentHouse, setNewStudentHouse] = useState("");
   const { toast } = useToast();
   
   // Authentication state
@@ -48,6 +56,32 @@ export default function AdminClean() {
     enabled: isAuthenticated,
   });
 
+  // Add scholar mutation
+  const addScholarMutation = useMutation({
+    mutationFn: async (data: InsertScholar) => {
+      const response = await apiRequest("POST", "/api/scholars", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Scholar Added",
+        description: "New scholar has been successfully added to the house.",
+      });
+      setNewStudentName("");
+      setNewStudentId("");
+      setNewStudentHouse("");
+      queryClient.invalidateQueries({ queryKey: ["/api/houses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/scholars"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add scholar. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminData");
@@ -58,6 +92,35 @@ export default function AdminClean() {
       description: "You have been successfully logged out.",
     });
     setLocation("/admin-login");
+  };
+
+  const handleAddScholar = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newStudentName || !newStudentId) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in student name and ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Auto-assign to house with least members if no house selected
+    let houseId = newStudentHouse;
+    if ((!houseId || houseId === "auto") && houses) {
+      const leastPopulatedHouse = houses.reduce((min, house) => 
+        house.memberCount < min.memberCount ? house : min
+      );
+      houseId = leastPopulatedHouse.id;
+    }
+
+    addScholarMutation.mutate({
+      name: newStudentName,
+      studentId: newStudentId,
+      houseId,
+      grade: 6, // Default grade
+    });
   };
 
   // Show loading while checking authentication
@@ -194,7 +257,7 @@ export default function AdminClean() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Button 
-                onClick={() => setLocation("/admin-full")}
+                onClick={() => setActiveTab("students")}
                 className="h-20 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Users className="h-6 w-6 mb-2" />
@@ -228,6 +291,135 @@ export default function AdminClean() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Student Management Modal/Tab */}
+      {activeTab === "students" && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Manage Students</h2>
+              <Button
+                variant="outline"
+                onClick={() => setActiveTab("dashboard")}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                Close
+              </Button>
+            </div>
+
+            {/* Add New Student Form */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  Add New Student
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddScholar} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="studentName">Student Name</Label>
+                      <Input
+                        id="studentName"
+                        value={newStudentName}
+                        onChange={(e) => setNewStudentName(e.target.value)}
+                        placeholder="Enter student name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="studentId">Student ID</Label>
+                      <Input
+                        id="studentId"
+                        value={newStudentId}
+                        onChange={(e) => setNewStudentId(e.target.value)}
+                        placeholder="Enter student ID"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="house">House Assignment</Label>
+                      <Select value={newStudentHouse} onValueChange={setNewStudentHouse}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Auto-assign to least populated" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto-assign (recommended)</SelectItem>
+                          {houses?.map((house) => (
+                            <SelectItem key={house.id} value={house.id}>
+                              {house.name.replace("House of ", "")} ({house.memberCount} members)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full md:w-auto"
+                    disabled={addScholarMutation.isPending}
+                  >
+                    {addScholarMutation.isPending ? "Adding..." : "Add Student"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Current Students List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  Current Students ({allScholars?.length || 0})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {allScholars && allScholars.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Name</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Student ID</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">House</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Username</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Total Points</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allScholars.map((scholar) => {
+                          const house = houses?.find(h => h.id === scholar.houseId);
+                          const totalPoints = (scholar.academicPoints || 0) + (scholar.attendancePoints || 0) + (scholar.behaviorPoints || 0);
+                          return (
+                            <tr key={scholar.id} className="hover:bg-gray-50">
+                              <td className="border border-gray-300 px-4 py-2">{scholar.name}</td>
+                              <td className="border border-gray-300 px-4 py-2">{scholar.studentId}</td>
+                              <td className="border border-gray-300 px-4 py-2">
+                                <Badge style={{ backgroundColor: house?.color || '#gray' }}>
+                                  {house?.name.replace("House of ", "") || "Unknown"}
+                                </Badge>
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2 font-mono text-sm">
+                                {scholar.username}
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2 font-bold">
+                                {totalPoints}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No students registered yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

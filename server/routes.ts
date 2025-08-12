@@ -1494,13 +1494,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send email notification to the new administrator
       try {
-        const { sendAdminRegistrationConfirmation } = require("./emailService");
-        await sendAdminRegistrationConfirmation({
-          firstName: admin.firstName,
-          lastName: admin.lastName,
-          email: admin.email,
-          title: admin.title,
+        const { sendEmail } = await import("./emailService");
+        await sendEmail({
+          to: admin.email,
+          from: 'BHSAHouses25@gmail.com',
+          subject: 'Administrator Account Created - Bush Hills STEAM Academy',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">Administrator Account Created Successfully</h2>
+              <p>Dear ${admin.firstName} ${admin.lastName},</p>
+              
+              <p>Your administrator account has been successfully created for the Bush Hills STEAM Academy Character Development Program.</p>
+              
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin: 0 0 10px 0;">Account Details:</h3>
+                <p><strong>Name:</strong> ${admin.firstName} ${admin.lastName}</p>
+                <p><strong>Role:</strong> ${admin.title}</p>
+                <p><strong>Email:</strong> ${admin.email}</p>
+                <p><strong>Login Portal:</strong> <a href="${process.env.FRONTEND_URL || 'http://localhost:5000'}/admin-login">Administrator Login</a></p>
+              </div>
+              
+              <p>You can now log in to access the administrator portal.</p>
+              
+              <p style="color: #666; font-size: 12px; margin-top: 40px;">
+                Bush Hills STEAM Academy<br>
+                Character Development Program<br>
+                ${new Date().toLocaleDateString()}
+              </p>
+            </div>
+          `,
         });
+        console.log(`Admin registration email sent to ${admin.email}`);
       } catch (emailError) {
         console.error("Failed to send admin registration email:", emailError);
         // Continue with registration even if email fails

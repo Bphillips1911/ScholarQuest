@@ -1045,6 +1045,7 @@ export class MemStorage implements IStorage {
       id: randomUUID(),
       ...adminData,
       passwordHash: hashedPassword,
+      isActive: true,
       permissions: adminData.permissions || ["view_all"],
       createdAt: new Date(),
     };

@@ -194,32 +194,35 @@ export default function AdminClean() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Button 
-                onClick={() => setLocation("/admin-settings")}
-                className="h-20 flex flex-col items-center justify-center"
-              >
-                <Shield className="h-6 w-6 mb-2" />
-                Settings
-              </Button>
-              <Button 
-                variant="outline"
-                className="h-20 flex flex-col items-center justify-center"
+                onClick={() => setLocation("/admin-full")}
+                className="h-20 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Users className="h-6 w-6 mb-2" />
                 Manage Students
               </Button>
               <Button 
                 variant="outline"
+                onClick={() => setLocation("/house-sorting")}
                 className="h-20 flex flex-col items-center justify-center"
               >
                 <GraduationCap className="h-6 w-6 mb-2" />
-                Teacher Portal
+                House Sorting
               </Button>
               <Button 
                 variant="outline"
+                onClick={() => setLocation("/pbis-enhanced")}
                 className="h-20 flex flex-col items-center justify-center"
               >
                 <Award className="h-6 w-6 mb-2" />
-                Reports
+                PBIS Awards
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setLocation("/admin-settings")}
+                className="h-20 flex flex-col items-center justify-center"
+              >
+                <Shield className="h-6 w-6 mb-2" />
+                Settings
               </Button>
             </div>
           </CardContent>

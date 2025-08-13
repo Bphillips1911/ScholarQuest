@@ -1692,19 +1692,26 @@ class PersistentMemStorage extends MemStorage {
       }
 
       // Load scholars (with error handling for missing columns)
-      const dbScholars = await db.select().from(scholars).catch(() => []);
-      for (const scholar of dbScholars) {
-        // Ensure all fields have default values if missing from database
-        const completeScholar = {
-          ...scholar,
-          isActive: scholar.isActive ?? true,
-          deactivatedAt: scholar.deactivatedAt ?? null,
-          deactivatedBy: scholar.deactivatedBy ?? null,
-          deactivationReason: scholar.deactivationReason ?? null,
-          isHouseSorted: scholar.isHouseSorted ?? false,
-          sortingNumber: scholar.sortingNumber ?? null,
-        };
-        this.scholars.set(scholar.id, completeScholar);
+      try {
+        const dbScholars = await db.select().from(scholars);
+        console.log(`Raw scholars from database:`, dbScholars.length);
+        for (const scholar of dbScholars) {
+          // Ensure all fields have default values if missing from database
+          const completeScholar = {
+            ...scholar,
+            isActive: scholar.isActive ?? true,
+            deactivatedAt: scholar.deactivatedAt ?? null,
+            deactivatedBy: scholar.deactivatedBy ?? null,
+            deactivationReason: scholar.deactivationReason ?? null,
+            isHouseSorted: scholar.isHouseSorted ?? true,
+            sortingNumber: scholar.sortingNumber ?? null,
+          };
+          this.scholars.set(scholar.id, completeScholar);
+          console.log(`Loaded scholar: ${scholar.name} (${scholar.studentId})`);
+        }
+        console.log(`Successfully loaded ${dbScholars.length} scholars from database`);
+      } catch (error) {
+        console.error("Error loading scholars from database:", error);
       }
 
       // Load parents
@@ -1876,23 +1883,19 @@ class PersistentMemStorage extends MemStorage {
         academicPoints: newScholar.academicPoints,
         attendancePoints: newScholar.attendancePoints,
         behaviorPoints: newScholar.behaviorPoints,
-        isActive: newScholar.isActive,
         isHouseSorted: newScholar.isHouseSorted,
         sortingNumber: newScholar.sortingNumber,
         addedByTeacher: newScholar.addedByTeacher,
-        deactivatedAt: newScholar.deactivatedAt,
-        deactivatedBy: newScholar.deactivatedBy,
-        deactivationReason: newScholar.deactivationReason,
         createdAt: newScholar.createdAt,
       }).onConflictDoUpdate({
         target: scholars.id,
         set: {
-          isActive: newScholar.isActive,
           academicPoints: newScholar.academicPoints,
           attendancePoints: newScholar.attendancePoints,
           behaviorPoints: newScholar.behaviorPoints,
         }
       });
+      console.log(`Successfully synced scholar ${newScholar.name} to database`);
     } catch (error) {
       console.error("Failed to sync scholar to database:", error);
     }

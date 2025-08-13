@@ -137,13 +137,12 @@ export default function TeacherLogin() {
           </div>
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-semibold text-blue-900 mb-2">Demo Accounts</h4>
+            <h4 className="font-semibold text-blue-900 mb-2">Teacher Login Credentials</h4>
             <div className="text-sm text-blue-700 space-y-1">
-              <p><strong>6th Grade Teacher:</strong> s.johnson@bhsteam.edu</p>
-              <p><strong>Unified Arts Teacher:</strong> r.miller@bhsteam.edu</p>
-              <p><strong>Administrator:</strong> principal@bhsteam.edu</p>
-              <p><strong>School Counselor:</strong> counselor@bhsteam.edu</p>
-              <p><strong>Password for all:</strong> password123</p>
+              <p><strong>Sarah Johnson (6th Grade):</strong> sarah.johnson@bhsteam.edu</p>
+              <p><strong>Jennifer Adams (6th Grade):</strong> jennifer.adams@bhsteam.edu</p>
+              <p><strong>Michael Davis (7th Grade):</strong> michael.davis@bhsteam.edu</p>
+              <p><strong>Password for all teachers:</strong> BHSATeacher2025!</p>
             </div>
           </div>
         </CardContent>

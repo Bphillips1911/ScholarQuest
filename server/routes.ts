@@ -866,29 +866,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/teacher/login", async (req, res) => {
+    console.log("=== TEACHER LOGIN ENDPOINT HIT ===");
     try {
       const { email, password } = req.body;
-      console.log("Login attempt for:", email);
+      console.log("LOGIN ATTEMPT - Email:", email, "Password length:", password?.length);
       
       if (!email || !password) {
+        console.log("Missing email or password");
         return res.status(400).json({ message: "Email and password required" });
       }
 
       const teacher = await storage.getTeacherAuthByEmail(email);
-      console.log("Found teacher:", teacher ? `yes (${teacher.name}, approved: ${teacher.isApproved})` : "no");
+      console.log("TEACHER LOOKUP RESULT:", teacher ? `Found: ${teacher.name} (approved: ${teacher.isApproved})` : "NOT FOUND");
       
       if (!teacher) {
+        console.log("Teacher not found, returning invalid credentials");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       if (!teacher.isApproved) {
+        console.log("Teacher not approved");
         return res.status(401).json({ message: "Account pending approval" });
       }
 
       const isValidPassword = await bcrypt.compare(password, teacher.passwordHash);
-      console.log("Password valid:", isValidPassword, "Hash:", teacher.passwordHash.substring(0, 10) + "...");
+      console.log("PASSWORD CHECK:", isValidPassword, "Expected hash starts with:", teacher.passwordHash.substring(0, 15));
       
       if (!isValidPassword) {
+        console.log("Password invalid, returning error");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 

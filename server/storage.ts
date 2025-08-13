@@ -744,7 +744,19 @@ export class MemStorage implements IStorage {
       isVerified: false,
       createdAt: new Date(),
     };
+    
+    // Store in memory
     this.parents.set(id, newParent);
+    
+    // Persist to database immediately
+    try {
+      await db.insert(parents).values(newParent);
+      console.log(`PARENT PERSISTENCE: Successfully saved parent ${newParent.firstName} ${newParent.lastName} to database`);
+    } catch (error) {
+      console.error("Failed to persist parent to database:", error);
+      // Continue with in-memory storage even if database fails
+    }
+    
     return newParent;
   }
 
@@ -775,8 +787,15 @@ export class MemStorage implements IStorage {
   
   private async syncParentToDatabase(parent: Parent): Promise<void> {
     try {
-      // This would sync to the database - placeholder for now
-      console.log("STORAGE: Would sync parent to database:", parent.firstName, parent.lastName);
+      // Update parent in database
+      await db.update(parents)
+        .set({ 
+          scholarIds: parent.scholarIds,
+          phone: parent.phone,
+          isVerified: parent.isVerified,
+        })
+        .where(eq(parents.id, parent.id));
+      console.log("STORAGE: Successfully synced parent to database:", parent.firstName, parent.lastName);
     } catch (error) {
       console.error("STORAGE: Failed to sync parent to database:", error);
     }
@@ -1908,7 +1927,9 @@ class PersistentMemStorage extends MemStorage {
 
       // Load parents
       const dbParents = await db.select().from(parents).catch(() => []);
+      console.log(`Loading ${dbParents.length} parents from database`);
       for (const parent of dbParents) {
+        console.log(`Loading parent: ${parent.firstName} ${parent.lastName} (${parent.email})`);
         this.parents.set(parent.id, parent);
       }
 

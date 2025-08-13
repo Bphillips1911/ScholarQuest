@@ -1661,8 +1661,268 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use MemStorage for now since DatabaseStorage is incomplete
-export const storage = new MemStorage();
+// Enhanced MemStorage with database persistence
+class PersistentMemStorage extends MemStorage {
+  constructor() {
+    super();
+    this.initializeFromDatabase();
+  }
+
+  private async initializeFromDatabase() {
+    try {
+      // Load data from database on startup
+      await this.loadDataFromDatabase();
+    } catch (error) {
+      console.error("Failed to load data from database:", error);
+    }
+  }
+
+  private async loadDataFromDatabase() {
+    try {
+      // Load teachers
+      const dbTeachers = await db.select().from(teacherAuth).catch(() => []);
+      for (const teacher of dbTeachers) {
+        this.teacherAuth.set(teacher.id, teacher);
+      }
+
+      // Load administrators
+      const dbAdmins = await db.select().from(administrators).catch(() => []);
+      for (const admin of dbAdmins) {
+        this.administrators.set(admin.id, admin);
+      }
+
+      // Load scholars (with error handling for missing columns)
+      const dbScholars = await db.select().from(scholars).catch(() => []);
+      for (const scholar of dbScholars) {
+        // Ensure all fields have default values if missing from database
+        const completeScholar = {
+          ...scholar,
+          isActive: scholar.isActive ?? true,
+          deactivatedAt: scholar.deactivatedAt ?? null,
+          deactivatedBy: scholar.deactivatedBy ?? null,
+          deactivationReason: scholar.deactivationReason ?? null,
+          isHouseSorted: scholar.isHouseSorted ?? false,
+          sortingNumber: scholar.sortingNumber ?? null,
+        };
+        this.scholars.set(scholar.id, completeScholar);
+      }
+
+      // Load parents
+      const dbParents = await db.select().from(parents).catch(() => []);
+      for (const parent of dbParents) {
+        this.parents.set(parent.id, parent);
+      }
+
+      // Load houses (ensure they exist or create default ones)
+      const dbHouses = await db.select().from(houses).catch(() => []);
+      if (dbHouses.length === 0) {
+        // Initialize default houses if none exist
+        await this.initializeDefaultHouses();
+      } else {
+        for (const house of dbHouses) {
+          this.houses.set(house.id, house);
+        }
+      }
+
+      // Load PBIS entries
+      const dbPbisEntries = await db.select().from(pbisEntries).catch(() => []);
+      for (const entry of dbPbisEntries) {
+        this.pbisEntries.set(entry.id, entry);
+      }
+
+      console.log(`Loaded ${dbTeachers.length} teachers, ${dbAdmins.length} admins, ${dbScholars.length} scholars from database`);
+    } catch (error) {
+      console.error("Error loading data from database:", error);
+      // Continue with in-memory defaults if database fails
+    }
+  }
+
+  private async initializeDefaultHouses() {
+    const defaultHouses = [
+      {
+        id: "franklin",
+        name: "House of Franklin",
+        color: "#FF6B6B",
+        icon: "⚡",
+        motto: "Inventors of Tomorrow",
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0
+      },
+      {
+        id: "courie",
+        name: "House of Courie", 
+        color: "#4ECDC4",
+        icon: "🏆",
+        motto: "Champions of Excellence",
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0
+      },
+      {
+        id: "west",
+        name: "House of West",
+        color: "#45B7D1", 
+        icon: "🌟",
+        motto: "Pioneers of Progress",
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0
+      },
+      {
+        id: "blackwell",
+        name: "House of Blackwell",
+        color: "#96CEB4",
+        icon: "🛡️",
+        motto: "Guardians of Knowledge", 
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0
+      },
+      {
+        id: "berruguete",
+        name: "House of Berruguete",
+        color: "#FFEAA7",
+        icon: "🎨",
+        motto: "Artists of Innovation",
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0
+      }
+    ];
+
+    try {
+      await db.insert(houses).values(defaultHouses).onConflictDoNothing();
+      for (const house of defaultHouses) {
+        this.houses.set(house.id, house);
+      }
+    } catch (error) {
+      console.error("Failed to initialize default houses:", error);
+    }
+  }
+
+  // Override methods to sync to database
+  async createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth> {
+    const teacher = await super.createTeacherAuth(teacherData);
+    // Sync to database
+    try {
+      await db.insert(teacherAuth).values({
+        id: teacher.id,
+        email: teacher.email,
+        fullName: teacher.fullName,
+        gradeRole: teacher.gradeRole,
+        subject: teacher.subject,
+        passwordHash: teacher.passwordHash,
+        isApproved: teacher.isApproved,
+        createdAt: teacher.createdAt,
+        updatedAt: teacher.updatedAt,
+      }).onConflictDoUpdate({
+        target: teacherAuth.id,
+        set: {
+          isApproved: teacher.isApproved,
+          updatedAt: teacher.updatedAt,
+        }
+      });
+    } catch (error) {
+      console.error("Failed to sync teacher to database:", error);
+    }
+    return teacher;
+  }
+
+  async createAdministrator(adminData: InsertAdministrator): Promise<Administrator> {
+    const admin = await super.createAdministrator(adminData);
+    // Sync to database
+    try {
+      await db.insert(administrators).values({
+        id: admin.id,
+        email: admin.email,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        title: admin.title,
+        passwordHash: admin.passwordHash,
+        isActive: admin.isActive,
+        permissions: admin.permissions,
+        createdAt: admin.createdAt,
+      }).onConflictDoUpdate({
+        target: administrators.id,
+        set: {
+          isActive: admin.isActive,
+          permissions: admin.permissions,
+        }
+      });
+    } catch (error) {
+      console.error("Failed to sync admin to database:", error);
+    }
+    return admin;
+  }
+
+  async createScholar(scholar: InsertScholar): Promise<Scholar> {
+    const newScholar = await super.createScholar(scholar);
+    // Sync to database
+    try {
+      await db.insert(scholars).values({
+        id: newScholar.id,
+        name: newScholar.name,
+        studentId: newScholar.studentId,
+        grade: newScholar.grade,
+        houseId: newScholar.houseId,
+        username: newScholar.username,
+        passwordHash: newScholar.passwordHash,
+        academicPoints: newScholar.academicPoints,
+        attendancePoints: newScholar.attendancePoints,
+        behaviorPoints: newScholar.behaviorPoints,
+        isActive: newScholar.isActive,
+        isHouseSorted: newScholar.isHouseSorted,
+        sortingNumber: newScholar.sortingNumber,
+        addedByTeacher: newScholar.addedByTeacher,
+        deactivatedAt: newScholar.deactivatedAt,
+        deactivatedBy: newScholar.deactivatedBy,
+        deactivationReason: newScholar.deactivationReason,
+        createdAt: newScholar.createdAt,
+      }).onConflictDoUpdate({
+        target: scholars.id,
+        set: {
+          isActive: newScholar.isActive,
+          academicPoints: newScholar.academicPoints,
+          attendancePoints: newScholar.attendancePoints,
+          behaviorPoints: newScholar.behaviorPoints,
+        }
+      });
+    } catch (error) {
+      console.error("Failed to sync scholar to database:", error);
+    }
+    return newScholar;
+  }
+
+  async createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry> {
+    const newEntry = await super.createPbisEntry(entry);
+    // Sync to database
+    try {
+      await db.insert(pbisEntries).values({
+        id: newEntry.id,
+        scholarId: newEntry.scholarId,
+        teacherName: newEntry.teacherName,
+        teacherRole: newEntry.teacherRole,
+        category: newEntry.category,
+        subcategory: newEntry.subcategory,
+        mustangTrait: newEntry.mustangTrait,
+        points: newEntry.points,
+        reason: newEntry.reason,
+        createdAt: newEntry.createdAt,
+      });
+    } catch (error) {
+      console.error("Failed to sync PBIS entry to database:", error);
+    }
+    return newEntry;
+  }
+}
+
+export const storage = new PersistentMemStorage();
 
 // Seed the memory storage with pending teacher from database
 async function seedMemoryStorage() {

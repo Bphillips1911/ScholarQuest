@@ -30,15 +30,17 @@ export default function TeacherLogin() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Teacher login successful - 30-day authentication active");
         localStorage.setItem("teacherToken", data.token);
         localStorage.setItem("teacherData", JSON.stringify(data.teacher));
         
         toast({
-          title: "Login Successful",
-          description: `Welcome back, ${data.teacher.name}!`,
+          title: "Login Successful - 30 Day Access",
+          description: `Welcome back, ${data.teacher.name}! You're logged in for 30 days.`,
         });
         
-        setLocation("/teacher-dashboard");
+        // Force reload to ensure proper authentication state
+        window.location.href = "/teacher-dashboard";
       } else {
         const error = await response.json();
         toast({

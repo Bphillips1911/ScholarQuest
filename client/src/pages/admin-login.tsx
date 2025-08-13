@@ -34,16 +34,13 @@ export default function AdminLogin() {
         localStorage.setItem("adminData", JSON.stringify(data.admin));
         
         toast({
-          title: "Login Successful",
-          description: `Welcome back, ${data.admin.firstName} ${data.admin.lastName}!`,
+          title: "Login Successful - 30 Day Access",
+          description: `Welcome back, ${data.admin.firstName} ${data.admin.lastName}! You're logged in for 30 days.`,
         });
         
-        // Force redirect to admin dashboard with a delay to ensure localStorage is set
-        setTimeout(() => {
-          console.log("Redirecting to /admin...");
-          setLocation("/admin");
-          window.location.href = "/admin";
-        }, 100);
+        console.log("Admin login successful - 30-day authentication active");
+        // Force redirect to admin dashboard 
+        window.location.href = "/admin";
       } else {
         const error = await response.json();
         toast({

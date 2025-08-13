@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX } from "lucide-react";
 
 interface Teacher {
   id: string;
@@ -36,7 +36,9 @@ export default function TeacherDashboard() {
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
   const [showAddScholar, setShowAddScholar] = useState(false);
   const [showAwardPoints, setShowAwardPoints] = useState(false);
+  const [showDeactivateStudent, setShowDeactivateStudent] = useState(false);
   const [selectedScholar, setSelectedScholar] = useState<Scholar | null>(null);
+  const [deactivationReason, setDeactivationReason] = useState("");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -164,6 +166,36 @@ export default function TeacherDashboard() {
     },
   });
 
+  // Deactivate student mutation
+  const deactivateStudentMutation = useMutation({
+    mutationFn: async (data: { studentId: string; reason: string }) => {
+      const response = await fetch("/api/teacher/deactivate-student", {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to deactivate student");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scholars"] });
+      setShowDeactivateStudent(false);
+      setSelectedScholar(null);
+      setDeactivationReason("");
+      toast({
+        title: "Student Deactivated",
+        description: "Student has been successfully deactivated",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to deactivate student",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogout = () => {
     localStorage.removeItem("teacherToken");
     localStorage.removeItem("teacherData");
@@ -195,6 +227,22 @@ export default function TeacherDashboard() {
     awardPointsMutation.mutate({
       scholarId: selectedScholar.id,
       ...pbisForm,
+    });
+  };
+
+  const handleDeactivateStudent = () => {
+    if (!selectedScholar || !deactivationReason.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide a reason for deactivation",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    deactivateStudentMutation.mutate({
+      studentId: selectedScholar.id,
+      reason: deactivationReason,
     });
   };
 
@@ -270,7 +318,7 @@ export default function TeacherDashboard() {
 
         {/* Actions */}
         {selectedGrade && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Button
               onClick={() => setShowAddScholar(true)}
               className="flex items-center gap-2"
@@ -287,6 +335,16 @@ export default function TeacherDashboard() {
             >
               <Award className="h-4 w-4" />
               Award MUSTANG Points
+            </Button>
+            <Button
+              onClick={() => setShowDeactivateStudent(true)}
+              disabled={!selectedScholar}
+              variant="destructive"
+              className="flex items-center gap-2"
+              data-testid="button-deactivate-student"
+            >
+              <UserX className="h-4 w-4" />
+              Deactivate Student
             </Button>
             <Button
               onClick={() => setLocation("/teacher-messages")}
@@ -495,6 +553,60 @@ export default function TeacherDashboard() {
                     variant="outline" 
                     onClick={() => setShowAwardPoints(false)}
                     data-testid="button-cancel-points"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Deactivate Student Modal */}
+        {showDeactivateStudent && selectedScholar && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle className="text-red-600">Deactivate Student</CardTitle>
+                <p className="text-sm text-gray-600">Student: {selectedScholar.name}</p>
+                <p className="text-sm text-red-600 font-medium">⚠️ This action cannot be undone</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="deactivationReason">Reason for Deactivation</Label>
+                  <Input
+                    id="deactivationReason"
+                    value={deactivationReason}
+                    onChange={(e) => setDeactivationReason(e.target.value)}
+                    placeholder="e.g., Student transferred to another school"
+                    data-testid="input-deactivation-reason"
+                  />
+                </div>
+                <div className="bg-red-50 p-3 rounded-md border border-red-200">
+                  <h4 className="text-red-800 font-medium text-sm">What happens when you deactivate a student:</h4>
+                  <ul className="text-red-700 text-xs mt-1 list-disc pl-4">
+                    <li>Student will no longer appear in active student lists</li>
+                    <li>Student will not be able to log in to their account</li>
+                    <li>Previous points and records will be preserved</li>
+                    <li>This action is permanent and cannot be reversed</li>
+                  </ul>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleDeactivateStudent}
+                    disabled={deactivateStudentMutation.isPending || !deactivationReason.trim()}
+                    variant="destructive"
+                    data-testid="button-confirm-deactivation"
+                  >
+                    {deactivateStudentMutation.isPending ? "Deactivating..." : "Deactivate Student"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowDeactivateStudent(false);
+                      setDeactivationReason("");
+                    }}
+                    data-testid="button-cancel-deactivation"
                   >
                     Cancel
                   </Button>

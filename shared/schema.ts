@@ -31,6 +31,10 @@ export const scholars = pgTable("scholars", {
   passwordHash: varchar("password_hash"),
   teacherId: varchar("teacher_id").references(() => teacherAuth.id),
   needsPasswordReset: boolean("needs_password_reset").default(false),
+  isActive: boolean("is_active").notNull().default(true), // For student deactivation
+  deactivatedAt: timestamp("deactivated_at"),
+  deactivatedBy: varchar("deactivated_by"), // Teacher who deactivated the student
+  deactivationReason: text("deactivation_reason"), // Reason for deactivation (e.g., "Student transferred to another school")
   createdAt: timestamp("created_at").defaultNow(),
 });
 

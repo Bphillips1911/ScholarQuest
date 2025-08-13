@@ -87,6 +87,7 @@ export interface IStorage {
   getAllScholars(): Promise<Scholar[]>;
   createScholar(scholar: InsertScholar): Promise<Scholar>;
   updateScholarPoints(scholarId: string, category: string, points: number): Promise<void>;
+  deactivateStudent(studentId: string, teacherId: string, reason: string): Promise<boolean>;
   
   // Teachers
   getTeacher(id: string): Promise<Teacher | undefined>;
@@ -501,8 +502,43 @@ export class MemStorage implements IStorage {
     this.scholars.set(scholarId, updatedScholar);
   }
 
+  async deactivateStudent(studentId: string, teacherId: string, reason: string): Promise<boolean> {
+    const scholar = this.scholars.get(studentId);
+    if (!scholar) return false;
+
+    const updatedScholar = { ...scholar };
+    updatedScholar.isActive = false;
+    updatedScholar.deactivatedAt = new Date();
+    updatedScholar.deactivatedBy = teacherId;
+    updatedScholar.deactivationReason = reason;
+
+    this.scholars.set(studentId, updatedScholar);
+    
+    // Also sync to database if using hybrid approach
+    try {
+      const { db } = await import("./db");
+      const { scholars } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      await db.update(scholars)
+        .set({
+          isActive: false,
+          deactivatedAt: new Date(),
+          deactivatedBy: teacherId,
+          deactivationReason: reason,
+        })
+        .where(eq(scholars.id, studentId));
+    } catch (error) {
+      console.error("Failed to sync deactivation to database:", error);
+    }
+    
+    return true;
+  }
+
   async getScholarsByGrade(grade: number): Promise<Scholar[]> {
-    return Array.from(this.scholars.values()).filter(scholar => scholar.grade === grade);
+    return Array.from(this.scholars.values()).filter(scholar => 
+      scholar.grade === grade && (scholar.isActive !== false)
+    );
   }
 
   async getScholarByUsername(username: string): Promise<Scholar | undefined> {
@@ -548,7 +584,7 @@ export class MemStorage implements IStorage {
 
     const visibleGrades = teacher.canSeeGrades || [];
     return Array.from(this.scholars.values()).filter(scholar => 
-      visibleGrades.includes(scholar.grade)
+      visibleGrades.includes(scholar.grade) && (scholar.isActive !== false)
     );
   }
 

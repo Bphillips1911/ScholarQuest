@@ -1022,6 +1022,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Teacher Deactivate Student Route
+  app.post("/api/teacher/deactivate-student", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getTeacherSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const teachers = await storage.getAllTeacherAuth();
+      const teacher = teachers.find(t => t.id === session.teacherId);
+      if (!teacher || !teacher.isApproved) {
+        return res.status(401).json({ message: "Teacher not approved" });
+      }
+
+      const { studentId, reason } = req.body;
+      if (!studentId || !reason) {
+        return res.status(400).json({ message: "Student ID and reason are required" });
+      }
+
+      // Verify teacher can see the student
+      const scholar = await storage.getScholar(studentId);
+      if (!scholar) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      if (!teacher.canSeeGrades?.includes(scholar.grade)) {
+        return res.status(403).json({ message: "You don't have permission to deactivate this student" });
+      }
+
+      const success = await storage.deactivateStudent(studentId, teacher.id, reason);
+      
+      if (success) {
+        res.json({
+          success: true,
+          message: "Student deactivated successfully"
+        });
+      } else {
+        res.status(400).json({ message: "Failed to deactivate student" });
+      }
+    } catch (error) {
+      console.error("Deactivate student error:", error);
+      res.status(500).json({ message: "Failed to deactivate student" });
+    }
+  });
+
   // Student Authentication Routes
   // Student profile route (requires authentication)
   app.get("/api/student/profile", async (req, res) => {

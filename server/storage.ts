@@ -821,6 +821,13 @@ export class MemStorage implements IStorage {
     return Array.from(this.teacherAuth.values());
   }
 
+  async getTeacherAuthById(id: string): Promise<TeacherAuth | undefined> {
+    console.log(`STORAGE: Looking for teacher with ID: ${id}`);
+    const teacher = this.teacherAuth.get(id);
+    console.log(`STORAGE: Found teacher by ID: ${teacher ? teacher.name : 'Not found'}`);
+    return teacher;
+  }
+
   async getPendingTeachers(): Promise<TeacherAuth[]> {
     return Array.from(this.teacherAuth.values()).filter(teacher => !teacher.isApproved);
   }

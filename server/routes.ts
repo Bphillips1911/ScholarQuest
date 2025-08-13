@@ -499,19 +499,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Teacher authentication middleware
   const authenticateTeacher = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
+    console.log("AUTH MIDDLEWARE: Token received:", token ? "Yes" : "No");
+    
     if (!token) {
+      console.log("AUTH MIDDLEWARE: No token provided");
       return res.status(401).json({ message: "No token provided" });
     }
 
     try {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "teacher-secret-key");
-      const teacher = await storage.getTeacher(decoded.teacherId);
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
+      console.log("AUTH MIDDLEWARE: Decoded token:", decoded);
+      
+      // Try to get teacher from new auth system first
+      const teacher = await storage.getTeacherAuthById(decoded.teacherId);
+      console.log("AUTH MIDDLEWARE: Found teacher:", teacher ? teacher.name : "Not found");
+      
       if (!teacher) {
+        console.log("AUTH MIDDLEWARE: Teacher not found");
         return res.status(401).json({ message: "Invalid token" });
       }
-      req.teacher = teacher;
+      
+      // Convert teacher format to match expected format
+      req.teacher = {
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        role: teacher.gradeRole,
+        subject: teacher.subject,
+        canSeeGrades: teacher.gradeRole.includes("6th") ? [6] : 
+                     teacher.gradeRole.includes("7th") ? [7] :
+                     teacher.gradeRole.includes("8th") ? [8] : [6, 7, 8]
+      };
+      
+      console.log("AUTH MIDDLEWARE: Teacher authenticated successfully");
       next();
     } catch (error) {
+      console.log("AUTH MIDDLEWARE: Token verification failed:", error.message);
       res.status(401).json({ message: "Invalid token" });
     }
   };

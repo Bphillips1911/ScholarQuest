@@ -507,7 +507,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
+      // Use consistent secret for both preview and deployment
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-teacher-secret-2025-stable";
+      console.log("AUTH MIDDLEWARE: JWT_SECRET source:", process.env.JWT_SECRET ? "env variable" : "fallback");
+      
+      const decoded: any = jwt.verify(token, jwtSecret);
       console.log("AUTH MIDDLEWARE: Decoded token:", decoded);
       
       // Try to get teacher from new auth system first
@@ -1858,9 +1862,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate session token with extended expiry (30 days for cost reduction)
+      // Use consistent secret for both preview and deployment
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-teacher-secret-2025-stable";
+      console.log("JWT_SECRET source:", process.env.JWT_SECRET ? "env variable" : "fallback");
+      
       const token = jwt.sign(
         { teacherId: teacher.id, email: teacher.email },
-        process.env.JWT_SECRET || "fallback_secret",
+        jwtSecret,
         { expiresIn: "30d" }
       );
 

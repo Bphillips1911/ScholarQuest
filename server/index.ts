@@ -56,11 +56,10 @@ app.use((req, res, next) => {
       throw dbError;
     }
 
-    // Seed the database on startup (only in development)
-    if (!isProduction) {
-      const { seedDatabase } = await import("./seed");
-      await seedDatabase();
-    }
+    // Seed the database on startup for both development and production
+    // This ensures teachers are available in deployed environment
+    const { seedDatabase } = await import("./seed");
+    await seedDatabase();
     
     const server = await registerRoutes(app);
 

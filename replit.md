@@ -29,14 +29,19 @@ Preferred communication style: Simple, everyday language.
 - **Parent Credentials**: Nancy Law (nslaw@yahoo.com / password) - fully working
 - **API Testing**: Confirmed add scholar endpoints work correctly via both credentials and student ID methods
 
-## Parent Portal Modal Improvements  
-- **Issue Fixed**: Add student modal was getting stuck and couldn't be closed
-- **Solution**: Added multiple exit methods:
+## Modal Improvements (Parent & Teacher Portals)
+- **Parent Portal**: Add student modal fixed with multiple exit methods:
   - Click outside modal to close
   - Large, visible X button in top-right corner with border and hover effects
   - Cancel button at bottom
   - Proper event handling to prevent stuck states
-- **Visual Enhancement**: Made X button more prominent with outline styling for better visibility in preview mode
+- **Teacher Portal**: Add Scholar modal enhanced with improved UX:
+  - Keyboard support (Escape key to close)
+  - Enhanced backdrop click handling  
+  - Automatic form reset when modal closes
+  - Better visual styling for close button with hover effects
+  - Form validation prevents submission without required fields
+  - Sticky header for better navigation in scrollable content
 
 # System Architecture
 

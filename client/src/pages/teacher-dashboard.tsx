@@ -43,6 +43,40 @@ export default function TeacherDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Modal close helper function
+  const closeAddScholarModal = () => {
+    setShowAddScholar(false);
+    setNewScholar({
+      name: "",
+      studentId: "",
+      houseId: "",
+      grade: 6,
+      username: "",
+      password: "",
+    });
+  };
+
+  // Handle Escape key to close modals
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (showAddScholar) {
+          closeAddScholarModal();
+        } else if (showAwardPoints) {
+          setShowAwardPoints(false);
+        } else if (showDeactivateStudent) {
+          setShowDeactivateStudent(false);
+          setDeactivationReason("");
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [showAddScholar, showAwardPoints, showDeactivateStudent]);
+
   // Scholar form state
   const [newScholar, setNewScholar] = useState({
     name: "",
@@ -480,22 +514,24 @@ export default function TeacherDashboard() {
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             onClick={(e) => {
+              // Close modal when clicking outside the modal content
               if (e.target === e.currentTarget) {
-                setShowAddScholar(false);
+                closeAddScholarModal();
               }
             }}
           >
-            <Card className="w-full max-w-md">
-              <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <CardHeader className="flex flex-row items-center justify-between sticky top-0 bg-white border-b">
                 <CardTitle>Add New Scholar</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowAddScholar(false)}
-                  className="h-10 w-10 p-0 border-2 border-gray-400 bg-white hover:bg-red-50 hover:border-red-400"
+                  onClick={closeAddScholarModal}
+                  className="h-10 w-10 p-0 border-2 border-gray-600 bg-white hover:bg-red-100 hover:border-red-500 transition-colors"
                   data-testid="button-close-modal"
+                  title="Close modal"
                 >
-                  <span className="text-xl font-bold text-gray-700 hover:text-red-600">✕</span>
+                  <span className="text-xl font-bold text-gray-800 hover:text-red-600">✕</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -614,18 +650,20 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-4">
                   <Button 
                     onClick={handleAddScholar}
-                    disabled={addScholarMutation.isPending}
+                    disabled={addScholarMutation.isPending || !newScholar.name || !newScholar.studentId || !newScholar.houseId}
                     data-testid="button-save-scholar"
+                    className="flex-1"
                   >
                     {addScholarMutation.isPending ? "Adding..." : "Add Scholar"}
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => setShowAddScholar(false)}
+                    onClick={closeAddScholarModal}
                     data-testid="button-cancel-scholar"
+                    className="flex-1 border-2 hover:bg-gray-100"
                   >
                     Cancel
                   </Button>

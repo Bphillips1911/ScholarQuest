@@ -63,7 +63,7 @@ export default function TeacherDashboard() {
     const teacherData = localStorage.getItem("teacherData");
     
     if (!token || !teacherData) {
-      setLocation("/teacher/login");
+      setLocation("/teacher-login");
       return;
     }
     
@@ -75,7 +75,7 @@ export default function TeacherDashboard() {
         setSelectedGrade(parsedTeacher.canSeeGrades[0]);
       }
     } catch (error) {
-      setLocation("/teacher/login");
+      setLocation("/teacher-login");
     }
   }, [setLocation]);
 
@@ -204,7 +204,7 @@ export default function TeacherDashboard() {
   const handleLogout = () => {
     localStorage.removeItem("teacherToken");
     localStorage.removeItem("teacherData");
-    setLocation("/teacher/login");
+    setLocation("/teacher-login");
   };
 
   const handleAddScholar = () => {

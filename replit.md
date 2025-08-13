@@ -37,6 +37,12 @@ This is a PBIS House of Champions program web application for Bush Hills STEAM A
 - ✅ **End-to-End Verification**: Complete parent creation → scholar linking → teacher messaging workflow working
 - ✅ **Frontend Debugging**: Enhanced teacher-messages.tsx with detailed logging for troubleshooting
 
+### Teacher Portal Logout 404 Error Fixed (August 13, 2025)
+- ✅ **CRITICAL FIX**: Resolved 404 error when logging out of teacher portal
+- ✅ **Routing Bug**: Fixed incorrect redirect paths from "/teacher/login" to "/teacher-login" (missing hyphen)
+- ✅ **Multiple Locations**: Updated all instances in teacher dashboard (token check, error handling, logout function)
+- ✅ **User Experience**: Teachers can now logout successfully without encountering 404 errors
+
 ### Admin Teacher Approval System Fixed (August 13, 2025)
 - ✅ **CRITICAL FIX**: Resolved 500 server errors preventing teacher approval functionality
 - ✅ **Storage System**: Fixed incomplete DatabaseStorage implementation by switching to working MemStorage

@@ -696,10 +696,28 @@ export default function ParentPortalEnhanced() {
 
       {/* Add Scholar Modal */}
       {showAddScholar && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAddScholar(false);
+            }
+          }}
+        >
+          <Card className="w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
             <CardHeader>
-              <CardTitle>Add Your Child</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Add Your Child</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddScholar(false)}
+                  className="h-8 w-8 p-0"
+                  data-testid="button-close-modal"
+                >
+                  ✕
+                </Button>
+              </div>
               <p className="text-sm text-gray-600">
                 Connect your child's account to view their progress and achievements.
               </p>

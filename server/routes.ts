@@ -287,8 +287,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Use consistent secret for both preview and deployment
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-parent-secret-2025-stable";
+      // Use deployment-compatible secret that works in all environments
+      const jwtSecret = "bhsa-parent-secret-2025-stable";
       const decoded = jwt.verify(token, jwtSecret) as any;
       const parent = await storage.getParent(decoded.parentId);
       if (!parent) {
@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate JWT token with extended expiry (30 days for cost reduction)
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-parent-secret-2025-stable";
+      const jwtSecret = "bhsa-parent-secret-2025-stable";
       const token = jwt.sign(
         { parentId: parent.id },
         jwtSecret,
@@ -414,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate parent login token with extended expiry (30 days for cost reduction)
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-parent-secret-2025-stable";
+      const jwtSecret = "bhsa-parent-secret-2025-stable";
       const token = jwt.sign(
         { parentId: parent.id },
         jwtSecret,

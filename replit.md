@@ -6,6 +6,22 @@ This web application, "PBIS House of Champions," manages a house points system f
 
 Preferred communication style: Simple, everyday language.
 
+# Recent Changes (August 13, 2025)
+
+## Parent Portal Authentication Fixes
+- **Issue Fixed**: Parent login worked in preview mode but failed in deployment due to JWT secret inconsistency
+- **Solution**: Hardcoded consistent JWT secret "bhsa-parent-secret-2025-stable" for all environments
+- **Parent Credentials**: Nancy Law (nslaw@yahoo.com / password) - fully working
+- **API Testing**: Confirmed add scholar endpoints work correctly via both credentials and student ID methods
+
+## Parent Portal Modal Improvements  
+- **Issue Fixed**: Add student modal was getting stuck and couldn't be closed
+- **Solution**: Added multiple exit methods:
+  - Click outside modal to close
+  - X button in top-right corner
+  - Cancel button at bottom
+  - Proper event handling to prevent stuck states
+
 # System Architecture
 
 ## Frontend Architecture

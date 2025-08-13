@@ -19,6 +19,8 @@ Preferred communication style: Simple, everyday language.
 - **Deployment Fix**: Resolved JWT secret mismatch that caused teacher login to work in preview but fail on deployment
 - **Database Seeding**: Added teacher authentication seeding to ensure teachers exist in deployment database
 - **Seeding Priority**: Teachers are now seeded before houses to guarantee deployment availability
+- **Enhanced Deployment Seeding**: Fixed schema field mismatch and added aggressive deployment-specific teacher creation
+- **Deployment Debug**: Added comprehensive logging and verification endpoints for deployment troubleshooting
 
 ## Parent Portal Authentication Fixes
 - **Issue Fixed**: Parent login worked in preview mode but failed in deployment due to JWT secret inconsistency

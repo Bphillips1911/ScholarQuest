@@ -1545,6 +1545,28 @@ export class MemStorage implements IStorage {
   async authenticateTeacher(email: string, password: string): Promise<TeacherAuth | null> {
     console.log("AUTH: Looking for teacher with email:", email);
     console.log("AUTH: Environment:", process.env.NODE_ENV || "development");
+    
+    // DEPLOYMENT FIX: Check database first, then memory storage
+    try {
+      console.log("AUTH: Checking database for teacher...");
+      const [dbTeacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.email, email));
+      
+      if (dbTeacher && dbTeacher.isApproved) {
+        console.log(`AUTH: Found teacher in database: ${dbTeacher.name}`);
+        const passwordMatch = await bcrypt.compare(password, dbTeacher.passwordHash);
+        if (passwordMatch) {
+          console.log("AUTH: ✅ DATABASE AUTH SUCCESS");
+          return dbTeacher;
+        } else {
+          console.log("AUTH: ❌ Database password mismatch");
+        }
+      }
+    } catch (dbError) {
+      console.log("AUTH: Database check failed, falling back to memory:", dbError);
+    }
+    
+    // Fallback to memory storage
+    console.log("AUTH: Checking memory storage...");
     console.log("AUTH: Available teachers:", Array.from(this.teacherAuth.values()).map(t => `${t.email} (${t.name}) - approved: ${t.isApproved}`));
     
     for (const teacher of this.teacherAuth.values()) {
@@ -1558,7 +1580,7 @@ export class MemStorage implements IStorage {
           const isValidDirect = password === "BHSATeacher2025!";
           
           if (isValidBcrypt || isValidDirect) {
-            console.log("AUTH: Password match! Returning teacher");
+            console.log("AUTH: ✅ MEMORY AUTH SUCCESS");
             return teacher;
           }
           console.log("AUTH: Password mismatch for both bcrypt and direct check");
@@ -1573,7 +1595,7 @@ export class MemStorage implements IStorage {
         console.log("AUTH: Found teacher but not approved:", teacher.isApproved);
       }
     }
-    console.log("AUTH: No matching teacher found");
+    console.log("AUTH: ❌ No matching teacher found in memory or database");
     return null;
   }
 

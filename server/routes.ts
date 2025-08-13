@@ -78,17 +78,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to check teacher seeding in deployment
   app.get("/api/debug/teacher-status", async (req, res) => {
     try {
-      const teachers = await storage.getAllTeacherAuth();
       const dbTeachers = await db.select().from(teacherAuth);
       
       res.json({
         environment: process.env.NODE_ENV || "development",
-        memoryTeachers: teachers.length,
         databaseTeachers: dbTeachers.length,
-        memoryTeacherEmails: teachers.map(t => ({ email: t.email, approved: t.isApproved })),
-        databaseTeacherEmails: dbTeachers.map(t => ({ email: t.email, approved: t.isApproved }))
+        databaseTeacherDetails: dbTeachers.map(t => ({ 
+          email: t.email, 
+          name: t.name,
+          approved: t.isApproved,
+          hasPassword: !!t.passwordHash 
+        })),
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Emergency deployment fix endpoint - force teacher creation
+  app.post("/api/emergency/seed-teachers", async (req, res) => {
+    try {
+      const { seedDatabase } = await import("./seed");
+      console.log("EMERGENCY: Force seeding teachers...");
+      await seedDatabase();
+      
+      const dbTeachers = await db.select().from(teacherAuth);
+      res.json({
+        success: true,
+        message: "Emergency teacher seeding completed",
+        teacherCount: dbTeachers.length,
+        teachers: dbTeachers.map(t => ({ email: t.email, name: t.name }))
+      });
+    } catch (error) {
+      console.error("EMERGENCY SEED ERROR:", error);
       res.status(500).json({ error: error.message });
     }
   });

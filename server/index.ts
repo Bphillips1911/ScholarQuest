@@ -56,10 +56,64 @@ app.use((req, res, next) => {
       throw dbError;
     }
 
-    // Seed the database on startup for both development and production
-    // This ensures teachers are available in deployed environment
+    // CRITICAL DEPLOYMENT FIX - Force teacher seeding on every startup
+    const isProduction = process.env.NODE_ENV === 'production';
+    console.log(`STARTUP: Running in ${process.env.NODE_ENV || 'development'} mode`);
+    console.log(`STARTUP: Production mode: ${isProduction}`);
+    console.log(`STARTUP: REPL_ID: ${process.env.REPL_ID || 'not set'}`);
+    
+    // Aggressive deployment seeding - check and create teachers if missing
+    try {
+      console.log("STARTUP: 🔧 DEPLOYMENT FIX - Checking teacher count...");
+      const { db } = await import("./db");
+      const { teacherAuth } = await import("@shared/schema");
+      const existingTeachers = await db.select().from(teacherAuth);
+      console.log(`STARTUP: Found ${existingTeachers.length} teachers in database`);
+      
+      if (existingTeachers.length === 0 || isProduction) {
+        console.log("STARTUP: 🚨 DEPLOYMENT EMERGENCY - Force creating teachers...");
+        
+        const bcrypt = (await import("bcryptjs")).default;
+        const { randomUUID } = await import("crypto");
+        const hashedPassword = await bcrypt.hash("BHSATeacher2025!", 10);
+        
+        const requiredTeachers = [
+          { email: "sarah.johnson@bhsteam.edu", name: "Sarah Johnson", gradeRole: "6th Grade", subject: "Mathematics" },
+          { email: "jennifer.adams@bhsteam.edu", name: "Jennifer Adams", gradeRole: "7th Grade", subject: "Science" },
+          { email: "michael.davis@bhsteam.edu", name: "Michael Davis", gradeRole: "8th Grade", subject: "English" }
+        ];
+        
+        for (const teacherInfo of requiredTeachers) {
+          const existing = existingTeachers.find(t => t.email === teacherInfo.email);
+          if (!existing) {
+            const teacherData = {
+              id: randomUUID(),
+              email: teacherInfo.email,
+              name: teacherInfo.name,
+              gradeRole: teacherInfo.gradeRole,
+              subject: teacherInfo.subject,
+              passwordHash: hashedPassword,
+              isApproved: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+            
+            await db.insert(teacherAuth).values(teacherData);
+            console.log(`STARTUP: ✅ EMERGENCY CREATED: ${teacherInfo.email}`);
+          }
+        }
+        
+        const finalCount = await db.select().from(teacherAuth);
+        console.log(`STARTUP: 🎯 DEPLOYMENT SUCCESS - ${finalCount.length} teachers now in database`);
+      }
+    } catch (emergencyError) {
+      console.error("STARTUP: 🚨 EMERGENCY SEEDING FAILED:", emergencyError);
+    }
+    
+    // Run regular seeding as well
     const { seedDatabase } = await import("./seed");
     await seedDatabase();
+    console.log("STARTUP: Database seeding completed");
     
     const server = await registerRoutes(app);
 

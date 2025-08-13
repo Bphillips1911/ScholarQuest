@@ -36,17 +36,21 @@ export default function ParentLogin() {
       return result;
     },
     onSuccess: (data) => {
+      console.log("✅ Frontend login success - storing data:", data);
       localStorage.setItem("parentToken", data.token);
       localStorage.setItem("parentData", JSON.stringify(data.parent));
+      console.log("✅ Token stored:", data.token?.substring(0, 20) + "...");
       toast({
         title: "Login Successful",
         description: `Welcome back, ${data.parent.firstName}!`,
       });
       
       // Redirect to parent portal
+      console.log("🚀 Redirecting to parent portal...");
       window.location.href = "/parent-portal";
     },
     onError: (error) => {
+      console.error("❌ Frontend login error:", error);
       toast({
         title: "Login Failed",
         description: error.message,

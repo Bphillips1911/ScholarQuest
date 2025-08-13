@@ -1,0 +1,470 @@
+import { 
+  type House, 
+  type Scholar, 
+  type Teacher, 
+  type PointEntry, 
+  type PbisEntry, 
+  type PbisPhoto, 
+  type Parent,
+  type TeacherAuth,
+  type TeacherSession,
+  type StudentSession,
+  type PasswordResetRequest,
+  type Administrator,
+  type AdminSession,
+  type InsertHouse, 
+  type InsertScholar, 
+  type InsertTeacher, 
+  type InsertPointEntry, 
+  type InsertPbisEntry, 
+  type InsertPbisPhoto, 
+  type InsertParent,
+  type InsertTeacherAuth,
+  type InsertTeacherSession,
+  type InsertStudentSession,
+  type InsertPasswordResetRequest,
+  type InsertAdministrator,
+  type InsertAdminSession,
+  houses, 
+  scholars, 
+  teachers, 
+  pointEntries, 
+  pbisEntries, 
+  pbisPhotos, 
+  parents,
+  teacherAuth,
+  teacherSessions,
+  studentSessions,
+  passwordResetRequests,
+  administrators,
+  adminSessions
+} from "@shared/schema";
+import { randomUUID } from "crypto";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { eq, desc, sql } from "drizzle-orm";
+import { db } from "./db";
+import { IStorage } from "./storage";
+
+export class DatabaseStorage implements IStorage {
+  constructor() {
+    this.initializeData();
+  }
+
+  private async initializeData() {
+    // Initialize houses if they don't exist
+    await this.initializeHouses();
+  }
+
+  private async initializeHouses() {
+    // Check if houses already exist
+    const existingHouses = await db.select().from(houses).limit(1);
+    if (existingHouses.length === 0) {
+      const defaultHouses = [
+        {
+          id: "franklin",
+          name: "House of Franklin",
+          color: "#FF6B6B",
+          icon: "⚡",
+          motto: "Inventors of Tomorrow",
+          academicPoints: 0,
+          attendancePoints: 0,
+          behaviorPoints: 0,
+          memberCount: 0
+        },
+        {
+          id: "courie",
+          name: "House of Courie",
+          color: "#4ECDC4",
+          icon: "🔬",
+          motto: "Seekers of Knowledge",
+          academicPoints: 0,
+          attendancePoints: 0,
+          behaviorPoints: 0,
+          memberCount: 0
+        },
+        {
+          id: "west",
+          name: "House of West",
+          color: "#45B7D1",
+          icon: "🎨",
+          motto: "Creative Visionaries",
+          academicPoints: 0,
+          attendancePoints: 0,
+          behaviorPoints: 0,
+          memberCount: 0
+        },
+        {
+          id: "blackwell",
+          name: "House of Blackwell",
+          color: "#96CEB4",
+          icon: "🌱",
+          motto: "Champions of Change",
+          academicPoints: 0,
+          attendancePoints: 0,
+          behaviorPoints: 0,
+          memberCount: 0
+        },
+        {
+          id: "berruguete",
+          name: "House of Berruguete",
+          color: "#FFEAA7",
+          icon: "🏆",
+          motto: "Leaders of Excellence",
+          academicPoints: 0,
+          attendancePoints: 0,
+          behaviorPoints: 0,
+          memberCount: 0
+        }
+      ];
+
+      await db.insert(houses).values(defaultHouses);
+    }
+  }
+
+  // House methods
+  async getHouses(): Promise<House[]> {
+    return await db.select().from(houses);
+  }
+
+  async getHouse(id: string): Promise<House | undefined> {
+    const [house] = await db.select().from(houses).where(eq(houses.id, id));
+    return house || undefined;
+  }
+
+  async updateHouse(id: string, updates: Partial<House>): Promise<boolean> {
+    const result = await db.update(houses).set(updates).where(eq(houses.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Scholar methods
+  async getScholars(): Promise<Scholar[]> {
+    return await db.select().from(scholars);
+  }
+
+  async getScholar(id: string): Promise<Scholar | undefined> {
+    const [scholar] = await db.select().from(scholars).where(eq(scholars.id, id));
+    return scholar || undefined;
+  }
+
+  async createScholar(scholarData: InsertScholar): Promise<Scholar> {
+    const [scholar] = await db.insert(scholars).values({
+      id: randomUUID(),
+      ...scholarData,
+    }).returning();
+    return scholar;
+  }
+
+  async updateScholar(id: string, updates: Partial<Scholar>): Promise<boolean> {
+    const result = await db.update(scholars).set(updates).where(eq(scholars.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async deleteScholar(id: string): Promise<boolean> {
+    const result = await db.delete(scholars).where(eq(scholars.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getScholarsByHouse(houseId: string): Promise<Scholar[]> {
+    return await db.select().from(scholars).where(eq(scholars.houseId, houseId));
+  }
+
+  async getUnsortedScholars(): Promise<Scholar[]> {
+    return await db.select().from(scholars).where(eq(scholars.isHouseSorted, false));
+  }
+
+  // Teacher Auth methods
+  async createTeacherAuth(teacherData: any): Promise<TeacherAuth> {
+    const hashedPassword = await bcrypt.hash(teacherData.password, 10);
+    
+    const [teacher] = await db.insert(teacherAuth).values({
+      id: randomUUID(),
+      name: teacherData.name,
+      email: teacherData.email,
+      passwordHash: hashedPassword,
+      subject: teacherData.subject,
+      gradeRole: teacherData.gradeRole,
+      isApproved: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastLoginAt: null
+    }).returning();
+    
+    return teacher;
+  }
+
+  async getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null> {
+    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.email, email));
+    return teacher || null;
+  }
+
+  async getPendingTeachers(): Promise<TeacherAuth[]> {
+    return await db.select().from(teacherAuth).where(eq(teacherAuth.isApproved, false));
+  }
+
+  async approveTeacher(id: string): Promise<boolean> {
+    const result = await db.update(teacherAuth)
+      .set({ 
+        isApproved: true, 
+        updatedAt: new Date() 
+      })
+      .where(eq(teacherAuth.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Administrator methods
+  async createAdministrator(adminData: any): Promise<Administrator> {
+    const hashedPassword = await bcrypt.hash(adminData.password, 10);
+    
+    const [admin] = await db.insert(administrators).values({
+      id: randomUUID(),
+      email: adminData.email,
+      firstName: adminData.firstName,
+      lastName: adminData.lastName,
+      title: adminData.title,
+      passwordHash: hashedPassword,
+      isActive: true,
+      permissions: adminData.permissions || ["view_all"],
+      createdAt: new Date(),
+      lastLoginAt: null
+    }).returning();
+    
+    return admin;
+  }
+
+  async getAdministratorByEmail(email: string): Promise<Administrator | undefined> {
+    const [admin] = await db.select().from(administrators).where(eq(administrators.email, email));
+    return admin || undefined;
+  }
+
+  async authenticateAdmin(email: string, password: string): Promise<Administrator | null> {
+    const admin = await this.getAdministratorByEmail(email);
+    if (!admin || !admin.isActive) {
+      return null;
+    }
+
+    const isValid = await bcrypt.compare(password, admin.passwordHash);
+    if (isValid) {
+      // Update last login time
+      await db.update(administrators)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(administrators.id, admin.id));
+      return admin;
+    }
+
+    return null;
+  }
+
+  async createAdminSession(sessionData: InsertAdminSession): Promise<AdminSession> {
+    const [session] = await db.insert(adminSessions).values({
+      id: randomUUID(),
+      ...sessionData,
+      createdAt: new Date(),
+    }).returning();
+    
+    return session;
+  }
+
+  async getAdminSession(token: string): Promise<AdminSession | undefined> {
+    const [session] = await db.select().from(adminSessions).where(eq(adminSessions.token, token));
+    return session || undefined;
+  }
+
+  async deleteAdminSession(token: string): Promise<boolean> {
+    const result = await db.delete(adminSessions).where(eq(adminSessions.token, token));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Point Entry methods
+  async createPointEntry(pointData: InsertPointEntry): Promise<PointEntry> {
+    const [entry] = await db.insert(pointEntries).values({
+      id: randomUUID(),
+      ...pointData,
+      createdAt: new Date(),
+    }).returning();
+    return entry;
+  }
+
+  async getPointEntries(): Promise<PointEntry[]> {
+    return await db.select().from(pointEntries).orderBy(desc(pointEntries.createdAt));
+  }
+
+  // PBIS Entry methods
+  async createPbisEntry(pbisData: InsertPbisEntry): Promise<PbisEntry> {
+    const [entry] = await db.insert(pbisEntries).values({
+      id: randomUUID(),
+      ...pbisData,
+      createdAt: new Date(),
+    }).returning();
+    return entry;
+  }
+
+  async getPbisEntries(): Promise<PbisEntry[]> {
+    return await db.select().from(pbisEntries).orderBy(desc(pbisEntries.createdAt));
+  }
+
+  // PBIS Photo methods
+  async createPbisPhoto(photoData: InsertPbisPhoto): Promise<PbisPhoto> {
+    const [photo] = await db.insert(pbisPhotos).values({
+      id: randomUUID(),
+      ...photoData,
+      createdAt: new Date(),
+    }).returning();
+    return photo;
+  }
+
+  async getPbisPhotos(): Promise<PbisPhoto[]> {
+    return await db.select().from(pbisPhotos).orderBy(desc(pbisPhotos.createdAt));
+  }
+
+  // Parent methods
+  async createParent(parentData: InsertParent): Promise<Parent> {
+    const [parent] = await db.insert(parents).values({
+      id: randomUUID(),
+      ...parentData,
+      createdAt: new Date(),
+    }).returning();
+    return parent;
+  }
+
+  async getParents(): Promise<Parent[]> {
+    return await db.select().from(parents);
+  }
+
+  async getParent(id: string): Promise<Parent | undefined> {
+    const [parent] = await db.select().from(parents).where(eq(parents.id, id));
+    return parent || undefined;
+  }
+
+  // Session methods
+  async createTeacherSession(sessionData: InsertTeacherSession): Promise<TeacherSession> {
+    const [session] = await db.insert(teacherSessions).values({
+      id: randomUUID(),
+      ...sessionData,
+      createdAt: new Date(),
+    }).returning();
+    return session;
+  }
+
+  async getTeacherSession(token: string): Promise<TeacherSession | undefined> {
+    const [session] = await db.select().from(teacherSessions).where(eq(teacherSessions.token, token));
+    return session || undefined;
+  }
+
+  async deleteTeacherSession(token: string): Promise<boolean> {
+    const result = await db.delete(teacherSessions).where(eq(teacherSessions.token, token));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async createStudentSession(sessionData: InsertStudentSession): Promise<StudentSession> {
+    const [session] = await db.insert(studentSessions).values({
+      id: randomUUID(),
+      ...sessionData,
+      createdAt: new Date(),
+    }).returning();
+    return session;
+  }
+
+  async getStudentSession(token: string): Promise<StudentSession | undefined> {
+    const [session] = await db.select().from(studentSessions).where(eq(studentSessions.token, token));
+    return session || undefined;
+  }
+
+  // Password reset methods
+  async createPasswordResetRequest(requestData: InsertPasswordResetRequest): Promise<PasswordResetRequest> {
+    const [request] = await db.insert(passwordResetRequests).values({
+      id: randomUUID(),
+      ...requestData,
+      createdAt: new Date(),
+      status: "pending",
+    }).returning();
+    return request;
+  }
+
+  async getPasswordResetRequest(token: string): Promise<PasswordResetRequest | null> {
+    const [request] = await db.select().from(passwordResetRequests).where(eq(passwordResetRequests.id, token));
+    return request || null;
+  }
+
+  // Sorting and house management methods
+  async sortStudentsIntoHouses(): Promise<{ sortedCount: number }> {
+    const unsortedStudents = await this.getUnsortedScholars();
+    const allHouses = await this.getHouses();
+    
+    if (unsortedStudents.length === 0) {
+      return { message: "No unsorted students found", results: [] };
+    }
+
+    // Simple round-robin assignment
+    const results = [];
+    for (let i = 0; i < unsortedStudents.length; i++) {
+      const student = unsortedStudents[i];
+      const house = allHouses[i % allHouses.length];
+      
+      await this.updateScholar(student.id, {
+        houseId: house.id,
+        isHouseSorted: true,
+        sortingNumber: i + 1
+      });
+
+      results.push({
+        studentName: student.name,
+        houseName: house.name,
+        houseColor: house.color
+      });
+    }
+
+    return { sortedCount: results.length };
+  }
+
+  async resetAllHouses(): Promise<void> {
+    // Reset all students to unsorted
+    await db.update(scholars).set({
+      houseId: null,
+      isHouseSorted: false,
+      sortingNumber: null
+    });
+
+    // Reset house point totals
+    await db.update(houses).set({
+      academicPoints: 0,
+      attendancePoints: 0,
+      behaviorPoints: 0,
+      memberCount: 0
+    });
+  }
+
+  // Admin-specific student creation with username generation
+  async createScholarWithUsername(scholarData: Omit<InsertScholar, 'username'>): Promise<Scholar> {
+    const username = await this.generateUniqueUsername(
+      scholarData.name.split(' ')[0] || '',
+      scholarData.name.split(' ').slice(-1)[0] || '',
+      scholarData.studentId
+    );
+
+    return this.createScholar({
+      ...scholarData,
+      username
+    });
+  }
+
+  private async generateUniqueUsername(firstName: string, lastName: string, studentId: string): Promise<string> {
+    const cleanFirst = firstName.toLowerCase().replace(/[^a-z]/g, '').substring(0, 3);
+    const cleanLast = lastName.toLowerCase().replace(/[^a-z]/g, '').substring(0, 3);
+    const idSuffix = studentId.replace(/[^0-9]/g, '').slice(-3);
+    
+    let baseUsername = `${cleanFirst}${cleanLast}${idSuffix}`;
+    let username = baseUsername;
+    let counter = 1;
+    
+    // Check if username exists and add number suffix if needed
+    while (await db.select().from(scholars).where(eq(scholars.username, username)).then(result => result.length > 0)) {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
+    
+    return username;
+  }
+}
+
+export const storage = new DatabaseStorage();

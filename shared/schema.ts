@@ -318,26 +318,3 @@ export const insertParentTeacherMessageSchema = createInsertSchema(parentTeacher
 
 export type ParentTeacherMessage = typeof parentTeacherMessages.$inferSelect;
 export type InsertParentTeacherMessage = z.infer<typeof insertParentTeacherMessageSchema>;
-
-export type House = typeof houses.$inferSelect;
-export type Scholar = typeof scholars.$inferSelect;
-export type Teacher = typeof teachers.$inferSelect;
-export type PointEntry = typeof pointEntries.$inferSelect;
-export type PbisEntry = typeof pbisEntries.$inferSelect;
-export type PbisPhoto = typeof pbisPhotos.$inferSelect;
-export type Parent = typeof parents.$inferSelect;
-export type InsertHouse = z.infer<typeof insertHouseSchema>;
-export type InsertScholar = z.infer<typeof insertScholarSchema>;
-export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
-export type InsertPointEntry = z.infer<typeof insertPointEntrySchema>;
-export type InsertPbisEntry = z.infer<typeof insertPbisEntrySchema>;
-export type InsertPbisPhoto = z.infer<typeof insertPbisPhotoSchema>;
-export type InsertParent = z.infer<typeof insertParentSchema>;
-export type InsertTeacherAuth = z.infer<typeof insertTeacherAuthSchema>;
-export type TeacherAuth = typeof teacherAuth.$inferSelect;
-export type InsertTeacherSession = z.infer<typeof insertTeacherSessionSchema>;
-export type TeacherSession = typeof teacherSessions.$inferSelect;
-export type StudentSession = typeof studentSessions.$inferSelect;
-export type PasswordResetRequest = typeof passwordResetRequests.$inferSelect;
-export type InsertStudentSession = z.infer<typeof insertStudentSessionSchema>;
-export type InsertPasswordResetRequest = z.infer<typeof insertPasswordResetRequestSchema>;

@@ -489,13 +489,13 @@ export default function TeacherDashboard() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Add New Scholar</CardTitle>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowAddScholar(false)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                  className="h-10 w-10 p-0 border-2 border-gray-400 bg-white hover:bg-red-50 hover:border-red-400"
                   data-testid="button-close-modal"
                 >
-                  <span className="text-lg font-bold text-gray-500 hover:text-gray-700">✕</span>
+                  <span className="text-xl font-bold text-gray-700 hover:text-red-600">✕</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -652,13 +652,13 @@ export default function TeacherDashboard() {
                   <p className="text-sm text-gray-600">Scholar: {selectedScholar.name}</p>
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowAwardPoints(false)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                  className="h-10 w-10 p-0 border-2 border-gray-400 bg-white hover:bg-red-50 hover:border-red-400"
                   data-testid="button-close-points-modal"
                 >
-                  <span className="text-lg font-bold text-gray-500 hover:text-gray-700">✕</span>
+                  <span className="text-xl font-bold text-gray-700 hover:text-red-600">✕</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -741,13 +741,13 @@ export default function TeacherDashboard() {
                   <p className="text-sm text-red-600 font-medium">⚠️ This action cannot be undone</p>
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowDeactivateStudent(false)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                  className="h-10 w-10 p-0 border-2 border-gray-400 bg-white hover:bg-red-50 hover:border-red-400"
                   data-testid="button-close-deactivate-modal"
                 >
-                  <span className="text-lg font-bold text-gray-500 hover:text-gray-700">✕</span>
+                  <span className="text-xl font-bold text-gray-700 hover:text-red-600">✕</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">

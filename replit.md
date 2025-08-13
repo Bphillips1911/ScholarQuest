@@ -27,9 +27,10 @@ Preferred communication style: Simple, everyday language.
 - **Issue Fixed**: Add student modal was getting stuck and couldn't be closed
 - **Solution**: Added multiple exit methods:
   - Click outside modal to close
-  - X button in top-right corner
+  - Large, visible X button in top-right corner with border and hover effects
   - Cancel button at bottom
   - Proper event handling to prevent stuck states
+- **Visual Enhancement**: Made X button more prominent with outline styling for better visibility in preview mode
 
 # System Architecture
 

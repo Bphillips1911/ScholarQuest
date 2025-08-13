@@ -492,10 +492,10 @@ export default function TeacherDashboard() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowAddScholar(false)}
-                  className="h-6 w-6 p-0"
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
                   data-testid="button-close-modal"
                 >
-                  ✕
+                  <span className="text-lg font-bold text-gray-500 hover:text-gray-700">✕</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -655,10 +655,10 @@ export default function TeacherDashboard() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowAwardPoints(false)}
-                  className="h-6 w-6 p-0"
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
                   data-testid="button-close-points-modal"
                 >
-                  ✕
+                  <span className="text-lg font-bold text-gray-500 hover:text-gray-700">✕</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -744,10 +744,10 @@ export default function TeacherDashboard() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowDeactivateStudent(false)}
-                  className="h-6 w-6 p-0"
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
                   data-testid="button-close-deactivate-modal"
                 >
-                  ✕
+                  <span className="text-lg font-bold text-gray-500 hover:text-gray-700">✕</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">

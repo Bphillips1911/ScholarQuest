@@ -1810,16 +1810,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Teacher Authentication Routes
   app.post("/api/teacher-auth/login", async (req, res) => {
+    console.log("=== TEACHER-AUTH LOGIN REQUEST ===");
     try {
       const { email, password } = req.body;
+      console.log("Login attempt for:", email);
       
       if (!email || !password) {
+        console.log("Missing email or password");
         return res.status(400).json({ message: "Email and password required" });
       }
 
+      console.log("Calling storage.authenticateTeacher...");
       const teacher = await storage.authenticateTeacher(email, password);
+      console.log("Authentication result:", teacher ? `Success: ${teacher.name}` : "Failed");
       
       if (!teacher) {
+        console.log("Authentication failed, returning 401");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 

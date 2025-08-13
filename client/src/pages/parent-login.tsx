@@ -15,18 +15,25 @@ export default function ParentLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
+      console.log("🔐 Parent login attempt:", credentials.email);
+      
       const response = await fetch("/api/parent/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
       
+      console.log("📡 Response status:", response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("❌ Login error:", errorData);
         throw new Error(errorData.message || "Login failed");
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log("✅ Login success:", result);
+      return result;
     },
     onSuccess: (data) => {
       localStorage.setItem("parentToken", data.token);

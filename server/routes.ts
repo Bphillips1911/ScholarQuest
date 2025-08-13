@@ -637,16 +637,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const teacher = req.teacher;
       const scholarData = req.body;
       
+      console.log("Add scholar request:", scholarData);
+      console.log("Teacher permissions:", teacher.canSeeGrades);
+      
       // Verify teacher can add scholars of this grade
       if (!teacher.canSeeGrades?.includes(scholarData.grade)) {
+        console.log("Permission denied for grade:", scholarData.grade);
         return res.status(403).json({ message: "You don't have permission to add scholars for this grade" });
       }
 
-      const validatedData = insertScholarSchema.parse(scholarData);
+      // Add teacherId to the scholar data
+      const scholarWithTeacher = {
+        ...scholarData,
+        teacherId: teacher.id,
+        addedByTeacher: teacher.id,
+      };
+
+      console.log("Scholar data with teacher:", scholarWithTeacher);
+      
+      const validatedData = insertScholarSchema.parse(scholarWithTeacher);
+      console.log("Validated scholar data:", validatedData);
+      
       const scholar = await storage.createScholar(validatedData);
+      console.log("Created scholar:", scholar);
+      
       res.status(201).json(scholar);
     } catch (error) {
-      res.status(400).json({ message: "Failed to add scholar" });
+      console.error("Add scholar error:", error);
+      console.error("Error details:", error.message);
+      if (error.errors) {
+        console.error("Validation errors:", error.errors);
+      }
+      res.status(400).json({ message: "Failed to add scholar", error: error.message });
     }
   });
 

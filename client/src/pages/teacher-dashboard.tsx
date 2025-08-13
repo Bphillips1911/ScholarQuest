@@ -115,7 +115,11 @@ export default function TeacherDashboard() {
         headers: getAuthHeaders(),
         body: JSON.stringify(scholarData),
       });
-      if (!response.ok) throw new Error("Failed to add scholar");
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: Failed to add scholar`);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -127,10 +131,11 @@ export default function TeacherDashboard() {
         description: "Student has been successfully added to the system",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("Add scholar error:", error);
       toast({
         title: "Error",
-        description: "Failed to add scholar",
+        description: error.message || "Failed to add scholar",
         variant: "destructive",
       });
     },

@@ -180,9 +180,15 @@ export const insertScholarSchema = createInsertSchema(scholars).omit({
   academicPoints: true,
   attendancePoints: true,
   behaviorPoints: true,
+  isActive: true,
+  deactivatedAt: true,
+  deactivatedBy: true,
+  deactivationReason: true,
   createdAt: true,
 }).extend({
   grade: z.number().min(6).max(8),
+  name: z.string().min(1),
+  studentId: z.string().min(1),
 });
 
 export const insertTeacherSchema = createInsertSchema(teachers).omit({

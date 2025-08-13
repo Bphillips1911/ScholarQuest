@@ -540,6 +540,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Teacher routes (old login removed - using new auth system)
+  
+  // Test endpoint for token validation
+  app.get("/api/teacher/test-auth", authenticateTeacher, async (req: any, res) => {
+    res.json({ valid: true, teacher: req.teacher });
+  });
 
   // Create teacher account (for admin use)
   app.post("/api/teacher/register", async (req, res) => {
@@ -1852,18 +1857,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Generate session token
+      // Generate session token with extended expiry (30 days for cost reduction)
       const token = jwt.sign(
         { teacherId: teacher.id, email: teacher.email },
         process.env.JWT_SECRET || "fallback_secret",
-        { expiresIn: "8h" }
+        { expiresIn: "30d" }
       );
 
-      // Create session record
+      // Create session record with extended expiry (30 days)
       await storage.createTeacherSession({
         teacherId: teacher.id,
         token,
-        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000), // 8 hours
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       });
 
       res.json({

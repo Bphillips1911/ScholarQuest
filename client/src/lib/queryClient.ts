@@ -20,6 +20,12 @@ export async function apiRequest(
     headers.Authorization = `Bearer ${studentToken}`;
   }
   
+  // Add authorization header for teacher requests
+  const teacherToken = localStorage.getItem("teacherToken");
+  if (url.startsWith('/api/teacher/') && teacherToken) {
+    headers.Authorization = `Bearer ${teacherToken}`;
+  }
+  
   const res = await fetch(url, {
     method,
     headers,
@@ -44,6 +50,12 @@ export const getQueryFn: <T>(options: {
     const studentToken = localStorage.getItem("studentToken");
     if (url.includes('/api/student/') && studentToken) {
       headers.Authorization = `Bearer ${studentToken}`;
+    }
+    
+    // Add authorization header for teacher requests
+    const teacherToken = localStorage.getItem("teacherToken");
+    if (url.includes('/api/teacher/') && teacherToken) {
+      headers.Authorization = `Bearer ${teacherToken}`;
     }
     
     const res = await fetch(url, {

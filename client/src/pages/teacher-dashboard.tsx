@@ -477,10 +477,26 @@ export default function TeacherDashboard() {
 
         {/* Add Scholar Modal */}
         {showAddScholar && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowAddScholar(false);
+              }
+            }}
+          >
             <Card className="w-full max-w-md">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Add New Scholar</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddScholar(false)}
+                  className="h-6 w-6 p-0"
+                  data-testid="button-close-modal"
+                >
+                  ✕
+                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -531,7 +547,7 @@ export default function TeacherDashboard() {
                       <SelectValue placeholder="Select house" />
                     </SelectTrigger>
                     <SelectContent>
-                      {houses.map((house: any) => (
+                      {Array.isArray(houses) && houses.map((house: any) => (
                         <SelectItem key={house.id} value={house.id}>
                           {house.name}
                         </SelectItem>
@@ -621,11 +637,29 @@ export default function TeacherDashboard() {
 
         {/* Award Points Modal */}
         {showAwardPoints && selectedScholar && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowAwardPoints(false);
+              }
+            }}
+          >
             <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle>Award MUSTANG Points</CardTitle>
-                <p className="text-sm text-gray-600">Scholar: {selectedScholar.name}</p>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Award MUSTANG Points</CardTitle>
+                  <p className="text-sm text-gray-600">Scholar: {selectedScholar.name}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAwardPoints(false)}
+                  className="h-6 w-6 p-0"
+                  data-testid="button-close-points-modal"
+                >
+                  ✕
+                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -691,12 +725,30 @@ export default function TeacherDashboard() {
 
         {/* Deactivate Student Modal */}
         {showDeactivateStudent && selectedScholar && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowDeactivateStudent(false);
+              }
+            }}
+          >
             <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle className="text-red-600">Deactivate Student</CardTitle>
-                <p className="text-sm text-gray-600">Student: {selectedScholar.name}</p>
-                <p className="text-sm text-red-600 font-medium">⚠️ This action cannot be undone</p>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-red-600">Deactivate Student</CardTitle>
+                  <p className="text-sm text-gray-600">Student: {selectedScholar.name}</p>
+                  <p className="text-sm text-red-600 font-medium">⚠️ This action cannot be undone</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDeactivateStudent(false)}
+                  className="h-6 w-6 p-0"
+                  data-testid="button-close-deactivate-modal"
+                >
+                  ✕
+                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>

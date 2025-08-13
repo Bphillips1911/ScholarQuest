@@ -1625,6 +1625,30 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-import { DatabaseStorage } from "./db-storage";
+// Use MemStorage for now since DatabaseStorage is incomplete
+export const storage = new MemStorage();
 
-export const storage = new DatabaseStorage();
+// Seed the memory storage with pending teacher from database
+async function seedMemoryStorage() {
+  try {
+    // Add the pending teacher data
+    storage.teacherAuth.set("b23f37c3-553f-406a-8599-d7ad0c830523", {
+      id: "b23f37c3-553f-406a-8599-d7ad0c830523",
+      name: "Michael Davis",
+      email: "michael.davis@bhsteam.edu",
+      passwordHash: "$2b$10$6aOV.YTRNvFP3gAWP/sec.Buzwo4jFVek9K3qoP2n3IwxHhjyuoK2",
+      subject: "Science",
+      gradeRole: "7th Grade",
+      isApproved: false,
+      createdAt: new Date("2025-08-13T00:47:13.989Z"),
+      updatedAt: new Date("2025-08-13T00:47:13.989Z"),
+      lastLoginAt: null
+    });
+    console.log("Memory storage seeded with pending teacher");
+  } catch (error) {
+    console.error("Failed to seed memory storage:", error);
+  }
+}
+
+// Initialize memory storage
+seedMemoryStorage();

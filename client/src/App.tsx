@@ -15,6 +15,7 @@ import ParentLetter from "@/pages/parent-letter";
 import ParentSignup from "@/pages/parent-signup";
 import ParentLogin from "@/pages/parent-login";
 import ParentPortal from "@/pages/parent-portal";
+import ParentPortalEnhanced from "@/pages/parent-portal-enhanced";
 import TeacherLogin from "@/pages/teacher-login";
 import TeacherSignup from "@/pages/teacher-signup";
 import TeacherForgotPassword from "@/pages/teacher-forgot-password";
@@ -43,7 +44,7 @@ function Router() {
         {/* Parent portal routes without navigation */}
         <Route path="/parent-signup" component={ParentSignup} />
         <Route path="/parent-login" component={ParentLogin} />
-        <Route path="/parent-portal" component={ParentPortal} />
+        <Route path="/parent-portal" component={ParentPortalEnhanced} />
         
         {/* Authentication routes without navigation */}
         <Route path="/teacher-login" component={TeacherLogin} />

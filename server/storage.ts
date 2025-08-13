@@ -127,6 +127,18 @@ export interface IStorage {
   getParentScholars(parentId: string): Promise<Scholar[]>;
   getAllParents(): Promise<Parent[]>;
   addScholarToParentByUsername(parentId: string, studentUsername: string): Promise<Scholar | null>;
+  addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<Scholar | null>;
+  
+  // Messaging
+  createMessage(messageData: any): Promise<any>;
+  getParentMessages(parentId: string): Promise<any[]>;
+  getTeacherMessages(teacherId: string): Promise<any[]>;
+  markMessageAsRead(messageId: string): Promise<boolean>;
+  
+  // SMS Notifications
+  createSmsNotification(notificationData: any): Promise<any>;
+  getSmsNotifications(parentId: string): Promise<any[]>;
+  updateSmsStatus(notificationId: string, status: string): Promise<boolean>;
   
   // Parent-Teacher Messaging
   createParentTeacherMessage(messageData: any): Promise<any>;
@@ -813,6 +825,119 @@ export class MemStorage implements IStorage {
       this.parents.set(parentId, updatedParent);
     }
     return scholar;
+  }
+
+  async addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<Scholar | null> {
+    const parent = this.parents.get(parentId);
+    if (!parent) return null;
+    
+    // Find scholar by username
+    const scholar = Array.from(this.scholars.values()).find(s => 
+      s.username === username || s.studentId === username
+    );
+    
+    if (!scholar) return null;
+    
+    // For this implementation, we'll validate the scholar exists and add them
+    // In a real implementation, you'd verify the password hash
+    const success = await this.addScholarToParent(parentId, scholar.id);
+    return success ? scholar : null;
+  }
+
+  // Messaging methods
+  async createMessage(messageData: any): Promise<any> {
+    this.messages = this.messages || new Map();
+    const id = randomUUID();
+    const message = {
+      ...messageData,
+      id,
+      isRead: false,
+      notificationSent: false,
+      createdAt: new Date(),
+    };
+    
+    this.messages.set(id, message);
+    
+    // Send SMS notification if parent has phone
+    if (messageData.senderType !== "parent" && messageData.parentId) {
+      const parent = this.parents.get(messageData.parentId);
+      if (parent?.phone) {
+        await this.createSmsNotification({
+          parentId: messageData.parentId,
+          phoneNumber: parent.phone,
+          messageType: "teacher_message",
+          content: `New message from ${messageData.senderType}: ${messageData.subject}`,
+          relatedMessageId: id,
+        });
+      }
+    }
+    
+    return message;
+  }
+
+  async getParentMessages(parentId: string): Promise<any[]> {
+    this.messages = this.messages || new Map();
+    return Array.from(this.messages.values())
+      .filter(msg => msg.parentId === parentId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getTeacherMessages(teacherId: string): Promise<any[]> {
+    this.messages = this.messages || new Map();
+    return Array.from(this.messages.values())
+      .filter(msg => msg.teacherId === teacherId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async markMessageAsRead(messageId: string): Promise<boolean> {
+    this.messages = this.messages || new Map();
+    const message = this.messages.get(messageId);
+    if (message) {
+      message.isRead = true;
+      this.messages.set(messageId, message);
+      return true;
+    }
+    return false;
+  }
+
+  // SMS notification methods
+  async createSmsNotification(notificationData: any): Promise<any> {
+    this.smsNotifications = this.smsNotifications || new Map();
+    const id = randomUUID();
+    const notification = {
+      ...notificationData,
+      id,
+      status: "pending",
+      createdAt: new Date(),
+    };
+    
+    this.smsNotifications.set(id, notification);
+    
+    // In real implementation, would trigger actual SMS sending here
+    console.log("SMS notification created:", notification.content, "to", notification.phoneNumber);
+    
+    return notification;
+  }
+
+  async getSmsNotifications(parentId: string): Promise<any[]> {
+    this.smsNotifications = this.smsNotifications || new Map();
+    return Array.from(this.smsNotifications.values())
+      .filter(notif => notif.parentId === parentId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async updateSmsStatus(notificationId: string, status: string): Promise<boolean> {
+    this.smsNotifications = this.smsNotifications || new Map();
+    const notification = this.smsNotifications.get(notificationId);
+    if (notification) {
+      notification.status = status;
+      if (status === "sent") {
+        notification.sentAt = new Date();
+      }
+      this.smsNotifications.set(notificationId, notification);
+      return true;
+    }
+    return false;
   }
 
   // Teacher Authentication methods

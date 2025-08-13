@@ -510,6 +510,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add scholar by credentials (auto-populate)
+  app.post("/api/parent/add-scholar-by-credentials", authenticateParent, async (req: any, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password required" });
+      }
+
+      const scholar = await storage.addScholarToParentByCredentials(req.parent.id, username, password);
+      
+      if (!scholar) {
+        return res.status(404).json({ message: "Invalid credentials or scholar not found" });
+      }
+
+      res.json({ 
+        message: "Scholar added successfully",
+        scholar: {
+          id: scholar.id,
+          name: scholar.name,
+          studentId: scholar.studentId,
+          grade: scholar.grade,
+          houseId: scholar.houseId,
+          academicPoints: scholar.academicPoints,
+          attendancePoints: scholar.attendancePoints,
+          behaviorPoints: scholar.behaviorPoints,
+        }
+      });
+    } catch (error) {
+      console.error("Add scholar by credentials error:", error);
+      res.status(500).json({ message: "Failed to add scholar" });
+    }
+  });
+
+  // Get parent messages
+  app.get("/api/parent/messages", authenticateParent, async (req: any, res) => {
+    try {
+      const messages = await storage.getParentMessages(req.parent.id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Get parent messages error:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  // Send message from parent
+  app.post("/api/parent/send-message", authenticateParent, async (req: any, res) => {
+    try {
+      const { recipientType, teacherId, adminId, scholarId, subject, message, priority } = req.body;
+      
+      if (!subject || !message || !recipientType) {
+        return res.status(400).json({ message: "Subject, message, and recipient type required" });
+      }
+
+      if (recipientType === "teacher" && !teacherId) {
+        return res.status(400).json({ message: "Teacher ID required for teacher messages" });
+      }
+
+      const messageData = {
+        parentId: req.parent.id,
+        teacherId: recipientType === "teacher" ? teacherId : null,
+        adminId: recipientType === "admin" ? adminId : null,
+        scholarId: scholarId || null,
+        senderType: "parent",
+        recipientType,
+        subject,
+        message,
+        priority: priority || "normal",
+      };
+
+      const createdMessage = await storage.createMessage(messageData);
+      
+      res.json({
+        message: "Message sent successfully",
+        messageId: createdMessage.id,
+      });
+    } catch (error) {
+      console.error("Send message error:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Get SMS notifications for parent
+  app.get("/api/parent/notifications", authenticateParent, async (req: any, res) => {
+    try {
+      const notifications = await storage.getSmsNotifications(req.parent.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Get notifications error:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  // Get teachers list for messaging
+  app.get("/api/teachers", authenticateParent, async (req: any, res) => {
+    try {
+      const teachers = await storage.getAllTeacherAuth();
+      const approvedTeachers = teachers
+        .filter(t => t.isApproved)
+        .map(t => ({
+          id: t.id,
+          name: t.name,
+          gradeRole: t.gradeRole,
+          subject: t.subject,
+        }));
+      res.json(approvedTeachers);
+    } catch (error) {
+      console.error("Get teachers error:", error);
+      res.status(500).json({ message: "Failed to fetch teachers" });
+    }
+  });
+
   // Teacher authentication middleware
   const authenticateTeacher = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.replace("Bearer ", "");

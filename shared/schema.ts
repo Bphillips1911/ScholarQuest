@@ -100,13 +100,31 @@ export const parents = pgTable("parents", {
 export const parentTeacherMessages = pgTable("parent_teacher_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   parentId: varchar("parent_id").notNull().references(() => parents.id),
-  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
-  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
-  senderType: varchar("sender_type").notNull(), // 'parent' or 'teacher'
+  teacherId: varchar("teacher_id").references(() => teacherAuth.id), // Optional for parent-to-admin messages
+  adminId: varchar("admin_id").references(() => administrators.id), // For parent-to-admin messages
+  scholarId: varchar("scholar_id").references(() => scholars.id), // Optional for general inquiries
+  senderType: varchar("sender_type").notNull(), // 'parent', 'teacher', or 'admin'
+  recipientType: varchar("recipient_type").notNull(), // 'parent', 'teacher', or 'admin'
   subject: text("subject").notNull(),
   message: text("message").notNull(), // Minimum 10 characters for basic validation
   isRead: boolean("is_read").default(false),
   threadId: varchar("thread_id"), // For grouping related messages
+  priority: varchar("priority").default("normal"), // 'low', 'normal', 'high', 'urgent'
+  notificationSent: boolean("notification_sent").default(false), // Track SMS/email notifications
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// SMS Notifications Table
+export const smsNotifications = pgTable("sms_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentId: varchar("parent_id").notNull().references(() => parents.id),
+  phoneNumber: varchar("phone_number").notNull(),
+  messageType: varchar("message_type").notNull(), // 'teacher_message', 'pbis_achievement', 'house_update', 'general'
+  content: text("content").notNull(),
+  status: varchar("status").default("pending"), // 'pending', 'sent', 'failed', 'delivered'
+  relatedMessageId: varchar("related_message_id").references(() => parentTeacherMessages.id),
+  scheduledAt: timestamp("scheduled_at"),
+  sentAt: timestamp("sent_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -319,12 +337,28 @@ export const insertParentTeacherMessageSchema = createInsertSchema(parentTeacher
   id: true,
   isRead: true,
   createdAt: true,
+  notificationSent: true,
 }).extend({
-  senderType: z.enum(["parent", "teacher"]),
+  senderType: z.enum(["parent", "teacher", "admin"]),
+  recipientType: z.enum(["parent", "teacher", "admin"]),
   subject: z.string().min(1).max(200),
   message: z.string().min(10).max(2000),
+  priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
+});
+
+export const insertSmsNotificationSchema = createInsertSchema(smsNotifications).omit({
+  id: true,
+  createdAt: true,
+  sentAt: true,
+}).extend({
+  messageType: z.enum(["teacher_message", "pbis_achievement", "house_update", "general"]),
+  content: z.string().min(1).max(160), // SMS character limit
+  status: z.enum(["pending", "sent", "failed", "delivered"]).optional(),
   threadId: z.string().optional(),
 });
 
 export type ParentTeacherMessage = typeof parentTeacherMessages.$inferSelect;
+export type SmsNotification = typeof smsNotifications.$inferSelect;
+export type InsertParentTeacherMessage = typeof parentTeacherMessages.$inferInsert;
+export type InsertSmsNotification = typeof smsNotifications.$inferInsert;
 export type InsertParentTeacherMessage = z.infer<typeof insertParentTeacherMessageSchema>;

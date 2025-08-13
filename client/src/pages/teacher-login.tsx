@@ -20,7 +20,13 @@ export default function TeacherLogin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/teacher-auth/login", {
+      // Use deployment-compatible API endpoint
+      const apiUrl = window.location.hostname.includes('replit.app') 
+        ? `${window.location.origin}/api/teacher-auth/login`
+        : "/api/teacher-auth/login";
+      
+      console.log("Teacher login attempt to:", apiUrl);
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

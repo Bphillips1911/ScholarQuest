@@ -20,7 +20,13 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/admin/login", {
+      // Use deployment-compatible API endpoint
+      const apiUrl = window.location.hostname.includes('replit.app') 
+        ? `${window.location.origin}/api/admin/login`
+        : "/api/admin/login";
+      
+      console.log("Admin login attempt to:", apiUrl);
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

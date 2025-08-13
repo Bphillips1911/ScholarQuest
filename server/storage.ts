@@ -1175,7 +1175,7 @@ export class MemStorage implements IStorage {
       }
     ];
 
-    sampleParents.forEach(async (parentData) => {
+    for (const parentData of sampleParents) {
       const hashedPassword = await bcrypt.hash("parent123", 10);
       const parent: Parent = {
         id: randomUUID(),
@@ -1185,7 +1185,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date(),
       };
       this.parents.set(parent.id, parent);
-    });
+    }
   }
 
   // Initialize demo teacher authentication accounts

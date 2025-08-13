@@ -99,20 +99,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Emergency deployment fix endpoint - force teacher creation
   app.post("/api/emergency/seed-teachers", async (req, res) => {
     try {
-      const { seedDatabase } = await import("./seed");
-      console.log("EMERGENCY: Force seeding teachers...");
-      await seedDatabase();
+      console.log("EMERGENCY: Starting deployment teacher creation...");
       
-      const dbTeachers = await db.select().from(teacherAuth);
+      // Direct database teacher creation (bypassing regular seeding)
+      const bcrypt = (await import("bcryptjs")).default;
+      const { randomUUID } = await import("crypto");
+      
+      const hashedPassword = await bcrypt.hash("BHSATeacher2025!", 10);
+      const requiredTeachers = [
+        { email: "sarah.johnson@bhsteam.edu", name: "Sarah Johnson", gradeRole: "6th Grade", subject: "Mathematics" },
+        { email: "jennifer.adams@bhsteam.edu", name: "Jennifer Adams", gradeRole: "7th Grade", subject: "Science" },
+        { email: "michael.davis@bhsteam.edu", name: "Michael Davis", gradeRole: "8th Grade", subject: "English" }
+      ];
+      
+      const existingTeachers = await db.select().from(teacherAuth);
+      console.log(`EMERGENCY: Found ${existingTeachers.length} existing teachers`);
+      
+      let created = 0;
+      for (const teacherInfo of requiredTeachers) {
+        const existing = existingTeachers.find(t => t.email === teacherInfo.email);
+        if (!existing) {
+          const teacherData = {
+            id: randomUUID(),
+            email: teacherInfo.email,
+            name: teacherInfo.name,
+            gradeRole: teacherInfo.gradeRole,
+            subject: teacherInfo.subject,
+            passwordHash: hashedPassword,
+            isApproved: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          
+          await db.insert(teacherAuth).values(teacherData);
+          console.log(`EMERGENCY: Created teacher ${teacherInfo.email}`);
+          created++;
+        }
+      }
+      
+      const finalTeachers = await db.select().from(teacherAuth);
       res.json({
         success: true,
-        message: "Emergency teacher seeding completed",
-        teacherCount: dbTeachers.length,
-        teachers: dbTeachers.map(t => ({ email: t.email, name: t.name }))
+        message: `Emergency teacher seeding completed - created ${created} teachers`,
+        beforeCount: existingTeachers.length,
+        afterCount: finalTeachers.length,
+        teachers: finalTeachers.map(t => ({ email: t.email, name: t.name, approved: t.isApproved }))
       });
     } catch (error) {
       console.error("EMERGENCY SEED ERROR:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message, stack: error.stack });
     }
   });
 

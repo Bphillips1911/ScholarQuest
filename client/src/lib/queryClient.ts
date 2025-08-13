@@ -14,16 +14,20 @@ export async function apiRequest(
 ): Promise<Response> {
   const headers: HeadersInit = data ? { "Content-Type": "application/json" } : {};
   
-  // Add authorization header for student requests
+  // Add authorization headers for all user types (30-day tokens for cost reduction)
   const studentToken = localStorage.getItem("studentToken");
+  const teacherToken = localStorage.getItem("teacherToken");
+  const parentToken = localStorage.getItem("parentToken");
+  const adminToken = localStorage.getItem("adminToken");
+  
   if (url.startsWith('/api/student/') && studentToken) {
     headers.Authorization = `Bearer ${studentToken}`;
-  }
-  
-  // Add authorization header for teacher requests
-  const teacherToken = localStorage.getItem("teacherToken");
-  if (url.startsWith('/api/teacher/') && teacherToken) {
+  } else if (url.startsWith('/api/teacher/') && teacherToken) {
     headers.Authorization = `Bearer ${teacherToken}`;
+  } else if (url.startsWith('/api/parent/') && parentToken) {
+    headers.Authorization = `Bearer ${parentToken}`;
+  } else if (url.startsWith('/api/admin/') && adminToken) {
+    headers.Authorization = `Bearer ${adminToken}`;
   }
   
   const res = await fetch(url, {
@@ -46,16 +50,20 @@ export const getQueryFn: <T>(options: {
     const url = queryKey.join("/") as string;
     const headers: HeadersInit = {};
     
-    // Add authorization header for student requests
+    // Add authorization headers for all user types (30-day tokens for cost reduction)
     const studentToken = localStorage.getItem("studentToken");
+    const teacherToken = localStorage.getItem("teacherToken");
+    const parentToken = localStorage.getItem("parentToken");
+    const adminToken = localStorage.getItem("adminToken");
+    
     if (url.includes('/api/student/') && studentToken) {
       headers.Authorization = `Bearer ${studentToken}`;
-    }
-    
-    // Add authorization header for teacher requests
-    const teacherToken = localStorage.getItem("teacherToken");
-    if (url.includes('/api/teacher/') && teacherToken) {
+    } else if (url.includes('/api/teacher/') && teacherToken) {
       headers.Authorization = `Bearer ${teacherToken}`;
+    } else if (url.includes('/api/parent/') && parentToken) {
+      headers.Authorization = `Bearer ${parentToken}`;
+    } else if (url.includes('/api/admin/') && adminToken) {
+      headers.Authorization = `Bearer ${adminToken}`;
     }
     
     const res = await fetch(url, {

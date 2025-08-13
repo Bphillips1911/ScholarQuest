@@ -287,7 +287,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as any;
+      // Use consistent secret for both preview and deployment
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-parent-secret-2025-stable";
+      const decoded = jwt.verify(token, jwtSecret) as any;
       const parent = await storage.getParent(decoded.parentId);
       if (!parent) {
         return res.status(401).json({ message: "Invalid token" });
@@ -369,11 +371,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Continue with registration even if email fails
       }
 
-      // Generate JWT token
+      // Generate JWT token with extended expiry (30 days for cost reduction)
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-parent-secret-2025-stable";
       const token = jwt.sign(
         { parentId: parent.id },
-        process.env.JWT_SECRET || "fallback_secret",
-        { expiresIn: "7d" }
+        jwtSecret,
+        { expiresIn: "30d" }
       );
 
       res.status(201).json({
@@ -410,10 +413,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Generate parent login token with extended expiry (30 days for cost reduction)
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-parent-secret-2025-stable";
       const token = jwt.sign(
         { parentId: parent.id },
-        process.env.JWT_SECRET || "fallback_secret",
-        { expiresIn: "7d" }
+        jwtSecret,
+        { expiresIn: "30d" }
       );
 
       res.json({
@@ -1108,7 +1113,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "No token provided" });
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as any;
+      // Use consistent secret for both preview and deployment
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
+      const decoded = jwt.verify(token, jwtSecret) as any;
       const student = await storage.getScholar(decoded.studentId);
       
       if (!student) {
@@ -1135,9 +1142,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Create session token
-      const token = jwt.sign({ studentId: student.id }, process.env.JWT_SECRET || "secret", { expiresIn: "24h" });
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      // Create session token with extended expiry (30 days for cost reduction)
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
+      const token = jwt.sign({ studentId: student.id }, jwtSecret, { expiresIn: "30d" });
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
       await storage.createStudentSession({
         studentId: student.id,
@@ -1547,18 +1555,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Generate session token
+      // Generate session token with extended expiry (30 days for cost reduction)
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-admin-secret-2025-stable";
       const token = jwt.sign(
         { adminId: admin.id, title: admin.title },
-        process.env.JWT_SECRET || "fallback_secret",
-        { expiresIn: "24h" }
+        jwtSecret,
+        { expiresIn: "30d" }
       );
 
-      // Create session record
+      // Create session record with extended expiry (30 days)
       await storage.createAdminSession({
         adminId: admin.id,
         token,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       });
 
       res.json({
@@ -1654,7 +1663,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
+      // Use consistent secret for both preview and deployment
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-admin-secret-2025-stable";
+      const decoded: any = jwt.verify(token, jwtSecret);
       const session = await storage.getAdminSession(token);
       if (!session) {
         return res.status(401).json({ message: "Invalid session" });

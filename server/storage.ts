@@ -1850,6 +1850,15 @@ export class DatabaseStorage implements IStorage {
     const result = await db.update(teacherAuth)
       .set({ isApproved: true })
       .where(eq(teacherAuth.id, teacherId));
+    
+    // Sync the change to in-memory storage
+    const teacher = this.teacherAuth.get(teacherId);
+    if (teacher) {
+      teacher.isApproved = true;
+      this.teacherAuth.set(teacherId, teacher);
+      console.log(`✅ SYNC: Approved teacher ${teacher.name} in both database and memory`);
+    }
+    
     return result.rowCount > 0;
   }
 
@@ -1891,7 +1900,7 @@ class PersistentMemStorage extends MemStorage {
       const dbTeachers = await db.select().from(teacherAuth).catch(() => []);
       console.log(`Loading ${dbTeachers.length} teachers from database`);
       for (const teacher of dbTeachers) {
-        console.log(`Loading teacher: ${teacher.name} (${teacher.email})`);
+        console.log(`Loading teacher: ${teacher.name} (${teacher.email}) - Approved: ${teacher.isApproved}`);
         this.teacherAuth.set(teacher.id, teacher);
       }
 
@@ -2141,27 +2150,4 @@ class PersistentMemStorage extends MemStorage {
 
 export const storage = new PersistentMemStorage();
 
-// Seed the memory storage with pending teacher from database
-async function seedMemoryStorage() {
-  try {
-    // Add the pending teacher data
-    storage.teacherAuth.set("b23f37c3-553f-406a-8599-d7ad0c830523", {
-      id: "b23f37c3-553f-406a-8599-d7ad0c830523",
-      name: "Michael Davis",
-      email: "michael.davis@bhsteam.edu",
-      passwordHash: "$2b$10$6aOV.YTRNvFP3gAWP/sec.Buzwo4jFVek9K3qoP2n3IwxHhjyuoK2",
-      subject: "Science",
-      gradeRole: "7th Grade",
-      isApproved: false,
-      createdAt: new Date("2025-08-13T00:47:13.989Z"),
-      updatedAt: new Date("2025-08-13T00:47:13.989Z"),
-      lastLoginAt: null
-    });
-    console.log("Memory storage seeded with pending teacher");
-  } catch (error) {
-    console.error("Failed to seed memory storage:", error);
-  }
-}
-
-// Initialize memory storage
-seedMemoryStorage();
+// Database handles all teacher data - no manual seeding needed

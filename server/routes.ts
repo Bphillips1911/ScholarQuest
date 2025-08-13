@@ -768,20 +768,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have permission to add scholars for this grade" });
       }
 
-      // Add teacherId to the scholar data
+      // Hash password if provided
+      let passwordHash = undefined;
+      if (scholarData.password) {
+        passwordHash = await bcrypt.hash(scholarData.password, 10);
+      }
+
+      // Add teacherId and passwordHash to the scholar data  
       const scholarWithTeacher = {
         ...scholarData,
         teacherId: teacher.id,
         addedByTeacher: teacher.id,
+        passwordHash,
+        password: undefined, // Remove plain password from data
       };
 
-      console.log("Scholar data with teacher:", scholarWithTeacher);
+      console.log("Scholar data with teacher:", { ...scholarWithTeacher, passwordHash: passwordHash ? "***" : undefined });
       
       const validatedData = insertScholarSchema.parse(scholarWithTeacher);
-      console.log("Validated scholar data:", validatedData);
+      console.log("Validated scholar data:", { ...validatedData, passwordHash: validatedData.passwordHash ? "***" : undefined });
       
       const scholar = await storage.createScholar(validatedData);
-      console.log("Created scholar:", scholar);
+      console.log("Created scholar:", { ...scholar, passwordHash: scholar.passwordHash ? "***" : undefined });
       
       res.status(201).json(scholar);
     } catch (error) {

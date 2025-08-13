@@ -49,6 +49,8 @@ export default function TeacherDashboard() {
     studentId: "",
     houseId: "",
     grade: 6,
+    username: "",
+    password: "",
   });
 
   // PBIS form state
@@ -125,10 +127,10 @@ export default function TeacherDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
       setShowAddScholar(false);
-      setNewScholar({ name: "", studentId: "", houseId: "", grade: 6 });
+      setNewScholar({ name: "", studentId: "", houseId: "", grade: 6, username: "", password: "" });
       toast({
         title: "Scholar Added",
-        description: "Student has been successfully added to the system",
+        description: "Student has been successfully added with login credentials",
       });
     },
     onError: (error: Error) => {
@@ -207,11 +209,33 @@ export default function TeacherDashboard() {
     setLocation("/teacher-login");
   };
 
+  const generateUsername = () => {
+    if (newScholar.name && newScholar.studentId) {
+      const nameParts = newScholar.name.trim().split(' ');
+      const firstName = nameParts[0].toLowerCase();
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1].toLowerCase() : '';
+      
+      // Use first 3 letters of first name + first 3 letters of last name + last 2 digits of student ID
+      const firstPart = firstName.substring(0, 3);
+      const lastPart = lastName.substring(0, 3);
+      const studentIdPart = newScholar.studentId.slice(-2);
+      
+      const generatedUsername = `${firstPart}${lastPart}${studentIdPart}`.toLowerCase();
+      setNewScholar(prev => ({ ...prev, username: generatedUsername }));
+    }
+  };
+
+  const generatePassword = () => {
+    // Generate a simple password using student ID
+    const password = `bhsa${newScholar.studentId.toLowerCase()}`;
+    setNewScholar(prev => ({ ...prev, password }));
+  };
+
   const handleAddScholar = () => {
-    if (!newScholar.name || !newScholar.studentId || !newScholar.houseId) {
+    if (!newScholar.name || !newScholar.studentId || !newScholar.houseId || !newScholar.username || !newScholar.password) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
+        title: "Missing Information", 
+        description: "Please fill in all required fields including username and password",
         variant: "destructive",
       });
       return;
@@ -475,6 +499,65 @@ export default function TeacherDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                
+                {/* Username Generation Section */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-sm font-medium">Student Login Credentials</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={generateUsername}
+                        disabled={!newScholar.name || !newScholar.studentId}
+                        data-testid="button-generate-username"
+                      >
+                        Generate Username
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={generatePassword}
+                        disabled={!newScholar.studentId}
+                        data-testid="button-generate-password"
+                      >
+                        Generate Password
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <Label htmlFor="username">Username</Label>
+                      <Input
+                        id="username"
+                        value={newScholar.username}
+                        onChange={(e) => setNewScholar({...newScholar, username: e.target.value})}
+                        placeholder="Generated or custom username"
+                        data-testid="input-username"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Students will use this to log in to their accounts
+                      </p>
+                    </div>
+                    <div>
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="text"
+                        value={newScholar.password}
+                        onChange={(e) => setNewScholar({...newScholar, password: e.target.value})}
+                        placeholder="Generated or custom password"
+                        data-testid="input-password"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Students will use this password to log in
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button 

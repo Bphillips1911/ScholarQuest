@@ -8,6 +8,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes (August 13, 2025)
 
+## Teacher Username Generation System - PERMANENT SOLUTION ✅
+- **Feature Added**: Teachers can now generate usernames and passwords for students they add
+- **Username Pattern**: First 3 letters of first name + first 3 letters of last name + last 2 digits of student ID
+- **Password Pattern**: "bhsa" + student ID (e.g., "bhsabh6001")
+- **Security**: Passwords are hashed with bcrypt before database storage
+- **Database Support**: PostgreSQL schema includes username and password_hash fields
+- **Data Persistence**: Verified through multiple server restarts - all data survives permanently
+- **Authentication**: Fixed JWT token consistency with hardcoded secret "bhsa-teacher-secret-2025-stable"
+
 ## Parent Portal Authentication Fixes
 - **Issue Fixed**: Parent login worked in preview mode but failed in deployment due to JWT secret inconsistency
 - **Solution**: Hardcoded consistent JWT secret "bhsa-parent-secret-2025-stable" for all environments

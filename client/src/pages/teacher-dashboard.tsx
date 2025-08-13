@@ -209,27 +209,66 @@ export default function TeacherDashboard() {
     setLocation("/teacher-login");
   };
 
+  // Username generation function
   const generateUsername = () => {
-    if (newScholar.name && newScholar.studentId) {
-      const nameParts = newScholar.name.trim().split(' ');
-      const firstName = nameParts[0].toLowerCase();
-      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1].toLowerCase() : '';
-      
-      // Use first 3 letters of first name + first 3 letters of last name + last 2 digits of student ID
-      const firstPart = firstName.substring(0, 3);
-      const lastPart = lastName.substring(0, 3);
-      const studentIdPart = newScholar.studentId.slice(-2);
-      
-      const generatedUsername = `${firstPart}${lastPart}${studentIdPart}`.toLowerCase();
-      setNewScholar(prev => ({ ...prev, username: generatedUsername }));
+    if (!newScholar.name || !newScholar.studentId) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter student name and ID first",
+        variant: "destructive",
+      });
+      return;
     }
+
+    const nameParts = newScholar.name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts[nameParts.length - 1] || '';
+    
+    // Take first 3 letters of first and last name
+    const firstPart = firstName.toLowerCase().substring(0, 3);
+    const lastPart = lastName.toLowerCase().substring(0, 3);
+    
+    // Get last 2 digits of student ID
+    const studentIdDigits = newScholar.studentId.replace(/\D/g, '');
+    const lastTwoDigits = studentIdDigits.slice(-2).padStart(2, '0');
+    
+    const generatedUsername = `${firstPart}${lastPart}${lastTwoDigits}`;
+    
+    setNewScholar(prev => ({
+      ...prev,
+      username: generatedUsername
+    }));
+
+    toast({
+      title: "Username Generated",
+      description: `Generated username: ${generatedUsername}`,
+    });
   };
 
+  // Password generation function
   const generatePassword = () => {
-    // Generate a simple password using student ID
-    const password = `bhsa${newScholar.studentId.toLowerCase()}`;
-    setNewScholar(prev => ({ ...prev, password }));
+    if (!newScholar.studentId) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter student ID first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const generatedPassword = `bhsa${newScholar.studentId.toLowerCase()}`;
+    
+    setNewScholar(prev => ({
+      ...prev,
+      password: generatedPassword
+    }));
+
+    toast({
+      title: "Password Generated",
+      description: "Password generated successfully",
+    });
   };
+
 
   const handleAddScholar = () => {
     if (!newScholar.name || !newScholar.studentId || !newScholar.houseId || !newScholar.username || !newScholar.password) {

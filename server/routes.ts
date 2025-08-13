@@ -635,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Use consistent deployment-compatible secret 
       const jwtSecret = "bhsa-teacher-secret-2025-stable";
-      console.log("AUTH MIDDLEWARE: JWT_SECRET source:", "deployment-compatible-secret");
+      console.log("AUTH MIDDLEWARE: JWT_SECRET source:", "bhsa-teacher-secret-2025-stable");
       
       const decoded: any = jwt.verify(token, jwtSecret);
       console.log("AUTH MIDDLEWARE: Decoded token:", decoded);
@@ -1034,7 +1034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate session token
       const token = jwt.sign(
         { teacherId: teacher.id, gradeRole: teacher.gradeRole },
-        process.env.JWT_SECRET || "fallback_secret",
+        "bhsa-teacher-secret-2025-stable",
         { expiresIn: "7d" }
       );
 

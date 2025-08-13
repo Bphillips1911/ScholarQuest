@@ -21,6 +21,7 @@ Preferred communication style: Simple, everyday language.
 - **Seeding Priority**: Teachers are now seeded before houses to guarantee deployment availability
 - **Enhanced Deployment Seeding**: Fixed schema field mismatch and added aggressive deployment-specific teacher creation
 - **Deployment Debug**: Added comprehensive logging and verification endpoints for deployment troubleshooting
+- **Fresh Deployment Strategy**: Identified deployment environment isolation requiring complete redeployment for teacher authentication fix
 
 ## Parent Portal Authentication Fixes
 - **Issue Fixed**: Parent login worked in preview mode but failed in deployment due to JWT secret inconsistency

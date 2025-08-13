@@ -1374,11 +1374,15 @@ export class MemStorage implements IStorage {
   }
 
   async getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null> {
+    console.log(`STORAGE: Looking for teacher with email: ${email}`);
+    console.log(`STORAGE: Available teachers:`, Array.from(this.teacherAuth.values()).map(t => `${t.email} (${t.name})`));
     for (const teacher of this.teacherAuth.values()) {
       if (teacher.email === email) {
+        console.log(`STORAGE: Found teacher: ${teacher.name}, approved: ${teacher.isApproved}`);
         return teacher;
       }
     }
+    console.log(`STORAGE: Teacher ${email} not found`);
     return null;
   }
 
@@ -1681,7 +1685,9 @@ class PersistentMemStorage extends MemStorage {
     try {
       // Load teachers
       const dbTeachers = await db.select().from(teacherAuth).catch(() => []);
+      console.log(`Loading ${dbTeachers.length} teachers from database`);
       for (const teacher of dbTeachers) {
+        console.log(`Loading teacher: ${teacher.name} (${teacher.email})`);
         this.teacherAuth.set(teacher.id, teacher);
       }
 

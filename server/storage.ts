@@ -1699,10 +1699,10 @@ class PersistentMemStorage extends MemStorage {
           // Ensure all fields have default values if missing from database
           const completeScholar = {
             ...scholar,
-            isActive: scholar.isActive ?? true,
-            deactivatedAt: scholar.deactivatedAt ?? null,
-            deactivatedBy: scholar.deactivatedBy ?? null,
-            deactivationReason: scholar.deactivationReason ?? null,
+            isActive: true,
+            deactivatedAt: null,
+            deactivatedBy: null,
+            deactivationReason: null,
             isHouseSorted: scholar.isHouseSorted ?? true,
             sortingNumber: scholar.sortingNumber ?? null,
           };
@@ -1712,6 +1712,7 @@ class PersistentMemStorage extends MemStorage {
         console.log(`Successfully loaded ${dbScholars.length} scholars from database`);
       } catch (error) {
         console.error("Error loading scholars from database:", error);
+        console.log(`Failed to load scholars, continuing with ${this.scholars.size} in-memory scholars`);
       }
 
       // Load parents
@@ -1737,7 +1738,7 @@ class PersistentMemStorage extends MemStorage {
         this.pbisEntries.set(entry.id, entry);
       }
 
-      console.log(`Loaded ${dbTeachers.length} teachers, ${dbAdmins.length} admins, ${dbScholars.length} scholars from database`);
+      console.log(`Loaded ${dbTeachers.length} teachers, ${dbAdmins.length} admins, ${this.scholars.size} scholars from database`);
     } catch (error) {
       console.error("Error loading data from database:", error);
       // Continue with in-memory defaults if database fails
@@ -1870,7 +1871,7 @@ class PersistentMemStorage extends MemStorage {
 
   async createScholar(scholar: InsertScholar): Promise<Scholar> {
     const newScholar = await super.createScholar(scholar);
-    // Sync to database
+    // Sync to database (only fields that exist in current schema)
     try {
       await db.insert(scholars).values({
         id: newScholar.id,
@@ -1898,6 +1899,7 @@ class PersistentMemStorage extends MemStorage {
       console.log(`Successfully synced scholar ${newScholar.name} to database`);
     } catch (error) {
       console.error("Failed to sync scholar to database:", error);
+      console.log("Scholar saved to memory storage only");
     }
     return newScholar;
   }

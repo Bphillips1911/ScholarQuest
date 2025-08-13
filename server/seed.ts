@@ -6,6 +6,57 @@ import { randomUUID } from "crypto";
 
 export async function seedDatabase() {
   try {
+    // ALWAYS seed teachers regardless of houses status - deployment fix
+    console.log("🔍 Checking teacher authentication status...");
+    const existingTeachers = await db.select().from(teacherAuth);
+    console.log(`Database teachers found: ${existingTeachers.length}`);
+    
+    if (existingTeachers.length === 0) {
+      console.log("🔄 Seeding teacher authentication data for deployment...");
+      
+      const hashedPassword = await bcrypt.hash("BHSATeacher2025!", 10);
+      const teachersData = [
+        {
+          id: randomUUID(),
+          email: "sarah.johnson@bhsteam.edu",
+          fullName: "Sarah Johnson", 
+          gradeRole: "6th Grade",
+          subject: "Mathematics",
+          passwordHash: hashedPassword,
+          isApproved: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: randomUUID(),
+          email: "jennifer.adams@bhsteam.edu",
+          fullName: "Jennifer Adams",
+          gradeRole: "7th Grade", 
+          subject: "Science",
+          passwordHash: hashedPassword,
+          isApproved: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: randomUUID(),
+          email: "michael.davis@bhsteam.edu",
+          fullName: "Michael Davis",
+          gradeRole: "8th Grade",
+          subject: "English",
+          passwordHash: hashedPassword,
+          isApproved: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      ];
+      
+      await db.insert(teacherAuth).values(teachersData);
+      console.log("✅ CRITICAL: Teacher authentication data seeded - 3 teachers added to database");
+    } else {
+      console.log(`✅ Found ${existingTeachers.length} existing teachers in database - no seeding needed`);
+    }
+
     // Update house icons even if houses exist
     const existingHouses = await db.select().from(houses);
     if (existingHouses.length > 0) {
@@ -16,6 +67,7 @@ export async function seedDatabase() {
       await db.update(houses).set({ icon: "🦅" }).where(eq(houses.id, "blackwell"));
       await db.update(houses).set({ icon: "🦁" }).where(eq(houses.id, "berruguete"));
       console.log("House icons updated");
+      console.log("Database seeded successfully with houses, scholars, and teachers");
       return;
     }
 
@@ -125,54 +177,6 @@ export async function seedDatabase() {
     ];
 
     await db.insert(scholars).values(scholarsData);
-
-    // Seed teacher authentication data for deployment compatibility
-    const existingTeachers = await db.select().from(teacherAuth);
-    if (existingTeachers.length === 0) {
-      console.log("Seeding teacher authentication data...");
-      
-      const hashedPassword = await bcrypt.hash("BHSATeacher2025!", 10);
-      const teachersData = [
-        {
-          id: randomUUID(),
-          email: "sarah.johnson@bhsteam.edu",
-          fullName: "Sarah Johnson", 
-          gradeRole: "6th Grade",
-          subject: "Mathematics",
-          passwordHash: hashedPassword,
-          isApproved: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: randomUUID(),
-          email: "jennifer.adams@bhsteam.edu",
-          fullName: "Jennifer Adams",
-          gradeRole: "7th Grade", 
-          subject: "Science",
-          passwordHash: hashedPassword,
-          isApproved: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: randomUUID(),
-          email: "michael.davis@bhsteam.edu",
-          fullName: "Michael Davis",
-          gradeRole: "8th Grade",
-          subject: "English",
-          passwordHash: hashedPassword,
-          isApproved: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }
-      ];
-      
-      await db.insert(teacherAuth).values(teachersData);
-      console.log("Teacher authentication data seeded successfully");
-    } else {
-      console.log(`Found ${existingTeachers.length} existing teachers in database`);
-    }
 
     console.log("Database seeded successfully with houses, scholars, and teachers");
   } catch (error) {

@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema, insertParentTeacherMessageSchema } from "@shared/schema";
+import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema, insertParentTeacherMessageSchema, teacherAuth } from "@shared/schema";
+import { db } from "./db";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -71,6 +72,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(house);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch house" });
+    }
+  });
+
+  // Debug endpoint to check teacher seeding in deployment
+  app.get("/api/debug/teacher-status", async (req, res) => {
+    try {
+      const teachers = await storage.getAllTeacherAuth();
+      const dbTeachers = await db.select().from(teacherAuth);
+      
+      res.json({
+        environment: process.env.NODE_ENV || "development",
+        memoryTeachers: teachers.length,
+        databaseTeachers: dbTeachers.length,
+        memoryTeacherEmails: teachers.map(t => ({ email: t.email, approved: t.isApproved })),
+        databaseTeacherEmails: dbTeachers.map(t => ({ email: t.email, approved: t.isApproved }))
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
   });
 

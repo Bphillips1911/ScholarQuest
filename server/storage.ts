@@ -205,7 +205,9 @@ export class MemStorage implements IStorage {
   private administrators: Map<string, Administrator>;
   private adminSessions: Map<string, AdminSession>;
   private parentScholars: Map<string, string[]>; // parentId -> scholarIds
-  private parentTeacherMessages: Map<string, ParentTeacherMessage>;
+  private parentTeacherMessages: Map<string, any>;
+  private messages: Map<string, any>;
+  private smsNotifications: Map<string, any>;
 
   constructor() {
     this.houses = new Map();
@@ -223,6 +225,8 @@ export class MemStorage implements IStorage {
     this.adminSessions = new Map();
     this.parentScholars = new Map();
     this.parentTeacherMessages = new Map();
+    this.messages = new Map();
+    this.smsNotifications = new Map();
     
     // Initialize with the five houses and sample scholars and teachers
     this.initializeHouses();
@@ -1146,7 +1150,7 @@ export class MemStorage implements IStorage {
     return true;
   }
 
-  private initializeParents() {
+  private async initializeParents() {
     const sampleParents = [
       {
         email: "parent.johnson@example.com",
@@ -1171,12 +1175,14 @@ export class MemStorage implements IStorage {
       }
     ];
 
-    sampleParents.forEach(parentData => {
+    sampleParents.forEach(async (parentData) => {
+      const hashedPassword = await bcrypt.hash("parent123", 10);
       const parent: Parent = {
         id: randomUUID(),
         ...parentData,
+        password: hashedPassword,
+        isVerified: false,
         createdAt: new Date(),
-        updatedAt: new Date(),
       };
       this.parents.set(parent.id, parent);
     });

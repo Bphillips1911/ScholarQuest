@@ -80,6 +80,10 @@ export default function ParentPortalEnhanced() {
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("parentToken");
+    console.log("🔐 Getting auth headers, token exists:", !!token);
+    if (token) {
+      console.log("🔐 Token preview:", token.substring(0, 20) + "...");
+    }
     return {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -151,18 +155,27 @@ export default function ParentPortalEnhanced() {
   // Add scholar by credentials mutation
   const addScholarByCredentialsMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
+      console.log("🔑 Adding scholar by credentials:", credentials.username);
+      const headers = getAuthHeaders();
+      console.log("📋 Request headers:", headers);
+      
       const response = await fetch("/api/parent/add-scholar-by-credentials", {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers,
         body: JSON.stringify(credentials),
       });
       
+      console.log("📡 Response status:", response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("❌ Error response:", errorData);
         throw new Error(errorData.message || "Failed to add scholar");
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log("✅ Success response:", result);
+      return result;
     },
     onSuccess: (data) => {
       toast({
@@ -185,18 +198,27 @@ export default function ParentPortalEnhanced() {
   // Add scholar by ID mutation (fallback)
   const addScholarByIdMutation = useMutation({
     mutationFn: async (studentId: string) => {
+      console.log("🆔 Adding scholar by ID:", studentId);
+      const headers = getAuthHeaders();
+      console.log("📋 Request headers:", headers);
+      
       const response = await fetch("/api/parent/add-scholar", {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers,
         body: JSON.stringify({ studentId }),
       });
       
+      console.log("📡 Response status:", response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("❌ Error response:", errorData);
         throw new Error(errorData.message || "Failed to add scholar");
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log("✅ Success response:", result);
+      return result;
     },
     onSuccess: (data) => {
       toast({

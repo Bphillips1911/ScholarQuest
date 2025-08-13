@@ -37,6 +37,14 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  // Handle token expiration by clearing localStorage
+  if (res.status === 401) {
+    localStorage.removeItem("teacherToken");
+    localStorage.removeItem("parentToken");
+    localStorage.removeItem("studentToken");
+    localStorage.removeItem("adminToken");
+  }
+  
   await throwIfResNotOk(res);
   return res;
 }
@@ -72,6 +80,11 @@ export const getQueryFn: <T>(options: {
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      // Clear expired tokens on 401 errors
+      localStorage.removeItem("teacherToken");
+      localStorage.removeItem("parentToken");
+      localStorage.removeItem("studentToken");
+      localStorage.removeItem("adminToken");
       return null;
     }
 

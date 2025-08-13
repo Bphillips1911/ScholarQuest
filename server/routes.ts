@@ -875,7 +875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const teacher = await storage.getTeacherAuthByEmail(email);
-      console.log("Found teacher:", teacher ? "yes" : "no");
+      console.log("Found teacher:", teacher ? `yes (${teacher.name}, approved: ${teacher.isApproved})` : "no");
       
       if (!teacher) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -886,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const isValidPassword = await bcrypt.compare(password, teacher.passwordHash);
-      console.log("Password valid:", isValidPassword);
+      console.log("Password valid:", isValidPassword, "Hash:", teacher.passwordHash.substring(0, 10) + "...");
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });

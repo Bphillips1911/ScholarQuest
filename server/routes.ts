@@ -512,9 +512,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Use consistent secret for both preview and deployment
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-teacher-secret-2025-stable";
-      console.log("AUTH MIDDLEWARE: JWT_SECRET source:", process.env.JWT_SECRET ? "env variable" : "fallback");
+      // Use consistent deployment-compatible secret 
+      const jwtSecret = "bhsa-teacher-secret-2025-stable";
+      console.log("AUTH MIDDLEWARE: JWT_SECRET source:", "deployment-compatible-secret");
       
       const decoded: any = jwt.verify(token, jwtSecret);
       console.log("AUTH MIDDLEWARE: Decoded token:", decoded);
@@ -1556,7 +1556,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate session token with extended expiry (30 days for cost reduction)
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-admin-secret-2025-stable";
+      // Use consistent deployment-compatible secret
+      const jwtSecret = "bhsa-admin-secret-2025-stable";
       const token = jwt.sign(
         { adminId: admin.id, title: admin.title },
         jwtSecret,
@@ -1663,8 +1664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Use consistent secret for both preview and deployment
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-admin-secret-2025-stable";
+      // Use consistent deployment-compatible secret
+      const jwtSecret = "bhsa-admin-secret-2025-stable";
       const decoded: any = jwt.verify(token, jwtSecret);
       const session = await storage.getAdminSession(token);
       if (!session) {
@@ -1873,9 +1874,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate session token with extended expiry (30 days for cost reduction)
-      // Use consistent secret for both preview and deployment
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-teacher-secret-2025-stable";
-      console.log("JWT_SECRET source:", process.env.JWT_SECRET ? "env variable" : "fallback");
+      // Use consistent deployment-compatible secret
+      const jwtSecret = "bhsa-teacher-secret-2025-stable";
+      console.log("JWT_SECRET source:", "deployment-compatible-secret");
       
       const token = jwt.sign(
         { teacherId: teacher.id, email: teacher.email },

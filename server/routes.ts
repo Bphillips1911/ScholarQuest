@@ -516,43 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
-  // Teacher routes
-  // Teacher login
-  app.post("/api/teacher/login", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      const teacher = await storage.getTeacherByEmail(email);
-      
-      if (!teacher) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      const isValid = await bcrypt.compare(password, teacher.password);
-      if (!isValid) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      const token = jwt.sign(
-        { teacherId: teacher.id, role: teacher.role },
-        process.env.JWT_SECRET || "teacher-secret-key",
-        { expiresIn: "24h" }
-      );
-
-      res.json({
-        token,
-        teacher: {
-          id: teacher.id,
-          name: teacher.name,
-          email: teacher.email,
-          role: teacher.role,
-          subject: teacher.subject,
-          canSeeGrades: teacher.canSeeGrades,
-        },
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Login failed" });
-    }
-  });
+  // Teacher routes (old login removed - using new auth system)
 
   // Create teacher account (for admin use)
   app.post("/api/teacher/register", async (req, res) => {

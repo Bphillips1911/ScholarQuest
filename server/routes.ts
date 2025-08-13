@@ -2018,9 +2018,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate session token with extended expiry (30 days for cost reduction)
-      // Use consistent deployment-compatible secret
+      // Use consistent hardcoded secret for deployment stability
       const jwtSecret = "bhsa-teacher-secret-2025-stable";
-      console.log("JWT_SECRET source:", "deployment-compatible-secret");
+      console.log("JWT_SECRET source:", "bhsa-teacher-secret-2025-stable");
       
       const token = jwt.sign(
         { teacherId: teacher.id, email: teacher.email },

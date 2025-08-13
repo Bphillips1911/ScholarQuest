@@ -440,6 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/parent/add-scholar", authenticateParent, async (req: any, res) => {
     try {
       const { studentId } = req.body;
+      console.log("PARENT-SCHOLAR LINKING: Request to add scholar", studentId, "to parent", req.parent.id);
       
       if (!studentId) {
         return res.status(400).json({ message: "Student ID required" });
@@ -448,18 +449,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find scholar by student ID
       const scholars = await storage.getAllScholars();
       const scholar = scholars.find(s => s.studentId === studentId);
+      console.log("PARENT-SCHOLAR LINKING: Found scholar:", scholar ? scholar.name : "NOT FOUND");
       
       if (!scholar) {
         return res.status(404).json({ message: "Scholar not found with this Student ID" });
       }
 
       const success = await storage.addScholarToParent(req.parent.id, scholar.id);
+      console.log("PARENT-SCHOLAR LINKING: Add scholar result:", success);
+      
       if (success) {
+        // Verify the link was created
+        const parentScholars = await storage.getParentScholars(req.parent.id);
+        console.log("PARENT-SCHOLAR LINKING: Parent now has scholars:", parentScholars.map(s => s.name));
+        
         res.json({ message: "Scholar added successfully", scholar });
       } else {
         res.status(400).json({ message: "Failed to add scholar" });
       }
     } catch (error) {
+      console.error("PARENT-SCHOLAR LINKING ERROR:", error);
       res.status(500).json({ message: "Failed to add scholar" });
     }
   });
@@ -1737,9 +1746,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Parent-Teacher Messaging Routes
   
   // Create a new message
-  app.post("/api/parent-teacher-messages", async (req, res) => {
+  app.post("/api/parent-teacher-messages", authenticateTeacher, async (req: any, res) => {
     try {
-      const messageData = insertParentTeacherMessageSchema.parse(req.body);
+      // Extract teacher ID from authentication
+      const teacherId = req.teacher.id;
+      
+      // Add required fields for teacher message
+      const messageData = insertParentTeacherMessageSchema.parse({
+        ...req.body,
+        teacherId: teacherId,
+        senderType: "teacher"
+      });
       
       // Allow messages of any reasonable length (minimum 10 characters for basic validation)
       if (messageData.message.length < 10) {
@@ -1816,6 +1833,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/parents", async (req, res) => {
     try {
       const parents = await storage.getAllParents();
+      console.log("PARENT API: Fetched", parents.length, "parents");
+      
+      // Add debug info for parent-scholar linkings
+      for (const parent of parents) {
+        console.log(`PARENT API: Parent ${parent.firstName} ${parent.lastName} has scholarIds:`, parent.scholarIds || []);
+      }
+      
       res.json(parents);
     } catch (error) {
       console.error("Error fetching parents:", error);

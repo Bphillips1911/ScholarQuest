@@ -98,11 +98,21 @@ export default function TeacherMessages() {
   });
 
   const handleScholarSelect = (scholarId: string) => {
+    console.log("TEACHER-MESSAGES: Selecting scholar", scholarId);
     setSelectedScholar(scholarId);
     const scholar = scholars.find(s => s.id === scholarId);
+    console.log("TEACHER-MESSAGES: Found scholar:", scholar?.name);
+    
     if (scholar) {
       // Find parent linked to this scholar
       const parent = parents.find(p => p.scholarIds?.includes(scholarId));
+      console.log("TEACHER-MESSAGES: Searching for parent with scholarId", scholarId);
+      console.log("TEACHER-MESSAGES: Available parents:", parents.map(p => ({ 
+        name: `${p.firstName} ${p.lastName}`, 
+        scholarIds: p.scholarIds || [] 
+      })));
+      console.log("TEACHER-MESSAGES: Found parent:", parent ? `${parent.firstName} ${parent.lastName}` : "NONE");
+      
       if (parent) {
         setMessageForm(prev => ({
           ...prev,

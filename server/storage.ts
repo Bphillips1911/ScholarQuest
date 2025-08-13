@@ -736,30 +736,54 @@ export class MemStorage implements IStorage {
     const parent = this.parents.get(parentId);
     const scholar = this.scholars.get(scholarId);
     
+    console.log("STORAGE: Adding scholar to parent - Parent exists:", !!parent, "Scholar exists:", !!scholar);
+    
     if (!parent || !scholar) return false;
     
     const scholarIds = parent.scholarIds || [];
+    console.log("STORAGE: Current scholarIds for parent:", scholarIds);
+    
     if (!scholarIds.includes(scholarId)) {
       const updatedParent = {
         ...parent,
         scholarIds: [...scholarIds, scholarId],
       };
       this.parents.set(parentId, updatedParent);
+      console.log("STORAGE: Updated parent scholarIds:", updatedParent.scholarIds);
+      
+      // Also sync to database if using DatabaseStorage
+      await this.syncParentToDatabase(updatedParent);
     }
     return true;
+  }
+  
+  private async syncParentToDatabase(parent: Parent): Promise<void> {
+    try {
+      // This would sync to the database - placeholder for now
+      console.log("STORAGE: Would sync parent to database:", parent.firstName, parent.lastName);
+    } catch (error) {
+      console.error("STORAGE: Failed to sync parent to database:", error);
+    }
   }
 
 
 
   async getParentScholars(parentId: string): Promise<Scholar[]> {
-    const scholarIds = this.parentScholars.get(parentId) || [];
+    const parent = this.parents.get(parentId);
+    if (!parent) return [];
+    
+    const scholarIds = parent.scholarIds || [];
+    console.log("STORAGE: Getting scholars for parent", parentId, "scholarIds:", scholarIds);
+    
     const scholars: Scholar[] = [];
     for (const scholarId of scholarIds) {
       const scholar = this.scholars.get(scholarId);
       if (scholar) {
         scholars.push(scholar);
+        console.log("STORAGE: Found scholar:", scholar.name);
       }
     }
+    console.log("STORAGE: Returning", scholars.length, "scholars for parent");
     return scholars;
   }
 

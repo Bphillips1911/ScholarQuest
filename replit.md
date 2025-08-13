@@ -17,6 +17,7 @@ Preferred communication style: Simple, everyday language.
 - **Data Persistence**: Verified through multiple server restarts - all data survives permanently
 - **Authentication**: Fixed JWT token consistency with hardcoded secret "bhsa-teacher-secret-2025-stable" for both login and middleware
 - **Deployment Fix**: Resolved JWT secret mismatch that caused teacher login to work in preview but fail on deployment
+- **Database Seeding**: Added teacher authentication seeding to ensure teachers exist in deployment database
 
 ## Parent Portal Authentication Fixes
 - **Issue Fixed**: Parent login worked in preview mode but failed in deployment due to JWT secret inconsistency

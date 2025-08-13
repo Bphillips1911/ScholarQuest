@@ -1,6 +1,8 @@
 import { db } from "./db";
-import { houses, scholars } from "@shared/schema";
+import { houses, scholars, teacherAuth } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 
 export async function seedDatabase() {
   try {
@@ -124,7 +126,55 @@ export async function seedDatabase() {
 
     await db.insert(scholars).values(scholarsData);
 
-    console.log("Database seeded successfully");
+    // Seed teacher authentication data for deployment compatibility
+    const existingTeachers = await db.select().from(teacherAuth);
+    if (existingTeachers.length === 0) {
+      console.log("Seeding teacher authentication data...");
+      
+      const hashedPassword = await bcrypt.hash("BHSATeacher2025!", 10);
+      const teachersData = [
+        {
+          id: randomUUID(),
+          email: "sarah.johnson@bhsteam.edu",
+          fullName: "Sarah Johnson", 
+          gradeRole: "6th Grade",
+          subject: "Mathematics",
+          passwordHash: hashedPassword,
+          isApproved: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: randomUUID(),
+          email: "jennifer.adams@bhsteam.edu",
+          fullName: "Jennifer Adams",
+          gradeRole: "7th Grade", 
+          subject: "Science",
+          passwordHash: hashedPassword,
+          isApproved: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: randomUUID(),
+          email: "michael.davis@bhsteam.edu",
+          fullName: "Michael Davis",
+          gradeRole: "8th Grade",
+          subject: "English",
+          passwordHash: hashedPassword,
+          isApproved: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      ];
+      
+      await db.insert(teacherAuth).values(teachersData);
+      console.log("Teacher authentication data seeded successfully");
+    } else {
+      console.log(`Found ${existingTeachers.length} existing teachers in database`);
+    }
+
+    console.log("Database seeded successfully with houses, scholars, and teachers");
   } catch (error) {
     console.error("Error seeding database:", error);
   }

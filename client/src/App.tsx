@@ -16,6 +16,7 @@ import ParentSignup from "@/pages/parent-signup";
 import ParentLogin from "@/pages/parent-login";
 import ParentPortal from "@/pages/parent-portal";
 import ParentPortalEnhanced from "@/pages/parent-portal-enhanced";
+import DeploymentTest from "@/pages/deployment-test";
 import TeacherLogin from "@/pages/teacher-login";
 import TeacherSignup from "@/pages/teacher-signup";
 import TeacherForgotPassword from "@/pages/teacher-forgot-password";
@@ -81,6 +82,7 @@ function Router() {
               <Route path="/email-troubleshooting" component={EmailTroubleshooting} />
               <Route path="/qr-generator" component={QRGenerator} />
               <Route path="/tutorial" component={Tutorial} />
+              <Route path="/deployment-test" component={DeploymentTest} />
               <Route component={NotFound} />
             </Switch>
           </main>

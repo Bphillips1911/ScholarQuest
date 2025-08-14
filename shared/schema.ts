@@ -359,6 +359,5 @@ export const insertSmsNotificationSchema = createInsertSchema(smsNotifications).
 
 export type ParentTeacherMessage = typeof parentTeacherMessages.$inferSelect;
 export type SmsNotification = typeof smsNotifications.$inferSelect;
-export type InsertParentTeacherMessage = typeof parentTeacherMessages.$inferInsert;
-export type InsertSmsNotification = typeof smsNotifications.$inferInsert;
 export type InsertParentTeacherMessage = z.infer<typeof insertParentTeacherMessageSchema>;
+export type InsertSmsNotification = typeof smsNotifications.$inferInsert;

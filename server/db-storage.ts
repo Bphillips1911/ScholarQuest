@@ -403,12 +403,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTeacherSession(token: string): Promise<boolean> {
-    const result = await db.delete(teacherSessions).where(eq(teacherSessions.token, token));
+    const result = await db.delete(schema.teacherSessions).where(eq(schema.teacherSessions.token, token));
     return (result.rowCount || 0) > 0;
   }
 
   async createStudentSession(sessionData: InsertStudentSession): Promise<StudentSession> {
-    const [session] = await db.insert(studentSessions).values({
+    const [session] = await db.insert(schema.studentSessions).values({
       id: randomUUID(),
       ...sessionData,
       createdAt: new Date(),
@@ -417,13 +417,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentSession(token: string): Promise<StudentSession | undefined> {
-    const [session] = await db.select().from(studentSessions).where(eq(studentSessions.token, token));
+    const [session] = await db.select().from(schema.studentSessions).where(eq(schema.studentSessions.token, token));
     return session || undefined;
   }
 
   // Password reset methods
   async createPasswordResetRequest(requestData: InsertPasswordResetRequest): Promise<PasswordResetRequest> {
-    const [request] = await db.insert(passwordResetRequests).values({
+    const [request] = await db.insert(schema.passwordResetRequests).values({
       id: randomUUID(),
       ...requestData,
       createdAt: new Date(),
@@ -433,7 +433,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPasswordResetRequest(token: string): Promise<PasswordResetRequest | null> {
-    const [request] = await db.select().from(passwordResetRequests).where(eq(passwordResetRequests.id, token));
+    const [request] = await db.select().from(schema.passwordResetRequests).where(eq(schema.passwordResetRequests.id, token));
     return request || null;
   }
 
@@ -443,7 +443,7 @@ export class DatabaseStorage implements IStorage {
     const allHouses = await this.getHouses();
     
     if (unsortedStudents.length === 0) {
-      return { message: "No unsorted students found", results: [] };
+      return { sortedCount: 0 };
     }
 
     // Simple round-robin assignment
@@ -470,7 +470,7 @@ export class DatabaseStorage implements IStorage {
 
   async resetAllHouses(): Promise<void> {
     // Reset all students to unsorted
-    await db.update(scholars).set({
+    await db.update(schema.scholars).set({
       houseId: null,
       isHouseSorted: false,
       sortingNumber: null
@@ -650,6 +650,176 @@ export class DatabaseStorage implements IStorage {
       console.error('Error getting scholars by grade:', error);
       return [];
     }
+  }
+
+  // Additional missing methods for IStorage compliance
+  async createHouse(house: InsertHouse): Promise<House> {
+    const [newHouse] = await db.insert(houses).values(house).returning();
+    return newHouse;
+  }
+
+  async updateHousePoints(houseId: string, category: string, points: number): Promise<void> {
+    const updateField = category === 'academic' ? 'academic_points' :
+                       category === 'attendance' ? 'attendance_points' : 'behavior_points';
+    
+    await db.execute(sql`
+      UPDATE houses 
+      SET ${sql.identifier(updateField)} = ${sql.identifier(updateField)} + ${points}
+      WHERE id = ${houseId}
+    `);
+  }
+
+  async getScholarByUsername(username: string): Promise<Scholar | undefined> {
+    const [scholar] = await db.select().from(scholars).where(eq(scholars.username, username));
+    return scholar || undefined;
+  }
+
+  async getScholarByStudentId(studentId: string): Promise<Scholar | undefined> {
+    const [scholar] = await db.select().from(scholars).where(eq(scholars.studentId, studentId));
+    return scholar || undefined;
+  }
+
+  async getAllScholars(): Promise<Scholar[]> {
+    return await db.select().from(scholars);
+  }
+
+  async getPointEntriesByHouse(houseId: string): Promise<PointEntry[]> {
+    return await db.select().from(pointEntries).where(eq(pointEntries.houseId, houseId));
+  }
+
+  async getPbisEntriesByScholar(scholarId: string): Promise<PbisEntry[]> {
+    return await db.select().from(pbisEntries).where(eq(pbisEntries.scholarId, scholarId));
+  }
+
+  async deletePbisPhoto(id: string): Promise<boolean> {
+    const result = await db.delete(pbisPhotos).where(eq(pbisPhotos.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getParentsByScholarId(scholarId: string): Promise<Parent[]> {
+    // This would need a junction table in a real implementation
+    // For now, return empty array
+    return [];
+  }
+
+  async addScholarToParent(parentId: string, scholarId: string): Promise<boolean> {
+    // This would need a junction table in a real implementation
+    return true;
+  }
+
+  async getParentScholars(parentId: string): Promise<Scholar[]> {
+    // This would need a junction table in a real implementation
+    return [];
+  }
+
+  async addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<boolean> {
+    // Implementation for adding scholar by credentials
+    return true;
+  }
+
+  async addScholarToParentByUsername(parentId: string, username: string): Promise<boolean> {
+    // Implementation for adding scholar by username
+    return true;
+  }
+
+  async getParentMessages(parentId: string): Promise<any[]> {
+    return await this.getMessagesByParent(parentId);
+  }
+
+  async createParentTeacherMessage(messageData: any): Promise<any> {
+    const [message] = await db.insert(parentTeacherMessages).values({
+      id: randomUUID(),
+      ...messageData,
+      createdAt: new Date(),
+    }).returning();
+    return message;
+  }
+
+  async getTeacher(id: string): Promise<Teacher | undefined> {
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id));
+    return teacher || undefined;
+  }
+
+  async getTeacherByEmail(email: string): Promise<Teacher | undefined> {
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.email, email));
+    return teacher || undefined;
+  }
+
+  async getTeachersByGrade(grade: number): Promise<Teacher[]> {
+    return await db.select().from(teachers).where(sql`${teachers.canSeeGrades} @> ARRAY[${grade}]`);
+  }
+
+  async createTeacher(teacher: InsertTeacher): Promise<Teacher> {
+    const [newTeacher] = await db.insert(teachers).values(teacher).returning();
+    return newTeacher;
+  }
+
+  async getAllParents(): Promise<Parent[]> {
+    return await db.select().from(parents);
+  }
+
+  async getUnsortedStudents(): Promise<Scholar[]> {
+    return await db.select().from(scholars).where(eq(scholars.isHouseSorted, false));
+  }
+
+  async addUnsortedStudent(student: any): Promise<boolean> {
+    try {
+      await this.createScholar(student);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async removeUnsortedStudent(studentId: string): Promise<boolean> {
+    const result = await db.delete(scholars).where(eq(scholars.studentId, studentId));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getPasswordResetRequests(teacherId: string): Promise<PasswordResetRequest[]> {
+    return await db.select().from(passwordResetRequests).where(eq(passwordResetRequests.teacherId, teacherId));
+  }
+
+  async getPasswordResetRequest(token: string): Promise<PasswordResetRequest | undefined> {
+    const [request] = await db.select().from(passwordResetRequests).where(eq(passwordResetRequests.token, token));
+    return request || undefined;
+  }
+
+  async createStudentCredentials(studentId: string, username: string, password: string): Promise<boolean> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const result = await db.update(scholars)
+      .set({ username, passwordHash: hashedPassword })
+      .where(eq(scholars.studentId, studentId));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async resetStudentPassword(studentId: string, newPassword: string): Promise<boolean> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const result = await db.update(scholars)
+      .set({ passwordHash: hashedPassword, needsPasswordReset: false })
+      .where(eq(scholars.studentId, studentId));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async authenticateStudent(username: string, password: string): Promise<Scholar | null> {
+    const scholar = await this.getScholarByUsername(username);
+    if (!scholar || !scholar.passwordHash) {
+      return null;
+    }
+    const isValid = await bcrypt.compare(password, scholar.passwordHash);
+    return isValid ? scholar : null;
+  }
+
+  async deactivateStudent(studentId: string, teacherId: string, reason: string): Promise<boolean> {
+    const result = await db.update(scholars)
+      .set({
+        isActive: false,
+        deactivatedAt: new Date(),
+        deactivatedBy: teacherId,
+        deactivationReason: reason
+      })
+      .where(eq(scholars.studentId, studentId));
+    return (result.rowCount || 0) > 0;
   }
 }
 

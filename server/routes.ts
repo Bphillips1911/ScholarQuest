@@ -531,6 +531,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Alternative parent login endpoint (for compatibility with enhanced portal)
+  app.post("/api/parent-auth/login", async (req, res) => {
+    console.log("=== PARENT-AUTH LOGIN REQUEST RECEIVED ===");
+    try {
+      const { email, password } = req.body;
+      console.log("Request body:", req.body);
+      
+      if (!email || !password) {
+        console.log("Missing email or password");
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      console.log("Looking up parent in storage...");
+      const parent = await storage.getParentByEmail(email);
+      console.log("Parent lookup result:", parent ? `Found ${parent.firstName} ${parent.lastName}` : "Not found");
+      
+      if (!parent) {
+        console.log("Parent not found, returning 401");
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      console.log("Checking password...");
+      const isValidPassword = await bcrypt.compare(password, parent.password);
+      console.log("Password check:", isValidPassword);
+      
+      if (!isValidPassword) {
+        console.log("Invalid password");
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      console.log("Authentication successful, generating token...");
+
+      // Generate parent login token with extended expiry (30 days for cost reduction)
+      const jwtSecret = "bhsa-parent-secret-2025-stable";
+      const token = jwt.sign(
+        { parentId: parent.id, email: parent.email },
+        jwtSecret,
+        { expiresIn: "30d" }
+      );
+
+      res.json({
+        message: "Login successful",
+        token,
+        parent: {
+          id: parent.id,
+          email: parent.email,
+          firstName: parent.firstName,
+          lastName: parent.lastName,
+          phone: parent.phone,
+        },
+      });
+    } catch (error) {
+      console.error("Parent-auth login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
   // Add scholar to parent account
   app.post("/api/parent/add-scholar", authenticateParent, async (req: any, res) => {
     try {

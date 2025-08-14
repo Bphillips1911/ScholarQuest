@@ -43,7 +43,7 @@ import {
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and, or, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
 
@@ -520,38 +520,39 @@ export class DatabaseStorage implements IStorage {
   // Parent-Teacher Messaging Methods
   async createMessage(messageData: any): Promise<any> {
     try {
-      const [message] = await db.execute(sql`
-        INSERT INTO parent_teacher_messages (
-          parent_id, teacher_id, admin_id, scholar_id, sender_type, 
-          recipient_type, subject, message, is_read, thread_id, priority, 
-          notification_sent, created_at
-        ) VALUES (
-          ${messageData.parentId}, ${messageData.teacherId}, ${messageData.adminId}, 
-          ${messageData.scholarId}, ${messageData.senderType}, ${messageData.recipientType}, 
-          ${messageData.subject}, ${messageData.message}, ${messageData.isRead || false}, 
-          ${messageData.threadId}, ${messageData.priority || 'normal'}, 
-          ${messageData.notificationSent || false}, NOW()
-        ) RETURNING *
-      `);
+      const [message] = await db.insert(schema.parentTeacherMessages).values({
+        parentId: messageData.parentId,
+        teacherId: messageData.teacherId || null,
+        adminId: messageData.adminId || null,
+        scholarId: messageData.scholarId || null,
+        senderType: messageData.senderType,
+        recipientType: messageData.recipientType,
+        subject: messageData.subject,
+        message: messageData.message,
+        isRead: messageData.isRead || false,
+        threadId: messageData.threadId || null,
+        priority: messageData.priority || 'normal',
+        notificationSent: messageData.notificationSent || false
+      }).returning();
 
       // Create SMS notification if parent has phone number
       if (messageData.senderType === 'teacher' && messageData.recipientType === 'parent') {
-        const parentResult = await db.execute(sql`
-          SELECT phone FROM parents WHERE id = ${messageData.parentId}
-        `);
+        const [parent] = await db.select({ phone: schema.parents.phone })
+          .from(schema.parents)
+          .where(eq(schema.parents.id, messageData.parentId));
         
-        if (parentResult.rows[0]?.phone) {
+        if (parent?.phone) {
           await this.createSmsNotification({
             parentId: messageData.parentId,
-            phoneNumber: parentResult.rows[0].phone,
+            phoneNumber: parent.phone,
             messageType: 'teacher_message',
             content: `New message from teacher: ${messageData.subject}`,
-            relatedMessageId: message.rows[0].id
+            relatedMessageId: message.id
           });
         }
       }
 
-      return message.rows[0];
+      return message;
     } catch (error) {
       console.error('Database createMessage error:', error);
       throw error;
@@ -703,13 +704,54 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addScholarToParent(parentId: string, scholarId: string): Promise<boolean> {
-    // This would need a junction table in a real implementation
-    return true;
+    try {
+      // Get current parent data
+      const [parent] = await db.select().from(schema.parents).where(eq(schema.parents.id, parentId));
+      if (!parent) {
+        console.log("PARENT-SCHOLAR LINKING: Parent not found");
+        return false;
+      }
+
+      // Check if scholar already linked
+      const currentScholarIds = parent.scholarIds || [];
+      if (currentScholarIds.includes(scholarId)) {
+        console.log("PARENT-SCHOLAR LINKING: Scholar already linked to parent");
+        return true;
+      }
+
+      // Add scholar ID to parent's scholarIds array
+      const updatedScholarIds = [...currentScholarIds, scholarId];
+      await db.update(schema.parents)
+        .set({ scholarIds: updatedScholarIds })
+        .where(eq(schema.parents.id, parentId));
+
+      console.log("PARENT-SCHOLAR LINKING: Successfully added scholar", scholarId, "to parent", parentId);
+      return true;
+    } catch (error) {
+      console.error("PARENT-SCHOLAR LINKING ERROR:", error);
+      return false;
+    }
   }
 
   async getParentScholars(parentId: string): Promise<Scholar[]> {
-    // This would need a junction table in a real implementation
-    return [];
+    try {
+      // Get parent's scholar IDs
+      const [parent] = await db.select().from(schema.parents).where(eq(schema.parents.id, parentId));
+      if (!parent || !parent.scholarIds || parent.scholarIds.length === 0) {
+        console.log("PARENT-SCHOLAR LINKING: No scholars found for parent", parentId);
+        return [];
+      }
+
+      // Get all scholars that match the parent's scholarIds
+      const scholars = await db.select().from(schema.scholars)
+        .where(inArray(schema.scholars.id, parent.scholarIds));
+
+      console.log("PARENT-SCHOLAR LINKING: Found", scholars.length, "scholars for parent", parentId);
+      return scholars;
+    } catch (error) {
+      console.error("PARENT-SCHOLAR LINKING ERROR:", error);
+      return [];
+    }
   }
 
   async addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<boolean> {

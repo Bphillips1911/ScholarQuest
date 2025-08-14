@@ -614,6 +614,30 @@ export class DatabaseStorage implements IStorage {
     `);
     return result.rows;
   }
+
+  // Scholar methods for teachers
+  async getVisibleScholarsForTeacher(teacherId: string): Promise<Scholar[]> {
+    try {
+      // Get all scholars for now - teachers can see all grades in this system
+      const scholars = await db.select().from(schema.scholars);
+      return scholars;
+    } catch (error) {
+      console.error('Error getting visible scholars for teacher:', error);
+      return [];
+    }
+  }
+
+  async getScholarsByGrade(grade: number): Promise<Scholar[]> {
+    try {
+      const scholars = await db.select()
+        .from(schema.scholars)
+        .where(eq(schema.scholars.grade, grade));
+      return scholars;
+    } catch (error) {
+      console.error('Error getting scholars by grade:', error);
+      return [];
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

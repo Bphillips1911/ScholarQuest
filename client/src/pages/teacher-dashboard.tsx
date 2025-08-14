@@ -39,7 +39,7 @@ export default function TeacherDashboard() {
   const [showDeactivateStudent, setShowDeactivateStudent] = useState(false);
   const [selectedScholar, setSelectedScholar] = useState<Scholar | null>(null);
   const [deactivationReason, setDeactivationReason] = useState("");
-  const [activeView, setActiveView] = useState<'scholars' | 'messages'>('scholars');
+  const [activeView, setActiveView] = useState<'scholars' | 'messages'>('messages');
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();

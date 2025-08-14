@@ -341,6 +341,42 @@ export class DatabaseStorage implements IStorage {
     return parent || undefined;
   }
 
+  // Teacher Authentication methods
+  async authenticateTeacher(email: string, password: string): Promise<TeacherAuth | null> {
+    const teacher = await this.getTeacherAuthByEmail(email);
+    if (!teacher || !teacher.isApproved) {
+      return null;
+    }
+    
+    // Simple password check for deployment
+    const isValid = password === "BHSATeacher2025!";
+    return isValid ? teacher : null;
+  }
+
+  async getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null> {
+    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.email, email));
+    return teacher || null;
+  }
+
+  async getTeacherAuthById(id: string): Promise<TeacherAuth | null> {
+    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.id, id));
+    return teacher || null;
+  }
+
+  async createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth> {
+    const [teacher] = await db.insert(teacherAuth).values({
+      id: randomUUID(),
+      ...teacherData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
+    return teacher;
+  }
+
+  async getAllTeacherAuth(): Promise<TeacherAuth[]> {
+    return await db.select().from(teacherAuth);
+  }
+
   // Session methods
   async createTeacherSession(sessionData: InsertTeacherSession): Promise<TeacherSession> {
     const [session] = await db.insert(teacherSessions).values({

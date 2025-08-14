@@ -48,9 +48,15 @@ export default function HouseCard({ house }: HouseCardProps) {
       <div className={`bg-gradient-to-br ${houseGradientClass} p-6 text-white`}>
         <div className="flex items-center justify-between mb-4">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="house-icon-3d text-white text-3xl" data-testid={`icon-house-${house.id}`}>
-              {house.icon}
-            </span>
+            {house.id === 'west' ? (
+              <div className="house-icon-3d text-white text-3xl wolf-3d-icon" data-testid={`icon-house-${house.id}`}>
+                🐺
+              </div>
+            ) : (
+              <span className="house-icon-3d text-white text-3xl" data-testid={`icon-house-${house.id}`}>
+                {house.icon}
+              </span>
+            )}
           </div>
           <span className="text-2xl font-bold" data-testid={`text-total-points-${house.id}`}>
             {totalPoints.toLocaleString()}

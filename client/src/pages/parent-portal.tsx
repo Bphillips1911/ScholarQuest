@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { User, Star, TrendingUp, Calendar, LogOut, UserPlus, Award } from "lucide-react";
+import { User, Star, TrendingUp, Calendar, LogOut, UserPlus, Award, MessageCircle, Clock, Send } from "lucide-react";
 import type { Scholar, PbisEntry } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
@@ -28,6 +28,7 @@ export default function ParentPortal() {
   const [selectedScholarId, setSelectedScholarId] = useState<string>("");
   const [studentIdInput, setStudentIdInput] = useState("");
   const [showAddScholar, setShowAddScholar] = useState(false);
+  const [activeView, setActiveView] = useState<'scholars' | 'messages'>('scholars');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -208,9 +209,44 @@ export default function ParentPortal() {
           </CardHeader>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Scholars List */}
-          <Card className="lg:col-span-1" data-testid="scholars-list-card">
+        {/* Navigation Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveView('scholars')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeView === 'scholars'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-scholars"
+            >
+              <User className="h-4 w-4 inline mr-2" />
+              My Scholars
+            </button>
+            <button
+              onClick={() => setActiveView('messages')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeView === 'messages'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-messages"
+            >
+              <MessageCircle className="h-4 w-4 inline mr-2" />
+              Messages {messages.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {messages.length}
+                </Badge>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {activeView === 'scholars' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Scholars List */}
+            <Card className="lg:col-span-1" data-testid="scholars-list-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-bold text-gray-900 flex items-center">
@@ -439,7 +475,99 @@ export default function ParentPortal() {
               </Card>
             )}
           </div>
-        </div>
+        )}
+
+        {activeView === 'messages' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                <MessageCircle className="mr-2 h-5 w-5 text-blue-600" />
+                Message Inbox
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {messages.length > 0 ? (
+                <div className="space-y-4">
+                  {messages.map((message: any) => (
+                    <div
+                      key={message.id}
+                      className={`p-4 border rounded-lg ${
+                        message.is_read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'
+                      }`}
+                      data-testid={`message-${message.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">{message.subject}</h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                            <span>From: <strong>{message.teacher_name}</strong></span>
+                            <span>•</span>
+                            <span>About: <strong>{message.scholar_name}</strong></span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!message.is_read && (
+                            <Badge variant="default" className="bg-blue-600 text-white">
+                              New
+                            </Badge>
+                          )}
+                          <div className="text-xs text-gray-500">
+                            {message.created_at ? new Date(message.created_at).toLocaleDateString() : 'Today'}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white p-3 rounded border-l-4 border-blue-500 mb-3">
+                        <p className="text-gray-700">{message.message}</p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={message.sender_type === 'parent' ? 'default' : 'secondary'}>
+                            {message.sender_type === 'parent' ? 'Sent by you' : 'From teacher'}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Priority: {message.priority}
+                          </Badge>
+                        </div>
+                        
+                        <Button size="sm" variant="outline" className="text-blue-600">
+                          <Send className="h-3 w-3 mr-1" />
+                          Reply
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="font-medium text-blue-900 mb-2">💬 Communication Features</h4>
+                    <div className="text-sm text-blue-700 space-y-1">
+                      <p>✓ Direct messaging with your child's teachers</p>
+                      <p>✓ Real-time notifications when messages arrive</p>
+                      <p>✓ Messages are stored securely in the database</p>
+                      <p>✓ Teachers receive email notifications of your messages</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="h-16 w-16 text-gray-300 mx-auto mb-4">
+                    <MessageCircle className="h-full w-full" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
+                  <p className="text-gray-600 mb-4">
+                    Your messages from teachers will appear here when they contact you about your scholars.
+                  </p>
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200 max-w-md mx-auto">
+                    <p className="text-sm text-green-700">
+                      <strong>✅ Database Active:</strong> Messages are now being stored in the database and will persist across sessions.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </section>
   );

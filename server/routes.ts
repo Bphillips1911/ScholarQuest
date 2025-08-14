@@ -2224,6 +2224,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { expiresIn: '30d' }
       );
       
+      // Generate grade permissions for frontend
+      const getCanSeeGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
       res.json({ 
         success: true,
         token, 
@@ -2232,7 +2245,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: teacher.email,
           name: teacher.name,
           gradeRole: teacher.gradeRole,
-          subject: teacher.subject
+          subject: teacher.subject,
+          role: teacher.gradeRole, // Add role field for compatibility
+          canSeeGrades: getCanSeeGrades(teacher.gradeRole)
         }
       });
     } catch (error) {

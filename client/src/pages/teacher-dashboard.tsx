@@ -110,6 +110,8 @@ export default function TeacherDashboard() {
       // Set default grade for single-grade teachers OR if teacher has canSeeGrades
       if (parsedTeacher.canSeeGrades?.length >= 1) {
         setSelectedGrade(parsedTeacher.canSeeGrades[0]);
+        // Set default view to scholars so functionality is immediately visible
+        setActiveView('scholars');
       }
     } catch (error) {
       setLocation("/teacher-login");

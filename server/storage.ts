@@ -1674,7 +1674,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-export class DatabaseStorage implements IStorage {
+export class PersistentDatabaseStorage implements IStorage {
   // Houses
   async getHouses(): Promise<House[]> {
     return await db.select().from(houses).orderBy(houses.name);
@@ -2170,6 +2170,7 @@ class PersistentMemStorage extends MemStorage {
   }
 }
 
-export const storage = new PersistentMemStorage();
+import { DatabaseStorage } from "./db-storage";
+export const storage = new DatabaseStorage();
 
 // Database handles all teacher data - no manual seeding needed

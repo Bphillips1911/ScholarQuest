@@ -62,6 +62,20 @@ export default function ParentPortal() {
     enabled: !!parentData,
   });
 
+  // Fetch messages for the parent
+  const { data: messages = [] } = useQuery({
+    queryKey: ["/api/parent-teacher-messages/parent", parentData?.id],
+    queryFn: async () => {
+      if (!parentData?.id) return [];
+      const response = await fetch(`/api/parent-teacher-messages/parent/${parentData.id}`, {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch messages");
+      return response.json();
+    },
+    enabled: !!parentData?.id,
+  });
+
   const { data: scholarDetail } = useQuery<ScholarDetail>({
     queryKey: ["/api/parent/scholar", selectedScholarId],
     queryFn: async () => {

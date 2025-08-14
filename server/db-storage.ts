@@ -465,6 +465,117 @@ export class DatabaseStorage implements IStorage {
     
     return username;
   }
+
+  // Parent-Teacher Messaging Methods
+  async createMessage(messageData: any): Promise<any> {
+    try {
+      const [message] = await db.execute(sql`
+        INSERT INTO parent_teacher_messages (
+          parent_id, teacher_id, admin_id, scholar_id, sender_type, 
+          recipient_type, subject, message, is_read, thread_id, priority, 
+          notification_sent, created_at
+        ) VALUES (
+          ${messageData.parentId}, ${messageData.teacherId}, ${messageData.adminId}, 
+          ${messageData.scholarId}, ${messageData.senderType}, ${messageData.recipientType}, 
+          ${messageData.subject}, ${messageData.message}, ${messageData.isRead || false}, 
+          ${messageData.threadId}, ${messageData.priority || 'normal'}, 
+          ${messageData.notificationSent || false}, NOW()
+        ) RETURNING *
+      `);
+
+      // Create SMS notification if parent has phone number
+      if (messageData.senderType === 'teacher' && messageData.recipientType === 'parent') {
+        const parentResult = await db.execute(sql`
+          SELECT phone FROM parents WHERE id = ${messageData.parentId}
+        `);
+        
+        if (parentResult.rows[0]?.phone) {
+          await this.createSmsNotification({
+            parentId: messageData.parentId,
+            phoneNumber: parentResult.rows[0].phone,
+            messageType: 'teacher_message',
+            content: `New message from teacher: ${messageData.subject}`,
+            relatedMessageId: message.rows[0].id
+          });
+        }
+      }
+
+      return message.rows[0];
+    } catch (error) {
+      console.error('Database createMessage error:', error);
+      throw error;
+    }
+  }
+
+  async getMessagesByParent(parentId: string): Promise<any[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT ptm.*, ta.name as teacher_name, s.name as scholar_name 
+        FROM parent_teacher_messages ptm
+        LEFT JOIN teacher_auth ta ON ptm.teacher_id = ta.id
+        LEFT JOIN scholars s ON ptm.scholar_id = s.id
+        WHERE ptm.parent_id = ${parentId}
+        ORDER BY ptm.created_at DESC
+      `);
+      console.log(`DATABASE: Found ${result.rows?.length || 0} messages for parent ${parentId}`);
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error in getMessagesByParent:', error);
+      return [];
+    }
+  }
+
+  async getMessagesByTeacher(teacherId: string): Promise<any[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT ptm.*, p.first_name, p.last_name, s.name as scholar_name 
+        FROM parent_teacher_messages ptm
+        LEFT JOIN parents p ON ptm.parent_id = p.id
+        LEFT JOIN scholars s ON ptm.scholar_id = s.id
+        WHERE ptm.teacher_id = ${teacherId}
+        ORDER BY ptm.created_at DESC
+      `);
+      console.log(`DATABASE: Found ${result.rows?.length || 0} messages for teacher ${teacherId}`);
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error in getMessagesByTeacher:', error);
+      return [];
+    }
+  }
+
+  async markMessageAsRead(messageId: string): Promise<boolean> {
+    const result = await db.execute(sql`
+      UPDATE parent_teacher_messages 
+      SET is_read = true 
+      WHERE id = ${messageId}
+    `);
+    return (result as any).rowCount > 0;
+  }
+
+  // SMS Notification Methods
+  async createSmsNotification(notificationData: any): Promise<any> {
+    const [notification] = await db.execute(sql`
+      INSERT INTO sms_notifications (
+        parent_id, phone_number, message_type, content, status, related_message_id, created_at
+      ) VALUES (
+        ${notificationData.parentId}, ${notificationData.phoneNumber}, 
+        ${notificationData.messageType}, ${notificationData.content}, 
+        ${notificationData.status || 'pending'}, ${notificationData.relatedMessageId}, NOW()
+      ) RETURNING *
+    `);
+    
+    console.log("SMS notification created:", notificationData.content, "to", notificationData.phoneNumber);
+    return notification.rows[0];
+  }
+
+  async getSmsNotifications(parentId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT * FROM sms_notifications 
+      WHERE parent_id = ${parentId}
+      ORDER BY created_at DESC
+    `);
+    return result.rows;
+  }
 }
 
 export const storage = new DatabaseStorage();

@@ -2007,6 +2007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { parentId } = req.params;
       const messages = await storage.getMessagesByParent(parentId);
+      console.log(`MESSAGES: Fetched ${messages.length} messages for parent ${parentId}`);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching parent messages:", error);
@@ -2019,6 +2020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { teacherId } = req.params;
       const messages = await storage.getMessagesByTeacher(teacherId);
+      console.log(`MESSAGES: Fetched ${messages.length} messages for teacher ${teacherId}`);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching teacher messages:", error);

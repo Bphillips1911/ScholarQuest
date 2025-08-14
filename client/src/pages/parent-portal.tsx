@@ -28,7 +28,7 @@ export default function ParentPortal() {
   const [selectedScholarId, setSelectedScholarId] = useState<string>("");
   const [studentIdInput, setStudentIdInput] = useState("");
   const [showAddScholar, setShowAddScholar] = useState(false);
-  const [activeView, setActiveView] = useState<'scholars' | 'messages'>('messages');
+  const [activeView, setActiveView] = useState<'scholars' | 'messages'>('scholars');
   const { toast } = useToast();
 
   useEffect(() => {

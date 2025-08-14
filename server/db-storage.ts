@@ -336,6 +336,11 @@ export class DatabaseStorage implements IStorage {
     return parent || undefined;
   }
 
+  async getParentByEmail(email: string): Promise<Parent | undefined> {
+    const [parent] = await db.select().from(parents).where(eq(parents.email, email));
+    return parent || undefined;
+  }
+
   // Session methods
   async createTeacherSession(sessionData: InsertTeacherSession): Promise<TeacherSession> {
     const [session] = await db.insert(teacherSessions).values({

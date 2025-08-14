@@ -435,8 +435,8 @@ export default function TeacherDashboard() {
           </Card>
         )}
 
-        {/* Navigation Tabs */}
-        {selectedGrade && (
+        {/* Navigation Tabs - Always show when teacher is loaded */}
+        {teacher && (
           <div className="mb-6">
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
               <button
@@ -472,7 +472,7 @@ export default function TeacherDashboard() {
         )}
 
         {/* Actions */}
-        {selectedGrade && activeView === 'scholars' && (
+        {teacher && activeView === 'scholars' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Button
               onClick={() => setShowAddScholar(true)}
@@ -563,7 +563,7 @@ export default function TeacherDashboard() {
         </Card>
 
         {/* Scholars List */}
-        {selectedGrade && activeView === 'scholars' && (
+        {teacher && activeView === 'scholars' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -612,7 +612,7 @@ export default function TeacherDashboard() {
         )}
 
         {/* Messages Inbox */}
-        {selectedGrade && activeView === 'messages' && (
+        {teacher && activeView === 'messages' && (
           <Card>
             <CardHeader>
               <CardTitle className="text-xl font-bold text-gray-900 flex items-center">

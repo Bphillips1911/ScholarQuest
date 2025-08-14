@@ -107,8 +107,8 @@ export default function TeacherDashboard() {
     try {
       const parsedTeacher = JSON.parse(teacherData);
       setTeacher(parsedTeacher);
-      // Set default grade for single-grade teachers
-      if (parsedTeacher.canSeeGrades?.length === 1) {
+      // Set default grade for single-grade teachers OR if teacher has canSeeGrades
+      if (parsedTeacher.canSeeGrades?.length >= 1) {
         setSelectedGrade(parsedTeacher.canSeeGrades[0]);
       }
     } catch (error) {
@@ -138,10 +138,10 @@ export default function TeacherDashboard() {
     enabled: !!selectedGrade,
   });
 
-  // Fetch houses for scholar creation
+  // Fetch houses for dashboard and scholar creation
   const { data: houses = [] } = useQuery({
     queryKey: ["/api/houses"],
-    enabled: showAddScholar,
+    // Always fetch houses for dashboard display
   });
 
   // Fetch messages for the teacher
@@ -501,6 +501,64 @@ export default function TeacherDashboard() {
             </Button>
           </div>
         )}
+
+        {/* House Standings - Always visible */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-yellow-600" />
+              House Standings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {houses.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {houses.map((house: any) => (
+                  <div 
+                    key={house.id} 
+                    className="p-4 rounded-lg border-2 transition-all hover:shadow-md"
+                    style={{ borderColor: house.color }}
+                    data-testid={`house-card-${house.id}`}
+                  >
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">{house.icon}</div>
+                      <h3 className="font-bold text-sm" style={{ color: house.color }}>
+                        {house.name}
+                      </h3>
+                      <p className="text-xs text-gray-600 italic mb-3">{house.motto}</p>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span>Academic:</span>
+                          <span className="font-semibold">{house.academicPoints}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Attendance:</span>
+                          <span className="font-semibold">{house.attendancePoints}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Behavior:</span>
+                          <span className="font-semibold">{house.behaviorPoints}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-1 mt-2">
+                          <span className="font-bold">Total:</span>
+                          <span className="font-bold text-lg" style={{ color: house.color }}>
+                            {house.academicPoints + house.attendancePoints + house.behaviorPoints}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-gray-500">
+                          <span>Members:</span>
+                          <span>{house.memberCount}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">Loading house standings...</p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Scholars List */}
         {selectedGrade && activeView === 'scholars' && (

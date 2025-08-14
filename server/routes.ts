@@ -744,16 +744,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid token" });
       }
       
-      // Convert teacher format to match expected format
+      // Convert teacher format to match expected format with proper grade permissions
+      const getTeacherGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
       req.teacher = {
         id: teacher.id,
         name: teacher.name,
         email: teacher.email,
         role: teacher.gradeRole,
+        gradeRole: teacher.gradeRole, // Add this critical field!
         subject: teacher.subject,
-        canSeeGrades: teacher.gradeRole.includes("6th") ? [6] : 
-                     teacher.gradeRole.includes("7th") ? [7] :
-                     teacher.gradeRole.includes("8th") ? [8] : [6, 7, 8]
+        canSeeGrades: getTeacherGrades(teacher.gradeRole)
       };
       
       console.log("AUTH MIDDLEWARE: Teacher authenticated successfully");

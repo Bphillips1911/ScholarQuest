@@ -27,6 +27,19 @@ import {
   type InsertAdminSession,
 } from "@shared/schema";
 import * as schema from "@shared/schema";
+import { 
+  houses, 
+  scholars, 
+  pointEntries, 
+  pbisEntries, 
+  pbisPhotos, 
+  parents,
+  parentTeacherMessages,
+  administrators,
+  adminSessions,
+  teacherAuth,
+  teacherSessions
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";

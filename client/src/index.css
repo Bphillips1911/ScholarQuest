@@ -176,14 +176,8 @@
     drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.4))
     drop-shadow(0 0 15px rgba(139, 92, 246, 0.6))
     drop-shadow(0 0 25px rgba(139, 92, 246, 0.3));
-  transform: perspective(120px) rotateX(15deg) rotateY(8deg) scale(1.1);
+  transform: perspective(120px) rotateX(15deg) rotateY(8deg) scale(1.2);
   animation: wolfGlow 3s ease-in-out infinite alternate;
-}
-
-.wolf-3d-icon svg {
-  filter: 
-    drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3))
-    drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
 }
 
 @keyframes wolfGlow {

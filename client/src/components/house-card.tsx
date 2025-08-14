@@ -48,37 +48,37 @@ export default function HouseCard({ house }: HouseCardProps) {
       <div className={`bg-gradient-to-br ${houseGradientClass} p-6 text-white`}>
         <div className="flex items-center justify-between mb-4">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-            {house.id === 'west' ? (
-              <div className="house-icon-3d text-white text-3xl wolf-3d-icon" data-testid={`icon-house-${house.id}`}>
-                <svg width="48" height="48" viewBox="0 0 100 100" className="w-12 h-12">
+            <span className="house-icon-3d text-white text-3xl" data-testid={`icon-house-${house.id}`}>
+              {house.id === 'west' ? (
+                <svg width="48" height="48" viewBox="0 0 100 100" className="w-12 h-12 wolf-3d-icon">
                   <defs>
-                    <linearGradient id="wolfGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id={`wolfGradient-${house.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#E5E7EB" />
                       <stop offset="50%" stopColor="#D1D5DB" />
                       <stop offset="100%" stopColor="#9CA3AF" />
                     </linearGradient>
-                    <radialGradient id="wolfEyeGradient" cx="50%" cy="50%" r="50%">
+                    <radialGradient id={`wolfEyeGradient-${house.id}`} cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stopColor="#FCD34D" />
                       <stop offset="100%" stopColor="#F59E0B" />
                     </radialGradient>
                   </defs>
                   
                   {/* Wolf head */}
-                  <ellipse cx="50" cy="45" rx="25" ry="20" fill="url(#wolfGradient)" stroke="#6B7280" strokeWidth="1"/>
+                  <ellipse cx="50" cy="45" rx="25" ry="20" fill={`url(#wolfGradient-${house.id})`} stroke="#6B7280" strokeWidth="1"/>
                   
                   {/* Wolf ears */}
                   <path d="M32 35 L25 25 L35 30 Z" fill="#9CA3AF" stroke="#6B7280" strokeWidth="0.5"/>
                   <path d="M68 35 L75 25 L65 30 Z" fill="#9CA3AF" stroke="#6B7280" strokeWidth="0.5"/>
                   
                   {/* Wolf snout */}
-                  <ellipse cx="50" cy="52" rx="12" ry="8" fill="url(#wolfGradient)" stroke="#6B7280" strokeWidth="0.5"/>
+                  <ellipse cx="50" cy="52" rx="12" ry="8" fill={`url(#wolfGradient-${house.id})`} stroke="#6B7280" strokeWidth="0.5"/>
                   
                   {/* Wolf nose */}
                   <ellipse cx="50" cy="48" rx="3" ry="2" fill="#374151"/>
                   
                   {/* Wolf eyes */}
-                  <ellipse cx="42" cy="40" rx="4" ry="3" fill="url(#wolfEyeGradient)" stroke="#374151" strokeWidth="0.5"/>
-                  <ellipse cx="58" cy="40" rx="4" ry="3" fill="url(#wolfEyeGradient)" stroke="#374151" strokeWidth="0.5"/>
+                  <ellipse cx="42" cy="40" rx="4" ry="3" fill={`url(#wolfEyeGradient-${house.id})`} stroke="#374151" strokeWidth="0.5"/>
+                  <ellipse cx="58" cy="40" rx="4" ry="3" fill={`url(#wolfEyeGradient-${house.id})`} stroke="#374151" strokeWidth="0.5"/>
                   
                   {/* Eye pupils */}
                   <ellipse cx="43" cy="40" rx="1.5" ry="2" fill="#000"/>
@@ -92,12 +92,10 @@ export default function HouseCard({ house }: HouseCardProps) {
                   <path d="M50 50 Q45 55 40 52" stroke="#374151" strokeWidth="1" fill="none"/>
                   <path d="M50 50 Q55 55 60 52" stroke="#374151" strokeWidth="1" fill="none"/>
                 </svg>
-              </div>
-            ) : (
-              <span className="house-icon-3d text-white text-3xl" data-testid={`icon-house-${house.id}`}>
-                {house.icon}
-              </span>
-            )}
+              ) : (
+                house.icon
+              )}
+            </span>
           </div>
           <span className="text-2xl font-bold" data-testid={`text-total-points-${house.id}`}>
             {totalPoints.toLocaleString()}

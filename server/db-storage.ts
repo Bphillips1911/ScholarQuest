@@ -136,16 +136,16 @@ export class DatabaseStorage implements IStorage {
 
   // Scholar methods
   async getScholars(): Promise<Scholar[]> {
-    return await db.select().from(scholars);
+    return await db.select().from(schema.scholars);
   }
 
   async getScholar(id: string): Promise<Scholar | undefined> {
-    const [scholar] = await db.select().from(scholars).where(eq(scholars.id, id));
+    const [scholar] = await db.select().from(schema.scholars).where(eq(schema.scholars.id, id));
     return scholar || undefined;
   }
 
   async createScholar(scholarData: InsertScholar): Promise<Scholar> {
-    const [scholar] = await db.insert(scholars).values({
+    const [scholar] = await db.insert(schema.scholars).values({
       id: randomUUID(),
       ...scholarData,
     }).returning();
@@ -153,28 +153,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateScholar(id: string, updates: Partial<Scholar>): Promise<boolean> {
-    const result = await db.update(scholars).set(updates).where(eq(scholars.id, id));
+    const result = await db.update(schema.scholars).set(updates).where(eq(schema.scholars.id, id));
     return (result.rowCount || 0) > 0;
   }
 
   async deleteScholar(id: string): Promise<boolean> {
-    const result = await db.delete(scholars).where(eq(scholars.id, id));
+    const result = await db.delete(schema.scholars).where(eq(schema.scholars.id, id));
     return (result.rowCount || 0) > 0;
   }
 
   async getScholarsByHouse(houseId: string): Promise<Scholar[]> {
-    return await db.select().from(scholars).where(eq(scholars.houseId, houseId));
+    return await db.select().from(schema.scholars).where(eq(schema.scholars.houseId, houseId));
   }
 
   async getUnsortedScholars(): Promise<Scholar[]> {
-    return await db.select().from(scholars).where(eq(scholars.isHouseSorted, false));
+    return await db.select().from(schema.scholars).where(eq(schema.scholars.isHouseSorted, false));
   }
 
   // Teacher Auth methods
   async createTeacherAuth(teacherData: any): Promise<TeacherAuth> {
     const hashedPassword = await bcrypt.hash(teacherData.password, 10);
     
-    const [teacher] = await db.insert(teacherAuth).values({
+    const [teacher] = await db.insert(schema.teacherAuth).values({
       id: randomUUID(),
       name: teacherData.name,
       email: teacherData.email,
@@ -191,21 +191,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null> {
-    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.email, email));
+    const [teacher] = await db.select().from(schema.teacherAuth).where(eq(schema.teacherAuth.email, email));
     return teacher || null;
   }
 
   async getPendingTeachers(): Promise<TeacherAuth[]> {
-    return await db.select().from(teacherAuth).where(eq(teacherAuth.isApproved, false));
+    return await db.select().from(schema.teacherAuth).where(eq(schema.teacherAuth.isApproved, false));
   }
 
   async approveTeacher(id: string): Promise<boolean> {
-    const result = await db.update(teacherAuth)
+    const result = await db.update(schema.teacherAuth)
       .set({ 
         isApproved: true, 
         updatedAt: new Date() 
       })
-      .where(eq(teacherAuth.id, id));
+      .where(eq(schema.teacherAuth.id, id));
     return (result.rowCount || 0) > 0;
   }
 
@@ -325,16 +325,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getParents(): Promise<Parent[]> {
-    return await db.select().from(parents);
+    return await db.select().from(schema.parents);
   }
 
   async getParent(id: string): Promise<Parent | undefined> {
-    const [parent] = await db.select().from(parents).where(eq(parents.id, id));
+    const [parent] = await db.select().from(schema.parents).where(eq(schema.parents.id, id));
     return parent || undefined;
   }
 
   async getParentByEmail(email: string): Promise<Parent | undefined> {
-    const [parent] = await db.select().from(parents).where(eq(parents.email, email));
+    const [parent] = await db.select().from(schema.parents).where(eq(schema.parents.email, email));
     return parent || undefined;
   }
 
@@ -351,17 +351,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null> {
-    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.email, email));
+    const [teacher] = await db.select().from(schema.teacherAuth).where(eq(schema.teacherAuth.email, email));
     return teacher || null;
   }
 
   async getTeacherAuthById(id: string): Promise<TeacherAuth | null> {
-    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.id, id));
+    const [teacher] = await db.select().from(schema.teacherAuth).where(eq(schema.teacherAuth.id, id));
     return teacher || null;
   }
 
   async createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth> {
-    const [teacher] = await db.insert(teacherAuth).values({
+    const [teacher] = await db.insert(schema.teacherAuth).values({
       id: randomUUID(),
       ...teacherData,
       createdAt: new Date(),
@@ -371,12 +371,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllTeacherAuth(): Promise<TeacherAuth[]> {
-    return await db.select().from(teacherAuth);
+    return await db.select().from(schema.teacherAuth);
   }
 
   // Session methods
   async createTeacherSession(sessionData: InsertTeacherSession): Promise<TeacherSession> {
-    const [session] = await db.insert(teacherSessions).values({
+    const [session] = await db.insert(schema.teacherSessions).values({
       id: randomUUID(),
       ...sessionData,
       createdAt: new Date(),
@@ -385,7 +385,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeacherSession(token: string): Promise<TeacherSession | undefined> {
-    const [session] = await db.select().from(teacherSessions).where(eq(teacherSessions.token, token));
+    const [session] = await db.select().from(schema.teacherSessions).where(eq(schema.teacherSessions.token, token));
     return session || undefined;
   }
 
@@ -496,7 +496,7 @@ export class DatabaseStorage implements IStorage {
     let counter = 1;
     
     // Check if username exists and add number suffix if needed
-    while (await db.select().from(scholars).where(eq(scholars.username, username)).then(result => result.length > 0)) {
+    while (await db.select().from(schema.scholars).where(eq(schema.scholars.username, username)).then(result => result.length > 0)) {
       username = `${baseUsername}${counter}`;
       counter++;
     }

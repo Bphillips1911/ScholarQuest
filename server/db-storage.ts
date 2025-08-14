@@ -25,20 +25,8 @@ import {
   type InsertPasswordResetRequest,
   type InsertAdministrator,
   type InsertAdminSession,
-  houses, 
-  scholars, 
-  teachers, 
-  pointEntries, 
-  pbisEntries, 
-  pbisPhotos, 
-  parents,
-  teacherAuth,
-  teacherSessions,
-  studentSessions,
-  passwordResetRequests,
-  administrators,
-  adminSessions
 } from "@shared/schema";
+import * as schema from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -58,7 +46,7 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeHouses() {
     // Check if houses already exist
-    const existingHouses = await db.select().from(houses).limit(1);
+    const existingHouses = await db.select().from(schema.houses).limit(1);
     if (existingHouses.length === 0) {
       const defaultHouses = [
         {
@@ -118,22 +106,31 @@ export class DatabaseStorage implements IStorage {
         }
       ];
 
-      await db.insert(houses).values(defaultHouses);
+      await db.insert(schema.houses).values(defaultHouses);
     }
   }
 
   // House methods
   async getHouses(): Promise<House[]> {
-    return await db.select().from(houses);
+    return await db.select().from(schema.houses);
+  }
+
+  async getHouseStandings(): Promise<House[]> {
+    const housesData = await this.getHouses();
+    return housesData.sort((a, b) => {
+      const totalA = a.academicPoints + a.attendancePoints + a.behaviorPoints;
+      const totalB = b.academicPoints + b.attendancePoints + b.behaviorPoints;
+      return totalB - totalA;
+    });
   }
 
   async getHouse(id: string): Promise<House | undefined> {
-    const [house] = await db.select().from(houses).where(eq(houses.id, id));
+    const [house] = await db.select().from(schema.houses).where(eq(schema.houses.id, id));
     return house || undefined;
   }
 
   async updateHouse(id: string, updates: Partial<House>): Promise<boolean> {
-    const result = await db.update(houses).set(updates).where(eq(houses.id, id));
+    const result = await db.update(schema.houses).set(updates).where(eq(schema.houses.id, id));
     return (result.rowCount || 0) > 0;
   }
 

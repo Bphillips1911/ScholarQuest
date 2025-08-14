@@ -74,6 +74,7 @@ async function generateUniqueUsername(firstName: string, lastName: string, stude
 export interface IStorage {
   // Houses
   getHouses(): Promise<House[]>;
+  getHouseStandings(): Promise<House[]>;
   getHouse(id: string): Promise<House | undefined>;
   createHouse(house: InsertHouse): Promise<House>;
   updateHousePoints(houseId: string, category: string, points: number): Promise<void>;
@@ -1841,9 +1842,12 @@ export class PersistentDatabaseStorage implements IStorage {
 
   // Utility
   async getHouseStandings(): Promise<House[]> {
-    return await db.select().from(houses).orderBy(
-      desc(sql`${houses.academicPoints} + ${houses.attendancePoints} + ${houses.behaviorPoints}`)
-    );
+    const housesData = await db.select().from(houses);
+    return housesData.sort((a, b) => {
+      const totalA = a.academicPoints + a.attendancePoints + a.behaviorPoints;
+      const totalB = b.academicPoints + b.attendancePoints + b.behaviorPoints;
+      return totalB - totalA;
+    });
   }
 
   // Teacher Authentication

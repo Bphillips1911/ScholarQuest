@@ -55,10 +55,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all houses with standings
   app.get("/api/houses", async (_req, res) => {
     try {
+      console.log("HOUSES: Attempting to fetch house standings...");
       const houses = await storage.getHouseStandings();
+      console.log("HOUSES: Successfully fetched", houses.length, "houses");
       res.json(houses);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch houses" });
+      console.error("HOUSES: Error fetching houses:", error);
+      res.status(500).json({ message: "Failed to fetch houses", error: error.message });
     }
   });
 

@@ -811,8 +811,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const grade = parseInt(req.params.grade);
       const teacher = req.teacher;
       
-      // Check if teacher has permission to see this grade
-      if (!teacher.canSeeGrades?.includes(grade)) {
+      // Derive grade permissions from teacher's gradeRole
+      const getTeacherGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
+      const allowedGrades = getTeacherGrades(teacher.gradeRole);
+      if (!allowedGrades.includes(grade)) {
         return res.status(403).json({ message: "You don't have permission to view this grade" });
       }
 
@@ -835,9 +848,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedData = insertPbisEntrySchema.parse(pbisData);
       
+      // Derive grade permissions from teacher's gradeRole
+      const getTeacherGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
       // Verify teacher can see the scholar
       const scholar = await storage.getScholar(validatedData.scholarId);
-      if (!scholar || !teacher.canSeeGrades?.includes(scholar.grade)) {
+      const allowedGrades = getTeacherGrades(teacher.gradeRole);
+      if (!scholar || !allowedGrades.includes(scholar.grade)) {
         return res.status(403).json({ message: "You don't have permission to award points to this scholar" });
       }
 
@@ -855,10 +882,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const scholarData = req.body;
       
       console.log("Add scholar request:", scholarData);
-      console.log("Teacher permissions:", teacher.canSeeGrades);
+      console.log("Teacher grade role:", teacher.gradeRole);
+      
+      // Derive grade permissions from teacher's gradeRole
+      const getTeacherGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
+      const allowedGrades = getTeacherGrades(teacher.gradeRole);
+      console.log("Teacher allowed grades:", allowedGrades);
       
       // Verify teacher can add scholars of this grade
-      if (!teacher.canSeeGrades?.includes(scholarData.grade)) {
+      if (!allowedGrades.includes(scholarData.grade)) {
         console.log("Permission denied for grade:", scholarData.grade);
         return res.status(403).json({ message: "You don't have permission to add scholars for this grade" });
       }
@@ -1149,6 +1192,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: teacher.name,
           gradeRole: teacher.gradeRole,
           subject: teacher.subject,
+          role: teacher.gradeRole, // Add role field for frontend compatibility
+          canSeeGrades: (() => {
+            switch (teacher.gradeRole) {
+              case '6th Grade': return [6];
+              case '7th Grade': return [7];
+              case '8th Grade': return [8];
+              case 'Unified Arts': return [6, 7, 8];
+              case 'Administration': return [6, 7, 8];
+              case 'Counselor': return [6, 7, 8];
+              default: return [];
+            }
+          })()
         },
       });
     } catch (error) {
@@ -1183,11 +1238,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         teacher: {
           id: teacher.id,
-          firstName: teacher.firstName,
-          lastName: teacher.lastName,
+          name: teacher.name,
           email: teacher.email,
           gradeRole: teacher.gradeRole,
+          subject: teacher.subject,
           isApproved: teacher.isApproved,
+          role: teacher.gradeRole, // Add role field for frontend compatibility
+          canSeeGrades: (() => {
+            switch (teacher.gradeRole) {
+              case '6th Grade': return [6];
+              case '7th Grade': return [7];
+              case '8th Grade': return [8];
+              case 'Unified Arts': return [6, 7, 8];
+              case 'Administration': return [6, 7, 8];
+              case 'Counselor': return [6, 7, 8];
+              default: return [];
+            }
+          })()
         },
         houses,
         scholars: allScholars,
@@ -1308,7 +1375,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Student not found" });
       }
 
-      if (!teacher.canSeeGrades?.includes(scholar.grade)) {
+      // Derive grade permissions from teacher's gradeRole
+      const getTeacherGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
+      const allowedGrades = getTeacherGrades(teacher.gradeRole);
+      if (!allowedGrades.includes(scholar.grade)) {
         return res.status(403).json({ message: "You don't have permission to deactivate this student" });
       }
 

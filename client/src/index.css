@@ -117,6 +117,85 @@
   }
 }
 
+/* PBIS CHAMPION FLASH ANIMATIONS */
+@keyframes championFlash {
+  0% { 
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    transform: scale(1);
+  }
+  25% { 
+    text-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 30px rgba(255, 215, 0, 0.8);
+    transform: scale(1.02);
+  }
+  50% { 
+    text-shadow: 0 0 30px rgba(255, 255, 255, 1), 0 0 40px rgba(255, 215, 0, 1);
+    transform: scale(1.05);
+  }
+  75% { 
+    text-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 30px rgba(255, 215, 0, 0.8);
+    transform: scale(1.02);
+  }
+  100% { 
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    transform: scale(1);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8), 0 0 60px rgba(147, 51, 234, 0.6);
+  }
+}
+
+@keyframes house-celebration {
+  0% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-10px) rotate(2deg); }
+  50% { transform: translateY(-5px) rotate(-1deg); }
+  75% { transform: translateY(-8px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.champion-title {
+  animation: championFlash 3s ease-in-out infinite;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.hero-section-enhanced {
+  animation: pulse-glow 4s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.sparkle-effect {
+  position: absolute;
+  color: gold;
+  animation: sparkle 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.sparkle-1 { top: 10%; left: 20%; animation-delay: 0s; }
+.sparkle-2 { top: 20%; right: 15%; animation-delay: 0.5s; }
+.sparkle-3 { top: 60%; left: 10%; animation-delay: 1s; }
+.sparkle-4 { top: 70%; right: 25%; animation-delay: 1.5s; }
+
+.house-card-celebration {
+  animation: house-celebration 6s ease-in-out infinite;
+}
+
+.school-logo-champion {
+  animation: house-celebration 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.7));
+}
+
 .house-franklin {
   color: var(--house-franklin);
 }

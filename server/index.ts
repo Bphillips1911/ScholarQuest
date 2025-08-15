@@ -80,7 +80,8 @@ app.use((req, res, next) => {
         const requiredTeachers = [
           { email: "sarah.johnson@bhsteam.edu", name: "Sarah Johnson", gradeRole: "6th Grade", subject: "Mathematics" },
           { email: "jennifer.adams@bhsteam.edu", name: "Jennifer Adams", gradeRole: "7th Grade", subject: "Science" },
-          { email: "michael.davis@bhsteam.edu", name: "Michael Davis", gradeRole: "8th Grade", subject: "English" }
+          { email: "michael.davis@bhsteam.edu", name: "Michael Davis", gradeRole: "7th Grade", subject: "Science" },  // FIXED
+          { email: "david.thompson@bhsteam.edu", name: "David Thompson", gradeRole: "7th Grade", subject: "Science" }  // NEW
         ];
         
         for (const teacherInfo of requiredTeachers) {

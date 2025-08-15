@@ -15,7 +15,8 @@ export async function seedDatabase() {
     const requiredTeachers = [
       "sarah.johnson@bhsteam.edu",
       "jennifer.adams@bhsteam.edu", 
-      "michael.davis@bhsteam.edu"
+      "michael.davis@bhsteam.edu",
+      "david.thompson@bhsteam.edu"  // NEW 7th Grade Science teacher
     ];
     
     // Check existing teachers
@@ -36,16 +37,21 @@ export async function seedDatabase() {
       // Create all required teachers in one batch for deployment reliability
       const teachersToCreate = requiredTeachers.map(email => {
         const teacherName = email === "sarah.johnson@bhsteam.edu" ? "Sarah Johnson" :
-                          email === "jennifer.adams@bhsteam.edu" ? "Jennifer Adams" : "Michael Davis";
+                          email === "jennifer.adams@bhsteam.edu" ? "Jennifer Adams" : 
+                          email === "michael.davis@bhsteam.edu" ? "Michael Davis" : "David Thompson";
         
         return {
           id: randomUUID(),
           email: email,
           name: teacherName,
           gradeRole: email === "sarah.johnson@bhsteam.edu" ? "6th Grade" :
-                    email === "jennifer.adams@bhsteam.edu" ? "7th Grade" : "8th Grade",
+                    email === "jennifer.adams@bhsteam.edu" ? "7th Grade" :
+                    email === "michael.davis@bhsteam.edu" ? "7th Grade" :  // FIXED: Michael is now 7th Grade
+                    "7th Grade",  // David Thompson also 7th Grade
           subject: email === "sarah.johnson@bhsteam.edu" ? "Mathematics" :
-                  email === "jennifer.adams@bhsteam.edu" ? "Science" : "English",
+                  email === "jennifer.adams@bhsteam.edu" ? "Science" :
+                  email === "michael.davis@bhsteam.edu" ? "Science" :  // FIXED: Michael is now Science
+                  "Science",  // David Thompson also Science
           passwordHash: hashedPassword,
           isApproved: true,
           createdAt: new Date(),

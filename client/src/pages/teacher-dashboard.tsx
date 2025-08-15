@@ -109,13 +109,20 @@ export default function TeacherDashboard() {
       console.log("CACHE DEBUG: Environment:", isDeployment ? "DEPLOYMENT" : "PREVIEW");
       console.log("CACHE DEBUG: Fetching fresh teacher data with timestamp:", timestamp);
       
-      const response = await fetch(`/api/teacher-auth/verify?bust=${timestamp}&env=${isDeployment ? 'deploy' : 'preview'}`, {
+      // DEPLOYMENT SPECIFIC: Aggressive cache busting for deployment environment
+      const deploymentParams = isDeployment ? 
+        `bust=${timestamp}&deploy=true&force=${Math.random()}&clear=cache&env=deployment` :
+        `bust=${timestamp}&env=preview`;
+        
+      const response = await fetch(`/api/teacher-auth/verify?${deploymentParams}`, {
         headers: { 
           "Authorization": `Bearer ${token}`,
-          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
           "Pragma": "no-cache",
           "Expires": "0",
-          "X-Deployment-Fix": "true"
+          "If-None-Match": "*",
+          "X-Deployment-Cache-Bust": isDeployment ? "true" : "false",
+          "X-Fresh-Data-Request": "true"
         }
       });
       

@@ -102,12 +102,25 @@ export default function TeacherDashboard() {
     if (!token) return;
     
     try {
-      const response = await fetch("/api/teacher-auth/verify", {
-        headers: { "Authorization": `Bearer ${token}` }
+      // Add cache-busting query parameter for deployment consistency
+      const timestamp = Date.now();
+      const response = await fetch(`/api/teacher-auth/verify?t=${timestamp}`, {
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
       });
       
       if (response.ok) {
         const data = await response.json();
+        console.log("TEACHER DASHBOARD: Fresh teacher data from server:", data.teacher);
+        
+        // Clear any old cached data first
+        localStorage.removeItem("teacherData");
+        
+        // Store fresh data
         localStorage.setItem("teacherData", JSON.stringify(data.teacher));
         setTeacher(data.teacher);
         
@@ -140,9 +153,9 @@ export default function TeacherDashboard() {
         return;
       }
       
-      // FORCE REFRESH for Michael Davis to fix display bug
-      if (parsedTeacher.email === "michael.davis@bhsteam.edu" && parsedTeacher.role === "8th Grade") {
-        console.log("FORCE REFRESH: Michael Davis detected with old data, clearing cache...");
+      // DEPLOYMENT CACHE FIX: Always refresh for Michael Davis to ensure correct data
+      if (parsedTeacher.email === "michael.davis@bhsteam.edu") {
+        console.log("DEPLOYMENT CACHE FIX: Michael Davis - forcing fresh data fetch...");
         localStorage.removeItem("teacherData");
         refreshTeacherData();
         return;

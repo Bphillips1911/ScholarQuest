@@ -2367,7 +2367,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const decoded = jwt.verify(token, "bhsa-teacher-secret-2025-stable") as any;
+      
+      // DEPLOYMENT CACHE FIX: Always fetch fresh teacher data from database
       const teacher = await storage.getTeacherAuthById(decoded.teacherId);
+      console.log("TEACHER VERIFY: Fetched fresh teacher data:", teacher ? teacher.name : "Not found");
+      console.log("TEACHER VERIFY: Grade Role:", teacher?.gradeRole, "Subject:", teacher?.subject);
       
       if (!teacher) {
         return res.status(404).json({ message: "Teacher not found" });
@@ -2386,17 +2390,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
 
+      const teacherData = {
+        id: teacher.id,
+        email: teacher.email,
+        name: teacher.name,
+        gradeRole: teacher.gradeRole,
+        subject: teacher.subject,
+        role: teacher.gradeRole,
+        canSeeGrades: getCanSeeGrades(teacher.gradeRole)
+      };
+
+      console.log("TEACHER VERIFY: Returning fresh teacher data:", teacherData);
+
+      // Set cache-busting headers to prevent caching issues during deployment
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
       res.json({ 
         success: true,
-        teacher: {
-          id: teacher.id,
-          email: teacher.email,
-          name: teacher.name,
-          gradeRole: teacher.gradeRole,
-          subject: teacher.subject,
-          role: teacher.gradeRole,
-          canSeeGrades: getCanSeeGrades(teacher.gradeRole)
-        }
+        teacher: teacherData
       });
     } catch (error) {
       console.error("Teacher token verification error:", error);

@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock } from "lucide-react";
+import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 
 interface Teacher {
   id: string;
@@ -726,8 +727,29 @@ export default function TeacherDashboard() {
                               New
                             </span>
                           )}
-                          <div className="text-xs text-gray-500">
-                            {message.created_at ? new Date(message.created_at).toLocaleDateString() : 'Today'}
+                          <div className="text-xs text-gray-500 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <div>
+                              {message.created_at ? (
+                                <div>
+                                  <div className="font-medium">
+                                    {format(new Date(message.created_at), 'MMM dd, yyyy')}
+                                  </div>
+                                  <div className="text-gray-400">
+                                    {format(new Date(message.created_at), 'h:mm a')} • 
+                                    {isToday(new Date(message.created_at)) ? ' Today' :
+                                     isYesterday(new Date(message.created_at)) ? ' Yesterday' :
+                                     ` ${formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}`
+                                    }
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="font-medium">Today</div>
+                                  <div className="text-gray-400">Just now</div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

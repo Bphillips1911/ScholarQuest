@@ -15,6 +15,7 @@ import {
   MessageCircle, Send, Phone, Bell, GraduationCap, Home,
   CheckCircle, AlertCircle, Clock, Trophy
 } from "lucide-react";
+import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import type { Scholar, PbisEntry, ParentTeacherMessage } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
@@ -665,8 +666,20 @@ export default function ParentPortalEnhanced() {
                             <Badge variant="destructive">New</Badge>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {new Date(message.createdAt!).toLocaleDateString()}
+                        <div className="text-sm text-gray-500 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <div>
+                            <div className="font-medium">
+                              {format(new Date(message.createdAt!), 'MMM dd, yyyy')}
+                            </div>
+                            <div className="text-gray-400 text-xs">
+                              {format(new Date(message.createdAt!), 'h:mm a')} • 
+                              {isToday(new Date(message.createdAt!)) ? ' Today' :
+                               isYesterday(new Date(message.createdAt!)) ? ' Yesterday' :
+                               ` ${formatDistanceToNow(new Date(message.createdAt!), { addSuffix: true })}`
+                              }
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <p className="text-sm text-gray-600">

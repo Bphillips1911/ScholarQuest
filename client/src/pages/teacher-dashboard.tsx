@@ -102,76 +102,65 @@ export default function TeacherDashboard() {
     if (!token) return;
     
     try {
-      // Add cache-busting query parameter for deployment consistency
+      // Detect deployment environment
+      const isDeployment = window.location.hostname.includes('.replit.app');
       const timestamp = Date.now();
-      const response = await fetch(`/api/teacher-auth/verify?t=${timestamp}`, {
+      
+      console.log("CACHE DEBUG: Environment:", isDeployment ? "DEPLOYMENT" : "PREVIEW");
+      console.log("CACHE DEBUG: Fetching fresh teacher data with timestamp:", timestamp);
+      
+      const response = await fetch(`/api/teacher-auth/verify?bust=${timestamp}&env=${isDeployment ? 'deploy' : 'preview'}`, {
         headers: { 
           "Authorization": `Bearer ${token}`,
           "Cache-Control": "no-cache, no-store, must-revalidate",
           "Pragma": "no-cache",
-          "Expires": "0"
+          "Expires": "0",
+          "X-Deployment-Fix": "true"
         }
       });
       
       if (response.ok) {
         const data = await response.json();
         console.log("TEACHER DASHBOARD: Fresh teacher data from server:", data.teacher);
+        console.log("CACHE DEBUG: Grade Role received:", data.teacher.gradeRole, "Subject:", data.teacher.subject);
         
-        // Clear any old cached data first
-        localStorage.removeItem("teacherData");
-        
-        // Store fresh data
-        localStorage.setItem("teacherData", JSON.stringify(data.teacher));
-        setTeacher(data.teacher);
-        
-        if (data.teacher.canSeeGrades?.length >= 1) {
-          setSelectedGrade(data.teacher.canSeeGrades[0]);
-          setActiveView('scholars');
-        }
+        // Force state update to ensure UI reflects fresh data
+        setTeacher(null); // Clear first
+        setTimeout(() => {
+          setTeacher(data.teacher); // Then set fresh data
+          
+          if (data.teacher.canSeeGrades?.length >= 1) {
+            setSelectedGrade(data.teacher.canSeeGrades[0]);
+            setActiveView('scholars');
+          }
+        }, 10);
+      } else {
+        console.log("CACHE DEBUG: Auth failed, redirecting to login");
+        setLocation("/teacher-login");
       }
     } catch (error) {
-      console.log("Could not refresh teacher data");
+      console.log("Could not refresh teacher data", error);
+      setLocation("/teacher-login");
     }
   };
 
   useEffect(() => {
     const token = localStorage.getItem("teacherToken");
-    const teacherData = localStorage.getItem("teacherData");
     
-    if (!token || !teacherData) {
+    if (!token) {
       setLocation("/teacher-login");
       return;
     }
     
-    try {
-      const parsedTeacher = JSON.parse(teacherData);
-      
-      // Check if we have fresh data (with gradeRole field) or need to refresh
-      if (!parsedTeacher.gradeRole && parsedTeacher.role) {
-        console.log("Detected old cached data, refreshing...");
-        refreshTeacherData();
-        return;
-      }
-      
-      // DEPLOYMENT CACHE FIX: Always refresh for Michael Davis to ensure correct data
-      if (parsedTeacher.email === "michael.davis@bhsteam.edu") {
-        console.log("DEPLOYMENT CACHE FIX: Michael Davis - forcing fresh data fetch...");
-        localStorage.removeItem("teacherData");
-        refreshTeacherData();
-        return;
-      }
-      
-      setTeacher(parsedTeacher);
-      
-      // Set default grade for single-grade teachers OR if teacher has canSeeGrades
-      if (parsedTeacher.canSeeGrades?.length >= 1) {
-        setSelectedGrade(parsedTeacher.canSeeGrades[0]);
-        // Set default view to scholars so functionality is immediately visible
-        setActiveView('scholars');
-      }
-    } catch (error) {
-      setLocation("/teacher-login");
-    }
+    // DEPLOYMENT CACHE FIX: Always fetch fresh data, never use localStorage cache
+    // This ensures deployments always show correct data from database
+    console.log("DEPLOYMENT CACHE FIX: Clearing all cached teacher data and fetching fresh from server...");
+    
+    // Clear all cached teacher data to force fresh fetch
+    localStorage.removeItem("teacherData");
+    
+    // Always refresh from server to get the most current data
+    refreshTeacherData();
   }, [setLocation]);
 
   const getAuthHeaders = () => {

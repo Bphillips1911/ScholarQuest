@@ -2319,6 +2319,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Teacher token verification endpoint
+  app.get("/api/teacher-auth/verify", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+
+      const decoded = jwt.verify(token, "bhsa-teacher-secret-2025-stable") as any;
+      const teacher = await storage.getTeacherAuthById(decoded.teacherId);
+      
+      if (!teacher) {
+        return res.status(404).json({ message: "Teacher not found" });
+      }
+
+      // Generate grade permissions for frontend
+      const getCanSeeGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
+      res.json({ 
+        success: true,
+        teacher: {
+          id: teacher.id,
+          email: teacher.email,
+          name: teacher.name,
+          gradeRole: teacher.gradeRole,
+          subject: teacher.subject,
+          role: teacher.gradeRole,
+          canSeeGrades: getCanSeeGrades(teacher.gradeRole)
+        }
+      });
+    } catch (error) {
+      console.error("Teacher token verification error:", error);
+      res.status(401).json({ message: "Invalid token" });
+    }
+  });
+
   app.post("/api/teacher-auth/register", async (req, res) => {
     try {
       const { firstName, lastName, email, password, role, subject, canSeeGrades } = req.body;

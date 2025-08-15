@@ -95,6 +95,31 @@ export default function TeacherDashboard() {
     reason: "",
   });
 
+  // Function to refresh teacher data from server
+  const refreshTeacherData = async () => {
+    const token = localStorage.getItem("teacherToken");
+    if (!token) return;
+    
+    try {
+      const response = await fetch("/api/teacher-auth/verify", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("teacherData", JSON.stringify(data.teacher));
+        setTeacher(data.teacher);
+        
+        if (data.teacher.canSeeGrades?.length >= 1) {
+          setSelectedGrade(data.teacher.canSeeGrades[0]);
+          setActiveView('scholars');
+        }
+      }
+    } catch (error) {
+      console.log("Could not refresh teacher data");
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("teacherToken");
     const teacherData = localStorage.getItem("teacherData");
@@ -106,7 +131,16 @@ export default function TeacherDashboard() {
     
     try {
       const parsedTeacher = JSON.parse(teacherData);
+      
+      // Check if we have fresh data (with gradeRole field) or need to refresh
+      if (!parsedTeacher.gradeRole && parsedTeacher.role) {
+        console.log("Detected old cached data, refreshing...");
+        refreshTeacherData();
+        return;
+      }
+      
       setTeacher(parsedTeacher);
+      
       // Set default grade for single-grade teachers OR if teacher has canSeeGrades
       if (parsedTeacher.canSeeGrades?.length >= 1) {
         setSelectedGrade(parsedTeacher.canSeeGrades[0]);

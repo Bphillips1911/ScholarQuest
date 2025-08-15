@@ -396,7 +396,7 @@ export default function TeacherDashboard() {
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 school-name-3d">Teacher Dashboard</h1>
                   <p className="text-sm text-gray-600 program-title-3d">Welcome, {teacher.name}</p>
-                  <p className="text-xs text-gray-500">{teacher.role} - {teacher.subject}</p>
+                  <p className="text-xs text-gray-500">{teacher.gradeRole} - {teacher.subject}</p>
                 </div>
               </div>
               <Button 

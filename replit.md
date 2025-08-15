@@ -8,6 +8,14 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes (August 15, 2025)
 
+## TEACHER DASHBOARD DISPLAY BUG FIXED ✅
+- **UI Display Issue Resolved**: Fixed Michael Davis teacher dashboard showing incorrect grade/subject combination
+- **Root Cause**: Frontend using `teacher.role` instead of `teacher.gradeRole` from API response
+- **Database vs Display**: Database correctly shows "7th Grade - Science" but UI was displaying cached "8th Grade - English"
+- **Fix Applied**: Updated teacher dashboard to use `teacher.gradeRole` field for accurate display
+- **Verified Data**: API returns correct "gradeRole": "7th Grade" and "subject": "Science" for Michael Davis
+- **UI Consistency**: Teacher dashboard header now displays accurate grade and subject information
+
 ## PARENT-SCHOLAR LINKING SYSTEM PERMANENTLY FIXED ✅
 - **CRITICAL SUCCESS**: Parent-scholar linking functionality completely restored with proper database persistence
 - **Root Cause Resolved**: Missing `addScholarToParentByCredentials` method implementation in DatabaseStorage class

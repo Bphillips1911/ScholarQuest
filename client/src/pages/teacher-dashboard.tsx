@@ -152,8 +152,16 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem("teacherToken");
+    const isDeployment = window.location.hostname.includes('replit.app');
+    
+    console.log("TEACHER DASHBOARD INIT:", {
+      hasToken: !!token,
+      isDeployment,
+      hostname: window.location.hostname
+    });
     
     if (!token) {
+      console.log("No token found, redirecting to login");
       setLocation("/teacher-login");
       return;
     }
@@ -165,23 +173,66 @@ export default function TeacherDashboard() {
     // Clear all cached teacher data to force fresh fetch
     localStorage.removeItem("teacherData");
     
-    // Always refresh from server to get the most current data
-    refreshTeacherData();
+    if (isDeployment) {
+      // DEPLOYMENT FIX: Extra verification of token validity in deployment
+      console.log("DEPLOYMENT MODE: Verifying token validity before proceeding...");
+      
+      // Test token with a simple API call first
+      fetch("/api/teacher-auth/verify", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          console.log("DEPLOYMENT: Token verified successfully");
+          refreshTeacherData();
+        } else {
+          console.error("DEPLOYMENT: Token verification failed, redirecting to login");
+          localStorage.removeItem("teacherToken");
+          localStorage.removeItem("teacherData");
+          setLocation("/teacher-login");
+        }
+      })
+      .catch(error => {
+        console.error("DEPLOYMENT: Token verification error:", error);
+        refreshTeacherData(); // Try anyway as a fallback
+      });
+    } else {
+      // Preview mode: proceed normally
+      refreshTeacherData();
+    }
   }, [setLocation]);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("teacherToken");
+    console.log("DEPLOYMENT AUTH DEBUG: Getting token from localStorage:", token ? "Token found" : "No token");
+    
     if (!token) {
-      console.error("TEACHER AUTH: No token found in localStorage");
+      console.error("TEACHER AUTH: No token found in localStorage, redirecting to login");
       setLocation("/teacher-login");
       throw new Error("Authentication token not found");
     }
-    return {
+    
+    // DEPLOYMENT FIX: Add deployment-specific headers for cache-busting
+    const isDeployment = window.location.hostname.includes('replit.app');
+    const headers = {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
       "X-Requested-With": "XMLHttpRequest"
     };
+    
+    if (isDeployment) {
+      headers["X-Deployment-Cache-Bust"] = Date.now().toString();
+      headers["X-Force-Fresh"] = "true";
+      console.log("DEPLOYMENT AUTH: Added deployment-specific headers");
+    }
+    
+    return headers;
   };
 
   // Fetch scholars based on selected grade
@@ -218,12 +269,21 @@ export default function TeacherDashboard() {
     enabled: !!teacher?.id,
   });
 
-  // Add scholar mutation with enhanced error handling
+  // Add scholar mutation with enhanced deployment error handling
   const addScholarMutation = useMutation({
     mutationFn: async (scholarData: any) => {
       console.log("ADD SCHOLAR: Starting request with data:", scholarData);
+      console.log("ADD SCHOLAR: Environment check - Deployment:", window.location.hostname.includes('replit.app'));
       
       try {
+        // DEPLOYMENT FIX: Verify token exists before proceeding
+        const token = localStorage.getItem("teacherToken");
+        if (!token) {
+          console.error("ADD SCHOLAR: No token in localStorage, redirecting");
+          setLocation("/teacher-login");
+          throw new Error("Authentication required. Please login again.");
+        }
+        
         const headers = getAuthHeaders();
         console.log("ADD SCHOLAR: Headers prepared successfully");
         
@@ -234,17 +294,25 @@ export default function TeacherDashboard() {
         });
         
         console.log("ADD SCHOLAR: Response status:", response.status);
+        console.log("ADD SCHOLAR: Response headers:", Object.fromEntries(response.headers.entries()));
         
         if (response.status === 401) {
-          console.error("ADD SCHOLAR: Token invalid, redirecting to login");
+          console.error("ADD SCHOLAR: Token invalid (401), clearing storage and redirecting");
           localStorage.removeItem("teacherToken");
+          localStorage.removeItem("teacherData");
           setLocation("/teacher-login");
           throw new Error("Session expired. Please login again.");
         }
         
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error("ADD SCHOLAR: Server error:", errorData);
+          const errorText = await response.text();
+          console.error("ADD SCHOLAR: Server error response:", errorText);
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { error: errorText || `HTTP ${response.status}` };
+          }
           throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: Failed to add scholar`);
         }
         
@@ -253,6 +321,17 @@ export default function TeacherDashboard() {
         return result;
       } catch (error) {
         console.error("ADD SCHOLAR: Mutation error:", error);
+        // DEPLOYMENT FIX: Special handling for deployment auth errors
+        if (error.message.includes("token") || error.message.includes("401")) {
+          toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "Your session has expired. Please login again.",
+          });
+          localStorage.removeItem("teacherToken");
+          localStorage.removeItem("teacherData");
+          setLocation("/teacher-login");
+        }
         throw error;
       }
     },

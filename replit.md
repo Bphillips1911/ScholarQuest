@@ -1,134 +1,20 @@
 # Overview
 
-This web application, "PBIS House of Champions," manages a house points system for Bush Hills STEAM Academy middle school. Students are assigned to one of five houses and earn points across academic excellence, attendance, and behavior. The system provides a comprehensive PBIS framework with enhanced dropdown categories, individual teacher tabs for recognizing MUSTANG traits, a house sorting generator, photo upload capabilities, and displays program information to parents. It features the official BHSA Mustangs Crest logo and includes comprehensive administrator authentication with role-based permissions for school leadership. The system aims to enhance positive behavior, academic achievement, and school pride.
+The "PBIS House of Champions" is a web application designed for Bush Hills STEAM Academy middle school to manage a house points system. Students, assigned to one of five houses, earn points for academic excellence, attendance, and behavior. The system provides a comprehensive Positive Behavioral Interventions and Supports (PBIS) framework, featuring enhanced dropdown categories, individual teacher dashboards for recognizing "MUSTANG" traits, a house sorting generator, and photo upload capabilities. It also displays program information for parents, incorporates the official BHSA Mustangs Crest logo, and includes robust administrator authentication with role-based permissions. The project's vision is to foster positive behavior, academic achievement, and school pride within the student body.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-# Recent Changes (August 15, 2025)
-
-## DEPLOYMENT CACHE CONSISTENCY PERMANENTLY FIXED ✅
-- **CRITICAL SUCCESS**: Eliminated deployment vs preview caching inconsistencies for teacher dashboard
-- **Root Cause**: setTimeout delay in state updates causing stale data display during initial render
-- **Database Fix**: Updated Michael Davis from "8th Grade - English" to correct "7th Grade - Science" 
-- **New Teacher Account**: Created David Thompson as backup 7th Grade Science teacher
-- **Aggressive Cache-Busting**: Enhanced deployment-specific cache prevention with random parameters
-- **Environment Detection**: Added deployment vs preview environment detection for enhanced debugging
-- **Enhanced Headers**: Implemented stronger HTTP cache prevention headers for deployment mode
-- **State Update Fix**: Removed problematic setTimeout delay, now sets teacher data immediately
-- **Database Verification**: Both Michael Davis and David Thompson show correct "7th Grade - Science"
-- **Deployment Credentials**: david.thompson@bhsteam.edu / BHSATeacher2025! available as fresh account
-- **Enhanced Token Management**: Extended JWT tokens to 30 days for deployment stability
-- **Error Handling**: Improved authentication error detection with automatic login redirect
-- **Token Validation**: All teacher API endpoints now properly handle token expiration
-
-## JESSICA RABBIT AUTHENTICATION PERMANENTLY FIXED ✅
-- **CRITICAL SUCCESS**: Jessica Rabbit parent account fully restored and working in all environments
-- **Root Cause Resolved**: Password hash mismatch corrected - updated database with proper hash for "rabbit911"
-- **Database Fix**: Password hash properly updated in PostgreSQL parents table using bcrypt
-- **30-Day Authentication**: Parent tokens now match teacher tokens with 30-day expiration for stability
-- **Working Credentials**: `jrabbit@yahoo.com` / `rabbit911` - verified working in preview mode
-- **Token Generation**: New 30-day JWT token successfully generated and validated
-- **API Access Verified**: Scholar linking and message functionality confirmed working
-- **Permanent Solution**: Database password hash persists across server restarts and deployments
-
-## PARENT SMS NOTIFICATION SYSTEM COMPLETED ✅
-- **Feature Added**: Complete phone number management for parent SMS notifications
-- **Modal Interface**: Responsive "Add Phone" modal with validation and user-friendly design
-- **API Endpoint**: `/api/parent/update-phone` with proper validation and database persistence
-- **Database Integration**: Phone numbers stored permanently in PostgreSQL parents table
-- **UI Enhancement**: Yellow alert card with "Add Phone" button in notification settings
-- **Phone Validation**: US format validation with proper error handling and user feedback
-- **Real-time Updates**: Immediate UI updates after successful phone number addition
-- **Security**: Proper authentication middleware and input sanitization for phone data
-
-## PARENT-SCHOLAR LINKING SYSTEM PERMANENTLY FIXED ✅
-- **CRITICAL SUCCESS**: Parent-scholar linking functionality completely restored with proper database persistence
-- **Root Cause Resolved**: Missing `addScholarToParentByCredentials` method implementation in DatabaseStorage class
-- **Database Authentication**: Fixed Jessica Rabbit parent account with proper password hashing (rabbit911)
-- **Permanent Data Persistence**: All parent-scholar links survive server restarts and deployments
-- **Clear User Guidance**: Updated parent portal UI with proper instructions about teacher-created accounts
-- **Working Example**: Jessica Rabbit successfully linked to "Michael Success Student" using credentials micsuc755/bhsabh7555
-- **Error Handling**: Proper feedback when invalid credentials provided - "Student account not found with those credentials"
-- **Security Model**: Parents can only link to existing student accounts created by teachers, maintaining data integrity
-
-## MICHAEL DAVIS "ADD SCHOLAR" BUG PERMANENTLY FIXED ✅
-- **CRITICAL SUCCESS**: Authentication middleware completely fixed with proper gradeRole implementation
-- **Root Cause Resolved**: Missing `gradeRole` field in authentication middleware causing all permission checks to fail
-- **Middleware Update**: Added comprehensive grade permission logic with proper role-to-grade mapping
-- **All Teacher Roles Working**: 6th Grade, 7th Grade, 8th Grade, Unified Arts, Administration, Counselor
-- **Verified Testing**: Michael Davis (7th Grade) successfully added Grade 7 student "Michael Success Student" (ID: BH7555)
-- **Database Integration**: Complete student creation with teacher association and credential generation
-- **Permission Validation**: Proper grade validation ensures teachers can only add students for their grade levels
-- **Server Restart Applied**: Middleware changes fully deployed and operational
-
-## TEACHER PORTAL FULLY RESTORED - ALL FUNCTIONALITY WORKING ✅
-- **Complete Feature Restoration**: All requested teacher portal features now fully operational
-- **Scholar Management**: Add Scholar button with username auto-generation (first3+last3+IDdigits format) ✅
-- **Grade Permissions Fix**: Fixed "Add Scholar" permissions error by implementing proper grade role derivation
-- **Teacher Grade Authorization**: Teachers can now add students for their assigned grade levels
-- **Parent-Teacher Messaging**: Complete messaging system with database persistence (Nancy Law message confirmed)
-- **Student Display**: Grade 6 students automatically displayed (9 students loading correctly)
-- **House Standings**: All 5 houses showing current points and member counts
-- **Default View Fix**: Dashboard defaults to "My Scholars" tab for immediate feature visibility
-- **Authentication Stable**: JWT tokens working with proper verification for all APIs
-- **Database Integration**: All features using PostgreSQL with proper data persistence
-
-## DEPLOYMENT AUTHENTICATION PERMANENTLY FIXED ✅
-- **Critical Issue Permanently Resolved**: All authentication systems now stable across deployments
-- **Admin Portal Permanently Restored**: Fixed table import issues causing deployment failures
-- **Database Storage Class**: Comprehensive method implementation for permanent IStorage compliance
-- **LSP Error Resolution**: Systematic fix of missing methods and duplicate implementations
-- **Missing Method Fixed**: Added `getParentByEmail` method to DatabaseStorage class that was causing parent login failures
-- **Teacher Auth Compatibility**: Fixed `/api/teacher-auth/login` endpoint to work with frontend deployment calls
-- **Database Integration**: All authentication now uses PostgreSQL with proper data persistence
-- **JWT Consistency**: Hardcoded stable JWT secrets for deployment reliability ("bhsa-teacher-secret-2025-stable", "bhsa-parent-secret-2025-stable")
-- **30-Day Tokens**: Extended token expiry to reduce authentication costs and improve user experience
-- **Verified Credentials (All Environments)**: 
-  - Parent: nslaw@yahoo.com / password ✅ 
-  - Teacher: sarah.johnson@bhsteam.edu / BHSATeacher2025! ✅
-  - Admin: bphillips@bhm.k12.al.us / BHSAAdmin2025! ✅
-- **Cost Optimization**: Stable authentication reduces redeployment costs and user frustration
-
-## Teacher Username Generation System - PERMANENT SOLUTION ✅
-- **Feature Added**: Teachers can now generate usernames and passwords for students they add
-- **Username Pattern**: First 3 letters of first name + first 3 letters of last name + last 2 digits of student ID
-- **Password Pattern**: "bhsa" + student ID (e.g., "bhsabh6001")
-- **Security**: Passwords are hashed with bcrypt before database storage
-- **Database Support**: PostgreSQL schema includes username and password_hash fields
-- **Data Persistence**: Verified through multiple server restarts - all data survives permanently
-
-## Parent Portal Authentication Legacy Fixes
-- **Historical Issue**: Parent login previously worked in preview mode but failed in deployment
-- **Root Cause**: Missing database storage methods and JWT secret inconsistency
-- **Parent Credentials**: Nancy Law (nslaw@yahoo.com / password) - fully working
-- **API Testing**: Confirmed add scholar endpoints work correctly via both credentials and student ID methods
-
-## Modal Improvements (Parent & Teacher Portals)
-- **Parent Portal**: Add student modal fixed with multiple exit methods:
-  - Click outside modal to close
-  - Large, visible X button in top-right corner with border and hover effects
-  - Cancel button at bottom
-  - Proper event handling to prevent stuck states
-- **Teacher Portal**: Add Scholar modal enhanced with improved UX (CONFIRMED WORKING):
-  - Keyboard support (Escape key to close)
-  - Enhanced backdrop click handling  
-  - Automatic form reset when modal closes
-  - Better visual styling for close button with hover effects
-  - Form validation prevents submission without required fields
-  - Sticky header for better navigation in scrollable content
-  - User confirmed: X button and all closing mechanisms working properly
-
 # System Architecture
 
 ## Frontend Architecture
-- **Framework**: React 18 with TypeScript using Vite.
+- **Framework**: React 18 with TypeScript (Vite).
 - **UI Library**: Shadcn/ui components built on Radix UI primitives.
 - **Styling**: Tailwind CSS with custom CSS variables.
-- **Routing**: Wouter for client-side routing.
-- **State Management**: TanStack React Query for server state management.
-- **Component Structure**: Page components, reusable UI components following shadcn/ui patterns, custom components for house cards and forms.
+- **Routing**: Wouter.
+- **State Management**: TanStack React Query for server state.
+- **Component Structure**: Page components, reusable UI components, and custom components for house cards and forms.
 - **Responsive Design**: Mobile-first approach.
 
 ## Backend Architecture
@@ -137,28 +23,31 @@ Preferred communication style: Simple, everyday language.
 - **Build Process**: ESBuild for server bundling, Vite for client bundling.
 
 ## Data Storage
-- **Database**: PostgreSQL configured with Drizzle ORM.
-- **Database Provider**: Neon Database (serverless PostgreSQL).
-- **Schema**: Five main tables (houses, scholars, point_entries, pbis_entries, pbis_photos) plus tables for teachers, parents, parent-teacher messages, administrators, and admin sessions.
-- **Scholars Table**: Includes automatic system-generated usernames (format: first3+last3+IDdigits).
+- **Database**: PostgreSQL with Drizzle ORM, hosted on Neon Database.
+- **Schema**: Tables for houses, scholars, point entries, PBIS entries, PBIS photos, teachers, parents, parent-teacher messages, administrators, and admin sessions.
+- **Scholars Table**: Includes automatic system-generated usernames (first3+last3+IDdigits format).
 - **File Storage**: Local file system for photo uploads using multer.
 
 ## Authentication and Authorization
-- **Administrator Authentication**: Fully working system for Principal (full access), Assistant Principal (full except admin settings), and Counselor (student management/reports). Default password: BHSAAdmin2025!.
-- **Teacher Authentication**: Existing system with grade-level permissions.
+- **Administrator Authentication**: Role-based permissions for Principal, Assistant Principal, and Counselor.
+- **Teacher Authentication**: Grade-level permissions.
 - **Session Management**: JWT-based sessions.
-- **Role-based Permissions**: Access levels based on administrative roles.
 
 ## Development Environment
 - **Hot Reload**: Vite dev server with Express middleware.
 - **TypeScript**: Strict configuration with path aliases.
-- **Replit Integration**: Custom plugins for development environment support.
+
+## UI/UX Decisions
+- Consistent use of BHSA Mustangs Crest logo and school branding.
+- Modals with multiple exit methods (click outside, X button, Cancel button) and keyboard support (Escape key).
+- Automatic form reset on modal close.
+- Responsive design for mobile-first experience.
 
 # External Dependencies
 
 ## Database Services
 - **Neon Database**: Serverless PostgreSQL hosting.
-- **Drizzle ORM**: Type-safe database queries and migrations.
+- **Drizzle ORM**: Type-safe database queries.
 
 ## UI and Styling
 - **Radix UI**: Accessible component primitives.
@@ -169,34 +58,24 @@ Preferred communication style: Simple, everyday language.
 ## Development Tools
 - **Vite**: Build tool and development server.
 - **TanStack React Query**: Server state management.
-- **Wouter**: Lightweight React router.
-- **ESBuild**: Fast JavaScript bundler.
-- **React Hook Form**: Form handling with validation.
-
-## Visual Assets and Branding
-- **School Logo**: Bush Hills STEAM Academy (BHSA) Mustangs Crest.
-- **Asset Management**: Vite-based asset importing with @assets/ alias.
-- **School Branding**: Consistent use of school identity.
+- **Wouter**: React router.
+- **ESBuild**: JavaScript bundler.
+- **React Hook Form**: Form handling.
 
 ## Email Notification System
 - **Service Provider**: SendGrid API.
-- **Administrator Email**: BHSAHouses25@gmail.com.
 - **Notification Types**: Teacher registrations, parent signups, student registrations, password reset requests.
-- **Email Templates**: HTML-formatted with school branding.
-- **Admin Configuration**: Admin settings page for email management.
 
 ## Data Export System
-- **Export Formats**: CSV and Excel (.xlsx) available from admin portal.
-- **Data Included**: Student name, ID, grade level, house assignment, all point categories, total points, date added.
-- **File Naming**: Automatic date-stamped filenames.
+- **Export Formats**: CSV and Excel (.xlsx) from admin portal.
 
 ## Form Validation
-- **Zod**: Schema validation library.
-- **Drizzle-Zod**: Integration between Drizzle schemas and Zod.
-- **Hookform Resolvers**: Bridge between React Hook Form and Zod.
+- **Zod**: Schema validation.
+- **Drizzle-Zod**: Integration with Drizzle schemas.
+- **Hookform Resolvers**: Integration with React Hook Form.
 
 ## Utility Libraries
-- **date-fns**: Date manipulation and formatting.
+- **date-fns**: Date manipulation.
 - **clsx & tailwind-merge**: Conditional CSS class composition.
 - **class-variance-authority**: Type-safe component variant handling.
 - **nanoid**: URL-safe unique ID generation.

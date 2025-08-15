@@ -42,6 +42,9 @@ Preferred communication style: Simple, everyday language.
 - Modals with multiple exit methods (click outside, X button, Cancel button) and keyboard support (Escape key).
 - Automatic form reset on modal close.
 - Responsive design for mobile-first experience.
+- **PBIS Champion Flash Effects**: Golden title animations, sparkle effects, and pulsing hero section glow
+- **Educational Background Music**: Toggle-controlled Web Audio API implementation with user interaction compliance
+- **Celebratory Animations**: House cards and school logo with gentle bounce/celebration movements
 
 # External Dependencies
 

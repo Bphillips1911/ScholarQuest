@@ -50,6 +50,37 @@ export default function ParentPortalEnhanced() {
   const [showSendMessage, setShowSendMessage] = useState(false);
   const [showAddPhone, setShowAddPhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
+
+  // MODAL CLOSE HELPER: Centralized function to close add scholar modal
+  const closeAddScholarModal = () => {
+    console.log("MODAL: Closing add scholar modal and resetting forms");
+    setShowAddScholar(false);
+    setStudentCredentials({ username: "", password: "" });
+    setStudentIdInput("");
+  };
+
+  // KEYBOARD SUPPORT: Handle escape key to close modals
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (showAddScholar) {
+          console.log("MODAL: Escape key pressed, closing add scholar modal");
+          closeAddScholarModal();
+        }
+        if (showSendMessage) {
+          console.log("MODAL: Escape key pressed, closing send message modal");
+          setShowSendMessage(false);
+        }
+        if (showAddPhone) {
+          console.log("MODAL: Escape key pressed, closing add phone modal");
+          setShowAddPhone(false);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showAddScholar, showSendMessage, showAddPhone]);
   
   // Scholar addition forms
   const [studentCredentials, setStudentCredentials] = useState({
@@ -790,7 +821,8 @@ export default function ParentPortalEnhanced() {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowAddScholar(false);
+              console.log("MODAL: Clicked outside, closing modal");
+              closeAddScholarModal();
             }
           }}
         >
@@ -801,9 +833,15 @@ export default function ParentPortalEnhanced() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowAddScholar(false)}
-                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("MODAL: X button clicked, closing modal");
+                    closeAddScholarModal();
+                  }}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
                   data-testid="button-close-modal"
+                  type="button"
                 >
                   ✕
                 </Button>
@@ -896,11 +934,7 @@ export default function ParentPortalEnhanced() {
               <div className="flex space-x-2">
                 <Button 
                   variant="outline" 
-                  onClick={() => {
-                    setShowAddScholar(false);
-                    setStudentCredentials({ username: "", password: "" });
-                    setStudentIdInput("");
-                  }}
+                  onClick={closeAddScholarModal}
                   className="flex-1"
                   data-testid="button-cancel-add"
                 >

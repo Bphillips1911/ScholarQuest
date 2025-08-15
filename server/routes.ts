@@ -671,14 +671,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password required" });
       }
 
+      console.log("PARENT-SCHOLAR LINKING: Request to add scholar by credentials:", username, "to parent", req.parent.id);
+      
       const scholar = await storage.addScholarToParentByCredentials(req.parent.id, username, password);
       
       if (!scholar) {
-        return res.status(404).json({ message: "Invalid credentials or scholar not found" });
+        console.log("PARENT-SCHOLAR LINKING: Failed to link scholar with credentials:", username);
+        return res.status(404).json({ 
+          message: "Student account not found with those credentials. Please check the username and password, or contact your child's teacher to create their account first." 
+        });
       }
 
+      console.log("PARENT-SCHOLAR LINKING: Successfully linked scholar:", scholar.name);
       res.json({ 
-        message: "Scholar added successfully",
+        message: "Student linked successfully",
         scholar: {
           id: scholar.id,
           name: scholar.name,

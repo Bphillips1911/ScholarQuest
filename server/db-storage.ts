@@ -863,6 +863,38 @@ export class DatabaseStorage implements IStorage {
       .where(eq(scholars.studentId, studentId));
     return (result.rowCount || 0) > 0;
   }
+
+  async addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<Scholar | null> {
+    try {
+      // First, try to find existing scholar by username or student ID
+      const [existingScholar] = await db.select()
+        .from(scholars)
+        .where(or(eq(scholars.username, username), eq(scholars.studentId, username)));
+
+      if (existingScholar && existingScholar.passwordHash) {
+        // Verify password if scholar exists
+        const isValid = await bcrypt.compare(password, existingScholar.passwordHash);
+        if (isValid) {
+          const success = await this.addScholarToParent(parentId, existingScholar.id);
+          return success ? existingScholar : null;
+        }
+        return null;
+      }
+
+      // If scholar doesn't exist with those exact credentials, return null
+      // This maintains security - we only link existing verified accounts
+      console.log("PARENT-SCHOLAR LINKING: No existing scholar found with username:", username);
+      return null;
+    } catch (error) {
+      console.error("Add scholar by credentials error:", error);
+      return null;
+    }
+  }
+
+  async getScholarByUsername(username: string): Promise<Scholar | undefined> {
+    const [scholar] = await db.select().from(scholars).where(eq(scholars.username, username));
+    return scholar || undefined;
+  }
 }
 
 export const storage = new DatabaseStorage();

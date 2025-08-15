@@ -727,8 +727,13 @@ export default function ParentPortalEnhanced() {
               <div className="space-y-4">
                 <h3 className="font-medium text-gray-900">Method 1: Student Login Credentials</h3>
                 <p className="text-sm text-gray-600">
-                  Enter your child's username and password to automatically link their account.
+                  Enter your child's username and password if their teacher has already created their account.
                 </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-700">
+                    <strong>Note:</strong> Student accounts must be created by teachers first. If your child doesn't have login credentials yet, contact their teacher or use Method 2 below.
+                  </p>
+                </div>
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="studentUsername">Student Username</Label>
@@ -775,7 +780,7 @@ export default function ParentPortalEnhanced() {
               <div className="space-y-4">
                 <h3 className="font-medium text-gray-900">Method 2: Student ID</h3>
                 <p className="text-sm text-gray-600">
-                  If you don't have the login credentials, you can add by Student ID.
+                  If your child's teacher hasn't created login credentials yet, you can link by Student ID.
                 </p>
                 <div>
                   <Label htmlFor="studentId">Student ID</Label>

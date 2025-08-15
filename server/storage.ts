@@ -125,6 +125,7 @@ export interface IStorage {
   getParentByEmail(email: string): Promise<Parent | undefined>;
   createParent(parent: InsertParent): Promise<Parent>;
   addScholarToParent(parentId: string, scholarId: string): Promise<boolean>;
+  addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<Scholar | null>;
   getParentScholars(parentId: string): Promise<Scholar[]>;
   getAllParents(): Promise<Parent[]>;
   addScholarToParentByUsername(parentId: string, studentUsername: string): Promise<Scholar | null>;

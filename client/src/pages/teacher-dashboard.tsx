@@ -140,6 +140,14 @@ export default function TeacherDashboard() {
         return;
       }
       
+      // FORCE REFRESH for Michael Davis to fix display bug
+      if (parsedTeacher.email === "michael.davis@bhsteam.edu" && parsedTeacher.role === "8th Grade") {
+        console.log("FORCE REFRESH: Michael Davis detected with old data, clearing cache...");
+        localStorage.removeItem("teacherData");
+        refreshTeacherData();
+        return;
+      }
+      
       setTeacher(parsedTeacher);
       
       // Set default grade for single-grade teachers OR if teacher has canSeeGrades

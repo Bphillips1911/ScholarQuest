@@ -780,6 +780,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update parent phone number
+  app.post("/api/parent/update-phone", authenticateParent, async (req: any, res) => {
+    try {
+      const { phone } = req.body;
+      
+      if (!phone || typeof phone !== 'string') {
+        return res.status(400).json({ message: "Valid phone number is required" });
+      }
+
+      // Basic phone validation (US format)
+      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+      const cleanPhone = phone.replace(/\D/g, '');
+      
+      if (!phoneRegex.test(cleanPhone) || cleanPhone.length < 10) {
+        return res.status(400).json({ message: "Please enter a valid phone number" });
+      }
+
+      const updatedParent = await storage.updateParentPhone(req.parent.id, cleanPhone);
+      
+      if (!updatedParent) {
+        return res.status(500).json({ message: "Failed to update phone number" });
+      }
+
+      res.json({
+        message: "Phone number updated successfully",
+        parent: {
+          id: updatedParent.id,
+          firstName: updatedParent.firstName,
+          lastName: updatedParent.lastName,
+          email: updatedParent.email,
+          phone: updatedParent.phone,
+        }
+      });
+    } catch (error) {
+      console.error("Update phone error:", error);
+      res.status(500).json({ message: "Failed to update phone number" });
+    }
+  });
+
   // Teacher authentication middleware
   const authenticateTeacher = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.replace("Bearer ", "");

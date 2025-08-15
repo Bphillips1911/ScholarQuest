@@ -130,6 +130,7 @@ export interface IStorage {
   getAllParents(): Promise<Parent[]>;
   addScholarToParentByUsername(parentId: string, studentUsername: string): Promise<Scholar | null>;
   addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<Scholar | null>;
+  updateParentPhone(parentId: string, phone: string): Promise<Parent | null>;
   
   // Messaging
   createMessage(messageData: any): Promise<any>;
@@ -1516,6 +1517,19 @@ export class MemStorage implements IStorage {
 
   async getAllParents(): Promise<Parent[]> {
     return Array.from(this.parents.values());
+  }
+
+  async updateParentPhone(parentId: string, phone: string): Promise<Parent | null> {
+    const parent = this.parents.get(parentId);
+    if (!parent) return null;
+
+    const updatedParent = { ...parent, phone };
+    this.parents.set(parentId, updatedParent);
+    
+    // Sync to database if using MemStorage as fallback
+    await this.syncParentToDatabase(updatedParent);
+    
+    return updatedParent;
   }
 
   async addScholarToParentByUsername(parentId: string, studentUsername: string): Promise<Scholar | null> {

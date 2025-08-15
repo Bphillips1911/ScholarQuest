@@ -47,6 +47,8 @@ export default function ParentPortalEnhanced() {
   const [activeTab, setActiveTab] = useState("my-scholars");
   const [showAddScholar, setShowAddScholar] = useState(false);
   const [showSendMessage, setShowSendMessage] = useState(false);
+  const [showAddPhone, setShowAddPhone] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
   
   // Scholar addition forms
   const [studentCredentials, setStudentCredentials] = useState({
@@ -65,6 +67,61 @@ export default function ParentPortalEnhanced() {
   });
 
   const { toast } = useToast();
+
+  // Add phone number mutation
+  const addPhoneMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      const response = await fetch("/api/parent/update-phone", {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ phone }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update phone number");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/parent/scholars"] });
+      setShowAddPhone(false);
+      setPhoneNumber("");
+      
+      // Update parent data in localStorage and state
+      if (data.parent && parentData) {
+        const updatedParentData = { ...parentData, phone: data.parent.phone };
+        localStorage.setItem("parentData", JSON.stringify(updatedParentData));
+        setParentData(updatedParentData);
+      }
+      
+      toast({
+        title: "Phone Number Added",
+        description: "You will now receive SMS notifications for important updates.",
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Add phone error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add phone number",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddPhone = () => {
+    if (!phoneNumber.trim()) {
+      toast({
+        title: "Phone Number Required",
+        description: "Please enter your phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    addPhoneMutation.mutate(phoneNumber);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("parentToken");
@@ -677,14 +734,25 @@ export default function ParentPortalEnhanced() {
                 
                 {!parentData.phone && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
-                      <div>
-                        <p className="font-medium text-yellow-800">Add Phone Number</p>
-                        <p className="text-sm text-yellow-700">
-                          Add your phone number to receive SMS notifications for important updates.
-                        </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+                        <div>
+                          <p className="font-medium text-yellow-800">Add Phone Number</p>
+                          <p className="text-sm text-yellow-700">
+                            Add your phone number to receive SMS notifications for important updates.
+                          </p>
+                        </div>
                       </div>
+                      <Button 
+                        size="sm" 
+                        onClick={() => setShowAddPhone(true)}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        data-testid="button-add-phone"
+                      >
+                        <Phone className="h-4 w-4 mr-1" />
+                        Add Phone
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -815,6 +883,76 @@ export default function ParentPortalEnhanced() {
                   data-testid="button-cancel-add"
                 >
                   Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Add Phone Number Modal */}
+      {showAddPhone && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Add Phone Number</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddPhone(false)}
+                  className="h-8 w-8 p-0"
+                  data-testid="button-close-phone-modal"
+                >
+                  ✕
+                </Button>
+              </div>
+              <p className="text-sm text-gray-600">
+                Receive SMS notifications for important updates about your child's progress.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  data-testid="input-phone-number"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter your 10-digit phone number for SMS notifications
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-700">
+                  <Bell className="h-4 w-4 inline mr-1" />
+                  You'll receive notifications for teacher messages, PBIS achievements, and important school updates.
+                </p>
+              </div>
+
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowAddPhone(false);
+                    setPhoneNumber("");
+                  }}
+                  className="flex-1"
+                  data-testid="button-cancel-phone"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleAddPhone}
+                  disabled={addPhoneMutation.isPending || !phoneNumber.trim()}
+                  className="flex-1"
+                  data-testid="button-save-phone"
+                >
+                  {addPhoneMutation.isPending ? "Saving..." : "Save Phone"}
                 </Button>
               </div>
             </CardContent>

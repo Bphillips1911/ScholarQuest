@@ -800,6 +800,20 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(parents);
   }
 
+  async updateParentPhone(parentId: string, phone: string): Promise<Parent | null> {
+    try {
+      const [updatedParent] = await db
+        .update(schema.parents)
+        .set({ phone })
+        .where(eq(schema.parents.id, parentId))
+        .returning();
+      return updatedParent || null;
+    } catch (error) {
+      console.error("Error updating parent phone:", error);
+      return null;
+    }
+  }
+
   async getUnsortedStudents(): Promise<Scholar[]> {
     return await db.select().from(scholars).where(eq(scholars.isHouseSorted, false));
   }

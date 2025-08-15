@@ -730,7 +730,7 @@ export default function TeacherDashboard() {
                           <div className="text-xs text-gray-500 flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             <div>
-                              {message.created_at ? (
+                              {message.created_at && !isNaN(new Date(message.created_at).getTime()) ? (
                                 <div>
                                   <div className="font-medium">
                                     {format(new Date(message.created_at), 'MMM dd, yyyy')}

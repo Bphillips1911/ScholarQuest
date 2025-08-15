@@ -124,16 +124,14 @@ export default function TeacherDashboard() {
         console.log("TEACHER DASHBOARD: Fresh teacher data from server:", data.teacher);
         console.log("CACHE DEBUG: Grade Role received:", data.teacher.gradeRole, "Subject:", data.teacher.subject);
         
-        // Force state update to ensure UI reflects fresh data
-        setTeacher(null); // Clear first
-        setTimeout(() => {
-          setTeacher(data.teacher); // Then set fresh data
-          
-          if (data.teacher.canSeeGrades?.length >= 1) {
-            setSelectedGrade(data.teacher.canSeeGrades[0]);
-            setActiveView('scholars');
-          }
-        }, 10);
+        // Force immediate state update to ensure UI reflects fresh data
+        console.log("CACHE DEBUG: Setting fresh teacher data immediately");
+        setTeacher(data.teacher); // Set fresh data immediately
+        
+        if (data.teacher.canSeeGrades?.length >= 1) {
+          setSelectedGrade(data.teacher.canSeeGrades[0]);
+          setActiveView('scholars');
+        }
       } else {
         console.log("CACHE DEBUG: Auth failed, redirecting to login");
         setLocation("/teacher-login");
@@ -558,7 +556,7 @@ export default function TeacherDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {houses.length > 0 ? (
+            {Array.isArray(houses) && houses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {houses.map((house: any) => (
                   <div 

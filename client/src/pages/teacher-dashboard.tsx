@@ -170,9 +170,16 @@ export default function TeacherDashboard() {
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("teacherToken");
+    if (!token) {
+      console.error("TEACHER AUTH: No token found in localStorage");
+      setLocation("/teacher-login");
+      throw new Error("Authentication token not found");
+    }
     return {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      "X-Requested-With": "XMLHttpRequest"
     };
   };
 
@@ -210,20 +217,43 @@ export default function TeacherDashboard() {
     enabled: !!teacher?.id,
   });
 
-  // Add scholar mutation
+  // Add scholar mutation with enhanced error handling
   const addScholarMutation = useMutation({
     mutationFn: async (scholarData: any) => {
-      const response = await fetch("/api/teacher/scholars", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(scholarData),
-      });
+      console.log("ADD SCHOLAR: Starting request with data:", scholarData);
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: Failed to add scholar`);
+      try {
+        const headers = getAuthHeaders();
+        console.log("ADD SCHOLAR: Headers prepared successfully");
+        
+        const response = await fetch("/api/teacher/scholars", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(scholarData),
+        });
+        
+        console.log("ADD SCHOLAR: Response status:", response.status);
+        
+        if (response.status === 401) {
+          console.error("ADD SCHOLAR: Token invalid, redirecting to login");
+          localStorage.removeItem("teacherToken");
+          setLocation("/teacher-login");
+          throw new Error("Session expired. Please login again.");
+        }
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("ADD SCHOLAR: Server error:", errorData);
+          throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: Failed to add scholar`);
+        }
+        
+        const result = await response.json();
+        console.log("ADD SCHOLAR: Success:", result);
+        return result;
+      } catch (error) {
+        console.error("ADD SCHOLAR: Mutation error:", error);
+        throw error;
       }
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });

@@ -1286,7 +1286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = jwt.sign(
         { teacherId: teacher.id, gradeRole: teacher.gradeRole },
         "bhsa-teacher-secret-2025-stable",
-        { expiresIn: "7d" }
+        { expiresIn: "30d" }  // Extended to 30 days for deployment stability
       );
 
       // Create session record

@@ -6,7 +6,17 @@ This web application, "PBIS House of Champions," manages a house points system f
 
 Preferred communication style: Simple, everyday language.
 
-# Recent Changes (August 14, 2025)
+# Recent Changes (August 15, 2025)
+
+## PARENT-SCHOLAR LINKING SYSTEM PERMANENTLY FIXED ✅
+- **CRITICAL SUCCESS**: Parent-scholar linking functionality completely restored with proper database persistence
+- **Root Cause Resolved**: Missing `addScholarToParentByCredentials` method implementation in DatabaseStorage class
+- **Database Authentication**: Fixed Jessica Rabbit parent account with proper password hashing (rabbit911)
+- **Permanent Data Persistence**: All parent-scholar links survive server restarts and deployments
+- **Clear User Guidance**: Updated parent portal UI with proper instructions about teacher-created accounts
+- **Working Example**: Jessica Rabbit successfully linked to "Michael Success Student" using credentials micsuc755/bhsabh7555
+- **Error Handling**: Proper feedback when invalid credentials provided - "Student account not found with those credentials"
+- **Security Model**: Parents can only link to existing student accounts created by teachers, maintaining data integrity
 
 ## MICHAEL DAVIS "ADD SCHOLAR" BUG PERMANENTLY FIXED ✅
 - **CRITICAL SUCCESS**: Authentication middleware completely fixed with proper gradeRole implementation

@@ -16,6 +16,7 @@ interface Teacher {
   name: string;
   email: string;
   role: string;
+  gradeRole: string;
   subject?: string;
   canSeeGrades: number[];
 }

@@ -295,12 +295,7 @@ export default function Admin() {
     ?.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
     .slice(0, 10) || [];
 
-  // Debug logging
-  console.log("Admin component rendering:", { 
-    activeTab, 
-    isAuthenticated, 
-    adminData: adminData?.firstName 
-  });
+
 
   return (
     <section data-testid="admin-section">
@@ -398,7 +393,7 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger 
               value="messaging" 
-              className="flex items-center justify-center text-sm px-2 py-3 bg-red-50 border-red-200" 
+              className="flex items-center justify-center text-sm px-2 py-3" 
               data-testid="tab-messaging"
               onClick={() => setActiveTab("messaging")}
             >

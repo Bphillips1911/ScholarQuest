@@ -380,7 +380,7 @@ export default function Admin() {
         {/* Admin Tabs */}
         <div className="clear-both pt-6 border-t border-gray-200">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-auto mb-6" data-testid="admin-tabs-list">
+            <TabsList className="grid w-full grid-cols-5 h-auto mb-6" data-testid="admin-tabs-list">
             <TabsTrigger value="dashboard" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-dashboard">
               <GraduationCap className="mr-1 h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">House Management</span>
@@ -400,6 +400,16 @@ export default function Admin() {
               <MessageSquare className="mr-1 h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Admin Messaging</span>
               <span className="sm:hidden">Messages</span>
+            </TabsTrigger>
+            <TabsTrigger value="exports" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-exports">
+              <Download className="mr-1 h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Data Export</span>
+              <span className="sm:hidden">Export</span>
+            </TabsTrigger>
+            <TabsTrigger value="quick-actions" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-quick-actions">
+              <Settings className="mr-1 h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Quick Actions</span>
+              <span className="sm:hidden">Actions</span>
             </TabsTrigger>
           </TabsList>
 
@@ -961,6 +971,203 @@ export default function Admin() {
                 </Card>
               </div>
             </TabsContent>
+
+          <TabsContent value="exports" className="mt-6">
+            <div className="space-y-6">
+              {/* Export Options */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Download className="mr-2 h-5 w-5" />
+                    Data Export Options
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Student Data Export</h3>
+                      <p className="text-sm text-gray-600">
+                        Export comprehensive student information including points, house assignments, and login credentials.
+                      </p>
+                      <div className="flex gap-3">
+                        <Button 
+                          onClick={() => handleExportData('csv')}
+                          className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                          data-testid="button-export-csv"
+                        >
+                          <FileSpreadsheet className="h-4 w-4" />
+                          Export CSV
+                        </Button>
+                        <Button 
+                          onClick={() => handleExportData('excel')}
+                          className="flex items-center gap-2 bg-green-700 text-white hover:bg-green-800"
+                          data-testid="button-export-excel"
+                        >
+                          <FileSpreadsheet className="h-4 w-4" />
+                          Export Excel
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Monthly PBIS Reports</h3>
+                      <p className="text-sm text-gray-600">
+                        Generate monthly reports for individual students or house-wide analytics.
+                      </p>
+                      <Button 
+                        onClick={() => setLocation("/admin-reports")}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                        data-testid="button-monthly-reports"
+                      >
+                        <QrCode className="h-4 w-4" />
+                        Monthly Reports
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="quick-actions" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Student QR Codes */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <QrCode className="mr-2 h-5 w-5" />
+                    Student QR Codes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Generate QR codes for student login information</p>
+                  <Button 
+                    asChild 
+                    className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                    data-testid="button-qr-generator"
+                  >
+                    <Link href="/qr-generator">
+                      Generate QR Codes
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* House Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <GraduationCap className="mr-2 h-5 w-5" />
+                    House Sorting
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Manage house assignments and balance distributions</p>
+                  <Button 
+                    asChild 
+                    className="w-full"
+                    data-testid="button-house-sorting"
+                  >
+                    <Link href="/admin-sorting">
+                      House Sorting
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* PBIS Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Award className="mr-2 h-5 w-5" />
+                    PBIS Awards
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Review and manage PBIS point awards</p>
+                  <Button 
+                    asChild 
+                    className="w-full"
+                    data-testid="button-pbis-management"
+                  >
+                    <Link href="/admin-pbis">
+                      PBIS Management
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* System Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Settings className="mr-2 h-5 w-5" />
+                    Admin Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Configure system settings and permissions</p>
+                  <Button 
+                    asChild 
+                    variant="outline"
+                    className="w-full"
+                    data-testid="button-admin-settings"
+                  >
+                    <Link href="/admin-settings">
+                      Admin Settings
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Password Reset */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Key className="mr-2 h-5 w-5" />
+                    Reset Semester
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Reset all house points for new semester</p>
+                  <Button 
+                    onClick={handleResetPoints}
+                    variant="destructive"
+                    className="w-full"
+                    data-testid="button-reset-points-quick"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Reset Semester
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Tutorial Access */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <User className="mr-2 h-5 w-5" />
+                    Tutorial
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Access system tutorial and guides</p>
+                  <Button 
+                    asChild 
+                    variant="outline"
+                    className="w-full"
+                    data-testid="button-tutorial"
+                  >
+                    <Link href="/tutorial">
+                      View Tutorial
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           </Tabs>
         </div>
       </Card>

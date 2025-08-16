@@ -140,7 +140,7 @@ export default function AdminClean() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
-      const response = await apiRequest("POST", "/api/admin/messages/send", messageData);
+      const response = await apiRequest("POST", "/api/admin/send-message", messageData);
       return response.json();
     },
     onSuccess: () => {

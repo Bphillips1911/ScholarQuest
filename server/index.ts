@@ -41,23 +41,68 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    // Test database connection first
+    // Enhanced database connection testing with retry logic
     try {
-      const { pool } = await import("./db");
-      const client = await pool.connect();
-      await client.query('SELECT 1');
-      client.release();
-      log("Database connection successful");
-    } catch (dbError) {
-      log(`Database connection failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+      const { testDatabaseConnection } = await import("./db");
+      log("DEPLOYMENT: Testing database connection with retry logic...");
+      
+      const maxRetries = isProduction ? 10 : 3;
+      const retryDelay = isProduction ? 5000 : 2000;
+      
+      const isConnected = await testDatabaseConnection(maxRetries, retryDelay);
+      
+      if (!isConnected) {
+        const errorMsg = `Database connection failed after ${maxRetries} attempts`;
+        log(`DEPLOYMENT ERROR: ${errorMsg}`);
+        
+        if (isProduction) {
+          console.error('DEPLOYMENT: Database connection failure - exiting');
+          process.exit(1);
+        }
+        throw new Error(errorMsg);
+      }
+      
+      log("DEPLOYMENT: Database connection established successfully");
+      
+      // Comprehensive deployment initialization
       if (isProduction) {
+        try {
+          const { verifyDeploymentEnvironment, initializeDeploymentDatabase } = await import("./deployment-init");
+          
+          // Verify environment variables
+          const envValid = verifyDeploymentEnvironment();
+          if (!envValid) {
+            console.error('DEPLOYMENT: Environment validation failed - missing required variables');
+            process.exit(1);
+          }
+          
+          // Initialize database schema
+          const schemaValid = await initializeDeploymentDatabase();
+          if (!schemaValid) {
+            log("DEPLOYMENT WARNING: Database schema issues detected");
+            log("DEPLOYMENT: Proceeding with seeding to create missing tables...");
+          } else {
+            log("DEPLOYMENT: Database schema validation passed");
+          }
+          
+        } catch (deploymentError) {
+          log(`DEPLOYMENT ERROR: Initialization failed - ${deploymentError instanceof Error ? deploymentError.message : 'Unknown error'}`);
+          // Continue with startup - seeding may resolve issues
+        }
+      }
+      
+    } catch (dbError) {
+      const errorMsg = `Database initialization failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`;
+      log(`DEPLOYMENT ERROR: ${errorMsg}`);
+      
+      if (isProduction) {
+        console.error('DEPLOYMENT: Critical database error - application cannot start');
         process.exit(1);
       }
-      throw dbError;
+      throw new Error(errorMsg);
     }
 
     // CRITICAL DEPLOYMENT FIX - Force teacher seeding on every startup
-    const isProduction = process.env.NODE_ENV === 'production';
     console.log(`STARTUP: Running in ${process.env.NODE_ENV || 'development'} mode`);
     console.log(`STARTUP: Production mode: ${isProduction}`);
     console.log(`STARTUP: REPL_ID: ${process.env.REPL_ID || 'not set'}`);
@@ -135,14 +180,15 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Enhanced server configuration for deployment
   const port = parseInt(process.env.PORT || '5000', 10);
+  const host = isProduction ? '0.0.0.0' : 'localhost'; // Bind to all interfaces in production
+  
+  log(`DEPLOYMENT: Starting server on ${host}:${port} (production: ${isProduction})`);
   
   const httpServer = server.listen({
     port,
+    host, // Explicit host binding for deployment
     host: "0.0.0.0",
     reusePort: true,
   }, () => {

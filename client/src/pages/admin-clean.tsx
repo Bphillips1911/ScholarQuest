@@ -683,7 +683,7 @@ export default function AdminClean() {
                             <SelectContent>
                               {teachers?.map((teacher: any) => (
                                 <SelectItem key={teacher.id} value={teacher.id}>
-                                  {teacher.firstName} {teacher.lastName} ({teacher.gradeLevel})
+                                  {teacher.name} ({teacher.gradeRole || teacher.gradeLevel})
                                 </SelectItem>
                               ))}
                             </SelectContent>

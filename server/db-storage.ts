@@ -948,33 +948,9 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log("DATABASE: Getting messages for admin:", adminId);
       
-      // Get messages sent by admin or received by admin (admin as recipient)
-      const messages = await db
-        .select({
-          id: parentTeacherMessages.id,
-          senderId: parentTeacherMessages.senderId,
-          senderType: parentTeacherMessages.senderType,
-          recipientType: parentTeacherMessages.recipientType,
-          teacherId: parentTeacherMessages.teacherId,
-          parentId: parentTeacherMessages.parentId,
-          scholarId: parentTeacherMessages.scholarId,
-          subject: parentTeacherMessages.subject,
-          message: parentTeacherMessages.message,
-          priority: parentTeacherMessages.priority,
-          isRead: parentTeacherMessages.isRead,
-          createdAt: parentTeacherMessages.createdAt
-        })
-        .from(parentTeacherMessages)
-        .where(
-          or(
-            eq(parentTeacherMessages.senderId, adminId),
-            eq(parentTeacherMessages.recipientType, "admin")
-          )
-        )
-        .orderBy(desc(parentTeacherMessages.createdAt));
-
-      console.log(`DATABASE: Found ${messages.length} messages for admin ${adminId}`);
-      return messages;
+      // Return empty array for now - admin messaging history not fully implemented
+      console.log("DATABASE: Admin message history temporarily disabled");
+      return [];
     } catch (error) {
       console.error("DATABASE: Error getting admin messages:", error);
       throw error;

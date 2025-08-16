@@ -2044,7 +2044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use consistent deployment-compatible secret
       const jwtSecret = "bhsa-admin-secret-2025-stable";
       const token = jwt.sign(
-        { adminId: admin.id, title: admin.title },
+        { adminId: admin.id, email: admin.email, title: admin.title },
         jwtSecret,
         { expiresIn: "30d" }
       );

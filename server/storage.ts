@@ -1524,6 +1524,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.parents.values());
   }
 
+  async getAllTeachers(): Promise<TeacherAuth[]> {
+    return Array.from(this.teacherAuth.values());
+  }
+
   async updateParentPhone(parentId: string, phone: string): Promise<Parent | null> {
     const parent = this.parents.get(parentId);
     if (!parent) return null;

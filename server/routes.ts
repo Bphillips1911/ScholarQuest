@@ -819,6 +819,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // Teacher authentication middleware
   const authenticateTeacher = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
@@ -878,6 +880,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Teacher routes (old login removed - using new auth system)
+  
+  // TEACHER MESSAGING ROUTES
+  // Get teacher messages
+  app.get("/api/teacher/messages", authenticateTeacher, async (req: any, res) => {
+    try {
+      const messages = await storage.getMessagesByTeacher(req.teacher.id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Get teacher messages error:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  // Send message from teacher
+  app.post("/api/teacher/send-message", authenticateTeacher, async (req: any, res) => {
+    try {
+      const { recipientType, parentId, adminId, scholarId, subject, message, priority } = req.body;
+      
+      if (!subject || !message || !recipientType) {
+        return res.status(400).json({ message: "Subject, message, and recipient type required" });
+      }
+
+      if (recipientType === "parent" && !parentId) {
+        return res.status(400).json({ message: "Parent ID required for parent messages" });
+      }
+
+      const messageData = {
+        teacherId: req.teacher.id,
+        parentId: recipientType === "parent" ? parentId : null,
+        adminId: recipientType === "admin" ? adminId : null,
+        scholarId: scholarId || null,
+        senderType: "teacher",
+        recipientType,
+        subject,
+        message,
+        priority: priority || "normal",
+      };
+
+      const createdMessage = await storage.createMessage(messageData);
+      
+      res.json({
+        message: "Message sent successfully",
+        messageId: createdMessage.id,
+      });
+    } catch (error) {
+      console.error("Send teacher message error:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Get parents list for teacher messaging
+  app.get("/api/teacher/parents", authenticateTeacher, async (req: any, res) => {
+    try {
+      const parents = await storage.getAllParents();
+      const parentsList = parents.map(p => ({
+        id: p.id,
+        name: `${p.firstName} ${p.lastName}`,
+        email: p.email
+      }));
+      res.json(parentsList);
+    } catch (error) {
+      console.error("Get parents error:", error);
+      res.status(500).json({ message: "Failed to fetch parents" });
+    }
+  });
   
   // Test endpoint for token validation
   app.get("/api/teacher/test-auth", authenticateTeacher, async (req: any, res) => {

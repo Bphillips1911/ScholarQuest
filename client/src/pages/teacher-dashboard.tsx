@@ -257,10 +257,10 @@ export default function TeacherDashboard() {
 
   // Fetch messages for the teacher
   const { data: messages = [] } = useQuery({
-    queryKey: ["/api/parent-teacher-messages/teacher", teacher?.id],
+    queryKey: ["/api/teacher/messages", teacher?.id],
     queryFn: async () => {
       if (!teacher?.id) return [];
-      const response = await fetch(`/api/parent-teacher-messages/teacher/${teacher.id}`, {
+      const response = await fetch(`/api/teacher/messages`, {
         headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error("Failed to fetch messages");

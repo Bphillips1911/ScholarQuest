@@ -98,6 +98,15 @@ export default function ParentPortalEnhanced() {
     priority: "normal" as "low" | "normal" | "high" | "urgent",
   });
 
+  // Reply functionality state
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [replyForm, setReplyForm] = useState({
+    subject: "",
+    message: "",
+    priority: "normal" as "low" | "normal" | "high" | "urgent",
+  });
+
   const { toast } = useToast();
 
   // Add phone number mutation
@@ -361,6 +370,40 @@ export default function ParentPortalEnhanced() {
     onError: (error) => {
       toast({
         title: "Error Sending Message",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reply to message mutation
+  const replyMutation = useMutation({
+    mutationFn: async (replyData: any) => {
+      const response = await fetch("/api/parent/send-message", {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(replyData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to send reply");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reply Sent",
+        description: "Your reply has been sent successfully.",
+      });
+      setReplyForm({ subject: "", message: "", priority: "normal" });
+      setShowReplyModal(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/parent/messages"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error Sending Reply",
         description: error.message,
         variant: "destructive",
       });
@@ -728,7 +771,31 @@ export default function ParentPortalEnhanced() {
                       </p>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-700">{message.message}</p>
+                      <p className="text-gray-700 mb-4">{message.message}</p>
+                      
+                      {/* Reply button - only show for messages from teachers/admin */}
+                      {message.senderType !== "parent" && (
+                        <div className="flex justify-end">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-blue-600"
+                            onClick={() => {
+                              setSelectedMessage(message);
+                              setReplyForm({
+                                subject: `Re: ${message.subject}`,
+                                message: "",
+                                priority: "normal"
+                              });
+                              setShowReplyModal(true);
+                            }}
+                            data-testid={`button-reply-${message.id}`}
+                          >
+                            <MessageCircle className="h-3 w-3 mr-1" />
+                            Reply
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -1140,6 +1207,147 @@ export default function ParentPortalEnhanced() {
                   data-testid="button-send-message"
                 >
                   {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Reply Modal */}
+      {showReplyModal && selectedMessage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowReplyModal(false);
+              setReplyForm({ subject: "", message: "", priority: "normal" });
+            }
+          }}
+        >
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader className="flex flex-row items-center justify-between sticky top-0 bg-white border-b">
+              <div>
+                <CardTitle>Reply to Message</CardTitle>
+                <p className="text-sm text-gray-600">
+                  From: {selectedMessage.senderType === "teacher" ? "Teacher" : "Administration"}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowReplyModal(false);
+                  setReplyForm({ subject: "", message: "", priority: "normal" });
+                }}
+                className="h-10 w-10 p-0 border-2 border-gray-600 bg-white hover:bg-red-100 hover:border-red-500"
+                data-testid="button-close-reply-modal"
+              >
+                <span className="text-xl font-bold text-gray-800 hover:text-red-600">✕</span>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Original Message Reference */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h4 className="font-medium text-sm text-gray-700 mb-2">Original Message:</h4>
+                <div className="text-sm">
+                  <p><strong>Subject:</strong> {selectedMessage.subject}</p>
+                  <p><strong>About:</strong> {selectedMessage.scholarName || 'General'}</p>
+                  <div className="mt-2 p-3 bg-white rounded border-l-4 border-blue-500">
+                    <p className="text-gray-700">{selectedMessage.message}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reply Form */}
+              <div>
+                <Label htmlFor="replySubject">Subject</Label>
+                <Input
+                  id="replySubject"
+                  value={replyForm.subject}
+                  onChange={(e) => setReplyForm({...replyForm, subject: e.target.value})}
+                  placeholder="Enter reply subject"
+                  data-testid="input-reply-subject"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="replyMessage">Message</Label>
+                <textarea
+                  id="replyMessage"
+                  value={replyForm.message}
+                  onChange={(e) => setReplyForm({...replyForm, message: e.target.value})}
+                  placeholder="Type your reply message here..."
+                  className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  data-testid="textarea-reply-message"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="replyPriority">Priority</Label>
+                <Select 
+                  value={replyForm.priority} 
+                  onValueChange={(value) => setReplyForm({...replyForm, priority: value})}
+                >
+                  <SelectTrigger data-testid="select-reply-priority">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                <p className="text-sm text-blue-700">
+                  <Phone className="h-4 w-4 inline mr-1" />
+                  You'll receive an SMS confirmation when your reply is sent.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    if (!replyForm.subject.trim() || !replyForm.message.trim()) {
+                      toast({
+                        title: "Missing information",
+                        description: "Please fill in both subject and message.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // Prepare reply data based on original message sender
+                    const replyData = {
+                      recipientType: selectedMessage.senderType === "teacher" ? "teacher" : "admin",
+                      teacherId: selectedMessage.senderType === "teacher" ? selectedMessage.senderId : undefined,
+                      subject: replyForm.subject,
+                      message: replyForm.message,
+                      priority: replyForm.priority,
+                      parentId: parentData?.id,
+                      senderType: "parent",
+                      scholarId: selectedMessage.scholarId,
+                    };
+
+                    replyMutation.mutate(replyData);
+                  }}
+                  disabled={replyMutation.isPending || !replyForm.subject.trim() || !replyForm.message.trim()}
+                  data-testid="button-send-reply"
+                >
+                  {replyMutation.isPending ? "Sending..." : "Send Reply"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowReplyModal(false);
+                    setReplyForm({ subject: "", message: "", priority: "normal" });
+                  }}
+                  data-testid="button-cancel-reply"
+                >
+                  Cancel
                 </Button>
               </div>
             </CardContent>

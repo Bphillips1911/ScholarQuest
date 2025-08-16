@@ -177,6 +177,8 @@ export default function Admin() {
     },
   });
 
+
+
   const handleAddScholar = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -234,7 +236,7 @@ export default function Admin() {
     if (!messageRecipientType || !messageSubject || !messageContent) {
       toast({
         title: "Missing Information",
-        description: "Please fill in recipient type, subject, and message.",
+        description: "Please fill in recipient type, subject, and message content.",
         variant: "destructive",
       });
       return;
@@ -242,8 +244,8 @@ export default function Admin() {
 
     if (messageRecipientType === "teacher" && !messageTeacherId) {
       toast({
-        title: "Missing Information",
-        description: "Please select a teacher.",
+        title: "Missing Information", 
+        description: "Please select a teacher to send the message to.",
         variant: "destructive",
       });
       return;
@@ -252,22 +254,20 @@ export default function Admin() {
     if (messageRecipientType === "parent" && !messageParentId) {
       toast({
         title: "Missing Information",
-        description: "Please select a parent.",
+        description: "Please select a parent to send the message to.",
         variant: "destructive",
       });
       return;
     }
 
-    const messageData = {
+    sendMessageMutation.mutate({
       recipientType: messageRecipientType,
       teacherId: messageRecipientType === "teacher" ? messageTeacherId : null,
       parentId: messageRecipientType === "parent" ? messageParentId : null,
       subject: messageSubject,
       message: messageContent,
       priority: messagePriority,
-    };
-
-    sendMessageMutation.mutate(messageData);
+    });
   };
 
   const approveTeacherMutation = useMutation({
@@ -436,7 +436,7 @@ export default function Admin() {
                           {teacher.gradeRole} • {teacher.subject}
                         </p>
                         <p className="text-xs text-gray-400" data-testid={`teacher-date-${teacher.id}`}>
-                          Applied: {new Date(teacher.createdAt).toLocaleDateString()}
+                          Applied: {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'Unknown'}
                         </p>
                       </div>
                       <Button
@@ -811,11 +811,11 @@ export default function Admin() {
                               <SelectValue placeholder="Choose a teacher" />
                             </SelectTrigger>
                             <SelectContent>
-                              {allTeachers?.map((teacher: any) => (
+                              {(allTeachers && Array.isArray(allTeachers)) ? allTeachers.map((teacher: any) => (
                                 <SelectItem key={teacher.id} value={teacher.id.toString()} data-testid={`option-teacher-${teacher.id}`}>
                                   {teacher.name} ({teacher.gradeRole})
                                 </SelectItem>
-                              ))}
+                              )) : []}
                             </SelectContent>
                           </Select>
                         </div>
@@ -831,11 +831,11 @@ export default function Admin() {
                               <SelectValue placeholder="Choose a parent" />
                             </SelectTrigger>
                             <SelectContent>
-                              {allParents?.map((parent: any) => (
+                              {(allParents && Array.isArray(allParents)) ? allParents.map((parent: any) => (
                                 <SelectItem key={parent.id} value={parent.id.toString()} data-testid={`option-parent-${parent.id}`}>
                                   {parent.firstName} {parent.lastName} ({parent.email})
                                 </SelectItem>
-                              ))}
+                              )) : []}
                             </SelectContent>
                           </Select>
                         </div>
@@ -908,7 +908,7 @@ export default function Admin() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {adminMessages && adminMessages.length > 0 ? (
+                      {(adminMessages && Array.isArray(adminMessages) && adminMessages.length > 0) ? (
                         adminMessages.map((message: any, index: number) => (
                           <div 
                             key={message.id} 

@@ -74,19 +74,19 @@ export default function AdminClean() {
   // Fetch teachers for messaging
   const { data: teachers = [] } = useQuery({
     queryKey: ["/api/admin/teachers"],
-    enabled: isAuthenticated && activeTab === "messaging"
+    enabled: isAuthenticated && activeTab === "messaging" && !!localStorage.getItem("adminToken")
   });
 
-  // Fetch parents for messaging
+  // Fetch parents for messaging  
   const { data: parents = [] } = useQuery({
     queryKey: ["/api/admin/parents"],
-    enabled: isAuthenticated && activeTab === "messaging"
+    enabled: isAuthenticated && activeTab === "messaging" && !!localStorage.getItem("adminToken")
   });
 
   // Fetch sent messages
   const { data: sentMessages = [] } = useQuery({
     queryKey: ["/api/admin/messages"],
-    enabled: isAuthenticated && activeTab === "messaging"
+    enabled: isAuthenticated && activeTab === "messaging" && !!localStorage.getItem("adminToken")
   });
 
   // Add scholar mutation with auto-generated username

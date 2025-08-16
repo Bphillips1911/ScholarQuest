@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { houses, scholars, teacherAuth } from "@shared/schema";
+import { houses, scholars, teacherAuth, administrators } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
@@ -202,8 +202,52 @@ export async function seedDatabase() {
 
     await db.insert(scholars).values(scholarsData);
 
-    console.log("Database seeded successfully with houses, scholars, and teachers");
+    // Initialize admin users
+    await seedAdminUsers();
+    
+    console.log("Database seeded successfully with houses, scholars, teachers, and administrators");
   } catch (error) {
     console.error("Error seeding database:", error);
+  }
+}
+
+async function seedAdminUsers() {
+  try {
+    console.log("SEED: 🔐 ADMIN - Initializing administrator accounts...");
+    
+    // Check if admin users already exist
+    const existingAdmins = await db.select().from(administrators);
+    console.log(`SEED: Found ${existingAdmins.length} existing administrators`);
+    
+    if (existingAdmins.length === 0) {
+      const hashedPassword = await bcrypt.hash("School1911!", 10);
+      
+      const adminUsers = [
+        {
+          id: randomUUID(),
+          email: "bphillips@bhm.k12.al.us",
+          firstName: "Benjamin",
+          lastName: "Phillips", 
+          title: "Principal" as const,
+          permissions: ["all"],
+          passwordHash: hashedPassword,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      ];
+      
+      for (const admin of adminUsers) {
+        await db.insert(administrators).values(admin);
+        console.log(`SEED: ✅ Created admin: ${admin.email} (${admin.title})`);
+      }
+    } else {
+      console.log("SEED: ✅ Admin users already exist");
+      existingAdmins.forEach(admin => {
+        console.log(`SEED: - ${admin.email} (${admin.title}) - Active: ${admin.isActive}`);
+      });
+    }
+  } catch (error) {
+    console.error("SEED: ❌ Admin initialization error:", error);
   }
 }

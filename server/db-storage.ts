@@ -942,6 +942,68 @@ export class DatabaseStorage implements IStorage {
     const [scholar] = await db.select().from(scholars).where(eq(scholars.username, username));
     return scholar || undefined;
   }
+
+  // Admin Messaging Methods
+  async getMessagesForAdmin(adminId: string): Promise<any[]> {
+    try {
+      console.log("DATABASE: Getting messages for admin:", adminId);
+      
+      // Get messages sent by admin or received by admin (admin as recipient)
+      const messages = await db
+        .select({
+          id: parentTeacherMessages.id,
+          senderId: parentTeacherMessages.senderId,
+          senderType: parentTeacherMessages.senderType,
+          recipientType: parentTeacherMessages.recipientType,
+          teacherId: parentTeacherMessages.teacherId,
+          parentId: parentTeacherMessages.parentId,
+          scholarId: parentTeacherMessages.scholarId,
+          subject: parentTeacherMessages.subject,
+          message: parentTeacherMessages.message,
+          priority: parentTeacherMessages.priority,
+          isRead: parentTeacherMessages.isRead,
+          createdAt: parentTeacherMessages.createdAt
+        })
+        .from(parentTeacherMessages)
+        .where(
+          or(
+            eq(parentTeacherMessages.senderId, adminId),
+            eq(parentTeacherMessages.recipientType, "admin")
+          )
+        )
+        .orderBy(desc(parentTeacherMessages.createdAt));
+
+      console.log(`DATABASE: Found ${messages.length} messages for admin ${adminId}`);
+      return messages;
+    } catch (error) {
+      console.error("DATABASE: Error getting admin messages:", error);
+      throw error;
+    }
+  }
+
+  async getAllTeachers(): Promise<any[]> {
+    try {
+      console.log("DATABASE: Getting all teachers for admin messaging");
+      const teachers = await db.select().from(teacherAuth);
+      console.log(`DATABASE: Found ${teachers.length} teachers`);
+      return teachers;
+    } catch (error) {
+      console.error("DATABASE: Error getting all teachers:", error);
+      throw error;
+    }
+  }
+
+  async getAllParents(): Promise<any[]> {
+    try {
+      console.log("DATABASE: Getting all parents for admin messaging");
+      const parentsData = await db.select().from(parents);
+      console.log(`DATABASE: Found ${parentsData.length} parents`);
+      return parentsData;
+    } catch (error) {
+      console.error("DATABASE: Error getting all parents:", error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

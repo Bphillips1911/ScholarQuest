@@ -2527,6 +2527,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Messaging Routes
+  // Get all messages for admin (both sent and received)
+  app.get("/api/admin/messages", authenticateAdmin, async (req: any, res) => {
+    try {
+      console.log("ADMIN MESSAGES: Fetching messages for admin:", req.admin.id);
+      const messages = await storage.getMessagesForAdmin(req.admin.id);
+      console.log(`ADMIN MESSAGES: Found ${messages.length} messages for admin`);
+      res.json(messages);
+    } catch (error) {
+      console.error("ADMIN MESSAGES: Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages", error: error.message });
+    }
+  });
+
+  // Send message from admin to teacher or parent
+  app.post("/api/admin/send-message", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { recipientType, teacherId, parentId, subject, message, priority = "normal" } = req.body;
+      
+      console.log("ADMIN SEND MESSAGE: Request data:", {
+        recipientType,
+        teacherId,
+        parentId,
+        subject,
+        priority,
+        adminId: req.admin.id
+      });
+
+      if (!subject || !message) {
+        return res.status(400).json({ message: "Subject and message are required" });
+      }
+
+      if (!recipientType || (recipientType !== "teacher" && recipientType !== "parent")) {
+        return res.status(400).json({ message: "Invalid recipient type. Must be 'teacher' or 'parent'" });
+      }
+
+      if (recipientType === "teacher" && !teacherId) {
+        return res.status(400).json({ message: "Teacher ID is required when sending to teacher" });
+      }
+
+      if (recipientType === "parent" && !parentId) {
+        return res.status(400).json({ message: "Parent ID is required when sending to parent" });
+      }
+
+      const messageData = {
+        senderId: req.admin.id,
+        senderType: "admin",
+        recipientType,
+        teacherId: recipientType === "teacher" ? teacherId : null,
+        parentId: recipientType === "parent" ? parentId : null,
+        subject,
+        message,
+        priority,
+        isRead: false,
+        createdAt: new Date(),
+      };
+
+      const newMessage = await storage.createParentTeacherMessage(messageData);
+      
+      console.log("ADMIN SEND MESSAGE: Message created successfully:", newMessage.id);
+      
+      res.json({ 
+        success: true, 
+        message: "Message sent successfully",
+        messageId: newMessage.id
+      });
+    } catch (error) {
+      console.error("ADMIN SEND MESSAGE: Error:", error);
+      res.status(500).json({ message: "Failed to send message", error: error.message });
+    }
+  });
+
+  // Get all teachers for admin messaging dropdown
+  app.get("/api/admin/teachers", authenticateAdmin, async (req: any, res) => {
+    try {
+      const teachers = await storage.getAllTeachers();
+      res.json(teachers.map(teacher => ({
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        gradeRole: teacher.gradeRole,
+        subject: teacher.subject
+      })));
+    } catch (error) {
+      console.error("ADMIN TEACHERS: Error fetching teachers:", error);
+      res.status(500).json({ message: "Failed to fetch teachers", error: error.message });
+    }
+  });
+
+  // Get all parents for admin messaging dropdown
+  app.get("/api/admin/parents", authenticateAdmin, async (req: any, res) => {
+    try {
+      const parents = await storage.getAllParents();
+      res.json(parents.map(parent => ({
+        id: parent.id,
+        firstName: parent.firstName,
+        lastName: parent.lastName,
+        email: parent.email
+      })));
+    } catch (error) {
+      console.error("ADMIN PARENTS: Error fetching parents:", error);
+      res.status(500).json({ message: "Failed to fetch parents", error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

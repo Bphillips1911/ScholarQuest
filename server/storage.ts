@@ -148,6 +148,11 @@ export interface IStorage {
   getMessagesByParent(parentId: string): Promise<any[]>;
   getMessagesByTeacher(teacherId: string): Promise<any[]>;
   
+  // Admin Messaging
+  getMessagesForAdmin(adminId: string): Promise<any[]>;
+  getAllTeachers(): Promise<TeacherAuth[]>;
+  getAllParents(): Promise<Parent[]>;
+  
   // Teacher Authentication  
   authenticateTeacher(email: string, password: string): Promise<TeacherAuth | null>;
   getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null>;

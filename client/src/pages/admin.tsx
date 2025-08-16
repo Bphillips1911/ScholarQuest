@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet, QrCode, LogOut, User } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet, QrCode, LogOut, User, MessageSquare, Send } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -22,6 +22,14 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Messaging states
+  const [messageRecipientType, setMessageRecipientType] = useState("");
+  const [messageTeacherId, setMessageTeacherId] = useState("");
+  const [messageParentId, setMessageParentId] = useState("");
+  const [messageSubject, setMessageSubject] = useState("");
+  const [messageContent, setMessageContent] = useState("");
+  const [messagePriority, setMessagePriority] = useState("normal");
 
   // Check if admin is logged in
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -68,6 +76,22 @@ export default function Admin() {
     enabled: isAuthenticated,
   });
 
+  // Messaging queries
+  const { data: adminMessages, refetch: refetchMessages } = useQuery({
+    queryKey: ["/api/admin/messages"],
+    enabled: isAuthenticated && activeTab === "messaging",
+  });
+
+  const { data: allTeachers } = useQuery({
+    queryKey: ["/api/admin/teachers"],
+    enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "teacher"),
+  });
+
+  const { data: allParents } = useQuery({
+    queryKey: ["/api/admin/parents"],
+    enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "parent"),
+  });
+
   // Show loading while checking authentication
   if (!isAuthenticated) {
     return <div className="min-h-screen flex items-center justify-center">
@@ -109,6 +133,45 @@ export default function Admin() {
       toast({
         title: "Error",
         description: "Failed to add scholar. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Messaging mutations
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: any) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/send-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(messageData)
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent successfully.",
+      });
+      setMessageRecipientType("");
+      setMessageTeacherId("");
+      setMessageParentId("");
+      setMessageSubject("");
+      setMessageContent("");
+      setMessagePriority("normal");
+      refetchMessages();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Message Failed",
+        description: error.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
     },
@@ -163,6 +226,48 @@ export default function Admin() {
         description: "Point reset functionality would be implemented here.",
       });
     }
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!messageRecipientType || !messageSubject || !messageContent) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in recipient type, subject, and message.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (messageRecipientType === "teacher" && !messageTeacherId) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a teacher.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (messageRecipientType === "parent" && !messageParentId) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a parent.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const messageData = {
+      recipientType: messageRecipientType,
+      teacherId: messageRecipientType === "teacher" ? messageTeacherId : null,
+      parentId: messageRecipientType === "parent" ? messageParentId : null,
+      subject: messageSubject,
+      message: messageContent,
+      priority: messagePriority,
+    };
+
+    sendMessageMutation.mutate(messageData);
   };
 
   const approveTeacherMutation = useMutation({
@@ -273,7 +378,7 @@ export default function Admin() {
         {/* Admin Tabs */}
         <div className="clear-both pt-6 border-t border-gray-200">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-auto mb-6">
+            <TabsList className="grid w-full grid-cols-3 h-auto mb-6">
             <TabsTrigger value="dashboard" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-dashboard">
               <GraduationCap className="mr-1 h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">House Management</span>
@@ -283,6 +388,16 @@ export default function Admin() {
               <Users className="mr-1 h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Student Information</span>
               <span className="sm:hidden">Students</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="messaging" 
+              className="flex items-center justify-center text-sm px-2 py-3" 
+              data-testid="tab-messaging"
+              onClick={() => setActiveTab("messaging")}
+            >
+              <MessageSquare className="mr-1 h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Admin Messaging</span>
+              <span className="sm:hidden">Messages</span>
             </TabsTrigger>
           </TabsList>
 
@@ -654,6 +769,192 @@ export default function Admin() {
                         No students found in the system.
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="messaging" className="mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Send Message Form */}
+                <Card className="border border-blue-200" data-testid="send-message-card">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold text-blue-900 flex items-center">
+                      <Send className="mr-2 h-5 w-5" />
+                      Send Message
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleSendMessage} className="space-y-4">
+                      <div>
+                        <Label htmlFor="recipient-type" className="text-sm font-medium text-gray-700 mb-2">
+                          Send to
+                        </Label>
+                        <Select value={messageRecipientType} onValueChange={setMessageRecipientType} data-testid="select-recipient-type">
+                          <SelectTrigger id="recipient-type">
+                            <SelectValue placeholder="Select recipient type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="teacher" data-testid="option-teacher">Teacher</SelectItem>
+                            <SelectItem value="parent" data-testid="option-parent">Parent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {messageRecipientType === "teacher" && (
+                        <div>
+                          <Label htmlFor="teacher-select" className="text-sm font-medium text-gray-700 mb-2">
+                            Select Teacher
+                          </Label>
+                          <Select value={messageTeacherId} onValueChange={setMessageTeacherId} data-testid="select-teacher">
+                            <SelectTrigger id="teacher-select">
+                              <SelectValue placeholder="Choose a teacher" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allTeachers?.map((teacher: any) => (
+                                <SelectItem key={teacher.id} value={teacher.id.toString()} data-testid={`option-teacher-${teacher.id}`}>
+                                  {teacher.name} ({teacher.gradeRole})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {messageRecipientType === "parent" && (
+                        <div>
+                          <Label htmlFor="parent-select" className="text-sm font-medium text-gray-700 mb-2">
+                            Select Parent
+                          </Label>
+                          <Select value={messageParentId} onValueChange={setMessageParentId} data-testid="select-parent">
+                            <SelectTrigger id="parent-select">
+                              <SelectValue placeholder="Choose a parent" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allParents?.map((parent: any) => (
+                                <SelectItem key={parent.id} value={parent.id.toString()} data-testid={`option-parent-${parent.id}`}>
+                                  {parent.firstName} {parent.lastName} ({parent.email})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <div>
+                        <Label htmlFor="message-priority" className="text-sm font-medium text-gray-700 mb-2">
+                          Priority
+                        </Label>
+                        <Select value={messagePriority} onValueChange={setMessagePriority} data-testid="select-priority">
+                          <SelectTrigger id="message-priority">
+                            <SelectValue placeholder="Normal" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="normal" data-testid="option-priority-normal">Normal</SelectItem>
+                            <SelectItem value="high" data-testid="option-priority-high">High</SelectItem>
+                            <SelectItem value="urgent" data-testid="option-priority-urgent">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="message-subject" className="text-sm font-medium text-gray-700 mb-2">
+                          Subject
+                        </Label>
+                        <Input
+                          id="message-subject"
+                          type="text"
+                          placeholder="Message subject"
+                          value={messageSubject}
+                          onChange={(e) => setMessageSubject(e.target.value)}
+                          data-testid="input-message-subject"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="message-content" className="text-sm font-medium text-gray-700 mb-2">
+                          Message
+                        </Label>
+                        <textarea
+                          id="message-content"
+                          placeholder="Type your message here..."
+                          value={messageContent}
+                          onChange={(e) => setMessageContent(e.target.value)}
+                          className="w-full min-h-[120px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                          data-testid="textarea-message-content"
+                        />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                        disabled={sendMessageMutation.isPending}
+                        data-testid="button-send-message"
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                {/* Message History */}
+                <Card className="border border-gray-200" data-testid="message-history-card">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                      <MessageSquare className="mr-2 h-5 w-5" />
+                      Message History
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {adminMessages && adminMessages.length > 0 ? (
+                        adminMessages.map((message: any, index: number) => (
+                          <div 
+                            key={message.id} 
+                            className={`p-4 rounded-lg border ${
+                              message.priority === "urgent" ? "border-red-200 bg-red-50" :
+                              message.priority === "high" ? "border-amber-200 bg-amber-50" :
+                              "border-gray-200 bg-gray-50"
+                            }`}
+                            data-testid={`message-item-${index}`}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900" data-testid={`message-subject-${index}`}>
+                                  {message.subject}
+                                </h4>
+                                <p className="text-sm text-gray-600" data-testid={`message-recipient-${index}`}>
+                                  To: {message.recipientType} {message.teacherId || message.parentId}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <Badge 
+                                  variant={
+                                    message.priority === "urgent" ? "destructive" :
+                                    message.priority === "high" ? "secondary" :
+                                    "outline"
+                                  }
+                                  data-testid={`message-priority-${index}`}
+                                >
+                                  {message.priority}
+                                </Badge>
+                                <p className="text-xs text-gray-500 mt-1" data-testid={`message-time-${index}`}>
+                                  {new Date(message.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="text-gray-700 text-sm" data-testid={`message-content-${index}`}>
+                              {message.message}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-500 py-8" data-testid="no-messages">
+                          No messages sent yet.
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </div>

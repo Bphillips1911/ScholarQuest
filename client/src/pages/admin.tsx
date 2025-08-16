@@ -401,7 +401,6 @@ export default function Admin() {
               className="flex items-center justify-center text-sm px-2 py-3 bg-red-50 border-red-200" 
               data-testid="tab-messaging"
               onClick={() => setActiveTab("messaging")}
-              style={{ display: 'flex !important', visibility: 'visible !important' }}
             >
               <MessageSquare className="mr-1 h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Admin Messaging</span>

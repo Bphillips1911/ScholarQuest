@@ -176,7 +176,7 @@ export default function ParentLetter() {
       </div>
 
       {/* Print-specific styles */}
-      <style jsx>{`
+      <style>{`
         @media print {
           body { margin: 0; }
           .print\\:hidden { display: none !important; }

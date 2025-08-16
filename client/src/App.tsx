@@ -59,8 +59,8 @@ function Router() {
         <Route path="/student-dashboard" component={StudentDashboard} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/admin-clean" component={AdminClean} />
+        <Route path="/admin" component={AdminClean} />
+        <Route path="/admin-full" component={Admin} />
         <Route path="/admin-settings" component={AdminSettings} />
         <Route path="/admin-pbis" component={PBIS} />
         <Route path="/admin-sorting" component={HouseSorting} />

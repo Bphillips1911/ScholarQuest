@@ -754,9 +754,42 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<boolean> {
-    // Implementation for adding scholar by credentials
-    return true;
+  async addScholarToParentByCredentials(parentId: string, username: string, password: string): Promise<Scholar | null> {
+    try {
+      console.log("PARENT-SCHOLAR LINKING: Looking for scholar with username:", username);
+      
+      // First, try to find existing scholar by username or student ID
+      const [existingScholar] = await db.select()
+        .from(schema.scholars)
+        .where(or(eq(schema.scholars.username, username), eq(schema.scholars.studentId, username)));
+
+      if (!existingScholar) {
+        console.log("PARENT-SCHOLAR LINKING: No existing scholar found with username:", username);
+        return null;
+      }
+
+      console.log("PARENT-SCHOLAR LINKING: Found scholar:", existingScholar.name, "with password hash:", existingScholar.passwordHash ? "***" : "NONE");
+
+      if (existingScholar.passwordHash) {
+        // Verify password if scholar exists
+        const isValid = await bcrypt.compare(password, existingScholar.passwordHash);
+        console.log("PARENT-SCHOLAR LINKING: Password validation result:", isValid);
+        
+        if (isValid) {
+          const success = await this.addScholarToParent(parentId, existingScholar.id);
+          console.log("PARENT-SCHOLAR LINKING: Add to parent result:", success);
+          return success ? existingScholar : null;
+        }
+        console.log("PARENT-SCHOLAR LINKING: Password validation failed for:", username);
+        return null;
+      }
+
+      console.log("PARENT-SCHOLAR LINKING: No password hash found for scholar:", username);
+      return null;
+    } catch (error) {
+      console.error("Add scholar by credentials error:", error);
+      return null;
+    }
   }
 
   async addScholarToParentByUsername(parentId: string, username: string): Promise<boolean> {

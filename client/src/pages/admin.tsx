@@ -295,6 +295,13 @@ export default function Admin() {
     ?.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
     .slice(0, 10) || [];
 
+  // Debug logging
+  console.log("Admin component rendering:", { 
+    activeTab, 
+    isAuthenticated, 
+    adminData: adminData?.firstName 
+  });
+
   return (
     <section data-testid="admin-section">
       <Card className="bg-white rounded-2xl shadow-lg p-8">
@@ -378,7 +385,7 @@ export default function Admin() {
         {/* Admin Tabs */}
         <div className="clear-both pt-6 border-t border-gray-200">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-auto mb-6">
+            <TabsList className="grid w-full grid-cols-3 h-auto mb-6" data-testid="admin-tabs-list">
             <TabsTrigger value="dashboard" className="flex items-center justify-center text-sm px-2 py-3" data-testid="tab-dashboard">
               <GraduationCap className="mr-1 h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">House Management</span>
@@ -391,9 +398,10 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger 
               value="messaging" 
-              className="flex items-center justify-center text-sm px-2 py-3" 
+              className="flex items-center justify-center text-sm px-2 py-3 bg-red-50 border-red-200" 
               data-testid="tab-messaging"
               onClick={() => setActiveTab("messaging")}
+              style={{ display: 'flex !important', visibility: 'visible !important' }}
             >
               <MessageSquare className="mr-1 h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Admin Messaging</span>

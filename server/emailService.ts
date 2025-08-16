@@ -14,8 +14,8 @@ if (process.env.SENDGRID_API_KEY) {
 }
 
 // Administrator email - update this with your actual email address
-const ADMIN_EMAIL = "BHSAHouses25@gmail.com";
-const FROM_EMAIL = "BHSAHouses25@gmail.com"; // Must be verified in SendGrid dashboard
+const ADMIN_EMAIL = "bhsahouses25@gmail.com";
+const FROM_EMAIL = "bhsahouses25@gmail.com"; // Must be verified in SendGrid dashboard
 
 interface EmailParams {
   to: string;
@@ -36,14 +36,20 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 
   try {
     const emailData = {
-      to: params.to,
-      from: params.from,
-      subject: params.subject,
-      text: params.text || undefined,
-      html: params.html || undefined,
+      personalizations: [
+        {
+          to: [{ email: params.to }],
+          subject: params.subject,
+        }
+      ],
+      from: { email: params.from },
+      content: [
+        ...(params.text ? [{ type: 'text/plain', value: params.text }] : []),
+        ...(params.html ? [{ type: 'text/html', value: params.html }] : [])
+      ],
       mail_settings: {
         sandbox_mode: {
-          enable: false // Disable sandbox mode for production email delivery
+          enable: false
         }
       }
     };

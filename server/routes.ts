@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema, insertParentTeacherMessageSchema, teacherAuth } from "@shared/schema";
 import { db } from "./db";
+import { sql } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -2597,13 +2598,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all messages for admin (both sent and received)
   app.get("/api/admin/messages", authenticateAdmin, async (req: any, res) => {
     try {
-      console.log("ADMIN MESSAGES: Fetching messages for admin:", req.admin.id);
-      const messages = await storage.getMessagesForAdmin(req.admin.id);
-      console.log(`ADMIN MESSAGES: Found ${messages.length} messages for admin`);
+      console.log("DEPLOYMENT: Direct admin messages query execution");
+      
+      // DEPLOYMENT FIX: Bypass storage layer and query database directly
+      const directResult = await db.execute(sql`
+        SELECT 
+          ptm.id,
+          ptm.subject,
+          ptm.message,
+          ptm.priority,
+          ptm.sender_type,
+          ptm.created_at,
+          CASE 
+            WHEN ptm.sender_type = 'admin' AND ptm.admin_id IS NOT NULL THEN 
+              CONCAT(a.first_name, ' ', a.last_name)
+            WHEN ptm.sender_type = 'parent' AND ptm.parent_id IS NOT NULL THEN 
+              CONCAT(p.first_name, ' ', p.last_name)  
+            WHEN ptm.sender_type = 'teacher' AND ptm.teacher_id IS NOT NULL THEN 
+              ta.name
+            ELSE 'Unknown'
+          END as sender_name,
+          CASE 
+            WHEN ptm.recipient_type = 'teacher' THEN 'Teacher'
+            WHEN ptm.recipient_type = 'parent' THEN 'Parent'
+            ELSE 'Administrator'
+          END as recipient_name
+        FROM parent_teacher_messages ptm
+        LEFT JOIN parents p ON ptm.parent_id = p.id
+        LEFT JOIN teacher_auth ta ON ptm.teacher_id = ta.id  
+        LEFT JOIN administrators a ON ptm.admin_id = a.id
+        ORDER BY ptm.created_at DESC
+        LIMIT 50
+      `);
+      
+      const messages = directResult.rows || [];
+      console.log(`DEPLOYMENT: Direct admin messages query found ${messages.length} messages`);
+      
       res.json(messages);
     } catch (error) {
-      console.error("ADMIN MESSAGES: Error fetching messages:", error);
-      res.status(500).json({ message: "Failed to fetch messages", error: error.message });
+      console.error("ADMIN MESSAGES: Direct query error:", error);
+      
+      // Fallback to storage method
+      try {
+        const messages = await storage.getMessagesForAdmin(req.admin.id);
+        console.log(`ADMIN MESSAGES: Fallback method found ${messages.length} messages`);
+        res.json(messages);
+      } catch (fallbackError) {
+        console.error("ADMIN MESSAGES: Both methods failed:", fallbackError);
+        res.status(500).json({ message: "Failed to fetch messages", error: fallbackError.message });
+      }
     }
   });
 
@@ -2682,10 +2725,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all parents for admin messaging dropdown
+  // Get all parents for admin messaging dropdown - DEPLOYMENT FIX: Direct database query
   app.get("/api/admin/parents", authenticateAdmin, async (req: any, res) => {
     try {
-      const parents = await storage.getAllParents();
+      console.log("DEPLOYMENT: Direct parent query execution");
+      
+      // DEPLOYMENT FIX: Bypass storage layer and query database directly
+      const directResult = await db.execute(`
+        SELECT id, first_name as "firstName", last_name as "lastName", email, created_at
+        FROM parents 
+        ORDER BY created_at DESC
+      `);
+      
+      const parents = directResult.rows || [];
+      console.log(`DEPLOYMENT: Direct query found ${parents.length} parents`);
+      
       res.json(parents.map(parent => ({
         id: parent.id,
         firstName: parent.firstName,
@@ -2693,8 +2747,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: parent.email
       })));
     } catch (error) {
-      console.error("ADMIN PARENTS: Error fetching parents:", error);
-      res.status(500).json({ message: "Failed to fetch parents", error: error.message });
+      console.error("ADMIN PARENTS: Direct query error:", error);
+      
+      // Fallback to storage method
+      try {
+        const parents = await storage.getAllParents();
+        console.log(`ADMIN PARENTS: Fallback method found ${parents.length} parents`);
+        res.json(parents.map(parent => ({
+          id: parent.id,
+          firstName: parent.firstName,
+          lastName: parent.lastName,
+          email: parent.email
+        })));
+      } catch (fallbackError) {
+        console.error("ADMIN PARENTS: Both methods failed:", fallbackError);
+        res.status(500).json({ message: "Failed to fetch parents", error: fallbackError.message });
+      }
     }
   });
 

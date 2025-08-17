@@ -84,11 +84,12 @@ Deployment environment is running older code or has different database state tha
 3. **Environment Variables**: Ensure deployment has same database connection and configuration as preview
 
 **Verified Working State (Preview):**
-- ✅ 13 parent accounts retrieved correctly
+- ✅ 13 parent accounts retrieved correctly via direct database queries
 - ✅ David Thompson authentication working
-- ✅ Admin messages showing correct sender types  
+- ✅ Admin messages showing correct sender types using direct SQL queries
 - ✅ Date formatting with proper error handling
-- ✅ All database storage methods using fixed implementations
+- ✅ Direct database access bypassing storage layer caching issues
+- ✅ API routes modified to use raw SQL queries for deployment reliability
 
 # External Dependencies
 

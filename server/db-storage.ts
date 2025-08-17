@@ -783,10 +783,7 @@ export class DatabaseStorage implements IStorage {
     return newTeacher;
   }
 
-  async getAllParents(): Promise<Parent[]> {
-    const { getAllParentsFixed } = await import('./db-storage-messaging-fix');
-    return await getAllParentsFixed();
-  }
+  // Remove duplicate method - using the one below
 
   async updateParentPhone(parentId: string, phone: string): Promise<Parent | null> {
     try {
@@ -922,15 +919,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllParents(): Promise<any[]> {
-    try {
-      console.log("DATABASE: Getting all parents for admin messaging");
-      const parentsData = await db.select().from(parents);
-      console.log(`DATABASE: Found ${parentsData.length} parents`);
-      return parentsData;
-    } catch (error) {
-      console.error("DATABASE: Error getting all parents:", error);
-      throw error;
-    }
+    const { getAllParentsFixed } = await import('./db-storage-messaging-fix');
+    return await getAllParentsFixed();
   }
 }
 

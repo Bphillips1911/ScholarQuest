@@ -2755,23 +2755,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all parents for admin messaging dropdown - DEPLOYMENT FIX: Direct database query
   app.get("/api/admin/parents", authenticateAdmin, async (req: any, res) => {
     try {
-      console.log("DEPLOYMENT: Direct parent query execution");
+      console.log("🔧 ADMIN PARENTS API: Starting request processing");
+      
+      // IMMEDIATE: Production database override if needed
+      const isProduction = !process.env.NODE_ENV || process.env.NODE_ENV === 'production';
+      if (isProduction) {
+        try {
+          const { overrideProductionDatabase } = await import('./production-db-override');
+          await overrideProductionDatabase();
+        } catch (overrideError) {
+          console.log("🔧 ADMIN PARENTS API: Override failed:", overrideError.message);
+        }
+      }
       
       // DEPLOYMENT FIX: Multiple database query approaches for compatibility
       let parents = [];
       
-      // DEPLOYMENT: Force data verification first
-      const countCheck = await db.execute("SELECT COUNT(*) as count FROM parents");
-      const dbCount = countCheck.rows?.[0]?.count || 0;
-      console.log(`DEPLOYMENT: Database verification - ${dbCount} parents in database`);
+      // DEPLOYMENT: Immediate database verification and forced sync
+      console.log("🔧 ADMIN PARENTS API: Starting immediate parent count verification");
       
-      if (dbCount < 10) {
-        console.log("DEPLOYMENT: Critical - insufficient parent data, triggering sync");
+      try {
+        const countCheck = await db.execute("SELECT COUNT(*) as count FROM parents");
+        const dbCount = parseInt(countCheck.rows?.[0]?.count || '0');
+        console.log(`🔧 ADMIN PARENTS API: Database verification - ${dbCount} parents in database`);
+        
+        // Force sync if insufficient data
+        if (dbCount < 13) {
+          console.log("🔧 ADMIN PARENTS API: CRITICAL - Forcing immediate database sync");
+          const { forceDeploymentDatabaseSync } = await import('./deployment-database-fix');
+          await forceDeploymentDatabaseSync();
+        }
+      } catch (verifyError) {
+        console.log("🔧 ADMIN PARENTS API: Verification failed, forcing sync:", verifyError.message);
         try {
-          const { ensureDeploymentDataSync } = await import('./deployment-data-sync');
-          await ensureDeploymentDataSync();
+          const { forceDeploymentDatabaseSync } = await import('./deployment-database-fix');
+          await forceDeploymentDatabaseSync();
         } catch (syncError) {
-          console.log("DEPLOYMENT: Data sync failed:", syncError.message);
+          console.log("🔧 ADMIN PARENTS API: Emergency sync failed:", syncError.message);
         }
       }
       
@@ -2803,26 +2823,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (sqlError) {
           console.log("DEPLOYMENT: Raw SQL failed, trying simple execute:", sqlError.message);
           
-          // Last resort - simple string query
-          const simpleResult = await db.execute(
-            "SELECT id, first_name, last_name, email FROM parents ORDER BY created_at DESC"
-          );
-          parents = (simpleResult.rows || []).map(row => ({
-            id: row.id,
-            firstName: row.first_name,
-            lastName: row.last_name,
-            email: row.email
-          }));
-          console.log(`DEPLOYMENT: Simple query found ${parents.length} parents`);
+          // Last resort - simple string query with additional fallback
+          try {
+            const simpleResult = await db.execute(
+              "SELECT id, first_name, last_name, email FROM parents ORDER BY created_at DESC"
+            );
+            parents = (simpleResult.rows || []).map(row => ({
+              id: row.id,
+              firstName: row.first_name,
+              lastName: row.last_name,
+              email: row.email
+            }));
+            console.log(`DEPLOYMENT: Simple query found ${parents.length} parents`);
+          } catch (finalError) {
+            console.log("DEPLOYMENT: All queries failed, returning empty result:", finalError.message);
+            parents = [];
+          }
         }
       }
       
-      res.json(parents.map(parent => ({
+      const responseData = parents.map(parent => ({
         id: parent.id,
         firstName: parent.firstName,
         lastName: parent.lastName,
         email: parent.email
-      })));
+      }));
+      
+      console.log(`DEPLOYMENT: Final API response - returning ${responseData.length} parents`);
+      res.json(responseData);
     } catch (error) {
       console.error("ADMIN PARENTS: Direct query error:", error);
       

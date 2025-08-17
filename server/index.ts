@@ -73,10 +73,18 @@ app.use((req, res, next) => {
       }
       
       try {
-        const { ensureDeploymentDataSync } = await import("./deployment-data-sync");
-        await ensureDeploymentDataSync();
+        const { forceDeploymentDatabaseSync } = await import("./deployment-database-fix");
+        await forceDeploymentDatabaseSync();
       } catch (error) {
-        log("DEPLOYMENT: Data sync error (non-critical):", error.message);
+        log("DEPLOYMENT: Database sync error (non-critical):", error.message);
+      }
+      
+      // Production database override for deployment consistency
+      try {
+        const { overrideProductionDatabase } = await import("./production-db-override");
+        await overrideProductionDatabase();
+      } catch (error) {
+        log("PRODUCTION: Database override error (non-critical):", error.message);
       }
       
       try {

@@ -2438,8 +2438,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Teacher lookup result:", "Found " + teacher.name);
       
-      // For deployment, use simple password check
-      const isValidPassword = password === "BHSATeacher2025!";
+      // Use bcrypt to validate the password hash
+      const isValidPassword = await bcrypt.compare(password, teacher.passwordHash);
       console.log("Password check:", isValidPassword);
       
       if (!isValidPassword) {

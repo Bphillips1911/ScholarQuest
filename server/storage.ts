@@ -1697,6 +1697,12 @@ export class MemStorage implements IStorage {
       ).length;
     }
   }
+
+  async getMessagesForAdmin(adminId: string): Promise<any[]> {
+    // Use the fixed database query instead of in-memory storage
+    const { getMessagesForAdminFixed } = await import('./db-storage-messaging-fix');
+    return await getMessagesForAdminFixed(adminId);
+  }
 }
 
 export class PersistentDatabaseStorage implements IStorage {

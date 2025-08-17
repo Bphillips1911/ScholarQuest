@@ -952,7 +952,12 @@ export default function Admin() {
                                   {message.priority}
                                 </Badge>
                                 <p className="text-xs text-gray-500 mt-1" data-testid={`message-time-${index}`}>
-                                  {new Date(message.createdAt).toLocaleString()}
+                                  {(message.createdAt || message.created_at) ? 
+                                    (typeof (message.createdAt || message.created_at) === 'string' ? 
+                                      new Date(message.createdAt || message.created_at).toLocaleString() : 
+                                      (message.createdAt || message.created_at).toLocaleString()
+                                    ) : 'Recently'
+                                  }
                                 </p>
                               </div>
                             </div>

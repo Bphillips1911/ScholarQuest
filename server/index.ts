@@ -64,6 +64,14 @@ app.use((req, res, next) => {
       
       log("DEPLOYMENT: Database connection established successfully");
       
+      // Validate deployment fixes
+      try {
+        const { validateDeploymentFixes } = await import("./deployment-validator");
+        await validateDeploymentFixes();
+      } catch (error) {
+        log("DEPLOYMENT: Validator error (non-critical):", error.message);
+      }
+      
       // Comprehensive deployment initialization
       if (isProduction) {
         try {

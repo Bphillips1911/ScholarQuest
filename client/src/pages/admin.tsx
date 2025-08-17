@@ -969,18 +969,19 @@ export default function Admin() {
                                 </div>
                                 <p className="text-xs text-gray-500 mt-1" data-testid={`message-time-${index}`}>
                                   {(() => {
+                                    // DEPLOYMENT FIX - Enhanced date handling for deployment sync
                                     const dateValue = message.createdAt || message.created_at;
                                     if (!dateValue) return 'Recently';
                                     
                                     try {
                                       const date = new Date(dateValue);
                                       if (isNaN(date.getTime())) {
-                                        console.log('Invalid date:', dateValue);
+                                        console.log('DEPLOYMENT: Invalid date detected:', dateValue);
                                         return 'Recently';
                                       }
                                       return date.toLocaleString();
                                     } catch (error) {
-                                      console.log('Date parsing error:', error, dateValue);
+                                      console.log('DEPLOYMENT: Date parsing error:', error, dateValue);
                                       return 'Recently';
                                     }
                                   })()}

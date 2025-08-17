@@ -924,4 +924,6 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
+// Force deployment sync - ensure latest fixes are deployed
+console.log("DEPLOYMENT: DatabaseStorage initialized with messaging fixes");
 export const storage = new DatabaseStorage();

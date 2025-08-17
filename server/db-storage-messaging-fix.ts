@@ -60,7 +60,8 @@ export const getMessagesByTeacherFixed = async (teacherId: string): Promise<any[
   }
 };
 
-// Fixed Admin Message Methods  
+// DEPLOYMENT FIX - Fixed Admin Message Methods  
+console.log("DEPLOYMENT: Loading fixed admin message methods");
 export const getMessagesForAdminFixed = async (adminId: string): Promise<any[]> => {
   try {
     console.log("DATABASE: Getting messages for admin:", adminId);

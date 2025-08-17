@@ -52,9 +52,14 @@ export default function TeacherMessages() {
   });
 
   const { data: messages = [] } = useQuery<ParentTeacherMessage[]>({
-    queryKey: ["/api/parent-teacher-messages/teacher", teacherData.id],
+    queryKey: ["/api/teacher/messages"],
     queryFn: async () => {
-      const response = await fetch(`/api/parent-teacher-messages/teacher/${teacherData.id}`);
+      const token = localStorage.getItem("teacherToken");
+      const response = await fetch("/api/teacher/messages", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       if (!response.ok) throw new Error("Failed to fetch messages");
       return response.json();
     },
@@ -86,7 +91,7 @@ export default function TeacherMessages() {
       setMessageForm({ parentId: "", scholarId: "", subject: "", message: "" });
       setShowForm(false);
       setSelectedScholar("");
-      queryClient.invalidateQueries({ queryKey: ["/api/parent-teacher-messages/teacher"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/messages"] });
     },
     onError: (error) => {
       toast({
@@ -308,13 +313,15 @@ export default function TeacherMessages() {
                       </div>
                       <div className="flex items-center text-xs text-gray-500">
                         <Clock className="h-3 w-3 mr-1" />
-                        {message.createdAt ? new Date(message.createdAt).toLocaleDateString() : 'Today'}
+                        {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Today'}
                       </div>
                     </div>
                     <p className="text-sm text-gray-700 mb-2">{message.message}</p>
                     <div className="flex items-center gap-2">
                       <Badge variant={message.senderType === 'teacher' ? 'default' : 'secondary'}>
-                        {message.senderType === 'teacher' ? 'Sent by you' : 'Parent reply'}
+                        {message.senderType === 'teacher' ? 'Sent by you' : 
+                         message.senderType === 'admin' ? `Admin: ${(message as any).sender_name || 'Administrator'}` :
+                         `Parent: ${(message as any).sender_name || 'Parent reply'}`}
                       </Badge>
                       {!message.isRead && (
                         <Badge variant="outline" className="text-blue-600">

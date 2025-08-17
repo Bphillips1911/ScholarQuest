@@ -937,7 +937,7 @@ export default function Admin() {
                                   {message.subject}
                                 </h4>
                                 <p className="text-sm text-gray-600" data-testid={`message-recipient-${index}`}>
-                                  To: {message.recipientType} {message.teacherId || message.parentId}
+                                  To: {message.recipientName ? `${message.recipientType === "teacher" ? "Teacher" : "Parent"} ${message.recipientName}` : `${message.recipientType} ${message.teacherId || message.parentId}`}
                                 </p>
                               </div>
                               <div className="text-right">

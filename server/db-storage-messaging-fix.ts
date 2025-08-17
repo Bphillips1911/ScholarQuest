@@ -76,6 +76,11 @@ export const getMessagesForAdminFixed = async (adminId: string): Promise<any[]> 
                WHEN ptm.teacher_id IS NOT NULL THEN 'teacher'
                ELSE 'unknown'
              END as actual_sender_type,
+             CASE 
+               WHEN ptm.recipient_type = 'teacher' THEN ta.name
+               WHEN ptm.recipient_type = 'parent' THEN CONCAT(p.first_name, ' ', p.last_name)
+               ELSE 'Unknown'
+             END as recipient_name,
              s.name as scholar_name 
       FROM parent_teacher_messages ptm
       LEFT JOIN parents p ON ptm.parent_id = p.id

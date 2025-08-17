@@ -1509,9 +1509,9 @@ export class MemStorage implements IStorage {
   }
 
   async getMessagesByTeacher(teacherId: string): Promise<ParentTeacherMessage[]> {
-    return Array.from(this.parentTeacherMessages.values())
-      .filter(message => message.teacherId === teacherId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    // Use the fixed database query instead of in-memory storage
+    const { getMessagesByTeacherFixed } = await import('./db-storage-messaging-fix');
+    return await getMessagesByTeacherFixed(teacherId);
   }
 
   async getMessagesByThread(threadId: string): Promise<ParentTeacherMessage[]> {

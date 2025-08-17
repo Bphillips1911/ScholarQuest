@@ -64,7 +64,14 @@ app.use((req, res, next) => {
       
       log("DEPLOYMENT: Database connection established successfully");
       
-      // Force deployment synchronization
+      // Deployment debugging and synchronization
+      try {
+        const { debugDeploymentEnvironment } = await import("./deployment-debug");
+        await debugDeploymentEnvironment();
+      } catch (error) {
+        log("DEPLOYMENT: Debug error (non-critical):", error.message);
+      }
+      
       try {
         const { forceDeploymentSync } = await import("./force-deployment-sync");
         await forceDeploymentSync();

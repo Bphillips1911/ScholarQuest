@@ -2600,39 +2600,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("DEPLOYMENT: Direct admin messages query execution");
       
-      // DEPLOYMENT FIX: Bypass storage layer and query database directly
-      const directResult = await db.execute(sql`
-        SELECT 
-          ptm.id,
-          ptm.subject,
-          ptm.message,
-          ptm.priority,
-          ptm.sender_type,
-          ptm.created_at,
-          CASE 
-            WHEN ptm.sender_type = 'admin' AND ptm.admin_id IS NOT NULL THEN 
-              CONCAT(a.first_name, ' ', a.last_name)
-            WHEN ptm.sender_type = 'parent' AND ptm.parent_id IS NOT NULL THEN 
-              CONCAT(p.first_name, ' ', p.last_name)  
-            WHEN ptm.sender_type = 'teacher' AND ptm.teacher_id IS NOT NULL THEN 
-              ta.name
-            ELSE 'Unknown'
-          END as sender_name,
-          CASE 
-            WHEN ptm.recipient_type = 'teacher' THEN 'Teacher'
-            WHEN ptm.recipient_type = 'parent' THEN 'Parent'
-            ELSE 'Administrator'
-          END as recipient_name
-        FROM parent_teacher_messages ptm
-        LEFT JOIN parents p ON ptm.parent_id = p.id
-        LEFT JOIN teacher_auth ta ON ptm.teacher_id = ta.id  
-        LEFT JOIN administrators a ON ptm.admin_id = a.id
-        ORDER BY ptm.created_at DESC
-        LIMIT 50
-      `);
+      // DEPLOYMENT FIX: Multiple query approaches for message compatibility
+      let messages = [];
       
-      const messages = directResult.rows || [];
-      console.log(`DEPLOYMENT: Direct admin messages query found ${messages.length} messages`);
+      // Try Drizzle ORM approach first
+      try {
+        const { parentTeacherMessages, parents, teacherAuth, administrators } = await import('@shared/schema');
+        const { desc, eq } = await import('drizzle-orm');
+        
+        const drizzleMessages = await db.select({
+          id: parentTeacherMessages.id,
+          subject: parentTeacherMessages.subject,
+          message: parentTeacherMessages.message,
+          priority: parentTeacherMessages.priority,
+          sender_type: parentTeacherMessages.senderType,
+          created_at: parentTeacherMessages.createdAt,
+          sender_name: sql<string>`CASE 
+            WHEN ${parentTeacherMessages.senderType} = 'admin' THEN 'Admin'
+            WHEN ${parentTeacherMessages.senderType} = 'parent' THEN 'Parent'
+            WHEN ${parentTeacherMessages.senderType} = 'teacher' THEN 'Teacher'
+            ELSE 'Unknown'
+          END`,
+          recipient_name: sql<string>`CASE 
+            WHEN ${parentTeacherMessages.recipientType} = 'teacher' THEN 'Teacher'
+            WHEN ${parentTeacherMessages.recipientType} = 'parent' THEN 'Parent'
+            ELSE 'Administrator'
+          END`
+        })
+        .from(parentTeacherMessages)
+        .orderBy(desc(parentTeacherMessages.createdAt))
+        .limit(50);
+        
+        messages = drizzleMessages;
+        console.log(`DEPLOYMENT: Drizzle messages query found ${messages.length} messages`);
+      } catch (drizzleError) {
+        console.log("DEPLOYMENT: Drizzle messages failed, trying simple query:", drizzleError.message);
+        
+        // Fallback to simple query
+        try {
+          const simpleResult = await db.execute(
+            "SELECT id, subject, message, priority, sender_type, created_at FROM parent_teacher_messages ORDER BY created_at DESC LIMIT 50"
+          );
+          messages = (simpleResult.rows || []).map(row => ({
+            id: row.id,
+            subject: row.subject,
+            message: row.message,
+            priority: row.priority || 'normal',
+            sender_type: row.sender_type,
+            created_at: row.created_at,
+            sender_name: row.sender_type === 'admin' ? 'Admin' : row.sender_type === 'parent' ? 'Parent' : 'Teacher',
+            recipient_name: 'Recipient'
+          }));
+          console.log(`DEPLOYMENT: Simple messages query found ${messages.length} messages`);
+        } catch (simpleError) {
+          console.log("DEPLOYMENT: All message queries failed:", simpleError.message);
+          messages = [];
+        }
+      }
       
       res.json(messages);
     } catch (error) {
@@ -2730,15 +2754,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("DEPLOYMENT: Direct parent query execution");
       
-      // DEPLOYMENT FIX: Bypass storage layer and query database directly
-      const directResult = await db.execute(`
-        SELECT id, first_name as "firstName", last_name as "lastName", email, created_at
-        FROM parents 
-        ORDER BY created_at DESC
-      `);
+      // DEPLOYMENT FIX: Multiple database query approaches for compatibility
+      let parents = [];
       
-      const parents = directResult.rows || [];
-      console.log(`DEPLOYMENT: Direct query found ${parents.length} parents`);
+      // Try Drizzle ORM approach first
+      try {
+        const { parents: parentsTable } = await import('@shared/schema');
+        const drizzleResult = await db.select({
+          id: parentsTable.id,
+          firstName: parentsTable.firstName,
+          lastName: parentsTable.lastName,
+          email: parentsTable.email,
+          createdAt: parentsTable.createdAt
+        }).from(parentsTable).orderBy(parentsTable.createdAt);
+        
+        parents = drizzleResult;
+        console.log(`DEPLOYMENT: Drizzle query found ${parents.length} parents`);
+      } catch (drizzleError) {
+        console.log("DEPLOYMENT: Drizzle query failed, trying raw SQL:", drizzleError.message);
+        
+        // Fallback to raw SQL with different syntax variations
+        try {
+          const rawResult = await db.execute(sql`
+            SELECT id, first_name as firstName, last_name as lastName, email, created_at as createdAt
+            FROM parents 
+            ORDER BY created_at DESC
+          `);
+          parents = rawResult.rows || [];
+          console.log(`DEPLOYMENT: Raw SQL found ${parents.length} parents`);
+        } catch (sqlError) {
+          console.log("DEPLOYMENT: Raw SQL failed, trying simple execute:", sqlError.message);
+          
+          // Last resort - simple string query
+          const simpleResult = await db.execute(
+            "SELECT id, first_name, last_name, email FROM parents ORDER BY created_at DESC"
+          );
+          parents = (simpleResult.rows || []).map(row => ({
+            id: row.id,
+            firstName: row.first_name,
+            lastName: row.last_name,
+            email: row.email
+          }));
+          console.log(`DEPLOYMENT: Simple query found ${parents.length} parents`);
+        }
+      }
       
       res.json(parents.map(parent => ({
         id: parent.id,

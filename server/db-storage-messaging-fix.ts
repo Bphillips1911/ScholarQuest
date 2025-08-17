@@ -68,24 +68,28 @@ export const getMessagesForAdminFixed = async (adminId: string): Promise<any[]> 
     const result = await db.execute(sql`
       SELECT ptm.*, 
              CASE 
+               WHEN ptm.admin_id IS NOT NULL THEN CONCAT(a.first_name, ' ', a.last_name)
                WHEN ptm.parent_id IS NOT NULL THEN CONCAT(p.first_name, ' ', p.last_name)
                WHEN ptm.teacher_id IS NOT NULL THEN ta.name
                ELSE 'Unknown'
              END as sender_name,
              CASE 
+               WHEN ptm.admin_id IS NOT NULL THEN 'admin'
                WHEN ptm.parent_id IS NOT NULL THEN 'parent'
                WHEN ptm.teacher_id IS NOT NULL THEN 'teacher'
                ELSE 'unknown'
              END as actual_sender_type,
              CASE 
-               WHEN ptm.recipient_type = 'teacher' THEN ta.name
-               WHEN ptm.recipient_type = 'parent' THEN CONCAT(p.first_name, ' ', p.last_name)
+               WHEN ptm.recipient_type = 'teacher' THEN 'Teacher'
+               WHEN ptm.recipient_type = 'parent' THEN 'Parent'
+               WHEN ptm.recipient_type = 'admin' THEN 'Administrator'
                ELSE 'Unknown'
              END as recipient_name,
              s.name as scholar_name 
       FROM parent_teacher_messages ptm
       LEFT JOIN parents p ON ptm.parent_id = p.id
       LEFT JOIN teacher_auth ta ON ptm.teacher_id = ta.id
+      LEFT JOIN administrators a ON ptm.admin_id = a.id
       LEFT JOIN scholars s ON ptm.scholar_id = s.id
       WHERE ptm.admin_id = ${adminId} OR ptm.recipient_type = 'admin'
       ORDER BY ptm.created_at DESC

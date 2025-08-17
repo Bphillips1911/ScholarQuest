@@ -939,25 +939,51 @@ export default function Admin() {
                                 <p className="text-sm text-gray-600" data-testid={`message-recipient-${index}`}>
                                   To: {message.recipientName ? `${message.recipientType === "teacher" ? "Teacher" : "Parent"} ${message.recipientName}` : `${message.recipientType} ${message.teacherId || message.parentId}`}
                                 </p>
+                                <p className="text-sm text-gray-500" data-testid={`message-sender-${index}`}>
+                                  From: {message.sender_name || 'Unknown'} ({message.actual_sender_type || message.senderType || 'unknown'})
+                                </p>
                               </div>
                               <div className="text-right">
-                                <Badge 
-                                  variant={
-                                    message.priority === "urgent" ? "destructive" :
-                                    message.priority === "high" ? "secondary" :
-                                    "outline"
-                                  }
-                                  data-testid={`message-priority-${index}`}
-                                >
-                                  {message.priority}
-                                </Badge>
+                                <div className="flex gap-2 justify-end mb-2">
+                                  <Badge 
+                                    variant={
+                                      message.actual_sender_type === 'admin' ? "destructive" :
+                                      message.actual_sender_type === 'parent' ? "default" : 
+                                      "secondary"
+                                    }
+                                    className="text-xs"
+                                    data-testid={`message-sender-badge-${index}`}
+                                  >
+                                    {message.actual_sender_type || message.senderType || 'unknown'}
+                                  </Badge>
+                                  <Badge 
+                                    variant={
+                                      message.priority === "urgent" ? "destructive" :
+                                      message.priority === "high" ? "secondary" :
+                                      "outline"
+                                    }
+                                    data-testid={`message-priority-${index}`}
+                                  >
+                                    {message.priority}
+                                  </Badge>
+                                </div>
                                 <p className="text-xs text-gray-500 mt-1" data-testid={`message-time-${index}`}>
-                                  {(message.createdAt || message.created_at) ? 
-                                    (typeof (message.createdAt || message.created_at) === 'string' ? 
-                                      new Date(message.createdAt || message.created_at).toLocaleString() : 
-                                      (message.createdAt || message.created_at).toLocaleString()
-                                    ) : 'Recently'
-                                  }
+                                  {(() => {
+                                    const dateValue = message.createdAt || message.created_at;
+                                    if (!dateValue) return 'Recently';
+                                    
+                                    try {
+                                      const date = new Date(dateValue);
+                                      if (isNaN(date.getTime())) {
+                                        console.log('Invalid date:', dateValue);
+                                        return 'Recently';
+                                      }
+                                      return date.toLocaleString();
+                                    } catch (error) {
+                                      console.log('Date parsing error:', error, dateValue);
+                                      return 'Recently';
+                                    }
+                                  })()}
                                 </p>
                               </div>
                             </div>

@@ -38,7 +38,9 @@ import {
   administrators,
   adminSessions,
   teacherAuth,
-  teacherSessions
+  teacherSessions,
+  teachers,
+  passwordResetRequests
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -519,44 +521,8 @@ export class DatabaseStorage implements IStorage {
 
   // Parent-Teacher Messaging Methods
   async createMessage(messageData: any): Promise<any> {
-    try {
-      const [message] = await db.insert(schema.parentTeacherMessages).values({
-        parentId: messageData.parentId,
-        teacherId: messageData.teacherId || null,
-        adminId: messageData.adminId || null,
-        scholarId: messageData.scholarId || null,
-        senderType: messageData.senderType,
-        recipientType: messageData.recipientType,
-        subject: messageData.subject,
-        message: messageData.message,
-        isRead: messageData.isRead || false,
-        threadId: messageData.threadId || null,
-        priority: messageData.priority || 'normal',
-        notificationSent: messageData.notificationSent || false
-      }).returning();
-
-      // Create SMS notification if parent has phone number
-      if (messageData.senderType === 'teacher' && messageData.recipientType === 'parent') {
-        const [parent] = await db.select({ phone: schema.parents.phone })
-          .from(schema.parents)
-          .where(eq(schema.parents.id, messageData.parentId));
-        
-        if (parent?.phone) {
-          await this.createSmsNotification({
-            parentId: messageData.parentId,
-            phoneNumber: parent.phone,
-            messageType: 'teacher_message',
-            content: `New message from teacher: ${messageData.subject}`,
-            relatedMessageId: message.id
-          });
-        }
-      }
-
-      return message;
-    } catch (error) {
-      console.error('Database createMessage error:', error);
-      throw error;
-    }
+    const { createMessageFixed } = await import('./db-storage-messaging-fix');
+    return await createMessageFixed(messageData);
   }
 
   async getMessagesByParent(parentId: string): Promise<any[]> {
@@ -578,21 +544,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessagesByTeacher(teacherId: string): Promise<any[]> {
-    try {
-      const result = await db.execute(sql`
-        SELECT ptm.*, p.first_name, p.last_name, s.name as scholar_name 
-        FROM parent_teacher_messages ptm
-        LEFT JOIN parents p ON ptm.parent_id = p.id
-        LEFT JOIN scholars s ON ptm.scholar_id = s.id
-        WHERE ptm.teacher_id = ${teacherId}
-        ORDER BY ptm.created_at DESC
-      `);
-      console.log(`DATABASE: Found ${result.rows?.length || 0} messages for teacher ${teacherId}`);
-      return result.rows || [];
-    } catch (error) {
-      console.error('Error in getMessagesByTeacher:', error);
-      return [];
-    }
+    const { getMessagesByTeacherFixed } = await import('./db-storage-messaging-fix');
+    return await getMessagesByTeacherFixed(teacherId);
   }
 
   async markMessageAsRead(messageId: string): Promise<boolean> {
@@ -798,7 +751,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getParentMessages(parentId: string): Promise<any[]> {
-    return await this.getMessagesByParent(parentId);
+    const { getParentMessagesFixed } = await import('./db-storage-messaging-fix');
+    return await getParentMessagesFixed(parentId);
   }
 
   async createParentTeacherMessage(messageData: any): Promise<any> {
@@ -811,26 +765,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeacher(id: string): Promise<Teacher | undefined> {
-    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id));
+    const [teacher] = await db.select().from(schema.teachers).where(eq(schema.teachers.id, id));
     return teacher || undefined;
   }
 
   async getTeacherByEmail(email: string): Promise<Teacher | undefined> {
-    const [teacher] = await db.select().from(teachers).where(eq(teachers.email, email));
+    const [teacher] = await db.select().from(schema.teachers).where(eq(schema.teachers.email, email));
     return teacher || undefined;
   }
 
   async getTeachersByGrade(grade: number): Promise<Teacher[]> {
-    return await db.select().from(teachers).where(sql`${teachers.canSeeGrades} @> ARRAY[${grade}]`);
+    return await db.select().from(schema.teachers).where(sql`${schema.teachers.canSeeGrades} @> ARRAY[${grade}]`);
   }
 
   async createTeacher(teacher: InsertTeacher): Promise<Teacher> {
-    const [newTeacher] = await db.insert(teachers).values(teacher).returning();
+    const [newTeacher] = await db.insert(schema.teachers).values(teacher).returning();
     return newTeacher;
   }
 
   async getAllParents(): Promise<Parent[]> {
-    return await db.select().from(parents);
+    const { getAllParentsFixed } = await import('./db-storage-messaging-fix');
+    return await getAllParentsFixed();
   }
 
   async updateParentPhone(parentId: string, phone: string): Promise<Parent | null> {
@@ -865,12 +820,24 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
+  // Remove duplicate methods that appear later in the file
+  async createPasswordResetRequest(requestData: InsertPasswordResetRequest): Promise<PasswordResetRequest> {
+    const [request] = await db.insert(passwordResetRequests).values({
+      id: randomUUID(),
+      ...requestData,
+      token: randomUUID(),
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    }).returning();
+    return request;
+  }
+
   async getPasswordResetRequests(teacherId: string): Promise<PasswordResetRequest[]> {
-    return await db.select().from(passwordResetRequests).where(eq(passwordResetRequests.teacherId, teacherId));
+    return await db.select().from(schema.passwordResetRequests).where(eq(schema.passwordResetRequests.teacherId, teacherId));
   }
 
   async getPasswordResetRequest(token: string): Promise<PasswordResetRequest | undefined> {
-    const [request] = await db.select().from(passwordResetRequests).where(eq(passwordResetRequests.token, token));
+    const [request] = await db.select().from(schema.passwordResetRequests).where(eq(schema.passwordResetRequests.token, token));
     return request || undefined;
   }
 
@@ -945,28 +912,13 @@ export class DatabaseStorage implements IStorage {
 
   // Admin Messaging Methods
   async getMessagesForAdmin(adminId: string): Promise<any[]> {
-    try {
-      console.log("DATABASE: Getting messages for admin:", adminId);
-      
-      // Return empty array for now - admin messaging history not fully implemented
-      console.log("DATABASE: Admin message history temporarily disabled");
-      return [];
-    } catch (error) {
-      console.error("DATABASE: Error getting admin messages:", error);
-      throw error;
-    }
+    const { getMessagesForAdminFixed } = await import('./db-storage-messaging-fix');
+    return await getMessagesForAdminFixed(adminId);
   }
 
   async getAllTeachers(): Promise<any[]> {
-    try {
-      console.log("DATABASE: Getting all teachers for admin messaging");
-      const teachers = await db.select().from(teacherAuth);
-      console.log(`DATABASE: Found ${teachers.length} teachers`);
-      return teachers;
-    } catch (error) {
-      console.error("DATABASE: Error getting all teachers:", error);
-      throw error;
-    }
+    const { getAllTeachersFixed } = await import('./db-storage-messaging-fix');
+    return await getAllTeachersFixed();
   }
 
   async getAllParents(): Promise<any[]> {

@@ -879,7 +879,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
-  // Teacher routes (old login removed - using new auth system)
+  // Teacher routes (using new auth system)
+  
+  // Teacher login
+  app.post("/api/teacher/login", async (req, res) => {
+    console.log("=== TEACHER LOGIN REQUEST RECEIVED ===");
+    try {
+      const { email, password } = req.body;
+      console.log("Request body:", req.body);
+      
+      if (!email || !password) {
+        console.log("Missing email or password");
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      console.log("Looking up teacher in storage...");
+      const teacher = await storage.getTeacherAuthByEmail(email);
+      console.log("Teacher lookup result:", teacher ? `Found ${teacher.name}` : "Not found");
+      
+      if (!teacher) {
+        console.log("Teacher not found");
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      console.log("Checking password...");
+      console.log("Stored hash:", teacher.passwordHash);
+      const isValidPassword = await bcrypt.compare(password, teacher.passwordHash);
+      console.log("Password check:", isValidPassword);
+      
+      if (!isValidPassword) {
+        console.log("Invalid password");
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      if (!teacher.isApproved) {
+        console.log("Teacher not approved");
+        return res.status(401).json({ message: "Account pending approval" });
+      }
+
+      console.log("Authentication successful, generating token...");
+
+      // Generate teacher login token with extended expiry (30 days for cost reduction)
+      const jwtSecret = "bhsa-teacher-secret-2025-stable";
+      const token = jwt.sign(
+        { teacherId: teacher.id },
+        jwtSecret,
+        { expiresIn: "30d" }
+      );
+
+      res.json({
+        message: "Login successful",
+        token,
+        teacher: {
+          id: teacher.id,
+          email: teacher.email,
+          name: teacher.name,
+          gradeRole: teacher.gradeRole,
+          subject: teacher.subject,
+          isApproved: teacher.isApproved
+        },
+      });
+    } catch (error) {
+      console.error("Teacher login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
   
   // TEACHER MESSAGING ROUTES
   // Get teacher messages
@@ -918,14 +982,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priority: priority || "normal",
       };
 
+      console.log("TEACHER SEND MESSAGE: Creating message with data:", messageData);
       const createdMessage = await storage.createMessage(messageData);
+      console.log("TEACHER SEND MESSAGE: Message created successfully:", createdMessage.id);
       
       res.json({
         message: "Message sent successfully",
         messageId: createdMessage.id,
       });
     } catch (error) {
-      console.error("Send teacher message error:", error);
+      console.error("TEACHER SEND MESSAGE: Error sending message:", error);
       res.status(500).json({ message: "Failed to send message" });
     }
   });

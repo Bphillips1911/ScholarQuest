@@ -909,8 +909,25 @@ export class DatabaseStorage implements IStorage {
 
   // Admin Messaging Methods
   async getMessagesForAdmin(adminId: string): Promise<any[]> {
-    const { getMessagesForAdminFixed } = await import('./db-storage-messaging-fix');
-    return await getMessagesForAdminFixed(adminId);
+    try {
+      // DEPLOYMENT FIX: Use direct database query to bypass any caching issues
+      const { getAdminMessagesDirect } = await import('./admin-messaging-direct');
+      const directMessages = await getAdminMessagesDirect(adminId);
+      
+      console.log(`DATABASE: Direct admin messages query found ${directMessages.length} messages`);
+      return directMessages;
+    } catch (error) {
+      console.error("DATABASE: Error in getMessagesForAdmin:", error);
+      
+      // Fallback to fixed method
+      try {
+        const { getMessagesForAdminFixed } = await import('./db-storage-messaging-fix');
+        return await getMessagesForAdminFixed(adminId);
+      } catch (fallbackError) {
+        console.error("DATABASE: Fallback method also failed:", fallbackError);
+        return [];
+      }
+    }
   }
 
   async getAllTeachers(): Promise<any[]> {
@@ -919,8 +936,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllParents(): Promise<any[]> {
-    const { getAllParentsFixed } = await import('./db-storage-messaging-fix');
-    return await getAllParentsFixed();
+    try {
+      // DEPLOYMENT FIX: Use direct database query to bypass any caching issues
+      const { getAdminParentsDirect } = await import('./admin-messaging-direct');
+      const directParents = await getAdminParentsDirect();
+      
+      if (directParents.length > 0) {
+        console.log(`DATABASE: Direct query found ${directParents.length} parents`);
+        return directParents;
+      }
+      
+      // Fallback to fixed method
+      const { getAllParentsFixed } = await import('./db-storage-messaging-fix');
+      return await getAllParentsFixed();
+    } catch (error) {
+      console.error("DATABASE: Error in getAllParents:", error);
+      throw error;
+    }
   }
 }
 

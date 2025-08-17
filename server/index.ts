@@ -64,12 +64,12 @@ app.use((req, res, next) => {
       
       log("DEPLOYMENT: Database connection established successfully");
       
-      // Validate deployment fixes
+      // Force deployment synchronization
       try {
-        const { validateDeploymentFixes } = await import("./deployment-validator");
-        await validateDeploymentFixes();
+        const { forceDeploymentSync } = await import("./force-deployment-sync");
+        await forceDeploymentSync();
       } catch (error) {
-        log("DEPLOYMENT: Validator error (non-critical):", error.message);
+        log("DEPLOYMENT: Sync error (non-critical):", error.message);
       }
       
       // Comprehensive deployment initialization

@@ -36,7 +36,15 @@ export const getMessagesByTeacherFixed = async (teacherId: string): Promise<any[
   try {
     console.log("DATABASE: Getting messages for teacher:", teacherId);
     const result = await db.execute(sql`
-      SELECT ptm.*, p.first_name, p.last_name, s.name as scholar_name 
+      SELECT ptm.*, 
+             p.first_name, 
+             p.last_name, 
+             s.name as scholar_name,
+             CASE 
+               WHEN ptm.admin_id IS NOT NULL THEN 'Administrator'
+               WHEN ptm.parent_id IS NOT NULL THEN CONCAT(p.first_name, ' ', p.last_name)
+               ELSE 'Unknown'
+             END as sender_name
       FROM parent_teacher_messages ptm
       LEFT JOIN parents p ON ptm.parent_id = p.id
       LEFT JOIN scholars s ON ptm.scholar_id = s.id

@@ -2638,7 +2638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const messageData = {
-        senderId: req.admin.id,
+        adminId: req.admin.id,  // Changed from senderId to adminId
         senderType: "admin",
         recipientType,
         teacherId: recipientType === "teacher" ? teacherId : null,

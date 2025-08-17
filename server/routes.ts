@@ -53,6 +53,9 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register force deployment API endpoints
+  const { registerForceDeploymentAPI } = await import('./deployment-force-api');
+  registerForceDeploymentAPI(app);
   // Get all houses with standings
   app.get("/api/houses", async (_req, res) => {
     try {
@@ -2756,6 +2759,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // DEPLOYMENT FIX: Multiple database query approaches for compatibility
       let parents = [];
+      
+      // DEPLOYMENT: Force data verification first
+      const countCheck = await db.execute("SELECT COUNT(*) as count FROM parents");
+      const dbCount = countCheck.rows?.[0]?.count || 0;
+      console.log(`DEPLOYMENT: Database verification - ${dbCount} parents in database`);
+      
+      if (dbCount < 10) {
+        console.log("DEPLOYMENT: Critical - insufficient parent data, triggering sync");
+        try {
+          const { ensureDeploymentDataSync } = await import('./deployment-data-sync');
+          await ensureDeploymentDataSync();
+        } catch (syncError) {
+          console.log("DEPLOYMENT: Data sync failed:", syncError.message);
+        }
+      }
       
       // Try Drizzle ORM approach first
       try {

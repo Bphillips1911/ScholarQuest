@@ -70,18 +70,22 @@ Preferred communication style: Simple, everyday language.
 Deployment environment is running older code or has different database state than preview environment.
 
 **Resolution Steps:**
-1. **Ensure Code Deployment**: Verify deployment has latest code including:
-   - Fixed `DatabaseStorage.getMessagesForAdmin()` method using `getMessagesForAdminFixed`
-   - Resolved duplicate method conflicts in `server/db-storage.ts`
-   - Updated admin portal date formatting with error handling
-   - Proper sender type field mapping (`actual_sender_type` vs `sender_type`)
+1. **Multi-Approach Query System**: Implemented progressive fallback queries:
+   - Drizzle ORM with proper table imports (primary)
+   - Raw SQL with template literals (secondary)
+   - Simple string queries (fallback)
+   - Force API endpoints bypassing all middleware
 
-2. **Database Synchronization**: Verify deployment database has:
-   - All 13 parent accounts from development
-   - Teacher credentials (david.thompson@bhsteam.edu / teacher123)  
-   - Proper message data with correct sender_type values
+2. **Data Synchronization**: Added automatic deployment data sync:
+   - Verifies parent count on startup
+   - Seeds missing parent data if count < 13
+   - Force API endpoints for direct database testing
+   - Comprehensive deployment debugging
 
-3. **Environment Variables**: Ensure deployment has same database connection and configuration as preview
+3. **Deployment Force Testing**: New endpoints for verification:
+   - `/api/force/parents` - Direct parent query (no auth)
+   - `/api/force/messages` - Direct message query (no auth)
+   - Real-time database state verification
 
 **Verified Working State (Preview):**
 - ✅ 13 parent accounts retrieved correctly via direct database queries

@@ -64,12 +64,19 @@ app.use((req, res, next) => {
       
       log("DEPLOYMENT: Database connection established successfully");
       
-      // Deployment debugging and synchronization
+      // Deployment debugging and data synchronization
       try {
         const { debugDeploymentEnvironment } = await import("./deployment-debug");
         await debugDeploymentEnvironment();
       } catch (error) {
         log("DEPLOYMENT: Debug error (non-critical):", error.message);
+      }
+      
+      try {
+        const { ensureDeploymentDataSync } = await import("./deployment-data-sync");
+        await ensureDeploymentDataSync();
+      } catch (error) {
+        log("DEPLOYMENT: Data sync error (non-critical):", error.message);
       }
       
       try {

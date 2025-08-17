@@ -1366,15 +1366,23 @@ export default function TeacherDashboard() {
 
                       // Extract parent ID from the original message
                       const parentId = selectedMessage.parent_id;
+                      const scholarId = selectedMessage.scholar_id;
                       
-                      replyMutation.mutate({
+                      // Prepare reply data, only include scholarId if it's not null
+                      const replyData = {
                         recipientType: "parent",
                         parentId: parentId,
-                        scholarId: selectedMessage.scholar_id,
                         subject: replyForm.subject,
                         message: replyForm.message,
                         priority: replyForm.priority,
-                      });
+                      };
+                      
+                      // Only add scholarId if it's not null
+                      if (scholarId) {
+                        replyData.scholarId = scholarId;
+                      }
+                      
+                      replyMutation.mutate(replyData);
                     }}
                     disabled={replyMutation.isPending || !replyForm.subject.trim() || !replyForm.message.trim()}
                     data-testid="button-send-reply"

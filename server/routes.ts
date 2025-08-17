@@ -885,43 +885,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Teacher routes (using new auth system)
   
-  // Teacher login
+  // Teacher login with deployment authentication fix
   app.post("/api/teacher/login", async (req, res) => {
-    console.log("=== TEACHER LOGIN REQUEST RECEIVED ===");
+    console.log("🏫 TEACHER LOGIN: Request received");
     try {
       const { email, password } = req.body;
-      console.log("Request body:", req.body);
+      console.log("🏫 TEACHER LOGIN: Request body:", req.body);
       
       if (!email || !password) {
-        console.log("Missing email or password");
+        console.log("🏫 TEACHER LOGIN: Missing email or password");
         return res.status(400).json({ message: "Email and password required" });
       }
 
-      console.log("Looking up teacher in storage...");
+      // DEPLOYMENT FIX: Ensure teacher auth consistency before login attempt
+      try {
+        const { ensureTeacherAuthConsistency } = await import('./teacher-auth-fix');
+        await ensureTeacherAuthConsistency();
+      } catch (fixError) {
+        console.log("🏫 TEACHER LOGIN: Auth consistency check failed:", fixError.message);
+      }
+
+      console.log("🏫 TEACHER LOGIN: Looking up teacher in storage...");
       const teacher = await storage.getTeacherAuthByEmail(email);
-      console.log("Teacher lookup result:", teacher ? `Found ${teacher.name}` : "Not found");
+      console.log("🏫 TEACHER LOGIN: Teacher lookup result:", teacher ? `Found ${teacher.name}` : "Not found");
       
       if (!teacher) {
-        console.log("Teacher not found");
+        console.log("🏫 TEACHER LOGIN: Teacher not found");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log("Checking password...");
-      console.log("Stored hash:", teacher.passwordHash);
+      console.log("🏫 TEACHER LOGIN: Checking password...");
+      console.log("🏫 TEACHER LOGIN: Stored hash:", teacher.passwordHash);
       const isValidPassword = await bcrypt.compare(password, teacher.passwordHash);
-      console.log("Password check:", isValidPassword);
+      console.log("🏫 TEACHER LOGIN: Password check:", isValidPassword);
       
       if (!isValidPassword) {
-        console.log("Invalid password");
+        console.log("🏫 TEACHER LOGIN: Invalid password");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       if (!teacher.isApproved) {
-        console.log("Teacher not approved");
+        console.log("🏫 TEACHER LOGIN: Teacher not approved");
         return res.status(401).json({ message: "Account pending approval" });
       }
 
-      console.log("Authentication successful, generating token...");
+      console.log("🏫 TEACHER LOGIN: Authentication successful, generating token...");
 
       // Generate teacher login token with extended expiry (30 days for cost reduction)
       const jwtSecret = "bhsa-teacher-secret-2025-stable";
@@ -944,7 +952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
     } catch (error) {
-      console.error("Teacher login error:", error);
+      console.error("🏫 TEACHER LOGIN: Error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });

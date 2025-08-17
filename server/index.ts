@@ -87,6 +87,14 @@ app.use((req, res, next) => {
         log("PRODUCTION: Database override error (non-critical):", error.message);
       }
       
+      // Teacher authentication consistency check
+      try {
+        const { ensureTeacherAuthConsistency } = await import("./teacher-auth-fix");
+        await ensureTeacherAuthConsistency();
+      } catch (error) {
+        log("TEACHER AUTH: Error (non-critical):", error.message);
+      }
+      
       try {
         const { forceDeploymentSync } = await import("./force-deployment-sync");
         await forceDeploymentSync();

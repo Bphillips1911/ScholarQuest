@@ -478,38 +478,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Parent login
+  // Parent login with deployment authentication fix
   app.post("/api/parent/login", async (req, res) => {
-    console.log("=== PARENT LOGIN REQUEST RECEIVED ===");
+    console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Request received");
     try {
       const { email, password } = req.body;
-      console.log("Request body:", req.body);
+      console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Request body:", req.body);
       
       if (!email || !password) {
-        console.log("Missing email or password");
+        console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Missing email or password");
         return res.status(400).json({ message: "Email and password required" });
       }
 
-      console.log("Looking up parent in storage...");
+      // DEPLOYMENT FIX: Ensure parent auth consistency before login attempt
+      try {
+        const { ensureParentAuthConsistency } = await import('./parent-auth-fix');
+        await ensureParentAuthConsistency();
+      } catch (fixError) {
+        console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Auth consistency check failed:", fixError.message);
+      }
+
+      console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Looking up parent in storage...");
       const parent = await storage.getParentByEmail(email);
-      console.log("Parent lookup result:", parent ? `Found ${parent.firstName} ${parent.lastName}` : "Not found");
+      console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Parent lookup result:", parent ? `Found ${parent.firstName} ${parent.lastName}` : "Not found");
       
       if (!parent) {
-        console.log("Parent not found, returning 401");
+        console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Parent not found, returning 401");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log("Checking password...");
-      console.log("Stored hash:", parent.password);
+      console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Checking password...");
+      console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Stored hash:", parent.password);
       const isValidPassword = await bcrypt.compare(password, parent.password);
-      console.log("Password check:", isValidPassword);
+      console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Password check:", isValidPassword);
       
       if (!isValidPassword) {
-        console.log("Invalid password");
+        console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Invalid password");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log("Authentication successful, generating token...");
+      console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Authentication successful, generating token...");
 
       // Generate parent login token with extended expiry (30 days for cost reduction)
       const jwtSecret = "bhsa-parent-secret-2025-stable";
@@ -530,42 +538,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
     } catch (error) {
-      console.error("Parent login error:", error);
+      console.error("👨‍👩‍👧‍👦 PARENT LOGIN: Error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });
 
-  // Alternative parent login endpoint (for compatibility with enhanced portal)
+  // Alternative parent login endpoint with deployment fix
   app.post("/api/parent-auth/login", async (req, res) => {
-    console.log("=== PARENT-AUTH LOGIN REQUEST RECEIVED ===");
+    console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Request received");
     try {
       const { email, password } = req.body;
-      console.log("Request body:", req.body);
+      console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Request body:", req.body);
       
       if (!email || !password) {
-        console.log("Missing email or password");
+        console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Missing email or password");
         return res.status(400).json({ message: "Email and password required" });
       }
 
-      console.log("Looking up parent in storage...");
+      // DEPLOYMENT FIX: Ensure parent auth consistency before login attempt
+      try {
+        const { ensureParentAuthConsistency } = await import('./parent-auth-fix');
+        await ensureParentAuthConsistency();
+      } catch (fixError) {
+        console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Auth consistency check failed:", fixError.message);
+      }
+
+      console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Looking up parent in storage...");
       const parent = await storage.getParentByEmail(email);
-      console.log("Parent lookup result:", parent ? `Found ${parent.firstName} ${parent.lastName}` : "Not found");
+      console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Parent lookup result:", parent ? `Found ${parent.firstName} ${parent.lastName}` : "Not found");
       
       if (!parent) {
-        console.log("Parent not found, returning 401");
+        console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Parent not found, returning 401");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log("Checking password...");
+      console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Checking password...");
       const isValidPassword = await bcrypt.compare(password, parent.password);
-      console.log("Password check:", isValidPassword);
+      console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Password check:", isValidPassword);
       
       if (!isValidPassword) {
-        console.log("Invalid password");
+        console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Invalid password");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log("Authentication successful, generating token...");
+      console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Authentication successful, generating token...");
 
       // Generate parent login token with extended expiry (30 days for cost reduction)
       const jwtSecret = "bhsa-parent-secret-2025-stable";
@@ -587,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
     } catch (error) {
-      console.error("Parent-auth login error:", error);
+      console.error("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });

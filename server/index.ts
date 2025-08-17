@@ -95,6 +95,14 @@ app.use((req, res, next) => {
         log("TEACHER AUTH: Error (non-critical):", error.message);
       }
       
+      // Parent authentication consistency check
+      try {
+        const { ensureParentAuthConsistency } = await import("./parent-auth-fix");
+        await ensureParentAuthConsistency();
+      } catch (error) {
+        log("PARENT AUTH: Error (non-critical):", error.message);
+      }
+      
       try {
         const { forceDeploymentSync } = await import("./force-deployment-sync");
         await forceDeploymentSync();

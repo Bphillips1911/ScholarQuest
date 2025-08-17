@@ -14,7 +14,7 @@ export const ensureTeacherAuthConsistency = async () => {
     
     // Verify David Thompson specifically
     const davidCheck = await db.execute(
-      "SELECT id, email, name, password, approved FROM teacher_auth WHERE email = 'david.thompson@bhsteam.edu'"
+      "SELECT id, email, name, password_hash as password, approved FROM teacher_auth WHERE email = 'david.thompson@bhsteam.edu'"
     );
     
     if (davidCheck.rows && davidCheck.rows.length > 0) {

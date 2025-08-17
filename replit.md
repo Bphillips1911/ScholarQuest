@@ -7,6 +7,7 @@ The "PBIS House of Champions" is a web application designed for Bush Hills STEAM
 - **Teacher Authentication Restored**: Fixed David Thompson login credentials and messaging capabilities
 - **Database Schema Updated**: Modified parent_teacher_messages table to allow null parent_id for admin messages
 - **Email Notifications**: Implemented SendGrid email notifications for teacher-to-parent messages
+- **Teacher Reply System Fixed**: Resolved database foreign key constraint issue preventing teachers from replying to parent messages when scholar_id is null
 
 # User Preferences
 

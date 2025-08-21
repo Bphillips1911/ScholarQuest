@@ -52,12 +52,18 @@ export default function Dashboard() {
   };
 
   // CREATE COMPETITIVE MUSIC FUNCTION
-  const createCompetitiveMusic = () => {
+  const createCompetitiveMusic = async () => {
     if (!audioContextRef.current || !hasUserInteracted) return;
 
     // Clear any existing interval
     if (musicIntervalRef.current) {
       clearInterval(musicIntervalRef.current);
+    }
+
+    // Ensure audio context is running
+    if (audioContextRef.current.state === 'suspended') {
+      await audioContextRef.current.resume();
+      console.log("MUSIC: Audio context resumed");
     }
 
     // Competitive melody frequencies - MUCH higher energy and faster
@@ -72,7 +78,7 @@ export default function Dashboard() {
     let beatCounter = 0;
 
     const playCompetitiveNote = () => {
-      if (!isPlaying || !audioContextRef.current) return;
+      if (!isPlaying || !audioContextRef.current || audioContextRef.current.state !== 'running') return;
 
       try {
         const oscillator = audioContextRef.current.createOscillator();
@@ -89,15 +95,17 @@ export default function Dashboard() {
         oscillator.type = isAccent ? 'square' : (isDriving ? 'sawtooth' : 'triangle');
         
         // Much louder and more aggressive - competitive sports style
-        const baseVolume = isAccent ? 0.35 : (isDriving ? 0.25 : 0.18);
+        const baseVolume = isAccent ? 0.5 : (isDriving ? 0.35 : 0.25); // Increased volume
         gainNode.gain.setValueAtTime(baseVolume, audioContextRef.current.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.12);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.15);
         
         oscillator.start(audioContextRef.current.currentTime);
-        oscillator.stop(audioContextRef.current.currentTime + 0.12);
+        oscillator.stop(audioContextRef.current.currentTime + 0.15);
         
         noteIndex = (noteIndex + 1) % competitiveNotes.length;
         beatCounter++;
+        
+        console.log(`MUSIC: Playing note ${currentNote}Hz, volume ${baseVolume}, type ${oscillator.type}`);
       } catch (error) {
         console.log("MUSIC: Audio note creation failed:", error);
       }
@@ -105,10 +113,11 @@ export default function Dashboard() {
 
     // Very fast tempo for HIGH ENERGY competitive feel (150ms)
     musicIntervalRef.current = setInterval(playCompetitiveNote, 150);
+    console.log("MUSIC: Started competitive music interval");
   };
 
   // MUSIC CONTROL FUNCTIONS
-  const toggleMusic = () => {
+  const toggleMusic = async () => {
     handleUserInteraction();
     
     if (isPlaying) {
@@ -120,15 +129,39 @@ export default function Dashboard() {
       setIsPlaying(false);
       console.log("MUSIC: Paused HIGH ENERGY competitive music");
     } else {
-      // Start competitive music
-      if (!audioContextRef.current && hasUserInteracted) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      
-      if (audioContextRef.current) {
+      try {
+        // Initialize audio context if needed
+        if (!audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+          console.log("MUSIC: Audio context created");
+        }
+        
+        // Resume audio context if suspended
+        if (audioContextRef.current.state === 'suspended') {
+          await audioContextRef.current.resume();
+          console.log("MUSIC: Audio context resumed from suspended state");
+        }
+        
+        // Test audio with immediate beep
+        const testOscillator = audioContextRef.current.createOscillator();
+        const testGain = audioContextRef.current.createGain();
+        testOscillator.connect(testGain);
+        testGain.connect(audioContextRef.current.destination);
+        testOscillator.frequency.setValueAtTime(880, audioContextRef.current.currentTime);
+        testOscillator.type = 'square';
+        testGain.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
+        testGain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.2);
+        testOscillator.start(audioContextRef.current.currentTime);
+        testOscillator.stop(audioContextRef.current.currentTime + 0.2);
+        console.log("MUSIC: Test beep played");
+        
+        // Start competitive music
         setIsPlaying(true);
-        createCompetitiveMusic();
+        await createCompetitiveMusic();
         console.log("MUSIC: Playing ULTRA HIGH ENERGY competitive sports music");
+      } catch (error) {
+        console.error("MUSIC: Failed to start audio:", error);
+        alert("Audio failed to start. Please check your browser audio settings and try again.");
       }
     }
   };

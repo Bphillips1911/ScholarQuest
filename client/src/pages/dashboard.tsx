@@ -34,11 +34,11 @@ export default function Dashboard() {
     // Create educational background music using Web Audio API for a positive, uplifting melody
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.volume = 0.3;
+      audioRef.current.volume = 0.4;
       audioRef.current.loop = true;
       
-      // Use a data URL for a simple educational melody
-      const createEducationalTone = () => {
+      // Use a data URL for competitive background music
+      const createCompetitiveTone = () => {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
@@ -46,28 +46,46 @@ export default function Dashboard() {
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
         
-        // Educational melody frequencies (C major scale)
-        const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+        // Competitive melody frequencies - energetic, driving rhythm
+        const competitiveNotes = [
+          // Main driving melody
+          349.23, 440.00, 523.25, 659.25, 523.25, 440.00, // F-A-C-E-C-A
+          392.00, 493.88, 587.33, 698.46, 587.33, 493.88, // G-B-D-F-D-B
+          // Power chord progressions for intensity
+          261.63, 329.63, 392.00, 523.25, // C-E-G-C octave
+          293.66, 369.99, 440.00, 587.33  // D-F#-A-D octave
+        ];
         let noteIndex = 0;
+        let beatCounter = 0;
         
-        const playNote = () => {
+        const playCompetitiveNote = () => {
           if (isPlaying && hasUserInteracted) {
-            oscillator.frequency.setValueAtTime(notes[noteIndex], audioContext.currentTime);
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+            const currentNote = competitiveNotes[noteIndex];
+            const isAccent = beatCounter % 4 === 0; // Accent every 4th beat
+            const isDriving = beatCounter % 2 === 0; // Driving rhythm on even beats
             
-            noteIndex = (noteIndex + 1) % notes.length;
-            setTimeout(playNote, 600);
+            oscillator.frequency.setValueAtTime(currentNote, audioContext.currentTime);
+            
+            // Dynamic volume for competitive energy
+            const baseVolume = isAccent ? 0.15 : (isDriving ? 0.12 : 0.08);
+            gainNode.gain.setValueAtTime(baseVolume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.25);
+            
+            noteIndex = (noteIndex + 1) % competitiveNotes.length;
+            beatCounter++;
+            
+            // Faster tempo for competitive feel - 350ms intervals
+            setTimeout(playCompetitiveNote, 350);
           }
         };
         
         if (isPlaying && hasUserInteracted) {
           oscillator.start();
-          playNote();
+          playCompetitiveNote();
         }
       };
       
-      // Alternative: Use a positive educational background music URL
+      // Alternative: Use competitive sports-style background music
       audioRef.current.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCCeB0fPWeSsF";
     }
 
@@ -94,11 +112,11 @@ export default function Dashboard() {
       if (isPlaying) {
         audioRef.current.pause();
         setIsPlaying(false);
-        console.log("MUSIC: Paused educational background music");
+        console.log("MUSIC: Paused competitive background music");
       } else {
         audioRef.current.play().then(() => {
           setIsPlaying(true);
-          console.log("MUSIC: Playing educational background music");
+          console.log("MUSIC: Playing competitive background music");
         }).catch(error => {
           console.log("MUSIC: Audio play failed (browser security):", error);
         });

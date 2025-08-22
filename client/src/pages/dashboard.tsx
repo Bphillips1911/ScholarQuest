@@ -58,6 +58,10 @@ export default function Dashboard() {
     if (isPlaying) {
       // Stop music
       if (musicIntervalRef.current) {
+        // Call the local stop function if it exists
+        if ((musicIntervalRef.current as any).stopMusic) {
+          (musicIntervalRef.current as any).stopMusic();
+        }
         clearInterval(musicIntervalRef.current);
         musicIntervalRef.current = null;
       }
@@ -96,8 +100,13 @@ export default function Dashboard() {
       let noteIndex = 0;
       let beatCounter = 0;
 
+      let musicRunning = true; // Local flag, not dependent on React state
+
       const playNote = () => {
-        if (!isPlaying || !audioContextRef.current) return;
+        if (!musicRunning || !audioContextRef.current) {
+          console.log("MUSIC: playNote stopped - running:", musicRunning, "context:", !!audioContextRef.current);
+          return;
+        }
         
         try {
           const oscillator = audioContextRef.current.createOscillator();
@@ -130,8 +139,17 @@ export default function Dashboard() {
       };
 
       // Start the competitive music loop immediately
+      console.log("MUSIC: Playing first note immediately");
       playNote(); // Play first note immediately
+      
+      console.log("MUSIC: Starting interval with 150ms timing");
       musicIntervalRef.current = setInterval(playNote, 150); // Continue every 150ms
+      
+      // Store the stop function for cleanup
+      (musicIntervalRef.current as any).stopMusic = () => {
+        musicRunning = false;
+        console.log("MUSIC: Set musicRunning to false");
+      };
       
       console.log("MUSIC: Started ULTRA HIGH ENERGY competitive sports music");
       

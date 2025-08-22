@@ -1232,9 +1232,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add student to sorting queue
   app.post("/api/sorting/add-student", async (req, res) => {
     try {
+      console.log("ROUTE: Adding student request received:", req.body);
       const { name, studentId, grade } = req.body;
       
       if (!name || !studentId || !grade) {
+        console.log("ROUTE: Missing required fields");
         return res.status(400).json({ message: "Name, student ID, and grade are required" });
       }
 
@@ -1245,10 +1247,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         addedByTeacher: "Sorting System", // Could be enhanced to track actual teacher
       };
 
+      console.log("ROUTE: About to call storage.addUnsortedStudent with:", studentData);
       const student = await storage.addUnsortedStudent(studentData);
+      console.log("ROUTE: Student creation result:", student);
       res.status(201).json(student);
     } catch (error) {
-      console.error("Error adding student:", error);
+      console.error("ROUTE: Error adding student:", error);
       if (error instanceof Error && error.message.includes("unique")) {
         res.status(400).json({ message: "Student ID already exists" });
       } else {

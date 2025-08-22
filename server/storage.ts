@@ -1367,8 +1367,46 @@ export class MemStorage implements IStorage {
 
   async getUnsortedStudents(): Promise<Scholar[]> {
     try {
-      const scholars = Array.from(this.scholars.values());
-      return scholars.filter(scholar => scholar.isHouseSorted === false || scholar.isHouseSorted === undefined);
+      // First check memory storage
+      const memoryScholars = Array.from(this.scholars.values());
+      const memoryUnsorted = memoryScholars.filter(scholar => scholar.isHouseSorted === false || scholar.isHouseSorted === undefined);
+      
+      // Also check database for any unsorted students not in memory
+      let dbUnsorted: Scholar[] = [];
+      try {
+        const { db } = await import("./db");
+        const { scholars } = await import("../shared/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        const dbResults = await db.select().from(scholars).where(eq(scholars.isHouseSorted, false));
+        dbUnsorted = dbResults.map(result => ({
+          ...result,
+          createdAt: result.createdAt || new Date(),
+        } as Scholar));
+        
+        console.log("STORAGE: Found", dbUnsorted.length, "unsorted students in database");
+        
+        // Add database students to memory if not already there
+        for (const student of dbUnsorted) {
+          if (!this.scholars.has(student.id)) {
+            this.scholars.set(student.id, student);
+            console.log("STORAGE: Added database student to memory:", student.name, student.studentId);
+          }
+        }
+        
+      } catch (dbError) {
+        console.error("STORAGE: Error querying database for unsorted students:", dbError);
+      }
+      
+      // Combine and deduplicate results
+      const allUnsorted = [...memoryUnsorted, ...dbUnsorted];
+      const uniqueUnsorted = allUnsorted.filter((student, index, self) => 
+        index === self.findIndex(s => s.id === student.id)
+      );
+      
+      console.log("STORAGE: Returning", uniqueUnsorted.length, "total unsorted students");
+      return uniqueUnsorted;
+      
     } catch (error) {
       console.error("Error in getUnsortedStudents:", error);
       return [];
@@ -1389,7 +1427,47 @@ export class MemStorage implements IStorage {
       addedByTeacher: student.addedByTeacher || null,
       createdAt: new Date(),
     };
+    
+    // Add to memory storage
     this.scholars.set(id, newScholar);
+    
+    // Also persist to database
+    try {
+      const { db } = await import("./db");
+      const { scholars } = await import("../shared/schema");
+      
+      console.log("STORAGE: About to insert student into database:", {
+        name: newScholar.name,
+        studentId: newScholar.studentId,
+        grade: newScholar.grade,
+        isHouseSorted: newScholar.isHouseSorted
+      });
+      
+      const insertResult = await db.insert(scholars).values({
+        id: newScholar.id,
+        name: newScholar.name,
+        studentId: newScholar.studentId,
+        grade: newScholar.grade,
+        houseId: newScholar.houseId,
+        academicPoints: newScholar.academicPoints,
+        attendancePoints: newScholar.attendancePoints,
+        behaviorPoints: newScholar.behaviorPoints,
+        isHouseSorted: newScholar.isHouseSorted,
+        sortingNumber: newScholar.sortingNumber,
+        addedByTeacher: newScholar.addedByTeacher,
+        createdAt: newScholar.createdAt,
+        isActive: true,
+        needsPasswordReset: false,
+      }).returning();
+      
+      console.log("STORAGE: Database insert result:", insertResult);
+      console.log("STORAGE: Successfully added unsorted student to database:", newScholar.name, newScholar.studentId);
+    } catch (error) {
+      console.error("STORAGE: Failed to persist unsorted student to database:", error);
+      console.error("STORAGE: Error details:", error.message);
+      console.error("STORAGE: Error stack:", error.stack);
+    }
+    
     return newScholar;
   }
 

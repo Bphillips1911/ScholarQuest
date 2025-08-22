@@ -183,6 +183,31 @@ export const createMessageFixed = async (messageData: any): Promise<any> => {
           });
           
           console.log(`DATABASE: Email notification sent to parent ${parent.email}`);
+          
+          // Check if parent has phone number and send SMS notification
+          const [parentWithPhone] = await db.select({
+            phone: schema.parents.phone
+          }).from(schema.parents).where(eq(schema.parents.id, messageData.parentId));
+          
+          if (parentWithPhone?.phone) {
+            try {
+              const { SmsService } = await import('./smsService');
+              const smsService = SmsService.getInstance();
+              
+              await smsService.sendTeacherMessageNotification(
+                parentWithPhone.phone,
+                teacher?.name || 'Teacher',
+                messageData.subject
+              );
+              
+              console.log(`DATABASE: SMS notification sent to parent phone ${parentWithPhone.phone}`);
+            } catch (smsError) {
+              console.error('DATABASE: Failed to send SMS notification:', smsError);
+              // Continue with success even if SMS fails
+            }
+          } else {
+            console.log('DATABASE: No phone number found for parent, SMS notification skipped');
+          }
         }
       } catch (emailError) {
         console.error('DATABASE: Failed to send email notification:', emailError);

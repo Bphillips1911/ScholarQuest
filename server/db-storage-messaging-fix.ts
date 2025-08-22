@@ -146,8 +146,8 @@ export const createMessageFixed = async (messageData: any): Promise<any> => {
       createdAt: new Date()
     }).returning();
 
-    // Send email notifications for teacher to parent messages
-    if (messageData.senderType === 'teacher' && messageData.recipientType === 'parent') {
+    // Send email notifications for teacher to parent messages OR admin to parent messages
+    if ((messageData.senderType === 'teacher' || messageData.senderType === 'admin') && messageData.recipientType === 'parent') {
       try {
         const [parent] = await db.select({
           email: schema.parents.email,
@@ -156,9 +156,21 @@ export const createMessageFixed = async (messageData: any): Promise<any> => {
         }).from(schema.parents).where(eq(schema.parents.id, messageData.parentId));
         
         if (parent) {
-          const [teacher] = await db.select({
-            name: schema.teacherAuth.name
-          }).from(schema.teacherAuth).where(eq(schema.teacherAuth.id, messageData.teacherId));
+          let senderName = 'School Administrator';
+          
+          // Get sender name (teacher or admin)
+          if (messageData.senderType === 'teacher' && messageData.teacherId) {
+            const [teacher] = await db.select({
+              name: schema.teacherAuth.name
+            }).from(schema.teacherAuth).where(eq(schema.teacherAuth.id, messageData.teacherId));
+            senderName = teacher?.name || 'Teacher';
+          } else if (messageData.senderType === 'admin' && messageData.adminId) {
+            const [admin] = await db.select({
+              firstName: schema.administrators.firstName,
+              lastName: schema.administrators.lastName
+            }).from(schema.administrators).where(eq(schema.administrators.id, messageData.adminId));
+            senderName = admin ? `${admin.firstName} ${admin.lastName}` : 'School Administrator';
+          }
           
           let scholarName = 'your student';
           
@@ -176,7 +188,7 @@ export const createMessageFixed = async (messageData: any): Promise<any> => {
           await sendTeacherMessageNotification({
             parentEmail: parent.email,
             parentName: `${parent.firstName} ${parent.lastName}`,
-            teacherName: teacher?.name || 'Teacher',
+            teacherName: senderName,
             studentName: scholarName,
             subject: messageData.subject,
             message: messageData.message
@@ -196,7 +208,7 @@ export const createMessageFixed = async (messageData: any): Promise<any> => {
               
               await smsService.sendTeacherMessageNotification(
                 parentWithPhone.phone,
-                teacher?.name || 'Teacher',
+                senderName,
                 messageData.subject
               );
               

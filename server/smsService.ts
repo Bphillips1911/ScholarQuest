@@ -49,10 +49,26 @@ export class SmsService {
         // Send actual SMS using Twilio
         console.log('📱 SMS SERVICE: Sending SMS to phone number:', notification.to);
         
+        // Ensure phone numbers are in proper format (+1XXXXXXXXXX)
+        const formatPhoneNumber = (phone: string) => {
+          const cleaned = phone.replace(/[\s\-\(\)+]/g, '');
+          if (cleaned.length === 10) {
+            return `+1${cleaned}`;
+          } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+            return `+${cleaned}`;
+          }
+          return phone.startsWith('+') ? phone : `+1${cleaned}`;
+        };
+
+        const fromNumber = formatPhoneNumber(process.env.TWILIO_PHONE_NUMBER);
+        const toNumber = formatPhoneNumber(notification.to);
+
+        console.log('📱 SMS SERVICE: Formatted numbers - From:', fromNumber, 'To:', toNumber);
+
         const message = await twilioClient.messages.create({
           body: `BHSA ${this.getMessageTypeLabel(notification.messageType)}: ${notification.content}`,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: notification.to
+          from: fromNumber,
+          to: toNumber
         });
         
         console.log('✅ SMS SERVICE: SMS sent successfully via Twilio. SID:', message.sid);

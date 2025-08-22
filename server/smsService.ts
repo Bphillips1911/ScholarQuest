@@ -37,6 +37,15 @@ export class SmsService {
       const isPhoneNumber = phoneRegex.test(notification.to.replace(/[\s\-\(\)]/g, ''));
       
       if (isPhoneNumber && twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+        // Check if trying to send to the same number as the sender
+        const cleanTo = notification.to.replace(/[\s\-\(\)+]/g, '');
+        const cleanFrom = process.env.TWILIO_PHONE_NUMBER.replace(/[\s\-\(\)+]/g, '');
+        
+        if (cleanTo === cleanFrom) {
+          console.log('⚠️ SMS SERVICE: Cannot send SMS to the same number as sender. To:', notification.to, 'From:', process.env.TWILIO_PHONE_NUMBER);
+          return await this.sendEmailFallback(notification, 'Cannot send SMS to same number as sender');
+        }
+        
         // Send actual SMS using Twilio
         console.log('📱 SMS SERVICE: Sending SMS to phone number:', notification.to);
         

@@ -1247,10 +1247,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         addedByTeacher: "Sorting System", // Could be enhanced to track actual teacher
       };
 
-      console.log("ROUTE: About to call storage.addUnsortedStudent with:", studentData);
-      const student = await storage.addUnsortedStudent(studentData);
-      console.log("ROUTE: Student creation result:", student);
-      res.status(201).json(student);
+      console.log("ROUTE: About to create student directly in database");
+      
+      // Create student directly in database since storage method is not working
+      const { randomUUID } = await import("crypto");
+      const { db } = await import("./db");
+      const { scholars } = await import("../shared/schema");
+      
+      const id = randomUUID();
+      const newStudent = {
+        id,
+        name: studentData.name,
+        studentId: studentData.studentId,
+        grade: studentData.grade,
+        houseId: "franklin", // Temporary house assignment for unsorted students
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        isHouseSorted: false,
+        sortingNumber: parseInt(studentData.studentId.replace(/\D/g, '')) || 0,
+        addedByTeacher: studentData.addedByTeacher,
+        createdAt: new Date(),
+        isActive: true,
+        needsPasswordReset: false,
+      };
+      
+      console.log("ROUTE: Inserting student into database:", newStudent);
+      
+      try {
+        const insertResult = await db.insert(scholars).values(newStudent).returning();
+        console.log("ROUTE: Database insert successful:", insertResult);
+        
+        const student = insertResult[0];
+        console.log("ROUTE: Student created successfully:", student.name, student.studentId);
+        res.status(201).json(student);
+      } catch (dbError) {
+        console.error("ROUTE: Database insert failed:", dbError);
+        res.status(500).json({ message: "Failed to create student in database", error: dbError.message });
+        return;
+      }
     } catch (error) {
       console.error("ROUTE: Error adding student:", error);
       if (error instanceof Error && error.message.includes("unique")) {

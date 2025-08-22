@@ -1414,61 +1414,73 @@ export class MemStorage implements IStorage {
   }
 
   async addUnsortedStudent(student: InsertScholar): Promise<Scholar> {
-    const id = randomUUID();
-    const newScholar: Scholar = {
-      ...student,
-      id,
-      houseId: student.houseId || null,
-      academicPoints: 0,
-      attendancePoints: 0,
-      behaviorPoints: 0,
-      isHouseSorted: false,
-      sortingNumber: this.extractSortingNumber(student.studentId),
-      addedByTeacher: student.addedByTeacher || null,
-      createdAt: new Date(),
-    };
+    console.log("STORAGE: addUnsortedStudent called with:", student);
     
-    // Add to memory storage
-    this.scholars.set(id, newScholar);
-    
-    // Also persist to database
     try {
-      const { db } = await import("./db");
-      const { scholars } = await import("../shared/schema");
+      const id = randomUUID();
+      const newScholar: Scholar = {
+        ...student,
+        id,
+        houseId: student.houseId || null,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        isHouseSorted: false,
+        sortingNumber: this.extractSortingNumber(student.studentId),
+        addedByTeacher: student.addedByTeacher || null,
+        createdAt: new Date(),
+      };
       
-      console.log("STORAGE: About to insert student into database:", {
-        name: newScholar.name,
-        studentId: newScholar.studentId,
-        grade: newScholar.grade,
-        isHouseSorted: newScholar.isHouseSorted
-      });
+      console.log("STORAGE: Created newScholar object:", newScholar);
       
-      const insertResult = await db.insert(scholars).values({
-        id: newScholar.id,
-        name: newScholar.name,
-        studentId: newScholar.studentId,
-        grade: newScholar.grade,
-        houseId: newScholar.houseId,
-        academicPoints: newScholar.academicPoints,
-        attendancePoints: newScholar.attendancePoints,
-        behaviorPoints: newScholar.behaviorPoints,
-        isHouseSorted: newScholar.isHouseSorted,
-        sortingNumber: newScholar.sortingNumber,
-        addedByTeacher: newScholar.addedByTeacher,
-        createdAt: newScholar.createdAt,
-        isActive: true,
-        needsPasswordReset: false,
-      }).returning();
+      // Add to memory storage
+      this.scholars.set(id, newScholar);
+      console.log("STORAGE: Added to memory storage, total scholars:", this.scholars.size);
       
-      console.log("STORAGE: Database insert result:", insertResult);
-      console.log("STORAGE: Successfully added unsorted student to database:", newScholar.name, newScholar.studentId);
+      // Also persist to database
+      try {
+        const { db } = await import("./db");
+        const { scholars } = await import("../shared/schema");
+        
+        console.log("STORAGE: About to insert student into database:", {
+          name: newScholar.name,
+          studentId: newScholar.studentId,
+          grade: newScholar.grade,
+          isHouseSorted: newScholar.isHouseSorted
+        });
+        
+        const insertResult = await db.insert(scholars).values({
+          id: newScholar.id,
+          name: newScholar.name,
+          studentId: newScholar.studentId,
+          grade: newScholar.grade,
+          houseId: newScholar.houseId,
+          academicPoints: newScholar.academicPoints,
+          attendancePoints: newScholar.attendancePoints,
+          behaviorPoints: newScholar.behaviorPoints,
+          isHouseSorted: newScholar.isHouseSorted,
+          sortingNumber: newScholar.sortingNumber,
+          addedByTeacher: newScholar.addedByTeacher,
+          createdAt: newScholar.createdAt,
+          isActive: true,
+          needsPasswordReset: false,
+        }).returning();
+        
+        console.log("STORAGE: Database insert result:", insertResult);
+        console.log("STORAGE: Successfully added unsorted student to database:", newScholar.name, newScholar.studentId);
+      } catch (error) {
+        console.error("STORAGE: Failed to persist unsorted student to database:", error);
+        console.error("STORAGE: Error details:", error.message);
+      }
+      
+      console.log("STORAGE: Returning newScholar:", newScholar);
+      return newScholar;
+      
     } catch (error) {
-      console.error("STORAGE: Failed to persist unsorted student to database:", error);
+      console.error("STORAGE: addUnsortedStudent failed:", error);
       console.error("STORAGE: Error details:", error.message);
-      console.error("STORAGE: Error stack:", error.stack);
+      throw error; // Re-throw the error so the route can handle it properly
     }
-    
-    return newScholar;
   }
 
   async removeUnsortedStudent(studentId: string): Promise<boolean> {

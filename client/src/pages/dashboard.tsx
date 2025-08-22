@@ -51,172 +51,93 @@ export default function Dashboard() {
     }
   };
 
-  // CREATE COMPETITIVE MUSIC FUNCTION - FIXED VERSION
-  const createCompetitiveMusic = async () => {
-    console.log("MUSIC: createCompetitiveMusic called - context:", !!audioContextRef.current, "interaction:", hasUserInteracted);
-    
-    if (!audioContextRef.current) {
-      console.log("MUSIC: No audio context available");
-      return;
-    }
-    
-    if (!hasUserInteracted) {
-      console.log("MUSIC: No user interaction yet");
-      return;
-    }
 
-    // Clear any existing interval
-    if (musicIntervalRef.current) {
-      clearInterval(musicIntervalRef.current);
-    }
 
-    // Ensure audio context is running
-    if (audioContextRef.current.state === 'suspended') {
-      await audioContextRef.current.resume();
-      console.log("MUSIC: Audio context resumed");
-    }
-
-    // Competitive melody frequencies - MUCH higher energy and faster
-    const competitiveNotes = [
-      880.00, 1108.73, 1396.91, 1760.00, // High intensity power notes
-      987.77, 1244.51, 1567.98, 1975.53, // Aggressive ascending
-      1046.50, 1318.51, 1661.22, 2093.00, // Driving competitive rhythm
-      1174.66, 1479.98, 1864.66, 2349.32  // Maximum energy peaks
-    ];
-    
-    let noteIndex = 0;
-    let beatCounter = 0;
-    let musicIsRunning = true; // Use local variable instead of React state
-
-    const playCompetitiveNote = () => {
-      console.log("MUSIC: playCompetitiveNote called, musicIsRunning:", musicIsRunning);
-      
-      if (!musicIsRunning || !audioContextRef.current) {
-        console.log("MUSIC: Stopping - not running or no context");
-        return;
-      }
-      
-      if (audioContextRef.current.state !== 'running') {
-        console.log("MUSIC: Audio context state:", audioContextRef.current.state);
-        return;
-      }
-
-      try {
-        const oscillator = audioContextRef.current.createOscillator();
-        const gainNode = audioContextRef.current.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContextRef.current.destination);
-        
-        const currentNote = competitiveNotes[noteIndex];
-        const isAccent = beatCounter % 4 === 0;
-        const isDriving = beatCounter % 2 === 0;
-        
-        oscillator.frequency.setValueAtTime(currentNote, audioContextRef.current.currentTime);
-        oscillator.type = isAccent ? 'square' : (isDriving ? 'sawtooth' : 'triangle');
-        
-        // Much louder and more aggressive - competitive sports style
-        const baseVolume = isAccent ? 0.8 : (isDriving ? 0.6 : 0.4);
-        gainNode.gain.setValueAtTime(baseVolume, audioContextRef.current.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.2);
-        
-        oscillator.start(audioContextRef.current.currentTime);
-        oscillator.stop(audioContextRef.current.currentTime + 0.2);
-        
-        noteIndex = (noteIndex + 1) % competitiveNotes.length;
-        beatCounter++;
-        
-        console.log(`MUSIC: ♪ ${currentNote.toFixed(0)}Hz vol:${baseVolume.toFixed(1)} type:${oscillator.type} beat:${beatCounter}`);
-      } catch (error) {
-        console.log("MUSIC: Audio note creation failed:", error);
-      }
-    };
-
-    // Store stop function in interval ref for cleanup
-    const stopMusic = () => {
-      musicIsRunning = false;
-      console.log("MUSIC: Stopped competitive music");
-    };
-
-    // Test immediate playback
-    console.log("MUSIC: About to call playCompetitiveNote immediately for test");
-    playCompetitiveNote();
-    
-    // Very fast tempo for HIGH ENERGY competitive feel (150ms)
-    console.log("MUSIC: Setting up interval with 150ms timing");
-    musicIntervalRef.current = setInterval(() => {
-      console.log("MUSIC: Interval tick - calling playCompetitiveNote");
-      playCompetitiveNote();
-    }, 150);
-    
-    // Store cleanup function
-    (musicIntervalRef.current as any).stopMusic = stopMusic;
-    
-    console.log("MUSIC: Started competitive music interval with ID:", musicIntervalRef.current);
-  };
-
-  // MUSIC CONTROL FUNCTIONS
+  // SIMPLIFIED MUSIC CONTROL - DIRECT IMPLEMENTATION
   const toggleMusic = async () => {
-    handleUserInteraction();
-    
     if (isPlaying) {
       // Stop music
       if (musicIntervalRef.current) {
-        // Call stop function if available
-        if ((musicIntervalRef.current as any).stopMusic) {
-          (musicIntervalRef.current as any).stopMusic();
-        }
         clearInterval(musicIntervalRef.current);
         musicIntervalRef.current = null;
       }
       setIsPlaying(false);
-      console.log("MUSIC: Paused HIGH ENERGY competitive music");
-    } else {
-      try {
-        // Initialize audio context if needed
-        if (!audioContextRef.current) {
-          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-          console.log("MUSIC: Audio context created");
-        }
-        
-        // Resume audio context if suspended
-        if (audioContextRef.current.state === 'suspended') {
-          await audioContextRef.current.resume();
-          console.log("MUSIC: Audio context resumed from suspended state");
-        }
-        
-        // Test audio with immediate beep
-        const testOscillator = audioContextRef.current.createOscillator();
-        const testGain = audioContextRef.current.createGain();
-        testOscillator.connect(testGain);
-        testGain.connect(audioContextRef.current.destination);
-        testOscillator.frequency.setValueAtTime(880, audioContextRef.current.currentTime);
-        testOscillator.type = 'square';
-        testGain.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
-        testGain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.2);
-        testOscillator.start(audioContextRef.current.currentTime);
-        testOscillator.stop(audioContextRef.current.currentTime + 0.2);
-        console.log("MUSIC: Test beep played");
-        
-        // Start competitive music
-        setIsPlaying(true);
-        console.log("MUSIC: Setting isPlaying to true, about to create music");
-        
-        // Wait a moment for state to update, then start music  
-        setTimeout(async () => {
-          if (audioContextRef.current && hasUserInteracted) {
-            await createCompetitiveMusic();
-            console.log("MUSIC: createCompetitiveMusic completed");
-          } else {
-            console.log("MUSIC: Context or interaction missing:", !!audioContextRef.current, hasUserInteracted);
-          }
-        }, 100);
-        
-        console.log("MUSIC: Playing ULTRA HIGH ENERGY competitive sports music");
-      } catch (error) {
-        console.error("MUSIC: Failed to start audio:", error);
-        alert("Audio failed to start. Please check your browser audio settings and try again.");
+      console.log("MUSIC: Stopped competitive music");
+      return;
+    }
+
+    try {
+      // Force user interaction flag
+      setHasUserInteracted(true);
+      
+      // Initialize audio context
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        console.log("MUSIC: Audio context created");
       }
+      
+      // Resume if suspended
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+        console.log("MUSIC: Audio context resumed");
+      }
+
+      // Start playing immediately
+      setIsPlaying(true);
+      
+      // Competitive music notes - high energy frequencies
+      const competitiveNotes = [
+        880.00, 1108.73, 1396.91, 1760.00, // High intensity
+        987.77, 1244.51, 1567.98, 1975.53, // Aggressive ascending
+        1046.50, 1318.51, 1661.22, 2093.00, // Driving rhythm
+        1174.66, 1479.98, 1864.66, 2349.32  // Maximum energy
+      ];
+      
+      let noteIndex = 0;
+      let beatCounter = 0;
+
+      const playNote = () => {
+        if (!isPlaying || !audioContextRef.current) return;
+        
+        try {
+          const oscillator = audioContextRef.current.createOscillator();
+          const gainNode = audioContextRef.current.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContextRef.current.destination);
+          
+          const currentNote = competitiveNotes[noteIndex];
+          const isAccent = beatCounter % 4 === 0;
+          const isDriving = beatCounter % 2 === 0;
+          
+          oscillator.frequency.setValueAtTime(currentNote, audioContextRef.current.currentTime);
+          oscillator.type = isAccent ? 'square' : (isDriving ? 'sawtooth' : 'triangle');
+          
+          const baseVolume = isAccent ? 0.8 : (isDriving ? 0.6 : 0.4);
+          gainNode.gain.setValueAtTime(baseVolume, audioContextRef.current.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.2);
+          
+          oscillator.start(audioContextRef.current.currentTime);
+          oscillator.stop(audioContextRef.current.currentTime + 0.2);
+          
+          noteIndex = (noteIndex + 1) % competitiveNotes.length;
+          beatCounter++;
+          
+          console.log(`MUSIC: ♪ ${currentNote.toFixed(0)}Hz vol:${baseVolume.toFixed(1)} beat:${beatCounter}`);
+        } catch (error) {
+          console.log("MUSIC: Note creation failed:", error);
+        }
+      };
+
+      // Start the competitive music loop immediately
+      playNote(); // Play first note immediately
+      musicIntervalRef.current = setInterval(playNote, 150); // Continue every 150ms
+      
+      console.log("MUSIC: Started ULTRA HIGH ENERGY competitive sports music");
+      
+    } catch (error) {
+      console.error("MUSIC: Failed to start:", error);
+      alert("Audio failed to start. Check browser audio settings.");
     }
   };
 

@@ -287,6 +287,18 @@ export class DatabaseStorage implements IStorage {
     return null;
   }
 
+  async updateAdministratorPassword(adminId: string, newPasswordHash: string): Promise<boolean> {
+    try {
+      const result = await db.update(administrators)
+        .set({ passwordHash: newPasswordHash })
+        .where(eq(administrators.id, adminId));
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      console.error("Failed to update administrator password:", error);
+      return false;
+    }
+  }
+
   async createAdminSession(sessionData: InsertAdminSession): Promise<AdminSession> {
     const [session] = await db.insert(adminSessions).values({
       id: randomUUID(),

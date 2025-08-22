@@ -182,6 +182,7 @@ export interface IStorage {
   createAdministrator(admin: InsertAdministrator): Promise<Administrator>;
   getAdministratorByEmail(email: string): Promise<Administrator | undefined>;
   authenticateAdmin(email: string, password: string): Promise<Administrator | null>;
+  updateAdministratorPassword(adminId: string, newPasswordHash: string): Promise<boolean>;
   createAdminSession(session: InsertAdminSession): Promise<AdminSession>;
   getAdminSession(token: string): Promise<AdminSession | undefined>;
   deleteAdminSession(token: string): Promise<boolean>;
@@ -1340,6 +1341,16 @@ export class MemStorage implements IStorage {
     }
 
     return null;
+  }
+
+  async updateAdministratorPassword(adminId: string, newPasswordHash: string): Promise<boolean> {
+    const admin = this.administrators.get(adminId);
+    if (!admin) {
+      return false;
+    }
+    admin.passwordHash = newPasswordHash;
+    this.administrators.set(adminId, admin);
+    return true;
   }
 
   async createAdminSession(sessionData: InsertAdminSession): Promise<AdminSession> {

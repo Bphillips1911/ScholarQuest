@@ -2399,7 +2399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Administrator middleware
+  // Administrator middleware (moved up before password change route)
   const authenticateAdmin = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token) {
@@ -2425,6 +2425,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(401).json({ message: "Invalid token" });
     }
   };
+
+  // Administrator password change route
+  app.post("/api/admin/change-password", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current password and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "New password must be at least 8 characters long" });
+      }
+
+      // Verify current password
+      const admin = req.admin;
+      const isCurrentValid = await bcrypt.compare(currentPassword, admin.passwordHash);
+      
+      if (!isCurrentValid) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      // Hash new password
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      
+      // Update password in database
+      await storage.updateAdministratorPassword(admin.id, newPasswordHash);
+
+      res.json({
+        message: "Password changed successfully",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Password change error:", error);
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
+  // Administrator middleware already defined above
 
   // Admin email test endpoint
   app.post("/api/admin/test-email", async (req, res) => {

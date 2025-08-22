@@ -10,6 +10,19 @@ The parent portal shows "sent successfully" for SMS notifications, but parents a
 - ✅ Correct: `+12052011276`  
 - ❌ Wrong: `2052011276`
 
+## Twilio Phone Number Verification
+**IMPORTANT**: The phone number must be purchased and active in your Twilio account:
+
+1. **Check Your Twilio Console**: 
+   - Go to Console > Phone Numbers > Manage > Active numbers
+   - Verify the exact phone number listed there
+   - Copy the number exactly as shown (including country code)
+
+2. **Common Issues**:
+   - Phone number not purchased in Twilio account
+   - Using wrong phone number format  
+   - Phone number belongs to different Twilio project
+
 ## Solution: Twilio SMS Integration
 
 ### Step 1: Create Twilio Account

@@ -3,6 +3,11 @@
 The "PBIS House of Champions" is a web application designed for Bush Hills STEAM Academy middle school to manage a house points system. Students, assigned to one of five houses, earn points for academic excellence, attendance, and behavior. The system provides a comprehensive Positive Behavioral Interventions and Supports (PBIS) framework, featuring enhanced dropdown categories, individual teacher dashboards for recognizing "MUSTANG" traits, a house sorting generator, and photo upload capabilities. It also displays program information for parents, incorporates the official BHSA Mustangs Crest logo, and includes robust administrator authentication with role-based permissions. The project includes a fully operational bi-directional parent-teacher messaging system with database persistence and reply functionality. The project's vision is to foster positive behavior, academic achievement, and school pride within the student body.
 
 ## Recent Changes (August 2025)
+- **HOUSE SORTING SYSTEM COMPLETELY FIXED**: Student registration database constraints resolved with temporary house assignment solution
+- **Student Creation Working**: Resolved NOT NULL and foreign key constraint issues preventing unsorted students from being saved to database
+- **UI Display Bug Fixed**: Corrected "undefined students sorted" message by properly parsing JSON responses from API mutations
+- **Database Integrity Maintained**: Students now assigned to temporary house (franklin) to satisfy foreign key constraints while remaining marked as unsorted
+- **Sorting Process Operational**: Students can be successfully added to queue, sorted into houses, and proper counts are displayed
 - **COMPREHENSIVE AUTHENTICATION FIX COMPLETE**: Implemented permanent solution for teacher and parent login consistency across all environments
 - **Parent Authentication System Fixed**: All 15 parent accounts now have consistent password hashes and verified credentials (csimmons@gmail.com, clovesimmons@yahoo.com, etc.)
 - **Teacher Authentication System Enhanced**: David Thompson and all teacher logins now work consistently in both preview and deployment environments

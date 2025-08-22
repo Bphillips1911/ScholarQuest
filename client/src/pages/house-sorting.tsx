@@ -110,10 +110,22 @@ export default function HouseSorting() {
       queryClient.invalidateQueries({ queryKey: ["/api/sorting/unsorted-students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/houses"] });
       setSortingInProgress(false);
-      toast({
-        title: "House Sorting Complete!",
-        description: `${result.sortedCount} students have been sorted into houses`,
-      });
+      
+      if (result.sortedStudents && result.sortedStudents.length > 0) {
+        const sortingDetails = result.sortedStudents
+          .map((s: any) => `${s.studentName} → ${s.houseName}`)
+          .join(', ');
+        
+        toast({
+          title: "House Sorting Complete!",
+          description: `${result.sortedCount} students sorted: ${sortingDetails}`,
+        });
+      } else {
+        toast({
+          title: "House Sorting Complete!",
+          description: `${result.sortedCount} students have been sorted into houses`,
+        });
+      }
     },
     onError: () => {
       setSortingInProgress(false);

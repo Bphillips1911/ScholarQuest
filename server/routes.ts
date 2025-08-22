@@ -1314,8 +1314,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sort all unsorted students into houses
   app.post("/api/sorting/sort-students", async (_req, res) => {
     try {
-      const result = await storage.sortStudentsIntoHouses();
-      res.json(result);
+      // Get unsorted students first for detailed info
+      const { db } = await import("./db");
+      const { scholars, houses } = await import("../shared/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      const unsortedStudents = await db.select().from(scholars).where(eq(scholars.isHouseSorted, false));
+      const allHouses = await db.select().from(houses);
+      
+      if (unsortedStudents.length === 0) {
+        res.json({ sortedCount: 0, sortedStudents: [] });
+        return;
+      }
+
+      const sortedStudents = [];
+      
+      // Simple round-robin assignment
+      for (let i = 0; i < unsortedStudents.length; i++) {
+        const student = unsortedStudents[i];
+        const house = allHouses[i % allHouses.length];
+        
+        await db.update(scholars)
+          .set({
+            houseId: house.id,
+            isHouseSorted: true,
+          })
+          .where(eq(scholars.id, student.id));
+
+        sortedStudents.push({
+          studentName: student.name,
+          houseName: house.name,
+          houseColor: house.color,
+          houseIcon: house.icon,
+        });
+      }
+
+      res.json({ 
+        sortedCount: sortedStudents.length, 
+        sortedStudents 
+      });
     } catch (error) {
       console.error("Error sorting students:", error);
       res.status(500).json({ message: "Failed to sort students" });

@@ -74,7 +74,10 @@ function Router() {
               <Route path="/" component={Dashboard} />
               <Route path="/houses" component={Houses} />
               <Route path="/houses/:id" component={HouseDetail} />
+              <Route path="/add-points" component={PBIS} />
               <Route path="/pbis" component={PBIS} />
+              <Route path="/pbis-recognition" component={PBIS} />
+              <Route path="/scholars" component={Houses} />
               <Route path="/monthly-pbis" component={MonthlyPBIS} />
               <Route path="/pledge" component={Pledge} />
               <Route path="/parent-letter" component={ParentLetter} />

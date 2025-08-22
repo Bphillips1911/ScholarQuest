@@ -53,8 +53,15 @@ export default function Dashboard() {
 
   // CREATE COMPETITIVE MUSIC FUNCTION - FIXED VERSION
   const createCompetitiveMusic = async () => {
-    if (!audioContextRef.current || !hasUserInteracted) {
-      console.log("MUSIC: Cannot create - no context or no interaction");
+    console.log("MUSIC: createCompetitiveMusic called - context:", !!audioContextRef.current, "interaction:", hasUserInteracted);
+    
+    if (!audioContextRef.current) {
+      console.log("MUSIC: No audio context available");
+      return;
+    }
+    
+    if (!hasUserInteracted) {
+      console.log("MUSIC: No user interaction yet");
       return;
     }
 
@@ -195,11 +202,15 @@ export default function Dashboard() {
         setIsPlaying(true);
         console.log("MUSIC: Setting isPlaying to true, about to create music");
         
-        // Wait a moment for state to update, then start music
+        // Wait a moment for state to update, then start music  
         setTimeout(async () => {
-          await createCompetitiveMusic();
-          console.log("MUSIC: createCompetitiveMusic completed");
-        }, 50);
+          if (audioContextRef.current && hasUserInteracted) {
+            await createCompetitiveMusic();
+            console.log("MUSIC: createCompetitiveMusic completed");
+          } else {
+            console.log("MUSIC: Context or interaction missing:", !!audioContextRef.current, hasUserInteracted);
+          }
+        }, 100);
         
         console.log("MUSIC: Playing ULTRA HIGH ENERGY competitive sports music");
       } catch (error) {
@@ -254,7 +265,7 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="text-center md:text-left mb-6 md:mb-0">
             <h1 className="text-4xl md:text-6xl font-bold mb-4 pbis-champion-title" data-testid="title-pbis-champion">
-              PBIS House of Champions
+              Bush Hills STEAM Academy PBIS House of Champions
             </h1>
             <p className="text-xl md:text-2xl opacity-90 mb-6" data-testid="subtitle-excellence">
               Promoting Excellence Through Character Development

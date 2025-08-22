@@ -1317,7 +1317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get unsorted students first for detailed info
       const { db } = await import("./db");
       const { scholars, houses } = await import("../shared/schema");
-      const { eq } = await import("drizzle-orm");
+      const { eq, sql } = await import("drizzle-orm");
       
       const unsortedStudents = await db.select().from(scholars).where(eq(scholars.isHouseSorted, false));
       const allHouses = await db.select().from(houses);
@@ -1349,6 +1349,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Update house member counts
+      for (const house of allHouses) {
+        const memberCount = await db.select({ count: sql`count(*)` })
+          .from(scholars)
+          .where(sql`${scholars.houseId} = ${house.id} AND ${scholars.isHouseSorted} = true`);
+        
+        await db.update(houses)
+          .set({ memberCount: Number(memberCount[0].count) })
+          .where(eq(houses.id, house.id));
+      }
+
       res.json({ 
         sortedCount: sortedStudents.length, 
         sortedStudents 
@@ -1367,6 +1378,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error resetting houses:", error);
       res.status(500).json({ message: "Failed to reset houses" });
+    }
+  });
+
+  // Update house member counts manually
+  app.post("/api/houses/update-counts", async (_req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { scholars, houses } = await import("../shared/schema");
+      const { eq, sql } = await import("drizzle-orm");
+      
+      const allHouses = await db.select().from(houses);
+      
+      for (const house of allHouses) {
+        const memberCount = await db.select({ count: sql`count(*)` })
+          .from(scholars)
+          .where(sql`${scholars.houseId} = ${house.id} AND ${scholars.isHouseSorted} = true`);
+        
+        await db.update(houses)
+          .set({ memberCount: Number(memberCount[0].count) })
+          .where(eq(houses.id, house.id));
+      }
+      
+      res.json({ message: "House member counts updated successfully" });
+    } catch (error) {
+      console.error("Error updating house counts:", error);
+      res.status(500).json({ message: "Failed to update house counts" });
     }
   });
 

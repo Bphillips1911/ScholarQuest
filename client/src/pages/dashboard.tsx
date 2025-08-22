@@ -78,7 +78,17 @@ export default function Dashboard() {
     let beatCounter = 0;
 
     const playCompetitiveNote = () => {
-      if (!isPlaying || !audioContextRef.current || audioContextRef.current.state !== 'running') return;
+      console.log("MUSIC: playCompetitiveNote called, isPlaying:", isPlaying);
+      
+      if (!isPlaying || !audioContextRef.current) {
+        console.log("MUSIC: Stopping - not playing or no context");
+        return;
+      }
+      
+      if (audioContextRef.current.state !== 'running') {
+        console.log("MUSIC: Audio context state:", audioContextRef.current.state);
+        return;
+      }
 
       try {
         const oscillator = audioContextRef.current.createOscillator();
@@ -95,17 +105,17 @@ export default function Dashboard() {
         oscillator.type = isAccent ? 'square' : (isDriving ? 'sawtooth' : 'triangle');
         
         // Much louder and more aggressive - competitive sports style
-        const baseVolume = isAccent ? 0.5 : (isDriving ? 0.35 : 0.25); // Increased volume
+        const baseVolume = isAccent ? 0.8 : (isDriving ? 0.6 : 0.4); // Even higher volume
         gainNode.gain.setValueAtTime(baseVolume, audioContextRef.current.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.15);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.2);
         
         oscillator.start(audioContextRef.current.currentTime);
-        oscillator.stop(audioContextRef.current.currentTime + 0.15);
+        oscillator.stop(audioContextRef.current.currentTime + 0.2);
         
         noteIndex = (noteIndex + 1) % competitiveNotes.length;
         beatCounter++;
         
-        console.log(`MUSIC: Playing note ${currentNote}Hz, volume ${baseVolume}, type ${oscillator.type}`);
+        console.log(`MUSIC: ♪ ${currentNote.toFixed(0)}Hz vol:${baseVolume.toFixed(1)} type:${oscillator.type} beat:${beatCounter}`);
       } catch (error) {
         console.log("MUSIC: Audio note creation failed:", error);
       }

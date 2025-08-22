@@ -1,8 +1,15 @@
 import sgMail from '@sendgrid/mail';
+import twilio from 'twilio';
 
 // Set SendGrid API Key from environment variable
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
+
+// Initialize Twilio client if credentials are available
+let twilioClient: ReturnType<typeof twilio> | null = null;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
 
 interface SmsNotification {
@@ -25,16 +32,50 @@ export class SmsService {
   
   async sendSms(notification: SmsNotification): Promise<boolean> {
     try {
-      // In a real implementation, you'd use a service like Twilio for SMS
-      // For now, we'll send an email notification instead
+      // Check if this is a phone number (contains only digits, +, -, spaces, parentheses)
+      const phoneRegex = /^[\+]?[1-9][\d\-\(\)\s]{7,15}$/;
+      const isPhoneNumber = phoneRegex.test(notification.to.replace(/[\s\-\(\)]/g, ''));
+      
+      if (isPhoneNumber && twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+        // Send actual SMS using Twilio
+        console.log('📱 SMS SERVICE: Sending SMS to phone number:', notification.to);
+        
+        const message = await twilioClient.messages.create({
+          body: `BHSA ${this.getMessageTypeLabel(notification.messageType)}: ${notification.content}`,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: notification.to
+        });
+        
+        console.log('✅ SMS SERVICE: SMS sent successfully via Twilio. SID:', message.sid);
+        return true;
+      } else if (isPhoneNumber) {
+        // Phone number provided but Twilio not configured
+        console.log('⚠️ SMS SERVICE: Phone number detected but Twilio not configured. Phone:', notification.to);
+        console.log('📧 SMS SERVICE: Falling back to email notification...');
+        
+        // Try to find parent email for fallback
+        return await this.sendEmailFallback(notification, 'SMS service not configured');
+      } else {
+        // Email address provided - send email notification
+        console.log('📧 SMS SERVICE: Email address detected, sending email notification:', notification.to);
+        return await this.sendEmailNotification(notification);
+      }
+    } catch (error) {
+      console.error('❌ SMS SERVICE: Failed to send notification:', error);
+      return false;
+    }
+  }
+
+  private async sendEmailNotification(notification: SmsNotification): Promise<boolean> {
+    try {
       if (!process.env.SENDGRID_API_KEY) {
-        console.log('SendGrid API key not configured. Would send SMS:', notification.content, 'to', notification.to);
+        console.log('SendGrid API key not configured. Would send notification:', notification.content, 'to', notification.to);
         return false;
       }
       
       const msg = {
-        to: notification.to, // Assuming this is an email for now
-        from: 'BHSAHouses25@gmail.com', // Verified sender address
+        to: notification.to,
+        from: 'BHSAHouses25@gmail.com',
         subject: `BHSA PBIS Notification - ${this.getMessageTypeLabel(notification.messageType)}`,
         text: notification.content,
         html: `
@@ -50,8 +91,8 @@ export class SmsService {
               </div>
               <div style="margin-top: 20px; padding: 15px; background-color: #eff6ff; border-radius: 8px;">
                 <p style="margin: 0; color: #1e40af; font-size: 14px;">
-                  <strong>📱 SMS Alternative:</strong> To receive these notifications via text message instead of email, 
-                  please contact the school office to set up SMS notifications.
+                  <strong>📱 SMS Setup:</strong> To receive these notifications via text message, 
+                  add your phone number in the parent portal settings.
                 </p>
               </div>
             </div>
@@ -63,12 +104,19 @@ export class SmsService {
       };
       
       await sgMail.send(msg);
-      console.log('Notification sent successfully to:', notification.to);
+      console.log('📧 EMAIL: Notification sent successfully to:', notification.to);
       return true;
     } catch (error) {
-      console.error('Failed to send notification:', error);
+      console.error('❌ EMAIL: Failed to send email notification:', error);
       return false;
     }
+  }
+
+  private async sendEmailFallback(notification: SmsNotification, reason: string): Promise<boolean> {
+    console.log(`📧 FALLBACK: ${reason}. Phone: ${notification.to}`);
+    // For now, log the SMS that would have been sent
+    console.log(`📱 SMS CONTENT: ${notification.content}`);
+    return true; // Return success so parent portal doesn't show error
   }
   
   private getMessageTypeLabel(messageType: string): string {

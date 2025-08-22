@@ -82,6 +82,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SMS Test endpoint for verifying Twilio integration
+  app.post("/api/test-sms", async (req, res) => {
+    try {
+      const { SmsService } = await import('./smsService');
+      const smsService = SmsService.getInstance();
+      
+      const testNotification = {
+        to: req.body.to || process.env.TEST_PHONE_NUMBER || "+1234567890",
+        content: req.body.message || "🏆 BHSA SMS Test: Your SMS notifications are now working! This is a test message from the Parent Portal.",
+        messageType: 'general' as const
+      };
+      
+      console.log('📱 SMS TEST: Attempting to send test SMS...');
+      const success = await smsService.sendSms(testNotification);
+      
+      res.json({
+        success,
+        message: success ? "SMS sent successfully via Twilio!" : "SMS sending failed",
+        twilioConfigured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER),
+        testDetails: {
+          to: testNotification.to,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('❌ SMS TEST: Error:', error);
+      res.status(500).json({ error: error.message, success: false });
+    }
+  });
+
   // Debug endpoint to check teacher seeding in deployment
   app.get("/api/debug/teacher-status", async (req, res) => {
     try {

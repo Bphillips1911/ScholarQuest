@@ -51,9 +51,12 @@ export default function Dashboard() {
     }
   };
 
-  // CREATE COMPETITIVE MUSIC FUNCTION
+  // CREATE COMPETITIVE MUSIC FUNCTION - FIXED VERSION
   const createCompetitiveMusic = async () => {
-    if (!audioContextRef.current || !hasUserInteracted) return;
+    if (!audioContextRef.current || !hasUserInteracted) {
+      console.log("MUSIC: Cannot create - no context or no interaction");
+      return;
+    }
 
     // Clear any existing interval
     if (musicIntervalRef.current) {
@@ -76,12 +79,13 @@ export default function Dashboard() {
     
     let noteIndex = 0;
     let beatCounter = 0;
+    let musicIsRunning = true; // Use local variable instead of React state
 
     const playCompetitiveNote = () => {
-      console.log("MUSIC: playCompetitiveNote called, isPlaying:", isPlaying);
+      console.log("MUSIC: playCompetitiveNote called, musicIsRunning:", musicIsRunning);
       
-      if (!isPlaying || !audioContextRef.current) {
-        console.log("MUSIC: Stopping - not playing or no context");
+      if (!musicIsRunning || !audioContextRef.current) {
+        console.log("MUSIC: Stopping - not running or no context");
         return;
       }
       
@@ -105,7 +109,7 @@ export default function Dashboard() {
         oscillator.type = isAccent ? 'square' : (isDriving ? 'sawtooth' : 'triangle');
         
         // Much louder and more aggressive - competitive sports style
-        const baseVolume = isAccent ? 0.8 : (isDriving ? 0.6 : 0.4); // Even higher volume
+        const baseVolume = isAccent ? 0.8 : (isDriving ? 0.6 : 0.4);
         gainNode.gain.setValueAtTime(baseVolume, audioContextRef.current.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.2);
         
@@ -121,9 +125,27 @@ export default function Dashboard() {
       }
     };
 
+    // Store stop function in interval ref for cleanup
+    const stopMusic = () => {
+      musicIsRunning = false;
+      console.log("MUSIC: Stopped competitive music");
+    };
+
+    // Test immediate playback
+    console.log("MUSIC: About to call playCompetitiveNote immediately for test");
+    playCompetitiveNote();
+    
     // Very fast tempo for HIGH ENERGY competitive feel (150ms)
-    musicIntervalRef.current = setInterval(playCompetitiveNote, 150);
-    console.log("MUSIC: Started competitive music interval");
+    console.log("MUSIC: Setting up interval with 150ms timing");
+    musicIntervalRef.current = setInterval(() => {
+      console.log("MUSIC: Interval tick - calling playCompetitiveNote");
+      playCompetitiveNote();
+    }, 150);
+    
+    // Store cleanup function
+    (musicIntervalRef.current as any).stopMusic = stopMusic;
+    
+    console.log("MUSIC: Started competitive music interval with ID:", musicIntervalRef.current);
   };
 
   // MUSIC CONTROL FUNCTIONS
@@ -133,6 +155,10 @@ export default function Dashboard() {
     if (isPlaying) {
       // Stop music
       if (musicIntervalRef.current) {
+        // Call stop function if available
+        if ((musicIntervalRef.current as any).stopMusic) {
+          (musicIntervalRef.current as any).stopMusic();
+        }
         clearInterval(musicIntervalRef.current);
         musicIntervalRef.current = null;
       }
@@ -167,7 +193,14 @@ export default function Dashboard() {
         
         // Start competitive music
         setIsPlaying(true);
-        await createCompetitiveMusic();
+        console.log("MUSIC: Setting isPlaying to true, about to create music");
+        
+        // Wait a moment for state to update, then start music
+        setTimeout(async () => {
+          await createCompetitiveMusic();
+          console.log("MUSIC: createCompetitiveMusic completed");
+        }, 50);
+        
         console.log("MUSIC: Playing ULTRA HIGH ENERGY competitive sports music");
       } catch (error) {
         console.error("MUSIC: Failed to start audio:", error);

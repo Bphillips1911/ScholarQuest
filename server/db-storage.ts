@@ -160,9 +160,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createScholar(scholarData: InsertScholar): Promise<Scholar> {
+    // Generate unique username if not provided
+    let username = scholarData.username;
+    let passwordHash = scholarData.passwordHash;
+    
+    if (!username && scholarData.name && scholarData.studentId) {
+      const nameParts = scholarData.name.split(' ');
+      const firstName = nameParts[0] || 'student';
+      const lastName = nameParts[1] || 'user';
+      username = await this.generateUniqueUsername(firstName, lastName, scholarData.studentId);
+    }
+    
+    // Generate default password if not provided
+    if (!passwordHash && scholarData.studentId) {
+      const bcrypt = (await import("bcryptjs")).default;
+      const defaultPassword = `BHSA${scholarData.studentId}!`;
+      passwordHash = await bcrypt.hash(defaultPassword, 10);
+    }
+    
     const [scholar] = await db.insert(schema.scholars).values({
       id: randomUUID(),
       ...scholarData,
+      username,
+      passwordHash,
     }).returning();
     return scholar;
   }

@@ -185,20 +185,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ensure username field is cleared to trigger auto-generation
       const scholarData = {
         ...req.body,
-        username: undefined // Force username generation
+        username: undefined, // Force username generation
+        passwordHash: undefined // Force password generation
       };
       
       const validatedData = insertScholarSchema.parse(scholarData);
       const scholar = await storage.createScholar(validatedData);
       
       res.status(201).json({
-        message: "Student created successfully with auto-generated username",
+        message: "Student created successfully with auto-generated credentials",
         scholar: scholar,
-        generatedUsername: scholar.username
+        generatedUsername: scholar.username,
+        defaultPassword: `BHSA${scholar.studentId}!`
       });
     } catch (error) {
       console.error("Admin scholar creation error:", error);
       res.status(400).json({ message: "Invalid scholar data" });
+    }
+  });
+
+  // Regenerate credentials for existing student  
+  app.post("/api/admin/scholars/:studentId/regenerate-credentials", async (req, res) => {
+    try {
+      const { studentId } = req.params;
+      const { db } = await import("./db");
+      const { scholars } = await import("../shared/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      // Find the student by student ID
+      const [student] = await db.select().from(scholars).where(eq(scholars.studentId, studentId));
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+      
+      // Generate new credentials
+      const nameParts = student.name.split(' ');
+      const firstName = nameParts[0] || 'student';
+      const lastName = nameParts[1] || 'user';
+      
+      const cleanFirst = firstName.toLowerCase().replace(/[^a-z]/g, '').substring(0, 3);
+      const cleanLast = lastName.toLowerCase().replace(/[^a-z]/g, '').substring(0, 3);
+      const idSuffix = student.studentId.replace(/[^0-9]/g, '').slice(-3);
+      const newUsername = `${cleanFirst}${cleanLast}${idSuffix}`;
+      
+      const bcrypt = (await import("bcryptjs")).default;
+      const newPassword = `BHSA${student.studentId}!`;
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      
+      // Update the student record
+      await db.update(scholars)
+        .set({ 
+          username: newUsername,
+          passwordHash: newPasswordHash
+        })
+        .where(eq(scholars.studentId, studentId));
+      
+      res.json({
+        message: "Credentials regenerated successfully",
+        studentName: student.name,
+        studentId: student.studentId,
+        username: newUsername,
+        password: newPassword
+      });
+    } catch (error) {
+      console.error("Regenerate credentials error:", error);
+      res.status(500).json({ message: "Failed to regenerate credentials" });
     }
   });
 

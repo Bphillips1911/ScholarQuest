@@ -1072,12 +1072,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { recipientType, parentId, adminId, scholarId, subject, message, priority } = req.body;
       
+      console.log("TEACHER SEND MESSAGE DEBUG: Full request body:", JSON.stringify(req.body, null, 2));
+      console.log("TEACHER SEND MESSAGE DEBUG: recipientType:", recipientType, "parentId:", parentId, "adminId:", adminId);
+      
       if (!subject || !message || !recipientType) {
         return res.status(400).json({ message: "Subject, message, and recipient type required" });
       }
 
       if (recipientType === "parent" && !parentId) {
         return res.status(400).json({ message: "Parent ID required for parent messages" });
+      }
+
+      if (recipientType === "admin" && !adminId) {
+        return res.status(400).json({ message: "Admin ID required for admin messages" });
       }
 
       const messageData = {

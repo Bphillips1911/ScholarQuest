@@ -25,6 +25,7 @@ interface MessageFormData {
 export default function TeacherMessages() {
   const [selectedScholar, setSelectedScholar] = useState<string>("");
   const [selectedAdmin, setSelectedAdmin] = useState<string>("");
+  const [replyingTo, setReplyingTo] = useState<any>(null);
   const [messageForm, setMessageForm] = useState<MessageFormData>({
     recipientType: 'parent',
     parentId: "",
@@ -130,6 +131,7 @@ export default function TeacherMessages() {
       setShowForm(false);
       setSelectedScholar("");
       setSelectedAdmin("");
+      setReplyingTo(null);
       queryClient.invalidateQueries({ queryKey: ["/api/teacher/messages"] });
     },
     onError: (error) => {
@@ -194,6 +196,34 @@ export default function TeacherMessages() {
       }));
       setShowForm(true);
     }
+  };
+
+  const handleReply = (originalMessage: any) => {
+    console.log("TEACHER-MESSAGES: Replying to message", originalMessage);
+    setReplyingTo(originalMessage);
+    
+    if (originalMessage.senderType === 'admin') {
+      // Reply to admin
+      setMessageForm(prev => ({
+        ...prev,
+        recipientType: 'admin',
+        parentId: "",
+        adminId: originalMessage.adminId || originalMessage.admin_id,
+        scholarId: originalMessage.scholarId || "",
+        subject: `Re: ${originalMessage.subject}`
+      }));
+    } else if (originalMessage.senderType === 'parent') {
+      // Reply to parent
+      setMessageForm(prev => ({
+        ...prev,
+        recipientType: 'parent',
+        parentId: originalMessage.parentId || originalMessage.parent_id,
+        adminId: "",
+        scholarId: originalMessage.scholarId || "",
+        subject: `Re: ${originalMessage.subject}`
+      }));
+    }
+    setShowForm(true);
   };
 
   const handleSendMessage = () => {
@@ -487,17 +517,29 @@ export default function TeacherMessages() {
                       </div>
                     </div>
                     <p className="text-sm text-gray-700 mb-2">{message.message}</p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={message.senderType === 'teacher' ? 'default' : 'secondary'}>
-                        {message.senderType === 'teacher' ? 'Sent by you' : 
-                         message.senderType === 'admin' ? `Admin: ${(message as any).sender_name || 'Administrator'}` :
-                         `Parent: ${(message as any).sender_name || 'Parent reply'}`}
-                      </Badge>
-                      {!message.isRead && (
-                        <Badge variant="outline" className="text-blue-600">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Unread
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={message.senderType === 'teacher' ? 'default' : 'secondary'}>
+                          {message.senderType === 'teacher' ? 'Sent by you' : 
+                           message.senderType === 'admin' ? `Admin: ${(message as any).sender_name || 'Administrator'}` :
+                           `Parent: ${(message as any).sender_name || 'Parent reply'}`}
                         </Badge>
+                        {!message.isRead && (
+                          <Badge variant="outline" className="text-blue-600">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Unread
+                          </Badge>
+                        )}
+                      </div>
+                      {message.senderType !== 'teacher' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReply(message)}
+                          className="ml-auto"
+                        >
+                          Reply
+                        </Button>
                       )}
                     </div>
                   </div>

@@ -3014,16 +3014,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/administrators", authenticateTeacher, async (req: any, res) => {
     try {
       console.log("DATABASE: Getting all administrators for teacher messaging");
-      const administrators = await db.select().from(schema.administrators);
-      console.log(`DATABASE: Found ${administrators.length} administrators`);
+      const { administrators } = await import('@shared/schema');
+      const adminList = await db.select().from(administrators);
+      console.log(`DATABASE: Found ${adminList.length} administrators`);
       
-      res.json(administrators.map(admin => ({
+      res.json(adminList.map(admin => ({
         id: admin.id,
         firstName: admin.firstName,
         lastName: admin.lastName,
         email: admin.email,
-        role: admin.role,
-        isApproved: admin.isApproved
+        role: admin.title,
+        isApproved: admin.isActive
       })));
     } catch (error) {
       console.error("TEACHER ADMINS: Error fetching administrators:", error);

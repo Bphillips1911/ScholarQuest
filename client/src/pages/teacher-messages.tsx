@@ -199,6 +199,8 @@ export default function TeacherMessages() {
   };
 
   const handleReply = (originalMessage: any) => {
+    console.log("🔥 REPLY BUTTON CLICKED!");
+    alert("Reply button clicked!");
     console.log("TEACHER-MESSAGES: Replying to message", originalMessage);
     console.log("TEACHER-MESSAGES: Original message structure:", JSON.stringify(originalMessage, null, 2));
     setReplyingTo(originalMessage);
@@ -544,8 +546,14 @@ export default function TeacherMessages() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleReply(message)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log("🔥 BUTTON CLICK EVENT");
+                            handleReply(message);
+                          }}
                           className="ml-auto"
+                          data-testid={`reply-button-${message.id}`}
                         >
                           Reply
                         </Button>

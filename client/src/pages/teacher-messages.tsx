@@ -200,27 +200,36 @@ export default function TeacherMessages() {
 
   const handleReply = (originalMessage: any) => {
     console.log("TEACHER-MESSAGES: Replying to message", originalMessage);
+    console.log("TEACHER-MESSAGES: Original message structure:", JSON.stringify(originalMessage, null, 2));
     setReplyingTo(originalMessage);
     
-    if (originalMessage.senderType === 'admin') {
+    if (originalMessage.senderType === 'admin' || originalMessage.sender_type === 'admin') {
       // Reply to admin
+      const adminId = originalMessage.adminId || originalMessage.admin_id;
+      console.log("TEACHER-MESSAGES: Replying to admin with ID:", adminId);
       setMessageForm(prev => ({
         ...prev,
         recipientType: 'admin',
         parentId: "",
-        adminId: originalMessage.adminId || originalMessage.admin_id,
-        scholarId: originalMessage.scholarId || "",
-        subject: `Re: ${originalMessage.subject}`
+        adminId: adminId,
+        scholarId: originalMessage.scholarId || originalMessage.scholar_id || "",
+        subject: `Re: ${originalMessage.subject}`,
+        message: "",
+        priority: "normal"
       }));
-    } else if (originalMessage.senderType === 'parent') {
+    } else if (originalMessage.senderType === 'parent' || originalMessage.sender_type === 'parent') {
       // Reply to parent
+      const parentId = originalMessage.parentId || originalMessage.parent_id;
+      console.log("TEACHER-MESSAGES: Replying to parent with ID:", parentId);
       setMessageForm(prev => ({
         ...prev,
         recipientType: 'parent',
-        parentId: originalMessage.parentId || originalMessage.parent_id,
+        parentId: parentId,
         adminId: "",
-        scholarId: originalMessage.scholarId || "",
-        subject: `Re: ${originalMessage.subject}`
+        scholarId: originalMessage.scholarId || originalMessage.scholar_id || "",
+        subject: `Re: ${originalMessage.subject}`,
+        message: "",
+        priority: "normal"
       }));
     }
     setShowForm(true);

@@ -3010,6 +3010,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all administrators for teacher messaging dropdown
+  app.get("/api/admin/administrators", authenticateTeacher, async (req: any, res) => {
+    try {
+      console.log("DATABASE: Getting all administrators for teacher messaging");
+      const administrators = await db.select().from(schema.administrators);
+      console.log(`DATABASE: Found ${administrators.length} administrators`);
+      
+      res.json(administrators.map(admin => ({
+        id: admin.id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        email: admin.email,
+        role: admin.role,
+        isApproved: admin.isApproved
+      })));
+    } catch (error) {
+      console.error("TEACHER ADMINS: Error fetching administrators:", error);
+      res.status(500).json({ message: "Failed to fetch administrators" });
+    }
+  });
+
   // Get all parents for admin messaging dropdown - DEPLOYMENT FIX: Direct database query
   app.get("/api/admin/parents", authenticateAdmin, async (req: any, res) => {
     try {

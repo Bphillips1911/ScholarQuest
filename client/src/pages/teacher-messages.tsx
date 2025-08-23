@@ -9,23 +9,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { MessageCircle, Send, User, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { MessageCircle, Send, User, Clock, CheckCircle, AlertCircle, UserCheck } from "lucide-react";
 import type { Scholar, Parent, ParentTeacherMessage } from "@shared/schema";
 
 interface MessageFormData {
+  recipientType: 'parent' | 'admin';
   parentId: string;
+  adminId: string;
   scholarId: string;
   subject: string;
   message: string;
+  priority: string;
 }
 
 export default function TeacherMessages() {
   const [selectedScholar, setSelectedScholar] = useState<string>("");
+  const [selectedAdmin, setSelectedAdmin] = useState<string>("");
   const [messageForm, setMessageForm] = useState<MessageFormData>({
+    recipientType: 'parent',
     parentId: "",
+    adminId: "",
     scholarId: "",
     subject: "",
-    message: ""
+    message: "",
+    priority: "normal"
   });
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
@@ -51,6 +58,20 @@ export default function TeacherMessages() {
     },
   });
 
+  const { data: admins = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/administrators"],
+    queryFn: async () => {
+      const token = localStorage.getItem("teacherToken");
+      const response = await fetch("/api/admin/administrators", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error("Failed to fetch administrators");
+      return response.json();
+    },
+  });
+
   const { data: messages = [] } = useQuery<ParentTeacherMessage[]>({
     queryKey: ["/api/teacher/messages"],
     queryFn: async () => {
@@ -67,30 +88,48 @@ export default function TeacherMessages() {
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (messageData: any) => {
-      const response = await fetch("/api/parent-teacher-messages", {
+    mutationFn: async (messageData: MessageFormData) => {
+      const token = localStorage.getItem("teacherToken");
+      const response = await fetch("/api/teacher/send-message", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
-          ...messageData,
-          teacherId: teacherData.id,
-          senderType: "teacher"
+          recipientType: messageData.recipientType,
+          parentId: messageData.recipientType === 'parent' ? messageData.parentId : null,
+          adminId: messageData.recipientType === 'admin' ? messageData.adminId : null,
+          scholarId: messageData.recipientType === 'parent' ? messageData.scholarId : null,
+          subject: messageData.subject,
+          message: messageData.message,
+          priority: messageData.priority
         }),
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to send message");
+        throw new Error(error.message || "Failed to send message");
       }
       return response.json();
     },
     onSuccess: () => {
+      const recipient = messageForm.recipientType === 'parent' ? 'parent' : 'administrator';
       toast({
         title: "Message Sent",
-        description: "Your message has been sent and the parent has been notified by email.",
+        description: `Your message has been sent successfully to the ${recipient}.`,
       });
-      setMessageForm({ parentId: "", scholarId: "", subject: "", message: "" });
+      setMessageForm({ 
+        recipientType: 'parent',
+        parentId: "", 
+        adminId: "",
+        scholarId: "", 
+        subject: "", 
+        message: "",
+        priority: "normal"
+      });
       setShowForm(false);
       setSelectedScholar("");
+      setSelectedAdmin("");
       queryClient.invalidateQueries({ queryKey: ["/api/teacher/messages"] });
     },
     onError: (error) => {
@@ -121,7 +160,9 @@ export default function TeacherMessages() {
       if (parent) {
         setMessageForm(prev => ({
           ...prev,
+          recipientType: 'parent',
           parentId: parent.id,
+          adminId: "",
           scholarId: scholarId,
           subject: `Update about ${scholar.name}`
         }));
@@ -133,6 +174,25 @@ export default function TeacherMessages() {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleAdminSelect = (adminId: string) => {
+    console.log("TEACHER-MESSAGES: Selecting admin", adminId);
+    setSelectedAdmin(adminId);
+    const admin = admins.find(a => a.id === adminId);
+    console.log("TEACHER-MESSAGES: Found admin:", admin);
+    
+    if (admin) {
+      setMessageForm(prev => ({
+        ...prev,
+        recipientType: 'admin',
+        parentId: "",
+        adminId: adminId,
+        scholarId: "",
+        subject: `Message from ${teacherData.name || 'Teacher'}`
+      }));
+      setShowForm(true);
     }
   };
 
@@ -168,6 +228,11 @@ export default function TeacherMessages() {
     return parent ? `${parent.firstName} ${parent.lastName}` : "Unknown Parent";
   };
 
+  const getAdminName = (adminId: string) => {
+    const admin = admins.find(a => a.id === adminId);
+    return admin ? `${admin.firstName} ${admin.lastName}` : "Administrator";
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="mb-8">
@@ -175,7 +240,7 @@ export default function TeacherMessages() {
           Parent Communication
         </h1>
         <p className="text-gray-600">
-          Send messages to parents about student progress and behavior.
+          Send messages to parents about student progress and administrators about school matters.
         </p>
       </div>
 
@@ -185,26 +250,84 @@ export default function TeacherMessages() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Send className="mr-2 h-5 w-5 text-blue-600" />
-              Send Message to Parent
+              Compose New Message
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="scholar-select">Select Student</Label>
-                <Select value={selectedScholar} onValueChange={handleScholarSelect}>
-                  <SelectTrigger data-testid="select-scholar">
-                    <SelectValue placeholder="Choose a student..." />
+                <Label htmlFor="recipient-type">Message Recipient</Label>
+                <Select 
+                  value={messageForm.recipientType} 
+                  onValueChange={(value: 'parent' | 'admin') => {
+                    setMessageForm(prev => ({
+                      ...prev, 
+                      recipientType: value,
+                      parentId: "",
+                      adminId: "",
+                      scholarId: "",
+                      subject: ""
+                    }));
+                    setShowForm(false);
+                    setSelectedScholar("");
+                    setSelectedAdmin("");
+                  }}
+                >
+                  <SelectTrigger data-testid="select-recipient-type">
+                    <SelectValue placeholder="Choose recipient type..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {scholars.map((scholar) => (
-                      <SelectItem key={scholar.id} value={scholar.id}>
-                        {scholar.name} (Grade {scholar.grade}) - {scholar.username || scholar.studentId}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="parent">
+                      <div className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        Parent (about student)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="admin">
+                      <div className="flex items-center">
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        Administrator
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {messageForm.recipientType === 'parent' && (
+                <div>
+                  <Label htmlFor="scholar-select">Select Student</Label>
+                  <Select value={selectedScholar} onValueChange={handleScholarSelect}>
+                    <SelectTrigger data-testid="select-scholar">
+                      <SelectValue placeholder="Choose a student..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {scholars.map((scholar) => (
+                        <SelectItem key={scholar.id} value={scholar.id}>
+                          {scholar.name} (Grade {scholar.grade}) - {scholar.username || scholar.studentId}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {messageForm.recipientType === 'admin' && (
+                <div>
+                  <Label htmlFor="admin-select">Select Administrator</Label>
+                  <Select value={selectedAdmin} onValueChange={handleAdminSelect}>
+                    <SelectTrigger data-testid="select-admin">
+                      <SelectValue placeholder="Choose an administrator..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {admins.map((admin) => (
+                        <SelectItem key={admin.id} value={admin.id}>
+                          {admin.firstName} {admin.lastName} - {admin.role || 'Administrator'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {showForm && (
                 <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -242,12 +365,41 @@ export default function TeacherMessages() {
 
                   <div className="bg-white p-3 rounded border">
                     <h4 className="font-medium text-gray-900 mb-2">Message Details</h4>
+                    {messageForm.recipientType === 'parent' ? (
+                      <>
+                        <p className="text-sm text-gray-600">
+                          <strong>To:</strong> {getParentName(messageForm.parentId)}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <strong>About:</strong> {getScholarName(messageForm.scholarId)}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-600">
+                        <strong>To:</strong> {getAdminName(messageForm.adminId)}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600">
-                      <strong>To:</strong> {getParentName(messageForm.parentId)}
+                      <strong>Priority:</strong> {messageForm.priority}
                     </p>
-                    <p className="text-sm text-gray-600">
-                      <strong>About:</strong> {getScholarName(messageForm.scholarId)}
-                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="priority">Priority</Label>
+                    <Select 
+                      value={messageForm.priority} 
+                      onValueChange={(value) => setMessageForm(prev => ({...prev, priority: value}))}
+                    >
+                      <SelectTrigger data-testid="select-priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low Priority</SelectItem>
+                        <SelectItem value="normal">Normal Priority</SelectItem>
+                        <SelectItem value="high">High Priority</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="flex gap-2">
@@ -264,7 +416,16 @@ export default function TeacherMessages() {
                       onClick={() => {
                         setShowForm(false);
                         setSelectedScholar("");
-                        setMessageForm({ parentId: "", scholarId: "", subject: "", message: "" });
+                        setSelectedAdmin("");
+                        setMessageForm({ 
+                          recipientType: 'parent',
+                          parentId: "", 
+                          adminId: "",
+                          scholarId: "", 
+                          subject: "", 
+                          message: "",
+                          priority: "normal"
+                        });
                       }}
                       data-testid="button-cancel"
                     >
@@ -277,7 +438,12 @@ export default function TeacherMessages() {
               {!showForm && (
                 <div className="text-center py-8 text-gray-500">
                   <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p>Select a student to send a message to their parent</p>
+                  <p>
+                    {messageForm.recipientType === 'parent' 
+                      ? "Select a student to send a message to their parent"
+                      : "Select an administrator to send a message"
+                    }
+                  </p>
                   <p className="text-sm mt-2">
                     All messages require a minimum of 10 characters
                   </p>
@@ -308,7 +474,11 @@ export default function TeacherMessages() {
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{message.subject}</h4>
                         <p className="text-sm text-gray-600">
-                          To: {getParentName(message.parentId)} • About: {getScholarName(message.scholarId)}
+                          {message.parentId ? (
+                            <>To: {getParentName(message.parentId)} • About: {getScholarName(message.scholarId)}</>
+                          ) : (
+                            <>To: {getAdminName((message as any).adminId || (message as any).admin_id)}</>
+                          )}
                         </p>
                       </div>
                       <div className="flex items-center text-xs text-gray-500">

@@ -223,27 +223,31 @@ export default function TeacherMessages() {
     if (senderType === 'admin' && adminId) {
       // Reply to admin
       console.log("TEACHER-MESSAGES: Setting up reply to admin with ID:", adminId);
-      setMessageForm({
-        recipientType: 'admin',
+      const newForm = {
+        recipientType: 'admin' as const,
         parentId: "",
         adminId: adminId,
         scholarId: scholarId || "",
         subject: `Re: ${originalMessage.subject}`,
         message: "",
         priority: "normal"
-      });
+      };
+      console.log("TEACHER-MESSAGES: Setting form to:", JSON.stringify(newForm, null, 2));
+      setMessageForm(newForm);
     } else if (senderType === 'parent' && parentId) {
       // Reply to parent
       console.log("TEACHER-MESSAGES: Setting up reply to parent with ID:", parentId);
-      setMessageForm({
-        recipientType: 'parent',
+      const newForm = {
+        recipientType: 'parent' as const,
         parentId: parentId,
         adminId: "",
         scholarId: scholarId || "",
         subject: `Re: ${originalMessage.subject}`,
         message: "",
         priority: "normal"
-      });
+      };
+      console.log("TEACHER-MESSAGES: Setting form to:", JSON.stringify(newForm, null, 2));
+      setMessageForm(newForm);
     } else {
       console.error("TEACHER-MESSAGES: Could not determine reply recipient:", { senderType, adminId, parentId });
       toast({

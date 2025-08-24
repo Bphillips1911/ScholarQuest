@@ -1128,6 +1128,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch parents" });
     }
   });
+
+  // Get administrators list for teacher messaging
+  app.get("/api/teacher/administrators", authenticateTeacher, async (req: any, res) => {
+    try {
+      console.log("TEACHER: Fetching administrators for message composition");
+      const administrators = await storage.getAllAdministrators();
+      console.log("TEACHER: Found", administrators.length, "administrators");
+      const adminsList = administrators.map(admin => ({
+        id: admin.id,
+        name: admin.name,
+        role: admin.role,
+        email: admin.email
+      }));
+      res.json(adminsList);
+    } catch (error) {
+      console.error("Get administrators error:", error);
+      res.status(500).json({ message: "Failed to fetch administrators" });
+    }
+  });
   
   // Test endpoint for token validation
   app.get("/api/teacher/test-auth", authenticateTeacher, async (req: any, res) => {

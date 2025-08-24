@@ -303,6 +303,19 @@ export default function TeacherDashboard() {
     enabled: !!teacher?.id,
   });
 
+  // Fetch administrators for compose message dropdown
+  const { data: administrators = [] } = useQuery({
+    queryKey: ["/api/teacher/administrators"],
+    queryFn: async () => {
+      const response = await fetch(`/api/teacher/administrators`, {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch administrators");
+      return response.json();
+    },
+    enabled: !!teacher?.id,
+  });
+
   // Reply to parent or admin mutation
   const replyMutation = useMutation({
     mutationFn: async (replyData: any) => {
@@ -1615,6 +1628,28 @@ export default function TeacherDashboard() {
                     </div>
                   )}
 
+                  {/* Administrator Selection (only if recipient is admin) */}
+                  {composeForm.recipientType === "admin" && (
+                    <div>
+                      <Label htmlFor="adminSelect">Select Administrator</Label>
+                      <Select 
+                        value={composeForm.adminId} 
+                        onValueChange={(value) => setComposeForm({...composeForm, adminId: value})}
+                      >
+                        <SelectTrigger data-testid="select-admin">
+                          <SelectValue placeholder="Select an administrator" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {administrators.map((admin: any) => (
+                            <SelectItem key={admin.id} value={admin.id} data-testid={`option-admin-${admin.id}`}>
+                              {admin.name} - {admin.role}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {/* Subject */}
                   <div>
                     <Label htmlFor="composeSubject">Subject</Label>
@@ -1685,7 +1720,9 @@ export default function TeacherDashboard() {
                     <Button
                       type="submit"
                       className="bg-blue-600 text-white hover:bg-blue-700"
-                      disabled={composeMutation.isPending || !composeForm.recipientType || !composeForm.subject || !composeForm.message}
+                      disabled={composeMutation.isPending || !composeForm.recipientType || !composeForm.subject || !composeForm.message || 
+                        (composeForm.recipientType === 'parent' && !composeForm.parentId) ||
+                        (composeForm.recipientType === 'admin' && !composeForm.adminId)}
                       data-testid="button-send-compose"
                     >
                       <Send className="mr-2 h-4 w-4" />

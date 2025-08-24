@@ -90,22 +90,29 @@ export default function TeacherMessages() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: MessageFormData) => {
+      console.log("🚀 FORM SUBMISSION: Current messageForm state:", JSON.stringify(messageForm, null, 2));
+      console.log("🚀 FORM SUBMISSION: Submitted messageData:", JSON.stringify(messageData, null, 2));
+      
       const token = localStorage.getItem("teacherToken");
+      const requestBody = {
+        recipientType: messageData.recipientType,
+        parentId: messageData.recipientType === 'parent' ? messageData.parentId : null,
+        adminId: messageData.recipientType === 'admin' ? messageData.adminId : null,
+        scholarId: messageData.recipientType === 'parent' ? messageData.scholarId : null,
+        subject: messageData.subject,
+        message: messageData.message,
+        priority: messageData.priority
+      };
+      
+      console.log("🚀 FORM SUBMISSION: Final request body:", JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch("/api/teacher/send-message", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          recipientType: messageData.recipientType,
-          parentId: messageData.recipientType === 'parent' ? messageData.parentId : null,
-          adminId: messageData.recipientType === 'admin' ? messageData.adminId : null,
-          scholarId: messageData.recipientType === 'parent' ? messageData.scholarId : null,
-          subject: messageData.subject,
-          message: messageData.message,
-          priority: messageData.priority
-        }),
+        body: JSON.stringify(requestBody),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -251,6 +258,9 @@ export default function TeacherMessages() {
   };
 
   const handleSendMessage = () => {
+    console.log("📤 SEND MESSAGE: Called with messageForm:", JSON.stringify(messageForm, null, 2));
+    console.log("📤 SEND MESSAGE: replyingTo:", replyingTo ? JSON.stringify(replyingTo, null, 2) : "null");
+    
     if (!messageForm.message.trim()) {
       toast({
         title: "Message Required",
@@ -269,6 +279,7 @@ export default function TeacherMessages() {
       return;
     }
 
+    console.log("📤 SEND MESSAGE: About to mutate with:", JSON.stringify(messageForm, null, 2));
     sendMessageMutation.mutate(messageForm);
   };
 

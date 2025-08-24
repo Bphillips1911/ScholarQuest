@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AddPointsForm from "@/components/add-points-form";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet, QrCode, LogOut, User, MessageSquare, Send } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet, QrCode, LogOut, User, MessageSquare, Send, Reply } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -30,6 +30,15 @@ export default function Admin() {
   const [messageSubject, setMessageSubject] = useState("");
   const [messageContent, setMessageContent] = useState("");
   const [messagePriority, setMessagePriority] = useState("normal");
+
+  // Reply modal states
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [replyForm, setReplyForm] = useState({
+    subject: "",
+    message: "",
+    priority: "normal"
+  });
 
   // Check if admin is logged in
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -177,7 +186,41 @@ export default function Admin() {
     },
   });
 
-
+  // Reply mutation
+  const replyMutation = useMutation({
+    mutationFn: async (replyData: any) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/reply-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(replyData)
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send reply");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reply Sent",
+        description: "Your reply has been sent successfully.",
+      });
+      setShowReplyModal(false);
+      setSelectedMessage(null);
+      setReplyForm({ subject: "", message: "", priority: "normal" });
+      refetchMessages();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Reply Failed",
+        description: error.message || "Failed to send reply. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleAddScholar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -991,6 +1034,30 @@ export default function Admin() {
                             <p className="text-gray-700 text-sm" data-testid={`message-content-${index}`}>
                               {message.message}
                             </p>
+                            
+                            {/* Reply Button */}
+                            {(message.senderType === "parent" || message.senderType === "teacher" || message.sender_type === "parent" || message.sender_type === "teacher") && (
+                              <div className="mt-3 pt-3 border-t border-gray-200">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedMessage(message);
+                                    setReplyForm({
+                                      subject: message.subject.startsWith("Re: ") ? message.subject : `Re: ${message.subject}`,
+                                      message: "",
+                                      priority: message.priority || "normal"
+                                    });
+                                    setShowReplyModal(true);
+                                  }}
+                                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  data-testid={`button-reply-${index}`}
+                                >
+                                  <Reply className="h-4 w-4" />
+                                  Reply
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         ))
                       ) : (
@@ -1002,6 +1069,141 @@ export default function Admin() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Reply Modal */}
+              {showReplyModal && selectedMessage && (
+                <div 
+                  className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                      setShowReplyModal(false);
+                      setSelectedMessage(null);
+                      setReplyForm({ subject: "", message: "", priority: "normal" });
+                    }
+                  }}
+                >
+                  <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <CardHeader className="flex flex-row items-center justify-between sticky top-0 bg-white border-b">
+                      <div>
+                        <CardTitle>Reply to Message</CardTitle>
+                        <p className="text-sm text-gray-600">
+                          Replying to: {selectedMessage.senderType === "teacher" || selectedMessage.sender_type === "teacher" ? "Teacher" : "Parent"}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowReplyModal(false);
+                          setSelectedMessage(null);
+                          setReplyForm({ subject: "", message: "", priority: "normal" });
+                        }}
+                        className="h-10 w-10 p-0 border-2 border-gray-600 bg-white hover:bg-red-100 hover:border-red-500"
+                        data-testid="button-close-reply-modal"
+                      >
+                        <span className="text-xl font-bold text-gray-800 hover:text-red-600">✕</span>
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        
+                        if (!replyForm.subject.trim() || !replyForm.message.trim()) {
+                          toast({
+                            title: "Missing Information",
+                            description: "Please fill in subject and message content.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        const replyData = {
+                          recipientType: selectedMessage.senderType === "teacher" || selectedMessage.sender_type === "teacher" ? "teacher" : "parent",
+                          teacherId: selectedMessage.senderType === "teacher" || selectedMessage.sender_type === "teacher" ? selectedMessage.teacherId || selectedMessage.teacher_id : null,
+                          parentId: selectedMessage.senderType === "parent" || selectedMessage.sender_type === "parent" ? selectedMessage.parentId || selectedMessage.parent_id : null,
+                          subject: replyForm.subject,
+                          message: replyForm.message,
+                          priority: replyForm.priority,
+                          replyToMessageId: selectedMessage.id
+                        };
+                        
+                        replyMutation.mutate(replyData);
+                      }}>
+                        
+                        {/* Subject */}
+                        <div>
+                          <Label htmlFor="replySubject">Subject</Label>
+                          <Input
+                            id="replySubject"
+                            value={replyForm.subject}
+                            onChange={(e) => setReplyForm({...replyForm, subject: e.target.value})}
+                            placeholder="Enter reply subject"
+                            required
+                            data-testid="input-reply-subject"
+                          />
+                        </div>
+                        
+                        {/* Message */}
+                        <div>
+                          <Label htmlFor="replyMessage">Message</Label>
+                          <textarea
+                            id="replyMessage"
+                            value={replyForm.message}
+                            onChange={(e) => setReplyForm({...replyForm, message: e.target.value})}
+                            placeholder="Type your reply here..."
+                            className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                            data-testid="textarea-reply-message"
+                          />
+                        </div>
+
+                        {/* Priority */}
+                        <div>
+                          <Label htmlFor="replyPriority">Priority</Label>
+                          <Select 
+                            value={replyForm.priority} 
+                            onValueChange={(value) => setReplyForm({...replyForm, priority: value})}
+                          >
+                            <SelectTrigger data-testid="select-reply-priority">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low" data-testid="option-reply-priority-low">Low</SelectItem>
+                              <SelectItem value="normal" data-testid="option-reply-priority-normal">Normal</SelectItem>
+                              <SelectItem value="high" data-testid="option-reply-priority-high">High</SelectItem>
+                              <SelectItem value="urgent" data-testid="option-reply-priority-urgent">Urgent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex gap-3 pt-4">
+                          <Button
+                            type="submit"
+                            className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+                            disabled={replyMutation.isPending || !replyForm.subject.trim() || !replyForm.message.trim()}
+                            data-testid="button-send-reply"
+                          >
+                            <Send className="mr-2 h-4 w-4" />
+                            {replyMutation.isPending ? "Sending..." : "Send Reply"}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => {
+                              setShowReplyModal(false);
+                              setSelectedMessage(null);
+                              setReplyForm({ subject: "", message: "", priority: "normal" });
+                            }}
+                            data-testid="button-cancel-reply"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </TabsContent>
 
           <TabsContent value="exports" className="mt-6">

@@ -3019,6 +3019,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin reply to messages
+  app.post("/api/admin/reply-message", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { recipientType, teacherId, parentId, subject, message, priority = "normal", replyToMessageId } = req.body;
+      
+      console.log("ADMIN REPLY MESSAGE: Request data:", {
+        recipientType,
+        teacherId,
+        parentId,
+        subject,
+        priority,
+        replyToMessageId,
+        adminId: req.admin.id
+      });
+
+      if (!subject || !message) {
+        return res.status(400).json({ message: "Subject and message are required" });
+      }
+
+      if (!recipientType || (recipientType !== "teacher" && recipientType !== "parent")) {
+        return res.status(400).json({ message: "Invalid recipient type. Must be 'teacher' or 'parent'" });
+      }
+
+      if (recipientType === "teacher" && !teacherId) {
+        return res.status(400).json({ message: "Teacher ID is required when replying to teacher" });
+      }
+
+      if (recipientType === "parent" && !parentId) {
+        return res.status(400).json({ message: "Parent ID is required when replying to parent" });
+      }
+
+      const replyData = {
+        adminId: req.admin.id,
+        senderType: "admin",
+        recipientType,
+        teacherId: recipientType === "teacher" ? teacherId : null,
+        parentId: recipientType === "parent" ? parentId : null,
+        subject,
+        message,
+        priority,
+        isRead: false,
+        createdAt: new Date(),
+        replyToMessageId: replyToMessageId || null,
+      };
+
+      const newReply = await storage.createParentTeacherMessage(replyData);
+      
+      console.log("ADMIN REPLY MESSAGE: Reply created successfully:", newReply.id);
+      
+      // Send email and SMS notifications for the reply
+      try {
+        if (recipientType === "parent" && parentId) {
+          const parent = await storage.getParent(parentId);
+          if (parent?.email) {
+            console.log("ADMIN REPLY: Sending email notification to parent:", parent.email);
+            await sendEmail({
+              to: parent.email,
+              subject: `Re: ${subject}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Reply from BHSA Administration</h1>
+                  </div>
+                  <div style="padding: 20px; background: #f9f9f9;">
+                    <h2 style="color: #333; margin-top: 0;">Subject: ${subject}</h2>
+                    <div style="background: white; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                      <p style="color: #555; line-height: 1.6; margin: 0;">${message}</p>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">Priority: <strong>${priority.toUpperCase()}</strong></p>
+                    <div style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 15px; font-size: 12px; color: #888;">
+                      <p>This is an automated message from Bush Hills STEAM Academy. Please log in to your parent portal to view and respond to messages.</p>
+                    </div>
+                  </div>
+                </div>
+              `
+            });
+
+            // Send SMS notification if phone number available
+            if (parent.phoneNumber) {
+              console.log("ADMIN REPLY: SMS notification would be sent to parent:", parent.phoneNumber);
+              // SMS functionality would be implemented here
+            }
+          }
+        } else if (recipientType === "teacher" && teacherId) {
+          const teacher = await storage.getTeacherAuthById(teacherId);
+          if (teacher?.email) {
+            console.log("ADMIN REPLY: Sending email notification to teacher:", teacher.email);
+            await sendEmail({
+              to: teacher.email,
+              subject: `Re: ${subject}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Reply from BHSA Administration</h1>
+                  </div>
+                  <div style="padding: 20px; background: #f9f9f9;">
+                    <h2 style="color: #333; margin-top: 0;">Subject: ${subject}</h2>
+                    <div style="background: white; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                      <p style="color: #555; line-height: 1.6; margin: 0;">${message}</p>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">Priority: <strong>${priority.toUpperCase()}</strong></p>
+                    <div style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 15px; font-size: 12px; color: #888;">
+                      <p>This is an automated message from Bush Hills STEAM Academy. Please log in to your teacher dashboard to view and respond to messages.</p>
+                    </div>
+                  </div>
+                </div>
+              `
+            });
+          }
+        }
+      } catch (notificationError) {
+        console.error("ADMIN REPLY: Notification sending failed:", notificationError);
+        // Don't fail the entire request if notifications fail
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Reply sent successfully",
+        messageId: newReply.id
+      });
+    } catch (error) {
+      console.error("ADMIN REPLY MESSAGE: Error:", error);
+      res.status(500).json({ message: "Failed to send reply", error: error.message });
+    }
+  });
+
   // Get all teachers for admin messaging dropdown
   app.get("/api/admin/teachers", authenticateAdmin, async (req: any, res) => {
     try {

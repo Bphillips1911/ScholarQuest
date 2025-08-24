@@ -211,11 +211,11 @@ export default function TeacherMessages() {
     console.log("TEACHER-MESSAGES: Original message structure:", JSON.stringify(originalMessage, null, 2));
     setReplyingTo(originalMessage);
     
-    // Check both camelCase and snake_case properties
-    const senderType = originalMessage.senderType || originalMessage.sender_type;
-    const adminId = originalMessage.adminId || originalMessage.admin_id;
-    const parentId = originalMessage.parentId || originalMessage.parent_id;
-    const scholarId = originalMessage.scholarId || originalMessage.scholar_id;
+    // Use the camelCase properties from the API response
+    const senderType = originalMessage.senderType;
+    const adminId = originalMessage.adminId;
+    const parentId = originalMessage.parentId;
+    const scholarId = originalMessage.scholarId;
     
     console.log("TEACHER-MESSAGES: Detected sender type:", senderType);
     console.log("TEACHER-MESSAGES: Admin ID:", adminId, "Parent ID:", parentId);
@@ -544,9 +544,9 @@ export default function TeacherMessages() {
                         <h4 className="font-medium text-gray-900">{message.subject}</h4>
                         <p className="text-sm text-gray-600">
                           {message.parentId ? (
-                            <>To: {getParentName(message.parentId)} • About: {getScholarName(message.scholarId)}</>
+                            <>To: {getParentName(message.parentId)} • About: {getScholarName(message.scholarId || "")}</>
                           ) : (
-                            <>To: {getAdminName((message as any).adminId || (message as any).admin_id)}</>
+                            <>To: {getAdminName(message.adminId || "")}</>
                           )}
                         </p>
                       </div>
@@ -558,9 +558,9 @@ export default function TeacherMessages() {
                     <p className="text-sm text-gray-700 mb-2">{message.message}</p>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Badge variant={(message.senderType || message.sender_type) === 'teacher' ? 'default' : 'secondary'}>
-                          {(message.senderType || message.sender_type) === 'teacher' ? 'Sent by you' : 
-                           (message.senderType || message.sender_type) === 'admin' ? `Admin: ${(message as any).sender_name || 'Administrator'}` :
+                        <Badge variant={message.senderType === 'teacher' ? 'default' : 'secondary'}>
+                          {message.senderType === 'teacher' ? 'Sent by you' : 
+                           message.senderType === 'admin' ? `Admin: ${(message as any).sender_name || 'Administrator'}` :
                            `Parent: ${(message as any).sender_name || 'Parent reply'}`}
                         </Badge>
                         {!message.isRead && (
@@ -570,7 +570,7 @@ export default function TeacherMessages() {
                           </Badge>
                         )}
                       </div>
-                      {(message.senderType || message.sender_type) !== 'teacher' && (
+                      {message.senderType !== 'teacher' && (
                         <Button
                           variant="outline"
                           size="sm"

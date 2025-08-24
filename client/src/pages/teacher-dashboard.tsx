@@ -296,7 +296,7 @@ export default function TeacherDashboard() {
       setReplyForm({ subject: "", message: "", priority: "normal" });
       toast({
         title: "Reply sent successfully",
-        description: `Your message has been sent to the ${selectedMessage?.senderType === 'admin' ? 'administrator' : 'parent'}.`,
+        description: `Your message has been sent to the ${selectedMessage?.sender_type === 'admin' ? 'administrator' : 'parent'}.`,
       });
     },
     onError: (error: any) => {
@@ -1282,10 +1282,10 @@ export default function TeacherDashboard() {
               <CardHeader className="flex flex-row items-center justify-between sticky top-0 bg-white border-b">
                 <div>
                   <CardTitle>
-                    {selectedMessage.senderType === 'admin' ? 'Reply to Administrator' : 'Reply to Parent'}
+                    {selectedMessage.sender_type === 'admin' ? 'Reply to Administrator' : 'Reply to Parent'}
                   </CardTitle>
                   <p className="text-sm text-gray-600">
-                    {selectedMessage.senderType === 'admin' 
+                    {selectedMessage.sender_type === 'admin' 
                       ? `To: ${selectedMessage.sender_name || 'Administrator'}`
                       : `To: ${selectedMessage.first_name} ${selectedMessage.last_name}`
                     }
@@ -1376,11 +1376,11 @@ export default function TeacherDashboard() {
                       // Create reply data based on sender type - admin vs parent
                       let replyData;
                       
-                      if (selectedMessage.senderType === 'admin') {
+                      if (selectedMessage.sender_type === 'admin') {
                         // Reply to admin
                         replyData = {
                           recipientType: "admin",
-                          adminId: selectedMessage.adminId || selectedMessage.admin_id,
+                          adminId: selectedMessage.admin_id,
                           subject: replyForm.subject,
                           message: replyForm.message,
                           priority: replyForm.priority,

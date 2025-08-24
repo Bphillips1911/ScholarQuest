@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 
 interface Teacher {
@@ -101,6 +101,18 @@ export default function TeacherDashboard() {
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [replyForm, setReplyForm] = useState({
+    subject: "",
+    message: "",
+    priority: "normal"
+  });
+
+  // Compose new message modal state
+  const [showComposeModal, setShowComposeModal] = useState(false);
+  const [composeForm, setComposeForm] = useState({
+    recipientType: "",
+    parentId: "",
+    adminId: "",
+    scholarId: "",
     subject: "",
     message: "",
     priority: "normal"
@@ -278,6 +290,19 @@ export default function TeacherDashboard() {
     enabled: !!teacher?.id,
   });
 
+  // Fetch parents for compose message dropdown
+  const { data: parents = [] } = useQuery({
+    queryKey: ["/api/teacher/parents"],
+    queryFn: async () => {
+      const response = await fetch(`/api/teacher/parents`, {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch parents");
+      return response.json();
+    },
+    enabled: !!teacher?.id,
+  });
+
   // Reply to parent or admin mutation
   const replyMutation = useMutation({
     mutationFn: async (replyData: any) => {
@@ -297,6 +322,44 @@ export default function TeacherDashboard() {
       toast({
         title: "Reply sent successfully",
         description: `Your message has been sent to the ${selectedMessage?.sender_type === 'admin' ? 'administrator' : 'parent'}.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send reply",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Compose new message mutation
+  const composeMutation = useMutation({
+    mutationFn: async (messageData: any) => {
+      console.log("🚀 TEACHER DASHBOARD COMPOSE: Sending new message with data:", JSON.stringify(messageData, null, 2));
+      const response = await fetch("/api/teacher/send-message", {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(messageData),
+      });
+      if (!response.ok) throw new Error("Failed to send message");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/messages"] });
+      setShowComposeModal(false);
+      setComposeForm({
+        recipientType: "",
+        parentId: "",
+        adminId: "",
+        scholarId: "",
+        subject: "",
+        message: "",
+        priority: "normal"
+      });
+      toast({
+        title: "Message sent successfully",
+        description: `Your message has been sent to the ${composeForm.recipientType === 'admin' ? 'administrator' : 'parent'}.`,
       });
     },
     onError: (error: any) => {
@@ -814,10 +877,31 @@ export default function TeacherDashboard() {
         {teacher && activeView === 'messages' && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                <MessageCircle className="mr-2 h-5 w-5 text-blue-600" />
-                Parent Messages
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                  <MessageCircle className="mr-2 h-5 w-5 text-blue-600" />
+                  Messages
+                </CardTitle>
+                <Button
+                  onClick={() => {
+                    setComposeForm({
+                      recipientType: "",
+                      parentId: "",
+                      adminId: "",
+                      scholarId: "",
+                      subject: "",
+                      message: "",
+                      priority: "normal"
+                    });
+                    setShowComposeModal(true);
+                  }}
+                  className="bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
+                  data-testid="button-compose-message"
+                >
+                  <Send className="h-4 w-4" />
+                  Compose New Message
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {messages.length > 0 ? (
@@ -1423,6 +1507,192 @@ export default function TeacherDashboard() {
                     Cancel
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Compose New Message Modal */}
+        {showComposeModal && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowComposeModal(false);
+                setComposeForm({
+                  recipientType: "",
+                  parentId: "",
+                  adminId: "",
+                  scholarId: "",
+                  subject: "",
+                  message: "",
+                  priority: "normal"
+                });
+              }
+            }}
+          >
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardHeader className="flex flex-row items-center justify-between sticky top-0 bg-white border-b">
+                <div>
+                  <CardTitle>Compose New Message</CardTitle>
+                  <p className="text-sm text-gray-600">Send a message to administrator or parent</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowComposeModal(false);
+                    setComposeForm({
+                      recipientType: "",
+                      parentId: "",
+                      adminId: "",
+                      scholarId: "",
+                      subject: "",
+                      message: "",
+                      priority: "normal"
+                    });
+                  }}
+                  className="h-10 w-10 p-0 border-2 border-gray-600 bg-white hover:bg-red-100 hover:border-red-500"
+                  data-testid="button-close-compose-modal"
+                >
+                  <span className="text-xl font-bold text-gray-800 hover:text-red-600">✕</span>
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  
+                  const messageData = {
+                    recipientType: composeForm.recipientType,
+                    subject: composeForm.subject,
+                    message: composeForm.message,
+                    priority: composeForm.priority,
+                    parentId: composeForm.recipientType === 'parent' ? composeForm.parentId : undefined,
+                    scholarId: composeForm.recipientType === 'parent' ? composeForm.scholarId : undefined,
+                    adminId: composeForm.recipientType === 'admin' ? composeForm.adminId : undefined
+                  };
+                  
+                  console.log("🚀 TEACHER COMPOSE: Submitting compose form:", messageData);
+                  composeMutation.mutate(messageData);
+                }}>
+                  
+                  {/* Recipient Type Selection */}
+                  <div>
+                    <Label htmlFor="recipientType">Send to</Label>
+                    <Select 
+                      value={composeForm.recipientType} 
+                      onValueChange={(value) => setComposeForm({...composeForm, recipientType: value})}
+                    >
+                      <SelectTrigger data-testid="select-recipient-type">
+                        <SelectValue placeholder="Select recipient type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin" data-testid="option-admin">Administrator</SelectItem>
+                        <SelectItem value="parent" data-testid="option-parent">Parent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Parent Selection (only if recipient is parent) */}
+                  {composeForm.recipientType === "parent" && (
+                    <div>
+                      <Label htmlFor="parentSelect">Select Parent</Label>
+                      <Select 
+                        value={composeForm.parentId} 
+                        onValueChange={(value) => setComposeForm({...composeForm, parentId: value})}
+                      >
+                        <SelectTrigger data-testid="select-parent">
+                          <SelectValue placeholder="Select a parent" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {parents.map((parent: any) => (
+                            <SelectItem key={parent.id} value={parent.id} data-testid={`option-parent-${parent.id}`}>
+                              {parent.name} - {parent.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Subject */}
+                  <div>
+                    <Label htmlFor="composeSubject">Subject</Label>
+                    <Input
+                      id="composeSubject"
+                      value={composeForm.subject}
+                      onChange={(e) => setComposeForm({...composeForm, subject: e.target.value})}
+                      placeholder="Enter message subject"
+                      required
+                      data-testid="input-compose-subject"
+                    />
+                  </div>
+                  
+                  {/* Message */}
+                  <div>
+                    <Label htmlFor="composeMessage">Message</Label>
+                    <textarea
+                      id="composeMessage"
+                      value={composeForm.message}
+                      onChange={(e) => setComposeForm({...composeForm, message: e.target.value})}
+                      placeholder="Type your message here..."
+                      className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                      data-testid="textarea-compose-message"
+                    />
+                  </div>
+
+                  {/* Priority */}
+                  <div>
+                    <Label htmlFor="composePriority">Priority</Label>
+                    <Select 
+                      value={composeForm.priority} 
+                      onValueChange={(value) => setComposeForm({...composeForm, priority: value})}
+                    >
+                      <SelectTrigger data-testid="select-compose-priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low" data-testid="option-priority-low">Low</SelectItem>
+                        <SelectItem value="normal" data-testid="option-priority-normal">Normal</SelectItem>
+                        <SelectItem value="high" data-testid="option-priority-high">High</SelectItem>
+                        <SelectItem value="urgent" data-testid="option-priority-urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowComposeModal(false);
+                        setComposeForm({
+                          recipientType: "",
+                          parentId: "",
+                          adminId: "",
+                          scholarId: "",
+                          subject: "",
+                          message: "",
+                          priority: "normal"
+                        });
+                      }}
+                      data-testid="button-cancel-compose"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                      disabled={composeMutation.isPending || !composeForm.recipientType || !composeForm.subject || !composeForm.message}
+                      data-testid="button-send-compose"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      {composeMutation.isPending ? "Sending..." : "Send Message"}
+                    </Button>
+                  </div>
+                </form>
               </CardContent>
             </Card>
           </div>

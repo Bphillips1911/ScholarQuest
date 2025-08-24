@@ -1642,7 +1642,7 @@ export default function TeacherDashboard() {
                         <SelectContent>
                           {administrators.map((admin: any) => (
                             <SelectItem key={admin.id} value={admin.id} data-testid={`option-admin-${admin.id}`}>
-                              {admin.name} - {admin.role}
+                              {admin.firstName} {admin.lastName} - {admin.title}
                             </SelectItem>
                           ))}
                         </SelectContent>

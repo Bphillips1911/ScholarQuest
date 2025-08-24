@@ -278,9 +278,10 @@ export default function TeacherDashboard() {
     enabled: !!teacher?.id,
   });
 
-  // Reply to parent mutation
+  // Reply to parent or admin mutation
   const replyMutation = useMutation({
     mutationFn: async (replyData: any) => {
+      console.log("🚀 TEACHER DASHBOARD REPLY: Sending reply with data:", JSON.stringify(replyData, null, 2));
       const response = await fetch("/api/teacher/send-message", {
         method: "POST",
         headers: getAuthHeaders(),
@@ -295,7 +296,7 @@ export default function TeacherDashboard() {
       setReplyForm({ subject: "", message: "", priority: "normal" });
       toast({
         title: "Reply sent successfully",
-        description: "Your message has been sent to the parent.",
+        description: `Your message has been sent to the ${selectedMessage?.senderType === 'admin' ? 'administrator' : 'parent'}.`,
       });
     },
     onError: (error: any) => {
@@ -894,6 +895,7 @@ export default function TeacherDashboard() {
                           variant="outline" 
                           className="text-blue-600"
                           onClick={() => {
+                            console.log("🔥 TEACHER DASHBOARD: Reply button clicked for message:", JSON.stringify(message, null, 2));
                             setSelectedMessage(message);
                             setReplyForm({
                               subject: `Re: ${message.subject}`,
@@ -1279,9 +1281,14 @@ export default function TeacherDashboard() {
             <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <CardHeader className="flex flex-row items-center justify-between sticky top-0 bg-white border-b">
                 <div>
-                  <CardTitle>Reply to Parent</CardTitle>
+                  <CardTitle>
+                    {selectedMessage.senderType === 'admin' ? 'Reply to Administrator' : 'Reply to Parent'}
+                  </CardTitle>
                   <p className="text-sm text-gray-600">
-                    To: {selectedMessage.first_name} {selectedMessage.last_name}
+                    {selectedMessage.senderType === 'admin' 
+                      ? `To: ${selectedMessage.sender_name || 'Administrator'}`
+                      : `To: ${selectedMessage.first_name} ${selectedMessage.last_name}`
+                    }
                   </p>
                 </div>
                 <Button
@@ -1364,24 +1371,40 @@ export default function TeacherDashboard() {
                         return;
                       }
 
-                      // Extract parent ID from the original message
-                      const parentId = selectedMessage.parent_id;
-                      const scholarId = selectedMessage.scholar_id;
+                      console.log("🔥 TEACHER DASHBOARD SEND: selectedMessage:", JSON.stringify(selectedMessage, null, 2));
                       
-                      // Prepare reply data, only include scholarId if it's not null
-                      const replyData = {
-                        recipientType: "parent",
-                        parentId: parentId,
-                        subject: replyForm.subject,
-                        message: replyForm.message,
-                        priority: replyForm.priority,
-                      };
+                      // Create reply data based on sender type - admin vs parent
+                      let replyData;
                       
-                      // Only add scholarId if it's not null
-                      if (scholarId) {
-                        replyData.scholarId = scholarId;
+                      if (selectedMessage.senderType === 'admin') {
+                        // Reply to admin
+                        replyData = {
+                          recipientType: "admin",
+                          adminId: selectedMessage.adminId || selectedMessage.admin_id,
+                          subject: replyForm.subject,
+                          message: replyForm.message,
+                          priority: replyForm.priority,
+                        };
+                      } else {
+                        // Reply to parent
+                        const parentId = selectedMessage.parentId || selectedMessage.parent_id;
+                        const scholarId = selectedMessage.scholarId || selectedMessage.scholar_id;
+                        
+                        replyData = {
+                          recipientType: "parent",
+                          parentId: parentId,
+                          subject: replyForm.subject,
+                          message: replyForm.message,
+                          priority: replyForm.priority,
+                        };
+                        
+                        // Only add scholarId if it's not null
+                        if (scholarId) {
+                          replyData.scholarId = scholarId;
+                        }
                       }
                       
+                      console.log("🔥 TEACHER DASHBOARD SEND: Final replyData:", JSON.stringify(replyData, null, 2));
                       replyMutation.mutate(replyData);
                     }}
                     disabled={replyMutation.isPending || !replyForm.subject.trim() || !replyForm.message.trim()}

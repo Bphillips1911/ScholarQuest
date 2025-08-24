@@ -200,40 +200,53 @@ export default function TeacherMessages() {
 
   const handleReply = (originalMessage: any) => {
     console.log("🔥 REPLY BUTTON CLICKED!");
-    alert("Reply button clicked!");
     console.log("TEACHER-MESSAGES: Replying to message", originalMessage);
     console.log("TEACHER-MESSAGES: Original message structure:", JSON.stringify(originalMessage, null, 2));
     setReplyingTo(originalMessage);
     
-    if (originalMessage.senderType === 'admin' || originalMessage.sender_type === 'admin') {
+    // Check both camelCase and snake_case properties
+    const senderType = originalMessage.senderType || originalMessage.sender_type;
+    const adminId = originalMessage.adminId || originalMessage.admin_id;
+    const parentId = originalMessage.parentId || originalMessage.parent_id;
+    const scholarId = originalMessage.scholarId || originalMessage.scholar_id;
+    
+    console.log("TEACHER-MESSAGES: Detected sender type:", senderType);
+    console.log("TEACHER-MESSAGES: Admin ID:", adminId, "Parent ID:", parentId);
+    
+    if (senderType === 'admin' && adminId) {
       // Reply to admin
-      const adminId = originalMessage.adminId || originalMessage.admin_id;
-      console.log("TEACHER-MESSAGES: Replying to admin with ID:", adminId);
-      setMessageForm(prev => ({
-        ...prev,
+      console.log("TEACHER-MESSAGES: Setting up reply to admin with ID:", adminId);
+      setMessageForm({
         recipientType: 'admin',
         parentId: "",
         adminId: adminId,
-        scholarId: originalMessage.scholarId || originalMessage.scholar_id || "",
+        scholarId: scholarId || "",
         subject: `Re: ${originalMessage.subject}`,
         message: "",
         priority: "normal"
-      }));
-    } else if (originalMessage.senderType === 'parent' || originalMessage.sender_type === 'parent') {
+      });
+    } else if (senderType === 'parent' && parentId) {
       // Reply to parent
-      const parentId = originalMessage.parentId || originalMessage.parent_id;
-      console.log("TEACHER-MESSAGES: Replying to parent with ID:", parentId);
-      setMessageForm(prev => ({
-        ...prev,
+      console.log("TEACHER-MESSAGES: Setting up reply to parent with ID:", parentId);
+      setMessageForm({
         recipientType: 'parent',
         parentId: parentId,
         adminId: "",
-        scholarId: originalMessage.scholarId || originalMessage.scholar_id || "",
+        scholarId: scholarId || "",
         subject: `Re: ${originalMessage.subject}`,
         message: "",
         priority: "normal"
-      }));
+      });
+    } else {
+      console.error("TEACHER-MESSAGES: Could not determine reply recipient:", { senderType, adminId, parentId });
+      toast({
+        title: "Error",
+        description: "Could not determine who to reply to",
+        variant: "destructive",
+      });
+      return;
     }
+    
     setShowForm(true);
   };
 

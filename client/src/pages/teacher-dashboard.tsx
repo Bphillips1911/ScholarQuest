@@ -311,7 +311,9 @@ export default function TeacherDashboard() {
         headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error("Failed to fetch administrators");
-      return response.json();
+      const data = response.json();
+      console.log("🔍 FRONTEND: Administrators data received:", data);
+      return data;
     },
     enabled: !!teacher?.id,
   });
@@ -1640,11 +1642,23 @@ export default function TeacherDashboard() {
                           <SelectValue placeholder="Select an administrator" />
                         </SelectTrigger>
                         <SelectContent>
-                          {administrators.map((admin: any) => (
-                            <SelectItem key={admin.id} value={admin.id} data-testid={`option-admin-${admin.id}`}>
-                              {admin.firstName} {admin.lastName} - {admin.title}
+                          {administrators.length === 0 ? (
+                            <SelectItem value="no-admins" disabled>
+                              No administrators available
                             </SelectItem>
-                          ))}
+                          ) : (
+                            administrators.map((admin: any) => {
+                              console.log("🔍 FRONTEND: Rendering admin:", admin);
+                              return (
+                                <SelectItem key={admin.id} value={admin.id} data-testid={`option-admin-${admin.id}`}>
+                                  {admin.firstName && admin.lastName ? 
+                                    `${admin.firstName} ${admin.lastName} - ${admin.title || admin.role || 'Administrator'}` :
+                                    `${admin.name || admin.email || 'Unknown'} - ${admin.title || admin.role || 'Administrator'}`
+                                  }
+                                </SelectItem>
+                              );
+                            })
+                          )}
                         </SelectContent>
                       </Select>
                     </div>

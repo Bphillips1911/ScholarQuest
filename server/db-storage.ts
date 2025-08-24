@@ -986,6 +986,18 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  async getAllAdministrators(): Promise<Administrator[]> {
+    try {
+      console.log("DATABASE: Fetching all administrators from database");
+      const administrators = await db.select().from(schema.administrators);
+      console.log(`DATABASE: Found ${administrators.length} administrators`);
+      return administrators;
+    } catch (error) {
+      console.error("DATABASE: Error in getAllAdministrators:", error);
+      throw error;
+    }
+  }
 }
 
 // Force deployment sync - ensure latest fixes are deployed

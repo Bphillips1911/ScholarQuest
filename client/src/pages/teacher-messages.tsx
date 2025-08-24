@@ -554,9 +554,9 @@ export default function TeacherMessages() {
                     <p className="text-sm text-gray-700 mb-2">{message.message}</p>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Badge variant={message.senderType === 'teacher' ? 'default' : 'secondary'}>
-                          {message.senderType === 'teacher' ? 'Sent by you' : 
-                           message.senderType === 'admin' ? `Admin: ${(message as any).sender_name || 'Administrator'}` :
+                        <Badge variant={(message.senderType || message.sender_type) === 'teacher' ? 'default' : 'secondary'}>
+                          {(message.senderType || message.sender_type) === 'teacher' ? 'Sent by you' : 
+                           (message.senderType || message.sender_type) === 'admin' ? `Admin: ${(message as any).sender_name || 'Administrator'}` :
                            `Parent: ${(message as any).sender_name || 'Parent reply'}`}
                         </Badge>
                         {!message.isRead && (
@@ -566,7 +566,7 @@ export default function TeacherMessages() {
                           </Badge>
                         )}
                       </div>
-                      {message.senderType !== 'teacher' && (
+                      {(message.senderType || message.sender_type) !== 'teacher' && (
                         <Button
                           variant="outline"
                           size="sm"

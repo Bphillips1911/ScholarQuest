@@ -3090,6 +3090,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log("ADMIN REPLY: Sending email notification to parent:", parent.email);
             await sendEmail({
               to: parent.email,
+              from: "noreply@bhsteamacademy.edu",
               subject: `Re: ${subject}`,
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -3111,8 +3112,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
 
             // Send SMS notification if phone number available
-            if (parent.phoneNumber) {
-              console.log("ADMIN REPLY: SMS notification would be sent to parent:", parent.phoneNumber);
+            if (parent.phone) {
+              console.log("ADMIN REPLY: SMS notification would be sent to parent:", parent.phone);
               // SMS functionality would be implemented here
             }
           }
@@ -3122,6 +3123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log("ADMIN REPLY: Sending email notification to teacher:", teacher.email);
             await sendEmail({
               to: teacher.email,
+              from: "noreply@bhsteamacademy.edu", 
               subject: `Re: ${subject}`,
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

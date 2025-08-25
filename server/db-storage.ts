@@ -407,15 +407,6 @@ export class DatabaseStorage implements IStorage {
     return teacher || null;
   }
 
-  async createTeacherAuth(teacherData: InsertTeacherAuth): Promise<TeacherAuth> {
-    const [teacher] = await db.insert(schema.teacherAuth).values({
-      id: randomUUID(),
-      ...teacherData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).returning();
-    return teacher;
-  }
 
   async getAllTeacherAuth(): Promise<TeacherAuth[]> {
     return await db.select().from(schema.teacherAuth);

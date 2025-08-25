@@ -2900,8 +2900,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subject: parentTeacherMessages.subject,
           message: parentTeacherMessages.message,
           priority: parentTeacherMessages.priority,
+          senderType: parentTeacherMessages.senderType,
           sender_type: parentTeacherMessages.senderType,
+          recipientType: parentTeacherMessages.recipientType,
+          teacherId: parentTeacherMessages.teacherId,
+          teacher_id: parentTeacherMessages.teacherId,
+          parentId: parentTeacherMessages.parentId,
+          parent_id: parentTeacherMessages.parentId,
           created_at: parentTeacherMessages.createdAt,
+          createdAt: parentTeacherMessages.createdAt,
           sender_name: sql<string>`CASE 
             WHEN ${parentTeacherMessages.senderType} = 'admin' THEN 'Admin'
             WHEN ${parentTeacherMessages.senderType} = 'parent' THEN 'Parent'
@@ -2926,15 +2933,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Fallback to simple query
         try {
           const simpleResult = await db.execute(
-            "SELECT id, subject, message, priority, sender_type, created_at FROM parent_teacher_messages ORDER BY created_at DESC LIMIT 50"
+            "SELECT id, subject, message, priority, sender_type, recipient_type, teacher_id, parent_id, created_at FROM parent_teacher_messages ORDER BY created_at DESC LIMIT 50"
           );
           messages = (simpleResult.rows || []).map(row => ({
             id: row.id,
             subject: row.subject,
             message: row.message,
             priority: row.priority || 'normal',
+            senderType: row.sender_type,
             sender_type: row.sender_type,
+            recipientType: row.recipient_type,
+            teacherId: row.teacher_id,
+            teacher_id: row.teacher_id,
+            parentId: row.parent_id,
+            parent_id: row.parent_id,
             created_at: row.created_at,
+            createdAt: row.created_at,
             sender_name: row.sender_type === 'admin' ? 'Admin' : row.sender_type === 'parent' ? 'Parent' : 'Teacher',
             recipient_name: 'Recipient'
           }));

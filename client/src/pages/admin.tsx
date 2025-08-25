@@ -1036,8 +1036,7 @@ export default function Admin() {
                             </p>
                             
                             {/* Reply Button - Show only for messages FROM parents/teachers TO admin */}
-                            {((message.senderType === "parent" || message.senderType === "teacher" || message.sender_type === "parent" || message.sender_type === "teacher") && 
-                              (message.senderType !== "admin" && message.sender_type !== "admin")) && (
+                            {(message.senderType === "parent" || message.senderType === "teacher" || message.sender_type === "parent" || message.sender_type === "teacher") && (
                               <div className="mt-3 pt-3 border-t border-gray-200">
                                 <Button
                                   variant="outline"
@@ -1059,11 +1058,6 @@ export default function Admin() {
                                 </Button>
                               </div>
                             )}
-                            
-                            {/* Debug Info - Remove after testing */}
-                            <div className="mt-2 text-xs text-gray-500" style={{fontSize: '10px'}}>
-                              Debug: senderType="{message.senderType || 'undefined'}" sender_type="{message.sender_type || 'undefined'}"
-                            </div>
                           </div>
                         ))
                       ) : (

@@ -37,11 +37,15 @@ import QRGenerator from "@/pages/qr-generator";
 import AdminQR from "@/pages/admin-qr";
 import Tutorial from "@/pages/tutorial";
 import NotFound from "@/pages/not-found";
+import MainLanding from "@/pages/main-landing";
 
 function Router() {
   return (
     <>
       <Switch>
+        {/* Main Landing Page - no navigation */}
+        <Route path="/" component={MainLanding} />
+        
         {/* Parent portal routes without navigation */}
         <Route path="/parent-signup" component={ParentSignup} />
         <Route path="/parent-login" component={ParentLogin} />
@@ -71,7 +75,7 @@ function Router() {
           <NavigationHeader />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Switch>
-              <Route path="/" component={Dashboard} />
+              <Route path="/dashboard" component={Dashboard} />
               <Route path="/houses" component={Houses} />
               <Route path="/houses/:id" component={HouseDetail} />
               <Route path="/add-points" component={PBIS} />

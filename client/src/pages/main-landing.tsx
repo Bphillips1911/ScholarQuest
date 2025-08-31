@@ -314,11 +314,18 @@ export default function MainLanding() {
                 </div>
                 <Button 
                   onClick={() => navigateToLogin('admin')}
-                  className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3"
+                  className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 mb-3"
                   data-testid="button-admin-login"
                 >
                   Administrator Login
                 </Button>
+                <button
+                  onClick={() => setLocation('/admin-signup')}
+                  className="w-full text-yellow-300 hover:text-yellow-100 text-sm underline transition-colors duration-200"
+                  data-testid="link-admin-signup"
+                >
+                  Create Administrator Account
+                </button>
               </CardContent>
             </Card>
           </div>

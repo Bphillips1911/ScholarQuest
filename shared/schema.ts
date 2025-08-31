@@ -173,6 +173,7 @@ export const administrators = pgTable("administrators", {
   title: varchar("title").notNull(), // 'Principal', 'Assistant Principal', 'Counselor'
   passwordHash: varchar("password_hash").notNull(),
   isActive: boolean("is_active").default(true),
+  isApproved: boolean("is_approved").default(false), // Requires approval before access
   permissions: text("permissions").array().default([]), // Array of permissions: ['view_all', 'manage_teachers', 'manage_students', 'manage_houses', 'view_reports']
   createdAt: timestamp("created_at").defaultNow(),
   lastLoginAt: timestamp("last_login_at"),
@@ -241,6 +242,7 @@ export const insertPbisEntrySchema = createInsertSchema(pbisEntries).omit({
 export const insertAdministratorSchema = createInsertSchema(administrators).omit({
   id: true,
   passwordHash: true,
+  isApproved: true,
   createdAt: true,
   lastLoginAt: true,
 }).extend({

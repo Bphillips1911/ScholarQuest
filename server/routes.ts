@@ -72,6 +72,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!admin) {
         return res.status(401).json({ message: "Invalid token" });
       }
+      if (!admin.isApproved) {
+        return res.status(403).json({ message: "Account pending approval" });
+      }
       req.admin = admin;
       next();
     } catch (error) {
@@ -2442,6 +2445,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!admin) {
         return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      if (!admin.isApproved) {
+        return res.status(403).json({ message: "Account pending approval. Please contact the principal for access." });
       }
 
       // Generate session token with extended expiry (30 days for cost reduction)

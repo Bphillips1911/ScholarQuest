@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { Shuffle, Users, Home, Plus, Trash2, RotateCcw } from "lucide-react";
+import { Shuffle, Users, Home, Plus, Trash2, RotateCcw, Eye } from "lucide-react";
 
 interface UnsortedStudent {
   id: string;
@@ -35,6 +36,7 @@ export default function HouseSorting() {
   const [selectedGrade, setSelectedGrade] = useState<number>(6);
   const [sortingInProgress, setSortingInProgress] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedHouseForStudents, setSelectedHouseForStudents] = useState<House | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -51,6 +53,18 @@ export default function HouseSorting() {
   // Fetch houses for sorting
   const { data: houses = [] } = useQuery({
     queryKey: ["/api/houses"],
+  });
+
+  // Fetch students by house (only when a house is selected)
+  const { data: houseStudents = [], isLoading: studentsLoading } = useQuery({
+    queryKey: ["/api/houses", selectedHouseForStudents?.id, "students"],
+    queryFn: async () => {
+      if (!selectedHouseForStudents?.id) return [];
+      const response = await fetch(`/api/houses/${selectedHouseForStudents.id}/students`);
+      if (!response.ok) throw new Error("Failed to fetch house students");
+      return response.json();
+    },
+    enabled: !!selectedHouseForStudents?.id,
   });
 
   // Add student mutation
@@ -313,10 +327,56 @@ export default function HouseSorting() {
                 >
                   <div className="text-2xl mb-2">{getHouseIcon(house.id)}</div>
                   <div className="font-semibold text-sm">{house.name}</div>
-                  <div className="text-lg font-bold" style={{ color: house.color }}>
-                    {house.memberCount}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button
+                        className="text-lg font-bold hover:underline cursor-pointer transition-all hover:scale-105"
+                        style={{ color: house.color }}
+                        onClick={() => setSelectedHouseForStudents(house)}
+                        data-testid={`button-view-students-${house.id}`}
+                      >
+                        {house.memberCount}
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <span className="text-2xl">{getHouseIcon(house.id)}</span>
+                          Students in {house.name}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="mt-4">
+                        {studentsLoading ? (
+                          <div className="text-center py-4">Loading students...</div>
+                        ) : houseStudents.length === 0 ? (
+                          <div className="text-center py-4 text-gray-500">
+                            No students currently assigned to this house
+                          </div>
+                        ) : (
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {houseStudents.map((student: any, index: number) => (
+                              <div
+                                key={student.id}
+                                className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                                data-testid={`student-item-${student.id}`}
+                              >
+                                <div>
+                                  <div className="font-medium">{student.name}</div>
+                                  <div className="text-sm text-gray-600">Grade {student.grade} • ID: {student.studentId}</div>
+                                </div>
+                                <Badge variant="outline" style={{ borderColor: house.color, color: house.color }}>
+                                  {student.grade}th
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <div className="text-xs text-gray-500">
+                    {house.memberCount === 1 ? 'member' : 'members'}
                   </div>
-                  <div className="text-xs text-gray-500">members</div>
                 </div>
               ))}
             </div>

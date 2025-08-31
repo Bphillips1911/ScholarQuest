@@ -494,9 +494,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resetAllHouses(): Promise<void> {
-    // Reset all students to unsorted
+    // Get the first house (franklin) to use as temporary assignment
+    const allHouses = await this.getHouses();
+    const tempHouse = allHouses[0]; // Franklin house
+    
+    // Reset all students to unsorted but assign to temp house to satisfy constraint
     await db.update(schema.scholars).set({
-      houseId: null,
+      houseId: tempHouse.id,
       isHouseSorted: false,
       sortingNumber: null
     });
@@ -508,6 +512,17 @@ export class DatabaseStorage implements IStorage {
       behaviorPoints: 0,
       memberCount: 0
     });
+  }
+
+  async getStudentsByHouse(houseId: string): Promise<Scholar[]> {
+    return await db.select()
+      .from(schema.scholars)
+      .where(and(
+        eq(schema.scholars.houseId, houseId),
+        eq(schema.scholars.isHouseSorted, true),
+        eq(schema.scholars.isActive, true)
+      ))
+      .orderBy(schema.scholars.name);
   }
 
   // Admin-specific student creation with username generation

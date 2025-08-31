@@ -1515,6 +1515,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get students by house
+  app.get("/api/houses/:houseId/students", async (req, res) => {
+    try {
+      const { houseId } = req.params;
+      const students = await storage.getStudentsByHouse(houseId);
+      res.json(students);
+    } catch (error) {
+      console.error("Error fetching students by house:", error);
+      res.status(500).json({ message: "Failed to fetch students" });
+    }
+  });
+
   // Admin routes for teacher management
   app.get("/api/admin/teachers/pending", async (req, res) => {
     try {

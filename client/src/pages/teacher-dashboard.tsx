@@ -1139,7 +1139,7 @@ export default function TeacherDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {galleryPhotos.map((photo: any) => (
                       <div key={photo.id} className="border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                        <div className="aspect-video bg-gray-100 flex items-center justify-center relative group">
                           <img 
                             src={`/uploads/${photo.filename}`}
                             alt={photo.description || 'Activity photo'}
@@ -1152,12 +1152,56 @@ export default function TeacherDashboard() {
                           <div className="hidden w-full h-full items-center justify-center text-gray-400">
                             <Image className="h-12 w-12" />
                           </div>
+                          {/* Teacher Download Button */}
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `/uploads/${photo.filename}`;
+                                link.download = photo.originalName || photo.filename;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                toast({
+                                  title: "Download Started",
+                                  description: `Downloading ${photo.originalName || 'photo'}`,
+                                });
+                              }}
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Download
+                            </Button>
+                          </div>
                         </div>
                         <div className="p-4">
                           <p className="text-sm text-gray-600 mb-2">{photo.description || 'No description'}</p>
-                          <div className="flex justify-between items-center text-xs text-gray-500">
-                            <span>By: {photo.uploadedBy}</span>
+                          <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+                            <span className="font-medium">By: {photo.uploadedBy}</span>
                             <span>{photo.createdAt ? new Date(photo.createdAt).toLocaleDateString() : 'Recently'}</span>
+                          </div>
+                          <div className="pt-2 border-t border-gray-100">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `/uploads/${photo.filename}`;
+                                link.download = photo.originalName || photo.filename;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                toast({
+                                  title: "Download Started",
+                                  description: `Downloading ${photo.originalName || 'photo'}`,
+                                });
+                              }}
+                            >
+                              <Download className="h-3 w-3 mr-2" />
+                              Download Photo
+                            </Button>
                           </div>
                         </div>
                       </div>

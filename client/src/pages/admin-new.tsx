@@ -30,6 +30,11 @@ export default function AdminNew() {
     recipientType: ""
   });
 
+  // Photo upload state
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [photoDescription, setPhotoDescription] = useState("");
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
   useEffect(() => {
     console.log("AdminNew component mounted");
     const token = localStorage.getItem("adminToken");
@@ -222,6 +227,75 @@ export default function AdminNew() {
       message: messageForm.message,
       recipientType: messageForm.recipientType,
       priority: 'normal'
+    });
+  };
+
+  // Photo upload mutation for admin
+  const uploadPhotoMutation = useMutation({
+    mutationFn: async ({ file, description }: { file: File; description: string }) => {
+      const formData = new FormData();
+      formData.append('photo', file);
+      formData.append('description', description);
+      formData.append('uploadedBy', `${adminData?.firstName} ${adminData?.lastName} (Admin)`);
+
+      const response = await fetch('/api/upload-pbis-photo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload photo');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pbis-photos"] });
+      setUploadedFile(null);
+      setPhotoDescription("");
+      setShowUploadModal(false);
+      toast({
+        title: "Photo Uploaded",
+        description: "Your photo has been uploaded successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload photo. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        setUploadedFile(file);
+      } else {
+        toast({
+          title: "Invalid File",
+          description: "Please select an image file.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleUploadPhoto = () => {
+    if (!uploadedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please select a photo to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadPhotoMutation.mutate({
+      file: uploadedFile,
+      description: photoDescription,
     });
   };
 
@@ -764,9 +838,18 @@ export default function AdminNew() {
             <TabsContent value="gallery" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Image className="h-5 w-5" />
-                    Activity Photo Gallery ({galleryPhotos?.length || 0} photos)
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Image className="h-5 w-5" />
+                      Activity Photo Gallery ({galleryPhotos?.length || 0} photos)
+                    </div>
+                    <Button
+                      onClick={() => setShowUploadModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      Upload Photo
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -871,6 +954,89 @@ export default function AdminNew() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Admin Photo Upload Modal */}
+          {showUploadModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Upload Photo</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowUploadModal(false);
+                      setUploadedFile(null);
+                      setPhotoDescription("");
+                    }}
+                  >
+                    ×
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="photo-upload">Select Photo</Label>
+                    <Input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  {uploadedFile && (
+                    <div className="text-sm text-gray-600">
+                      Selected: {uploadedFile.name}
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label htmlFor="photo-description">Description</Label>
+                    <Input
+                      id="photo-description"
+                      value={photoDescription}
+                      onChange={(e) => setPhotoDescription(e.target.value)}
+                      placeholder="Enter photo description..."
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      onClick={() => {
+                        setShowUploadModal(false);
+                        setUploadedFile(null);
+                        setPhotoDescription("");
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUploadPhoto}
+                      disabled={!uploadedFile || uploadPhotoMutation.isPending}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    >
+                      {uploadPhotoMutation.isPending ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Uploading...
+                        </div>
+                      ) : (
+                        <>
+                          <Camera className="h-4 w-4 mr-2" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     </div>

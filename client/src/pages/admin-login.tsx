@@ -46,7 +46,7 @@ export default function AdminLogin() {
         
         console.log("Admin login successful - 30-day authentication active");
         // Force redirect to admin dashboard 
-        window.location.href = "/admin-test";
+        window.location.href = "/admin";
       } else {
         const error = await response.json();
         toast({

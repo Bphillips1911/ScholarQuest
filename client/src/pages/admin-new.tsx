@@ -29,7 +29,7 @@ export default function AdminNew() {
         width: '100%',
         display: 'block'
       }}>
-        🚨 ADMIN NAVIGATION WORKING - NEW COMPONENT 🚨
+        🚨 ADMIN SYSTEM NAVIGATION - CLICK LINKS BELOW 🚨
       </div>
       <div style={{
         position: 'fixed',
@@ -171,9 +171,52 @@ export default function AdminNew() {
       
       <div style={{marginTop: '200px', padding: '20px'}}>
         <h1>Administrator Dashboard</h1>
-        <p>This is a test component to verify navigation visibility.</p>
-        <p>If you see this page with the red banner and blue buttons, the navigation system is working.</p>
-        <a href="/admin" style={{color: '#1d4ed8', textDecoration: 'underline'}}>Return to original admin dashboard</a>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '20px',
+          marginTop: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{margin: '0 0 10px 0', color: '#1f2937'}}>Quick Actions</h3>
+            <p style={{margin: '0 0 15px 0', color: '#6b7280'}}>Access main system functions</p>
+            <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+              <button onClick={() => window.location.href = '/houses'} style={{
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}>Manage Houses</button>
+              <button onClick={() => window.location.href = '/pbis'} style={{
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}>PBIS System</button>
+            </div>
+          </div>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{margin: '0 0 10px 0', color: '#1f2937'}}>Navigation Working</h3>
+            <p style={{margin: '0', color: '#059669'}}>✓ Navigation system is now operational</p>
+            <p style={{margin: '5px 0 0 0', color: '#6b7280', fontSize: '14px'}}>
+              Use the red navigation bar above to access all main system tabs
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

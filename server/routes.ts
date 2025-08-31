@@ -3047,6 +3047,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Broadcast message from admin to multiple recipients
+  app.post("/api/admin/broadcast-message", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { recipientType, subject, message, priority = "normal" } = req.body;
+      
+      console.log("ADMIN BROADCAST MESSAGE: Request data:", {
+        recipientType,
+        subject,
+        priority,
+        adminId: req.admin.id
+      });
+
+      if (!subject || !message || !recipientType) {
+        return res.status(400).json({ message: "Subject, message, and recipient type are required" });
+      }
+
+      const messagesSent = [];
+
+      if (recipientType === "all-parents") {
+        // Send to all parents
+        const parents = await storage.getAllParents();
+        for (const parent of parents) {
+          const messageData = {
+            subject,
+            message,
+            priority,
+            senderType: "admin",
+            adminId: req.admin.id,
+            recipientType: "parent",
+            parentId: parent.id,
+            isRead: false,
+            createdAt: new Date()
+          };
+          const newMessage = await storage.createParentTeacherMessage(messageData);
+          messagesSent.push(newMessage);
+        }
+      } else if (recipientType === "all-teachers") {
+        // Send to all teachers
+        const teachers = await storage.getAllTeachersAuth();
+        for (const teacher of teachers) {
+          const messageData = {
+            subject,
+            message,
+            priority,
+            senderType: "admin", 
+            adminId: req.admin.id,
+            recipientType: "teacher",
+            teacherId: teacher.id,
+            isRead: false,
+            createdAt: new Date()
+          };
+          const newMessage = await storage.createParentTeacherMessage(messageData);
+          messagesSent.push(newMessage);
+        }
+      } else if (recipientType === "broadcast") {
+        // Send to everyone (parents and teachers)
+        const [parents, teachers] = await Promise.all([
+          storage.getAllParents(),
+          storage.getAllTeachersAuth()
+        ]);
+        
+        // Send to all parents
+        for (const parent of parents) {
+          const messageData = {
+            subject,
+            message,
+            priority,
+            senderType: "admin",
+            adminId: req.admin.id,
+            recipientType: "parent",
+            parentId: parent.id,
+            isRead: false,
+            createdAt: new Date()
+          };
+          const newMessage = await storage.createParentTeacherMessage(messageData);
+          messagesSent.push(newMessage);
+        }
+        
+        // Send to all teachers
+        for (const teacher of teachers) {
+          const messageData = {
+            subject,
+            message,
+            priority,
+            senderType: "admin",
+            adminId: req.admin.id,
+            recipientType: "teacher",
+            teacherId: teacher.id,
+            isRead: false,
+            createdAt: new Date()
+          };
+          const newMessage = await storage.createParentTeacherMessage(messageData);
+          messagesSent.push(newMessage);
+        }
+      } else {
+        return res.status(400).json({ message: "Invalid recipient type" });
+      }
+
+      console.log(`ADMIN BROADCAST MESSAGE: Sent ${messagesSent.length} messages successfully`);
+      
+      res.json({ 
+        success: true,
+        message: `Message sent successfully to ${messagesSent.length} recipients`, 
+        messageCount: messagesSent.length,
+        recipientType
+      });
+    } catch (error) {
+      console.error("ADMIN BROADCAST MESSAGE: Error:", error);
+      res.status(500).json({ message: "Failed to send broadcast message", error: error.message });
+    }
+  });
+
   // Send message from admin to teacher or parent
   app.post("/api/admin/send-message", authenticateAdmin, async (req: any, res) => {
     try {

@@ -22,6 +22,13 @@ export default function AdminNew() {
   // Check if admin is logged in
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState<any>(null);
+  
+  // Message form state
+  const [messageForm, setMessageForm] = useState({
+    subject: "",
+    message: "",
+    recipientType: ""
+  });
 
   useEffect(() => {
     console.log("AdminNew component mounted");
@@ -56,6 +63,23 @@ export default function AdminNew() {
 
   const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
     queryKey: ["/api/admin/teachers/pending"],
+    enabled: isAuthenticated,
+  });
+
+  // Fetch admin messages
+  const { data: adminMessages = [] } = useQuery({
+    queryKey: ["/api/admin/messages"],
+    queryFn: async () => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/messages", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch messages");
+      return response.json();
+    },
     enabled: isAuthenticated,
   });
 
@@ -139,6 +163,56 @@ export default function AdminNew() {
       });
     },
   });
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: any) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/broadcast-message", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(messageData),
+      });
+      if (!response.ok) throw new Error("Failed to send message");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
+      setMessageForm({ subject: "", message: "", recipientType: "" });
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Send Failed",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSendMessage = () => {
+    if (!messageForm.subject || !messageForm.message || !messageForm.recipientType) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    sendMessageMutation.mutate({
+      subject: messageForm.subject,
+      message: messageForm.message,
+      recipientType: messageForm.recipientType,
+      priority: 'normal'
+    });
+  };
 
   return (
     <div style={{
@@ -470,34 +544,111 @@ export default function AdminNew() {
             </TabsContent>
 
             <TabsContent value="messaging" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Communication Center</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">Manage parent-teacher communications</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button onClick={() => window.location.href = '/admin-messages'} className="justify-start h-auto p-4">
-                      <div className="text-left">
-                        <div className="flex items-center">
-                          <MessageSquare className="mr-2 h-4 w-4" />
-                          View Messages
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Messages ({adminMessages?.length || 0})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {adminMessages && adminMessages.length > 0 ? (
+                        adminMessages.slice(0, 10).map((message: any) => (
+                          <div key={message.id} className="p-4 border rounded-lg bg-gray-50">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-medium text-gray-900">{message.subject}</h4>
+                              <span className="text-xs text-gray-500">
+                                {message.created_at ? new Date(message.created_at).toLocaleDateString() : 'Recently'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{message.message}</p>
+                            <div className="flex justify-between items-center text-xs text-gray-500">
+                              <span>From: {message.sender_name || 'Unknown'}</span>
+                              <span>To: {message.recipient_name || 'Unknown'}</span>
+                            </div>
+                            {message.priority === 'urgent' && (
+                              <Badge variant="destructive" className="mt-2">Urgent</Badge>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                          <p className="text-gray-500">No messages found</p>
+                          <p className="text-sm text-gray-400">Messages between parents and teachers will appear here</p>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">Access all parent-teacher messages</p>
-                      </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Send Message</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <Label htmlFor="message-subject">Subject</Label>
+                      <Input
+                        id="message-subject"
+                        placeholder="Message subject"
+                        value={messageForm.subject}
+                        onChange={(e) => setMessageForm(prev => ({ ...prev, subject: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="message-content">Message</Label>
+                      <textarea
+                        id="message-content"
+                        className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="Type your message here..."
+                        value={messageForm.message}
+                        onChange={(e) => setMessageForm(prev => ({ ...prev, message: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="message-type">Send To</Label>
+                      <Select onValueChange={(value) => setMessageForm(prev => ({ ...prev, recipientType: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select recipient type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all-parents">All Parents</SelectItem>
+                          <SelectItem value="all-teachers">All Teachers</SelectItem>
+                          <SelectItem value="broadcast">School-wide Announcement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      onClick={handleSendMessage}
+                      disabled={sendMessageMutation.isPending || !messageForm.subject || !messageForm.message || !messageForm.recipientType}
+                      className="w-full"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
                     </Button>
-                    <Button onClick={() => window.location.href = '/parent-letter'} className="justify-start h-auto p-4">
-                      <div className="text-left">
-                        <div className="flex items-center">
-                          <Send className="mr-2 h-4 w-4" />
-                          Parent Information
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">Parent portal setup guide</p>
-                      </div>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="pt-4 border-t space-y-2">
+                      <Button onClick={() => window.location.href = '/parent-letter'} variant="outline" className="w-full justify-start">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Parent Portal Information
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
+                          toast({
+                            title: "Messages Refreshed",
+                            description: "Latest messages have been loaded.",
+                          });
+                        }}
+                        variant="outline" 
+                        className="w-full justify-start"
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Refresh Messages
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="exports" className="space-y-6">

@@ -170,7 +170,7 @@ export const administrators = pgTable("administrators", {
   email: varchar("email").notNull().unique(),
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
-  title: varchar("title").notNull(), // 'Principal', 'Assistant Principal', 'Counselor'
+  title: varchar("title").notNull(), // 'Principal', 'Assistant Principal', 'Counselor', 'Database Manager'
   passwordHash: varchar("password_hash").notNull(),
   isActive: boolean("is_active").default(true),
   isApproved: boolean("is_approved").default(false), // Requires approval before access
@@ -248,7 +248,7 @@ export const insertAdministratorSchema = createInsertSchema(administrators).omit
 }).extend({
   email: z.string().email(),
   password: z.string().min(8),
-  title: z.enum(["Principal", "Assistant Principal", "Counselor"]),
+  title: z.enum(["Principal", "Assistant Principal", "Counselor", "Database Manager"]),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
 });

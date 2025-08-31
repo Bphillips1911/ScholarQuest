@@ -7,7 +7,10 @@ The "PBIS House of Champions" is a web application designed for Bush Hills STEAM
 - **4-Second Welcome Animation**: Trophy, crown, and star icons with "PBIS House of Champions" title animation
 - **Rotating House Spotlight**: Cycles through all 5 houses with glowing effects and floating sparkles every 2 seconds
 - **Enhanced Login Portals**: Four distinct animated login cards (Student, Parent, Teacher, Administrator) with hover effects
-- **Account Creation Links**: Added "Create Account" options underneath parent and teacher login sections
+- **Account Creation Links**: Added "Create Account" options underneath parent, teacher, and administrator login sections
+- **Administrator Approval System**: New administrators require approval before accessing the system, with pending message displayed
+- **Database Manager Role**: Added "Database Manager" as a new administrator role option with specialized permissions
+- **Personnel Update**: Replaced Susan Kirkland with Sharon Blanding-Glass as Counselor in administrator database
 - **Advanced CSS Animations**: Floating logos, rainbow text effects, glow pulses, bounce animations, and hover lifts
 - **House Gallery Display**: Interactive showcase of all houses with cycling spotlights and color-coded animations
 - **Mobile-Responsive Design**: Glassmorphism effects with gradient backgrounds optimized for middle school appeal

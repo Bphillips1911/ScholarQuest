@@ -65,6 +65,8 @@ export default function AdminSignup() {
             ? ["view_all", "manage_teachers", "manage_students", "manage_houses", "view_reports", "admin_settings"]
             : formData.title === "Assistant Principal"
             ? ["view_all", "manage_teachers", "manage_students", "manage_houses", "view_reports"]
+            : formData.title === "Database Manager"
+            ? ["view_all", "manage_data", "export_data", "backup_data", "view_reports"]
             : ["view_all", "manage_students", "view_reports"],
         }),
       });
@@ -167,6 +169,7 @@ export default function AdminSignup() {
                   <SelectItem value="Principal">Principal</SelectItem>
                   <SelectItem value="Assistant Principal">Assistant Principal</SelectItem>
                   <SelectItem value="Counselor">Counselor</SelectItem>
+                  <SelectItem value="Database Manager">Database Manager</SelectItem>
                 </SelectContent>
               </Select>
             </div>

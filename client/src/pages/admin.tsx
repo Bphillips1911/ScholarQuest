@@ -342,10 +342,10 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar - Access Main System */}
-      <div className="bg-blue-600 text-white shadow-sm border-b border-gray-200">
+      {/* ⭐ MAIN SYSTEM NAVIGATION ⭐ */}
+      <div className="bg-blue-600 text-white shadow-lg border-b-4 border-blue-800" style={{height: '60px'}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-12">
+          <div className="flex items-center justify-between h-full py-3">
             <div className="flex items-center space-x-6">
               <button
                 onClick={() => setLocation('/dashboard')}

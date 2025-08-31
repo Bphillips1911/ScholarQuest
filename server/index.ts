@@ -234,8 +234,7 @@ app.use((req, res, next) => {
   
   const httpServer = server.listen({
     port,
-    host, // Explicit host binding for deployment
-    host: "0.0.0.0",
+    host: "0.0.0.0", // Bind to all interfaces for preview access
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);

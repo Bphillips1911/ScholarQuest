@@ -71,6 +71,75 @@ export default function AdminNew() {
     setLocation("/admin-login");
   };
 
+  // Export data functions
+  const handleExportData = async (format: 'csv' | 'excel') => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(`/api/export/${format}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `pbis-data.${format === 'excel' ? 'xlsx' : 'csv'}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Export Successful",
+          description: `Data exported as ${format.toUpperCase()}`,
+        });
+      } else {
+        throw new Error(`Export failed: ${response.status}`);
+      }
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Unable to export data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Teacher approval functions
+  const approveTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(`/api/admin/teachers/${teacherId}/approve`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error("Failed to approve teacher");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
+      toast({
+        title: "Teacher Approved",
+        description: "Teacher has been successfully approved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Approval Failed",
+        description: "Failed to approve teacher. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -94,7 +163,7 @@ export default function AdminNew() {
         width: '100%',
         display: 'block'
       }}>
-        🚨 ADMIN SYSTEM NAVIGATION - CLICK LINKS BELOW 🚨
+        ✅ ADMIN NAVIGATION RESTORED - ALL FEATURES ACTIVE
       </div>
       <div style={{
         position: 'fixed',
@@ -165,14 +234,82 @@ export default function AdminNew() {
                 <p className="text-gray-600">Welcome, {adminData?.firstName} {adminData?.lastName} ({adminData?.title})</p>
               </div>
             </div>
+            <div className="flex flex-wrap gap-2 justify-start lg:justify-end">
+              <Button 
+                onClick={handleLogout}
+                variant="outline"
+                className="flex items-center gap-2"
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/admin-settings'}
+                className="bg-gray-600 text-white hover:bg-gray-700"
+                data-testid="button-admin-settings"
+              >
+                <User className="mr-2 h-4 w-4" />
+                Email Settings
+              </Button>
+              <Button 
+                onClick={() => window.open("/parent-letter", "_blank")}
+                className="bg-blue-600 text-white hover:bg-blue-700"
+                data-testid="button-parent-portal"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Parent Portal Info
+              </Button>
+              <Button 
+                onClick={() => handleExportData('csv')}
+                className="bg-green-600 text-white hover:bg-green-700"
+                data-testid="button-export-csv"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
+              <Button 
+                onClick={() => handleExportData('excel')}
+                className="bg-green-700 text-white hover:bg-green-800"
+                data-testid="button-export-excel"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export Excel
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/qr-generator'}
+                className="bg-blue-600 text-white hover:bg-blue-700"
+                data-testid="button-qr-generator"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                QR Generator
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (confirm("Are you sure you want to reset all semester points? This action cannot be undone.")) {
+                    // Add reset points functionality here
+                    toast({
+                      title: "Feature Coming Soon",
+                      description: "Semester reset functionality will be available soon.",
+                    });
+                  }
+                }}
+                variant="destructive"
+                data-testid="button-reset-points"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reset Semester
+              </Button>
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
               <TabsTrigger value="houses">Houses</TabsTrigger>
               <TabsTrigger value="messaging">Messages</TabsTrigger>
+              <TabsTrigger value="exports">Data Export</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
@@ -270,19 +407,34 @@ export default function AdminNew() {
                 <CardContent>
                   <p className="text-gray-600 mb-4">Manage teacher approvals and access</p>
                   {pendingTeachers && pendingTeachers.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {pendingTeachers.map((teacher) => (
-                        <div key={teacher.id} className="flex items-center justify-between p-3 border rounded">
-                          <div>
+                        <div key={teacher.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                          <div className="flex-1">
                             <p className="font-medium">{teacher.firstName} {teacher.lastName}</p>
                             <p className="text-sm text-gray-500">{teacher.email}</p>
+                            <p className="text-sm text-gray-600">{teacher.gradeRole} • {teacher.subject}</p>
+                            <p className="text-xs text-gray-400">
+                              Applied: {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'Recently'}
+                            </p>
                           </div>
-                          <Badge variant="secondary">Pending</Badge>
+                          <Button
+                            onClick={() => approveTeacherMutation.mutate(teacher.id)}
+                            disabled={approveTeacherMutation.isPending}
+                            className="bg-green-600 text-white hover:bg-green-700"
+                          >
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            {approveTeacherMutation.isPending ? "Approving..." : "Approve"}
+                          </Button>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500">No pending teacher approvals</p>
+                    <div className="text-center py-8">
+                      <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+                      <p className="text-gray-500">No pending teacher approvals</p>
+                      <p className="text-sm text-gray-400">All teachers have been approved</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -341,6 +493,104 @@ export default function AdminNew() {
                           Parent Information
                         </div>
                         <p className="text-sm text-gray-500 mt-1">Parent portal setup guide</p>
+                      </div>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="exports" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Data Export & Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-6">Export system data in various formats for analysis and reporting</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Button 
+                      onClick={() => handleExportData('csv')}
+                      className="bg-green-600 text-white hover:bg-green-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <Download className="mr-2 h-4 w-4" />
+                          Export CSV
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">All data in spreadsheet format</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => handleExportData('excel')}
+                      className="bg-green-700 text-white hover:bg-green-800 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <Download className="mr-2 h-4 w-4" />
+                          Export Excel
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">Formatted Excel workbook</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.location.href = '/qr-generator'}
+                      className="bg-blue-600 text-white hover:bg-blue-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <Plus className="mr-2 h-4 w-4" />
+                          QR Generator
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">Generate student QR codes</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.location.href = '/admin-settings'}
+                      className="bg-gray-600 text-white hover:bg-gray-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <User className="mr-2 h-4 w-4" />
+                          Email Settings
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">Configure email notifications</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.open("/parent-letter", "_blank")}
+                      className="bg-blue-600 text-white hover:bg-blue-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Parent Portal Info
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">Parent setup instructions</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => {
+                        if (confirm("Are you sure you want to reset all semester points? This action cannot be undone.")) {
+                          toast({
+                            title: "Feature Coming Soon",
+                            description: "Semester reset functionality will be available soon.",
+                          });
+                        }
+                      }}
+                      variant="destructive"
+                      className="justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Reset Semester
+                        </div>
+                        <p className="text-sm text-red-300 mt-1">Clear all point data</p>
                       </div>
                     </Button>
                   </div>

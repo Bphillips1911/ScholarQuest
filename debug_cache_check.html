@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cache Debug Check</title>
+    <style>
+        .debug-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            background-color: #ff0000;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 5px solid #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-banner">
+        🚨 DEBUG: If you see this, navigation updates should be working! 🚨
+    </div>
+    <h1>Cache Debug Check</h1>
+    <p>This is a test file to verify cache clearing is working.</p>
+    <p>Time: <span id="time"></span></p>
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>

@@ -260,11 +260,18 @@ export default function MainLanding() {
                 </div>
                 <Button 
                   onClick={() => navigateToLogin('parent')}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 mb-3"
                   data-testid="button-parent-login"
                 >
                   Parent Login
                 </Button>
+                <button
+                  onClick={() => setLocation('/parent-signup')}
+                  className="w-full text-green-300 hover:text-green-100 text-sm underline transition-colors duration-200"
+                  data-testid="link-parent-signup"
+                >
+                  Create Parent Account
+                </button>
               </CardContent>
             </Card>
 
@@ -280,11 +287,18 @@ export default function MainLanding() {
                 </div>
                 <Button 
                   onClick={() => navigateToLogin('teacher')}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 mb-3"
                   data-testid="button-teacher-login"
                 >
                   Teacher Login
                 </Button>
+                <button
+                  onClick={() => setLocation('/teacher-signup')}
+                  className="w-full text-purple-300 hover:text-purple-100 text-sm underline transition-colors duration-200"
+                  data-testid="link-teacher-signup"
+                >
+                  Create Teacher Account
+                </button>
               </CardContent>
             </Card>
 

@@ -72,7 +72,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!admin) {
         return res.status(401).json({ message: "Invalid token" });
       }
-      if (!admin.isApproved) {
+      // Principals are always approved automatically, others require approval
+      if (!admin.isApproved && admin.title !== "Principal") {
         return res.status(403).json({ message: "Account pending approval" });
       }
       req.admin = admin;

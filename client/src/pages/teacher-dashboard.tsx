@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 
 interface Teacher {
@@ -657,9 +657,85 @@ export default function TeacherDashboard() {
   ];
 
   return (
-    <section className="min-h-screen bg-gray-50 p-4" data-testid="teacher-dashboard-section">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Main Navigation Bar */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-12">
+            <div className="flex items-center space-x-6">
+              <button
+                onClick={() => setLocation('/dashboard')}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                data-testid="nav-dashboard"
+              >
+                <Home className="h-4 w-4" />
+                <span>Dashboard</span>
+              </button>
+              <button
+                onClick={() => setLocation('/tutorial')}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                data-testid="nav-tutorial"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>Tutorial</span>
+              </button>
+              <button
+                onClick={() => setLocation('/houses')}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                data-testid="nav-houses"
+              >
+                <Trophy className="h-4 w-4" />
+                <span>Houses</span>
+              </button>
+              <button
+                onClick={() => setLocation('/pbis')}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                data-testid="nav-pbis"
+              >
+                <Award className="h-4 w-4" />
+                <span>PBIS</span>
+              </button>
+              <button
+                onClick={() => setLocation('/monthly-pbis')}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                data-testid="nav-monthly"
+              >
+                <Calendar className="h-4 w-4" />
+                <span>Monthly Tracking</span>
+              </button>
+              <button
+                onClick={() => setLocation('/pledge')}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                data-testid="nav-pledge"
+              >
+                <Heart className="h-4 w-4" />
+                <span>House Pledge</span>
+              </button>
+              <button
+                onClick={() => setLocation('/parent-letter')}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                data-testid="nav-parent-letter"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Parent Letter</span>
+              </button>
+              <button
+                onClick={() => setLocation('/house-sorting')}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                data-testid="nav-house-sorting"
+              >
+                <Shuffle className="h-4 w-4" />
+                <span>House Sorting</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Teacher Dashboard Content */}
+      <section className="p-4" data-testid="teacher-dashboard-section">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
         <Card className="mb-6 bg-white shadow-lg">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -1748,7 +1824,8 @@ export default function TeacherDashboard() {
             </Card>
           </div>
         )}
-      </div>
-    </section>
+        </div>
+      </section>
+    </div>
   );
 }

@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { Shuffle, Users, Home, Plus, Trash2, RotateCcw, Eye } from "lucide-react";
+import { Shuffle, Users, Home, Plus, Trash2, RotateCcw, Eye, Lock } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface UnsortedStudent {
   id: string;
@@ -37,17 +38,29 @@ export default function HouseSorting() {
   const [sortingInProgress, setSortingInProgress] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedHouseForStudents, setSelectedHouseForStudents] = useState<House | null>(null);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Fetch all unsorted students
   const { data: unsortedStudents = [], isLoading } = useQuery({
     queryKey: ["/api/sorting/unsorted-students"],
     queryFn: async () => {
-      const response = await fetch("/api/sorting/unsorted-students");
+      const token = localStorage.getItem('teacherToken') || localStorage.getItem('adminToken');
+      const response = await fetch("/api/sorting/unsorted-students", {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+      if (response.status === 401) {
+        setIsUnauthorized(true);
+        throw new Error("Unauthorized access");
+      }
       if (!response.ok) throw new Error("Failed to fetch unsorted students");
       return response.json();
     },
+    retry: false,
   });
 
   // Fetch houses for sorting
@@ -60,11 +73,21 @@ export default function HouseSorting() {
     queryKey: ["/api/houses", selectedHouseForStudents?.id, "students"],
     queryFn: async () => {
       if (!selectedHouseForStudents?.id) return [];
-      const response = await fetch(`/api/houses/${selectedHouseForStudents.id}/students`);
+      const token = localStorage.getItem('teacherToken') || localStorage.getItem('adminToken');
+      const response = await fetch(`/api/houses/${selectedHouseForStudents.id}/students`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+      if (response.status === 401) {
+        setIsUnauthorized(true);
+        throw new Error("Unauthorized access");
+      }
       if (!response.ok) throw new Error("Failed to fetch house students");
       return response.json();
     },
     enabled: !!selectedHouseForStudents?.id,
+    retry: false,
   });
 
   // Add student mutation
@@ -221,6 +244,40 @@ export default function HouseSorting() {
     };
     return houseIcons[houseId] || "🏠";
   };
+
+  if (isUnauthorized) {
+    return (
+      <section className="min-h-screen bg-gray-50 p-4 flex items-center justify-center" data-testid="unauthorized-section">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <Lock className="h-16 w-16 text-red-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Restricted</h1>
+            <p className="text-gray-600 mb-6">
+              The House Sorting system is only accessible to teachers and administrators.
+              Please log in with your authorized account to continue.
+            </p>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => setLocation('/teacher-login')}
+                className="w-full"
+                data-testid="button-teacher-login"
+              >
+                Teacher Login
+              </Button>
+              <Button 
+                onClick={() => setLocation('/admin-login')}
+                variant="outline"
+                className="w-full"
+                data-testid="button-admin-login"
+              >
+                Administrator Login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
 
   return (
     <section className="min-h-screen bg-gray-50 p-4" data-testid="house-sorting-section">

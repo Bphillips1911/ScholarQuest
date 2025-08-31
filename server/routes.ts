@@ -53,6 +53,139 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication middleware definitions
+  const authenticateAdmin = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+      const jwtSecret = "bhsa-admin-secret-2025-stable";
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const session = await storage.getAdminSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+      
+      const admin = await storage.getAdministratorByEmail(decoded.email);
+      if (!admin) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      req.admin = admin;
+      next();
+    } catch (error) {
+      res.status(401).json({ message: "Invalid token" });
+    }
+  };
+
+  const authenticateTeacher = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+      const jwtSecret = "bhsa-teacher-secret-2025-stable";
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const teacher = await storage.getTeacherAuthById(decoded.teacherId);
+      
+      if (!teacher) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      
+      const getTeacherGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
+      req.teacher = {
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        role: teacher.gradeRole,
+        gradeRole: teacher.gradeRole,
+        subject: teacher.subject,
+        canSeeGrades: getTeacherGrades(teacher.gradeRole)
+      };
+      next();
+    } catch (error) {
+      res.status(401).json({ message: "Invalid token" });
+    }
+  };
+
+  const authenticateTeacherOrAdmin = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+      // Try teacher authentication first
+      try {
+        const jwtSecret = "bhsa-teacher-secret-2025-stable";
+        const decoded: any = jwt.verify(token, jwtSecret);
+        const teacher = await storage.getTeacherAuthById(decoded.teacherId);
+        
+        if (teacher) {
+          const getTeacherGrades = (gradeRole: string): number[] => {
+            switch (gradeRole) {
+              case '6th Grade': return [6];
+              case '7th Grade': return [7];
+              case '8th Grade': return [8];
+              case 'Unified Arts': return [6, 7, 8];
+              case 'Administration': return [6, 7, 8];
+              case 'Counselor': return [6, 7, 8];
+              default: return [];
+            }
+          };
+
+          req.teacher = {
+            id: teacher.id,
+            name: teacher.name,
+            email: teacher.email,
+            role: teacher.gradeRole,
+            gradeRole: teacher.gradeRole,
+            subject: teacher.subject,
+            canSeeGrades: getTeacherGrades(teacher.gradeRole)
+          };
+          return next();
+        }
+      } catch (teacherError) {
+        // Teacher auth failed, try admin auth
+      }
+
+      // Try admin authentication
+      try {
+        const jwtSecret = "bhsa-admin-secret-2025-stable";
+        const decoded: any = jwt.verify(token, jwtSecret);
+        const session = await storage.getAdminSession(token);
+        
+        if (session) {
+          const admin = await storage.getAdministratorByEmail(decoded.email);
+          if (admin) {
+            req.admin = admin;
+            return next();
+          }
+        }
+      } catch (adminError) {
+        // Admin auth failed
+      }
+
+      // Both failed
+      return res.status(401).json({ message: "Access denied. Teachers and administrators only." });
+    } catch (error) {
+      res.status(401).json({ message: "Invalid token" });
+    }
+  };
+
   // Register force deployment API endpoints
   const { registerForceDeploymentAPI } = await import('./deployment-force-api');
   registerForceDeploymentAPI(app);
@@ -923,63 +1056,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Teacher authentication middleware
-  const authenticateTeacher = async (req: any, res: any, next: any) => {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    console.log("AUTH MIDDLEWARE: Token received:", token ? "Yes" : "No");
-    
-    if (!token) {
-      console.log("AUTH MIDDLEWARE: No token provided");
-      return res.status(401).json({ message: "No token provided" });
-    }
 
-    try {
-      // Use consistent deployment-compatible secret 
-      const jwtSecret = "bhsa-teacher-secret-2025-stable";
-      console.log("AUTH MIDDLEWARE: JWT_SECRET source:", "bhsa-teacher-secret-2025-stable");
-      
-      const decoded: any = jwt.verify(token, jwtSecret);
-      console.log("AUTH MIDDLEWARE: Decoded token:", decoded);
-      
-      // Try to get teacher from new auth system first
-      const teacher = await storage.getTeacherAuthById(decoded.teacherId);
-      console.log("AUTH MIDDLEWARE: Found teacher:", teacher ? teacher.name : "Not found");
-      
-      if (!teacher) {
-        console.log("AUTH MIDDLEWARE: Teacher not found");
-        return res.status(401).json({ message: "Invalid token" });
-      }
-      
-      // Convert teacher format to match expected format with proper grade permissions
-      const getTeacherGrades = (gradeRole: string): number[] => {
-        switch (gradeRole) {
-          case '6th Grade': return [6];
-          case '7th Grade': return [7];
-          case '8th Grade': return [8];
-          case 'Unified Arts': return [6, 7, 8];
-          case 'Administration': return [6, 7, 8];
-          case 'Counselor': return [6, 7, 8];
-          default: return [];
-        }
-      };
-
-      req.teacher = {
-        id: teacher.id,
-        name: teacher.name,
-        email: teacher.email,
-        role: teacher.gradeRole,
-        gradeRole: teacher.gradeRole, // Add this critical field!
-        subject: teacher.subject,
-        canSeeGrades: getTeacherGrades(teacher.gradeRole)
-      };
-      
-      console.log("AUTH MIDDLEWARE: Teacher authenticated successfully");
-      next();
-    } catch (error) {
-      console.log("AUTH MIDDLEWARE: Token verification failed:", error.message);
-      res.status(401).json({ message: "Invalid token" });
-    }
-  };
 
   // Teacher routes (using new auth system)
   
@@ -1322,9 +1399,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // House Sorting routes
+  // House Sorting routes (Protected - Teachers and Administrators only)
   // Get unsorted students
-  app.get("/api/sorting/unsorted-students", async (_req, res) => {
+  app.get("/api/sorting/unsorted-students", authenticateTeacherOrAdmin, async (_req, res) => {
     try {
       console.log("Getting unsorted students...");
       const students = await storage.getUnsortedStudents();
@@ -1338,7 +1415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Add student to sorting queue
-  app.post("/api/sorting/add-student", async (req, res) => {
+  app.post("/api/sorting/add-student", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       console.log("ROUTE: Adding student request received:", req.body);
       const { name, studentId, grade } = req.body;
@@ -1405,7 +1482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Remove student from sorting queue
-  app.delete("/api/sorting/remove-student/:id", async (req, res) => {
+  app.delete("/api/sorting/remove-student/:id", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const removed = await storage.removeUnsortedStudent(req.params.id);
       if (removed) {
@@ -1420,7 +1497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sort all unsorted students into houses
-  app.post("/api/sorting/sort-students", async (_req, res) => {
+  app.post("/api/sorting/sort-students", authenticateTeacherOrAdmin, async (_req, res) => {
     try {
       // Get unsorted students first for detailed info
       const { db } = await import("./db");
@@ -1479,7 +1556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reset all houses (move all students back to unsorted)
-  app.post("/api/sorting/reset-houses", async (_req, res) => {
+  app.post("/api/sorting/reset-houses", authenticateTeacherOrAdmin, async (_req, res) => {
     try {
       await storage.resetAllHouses();
       res.json({ message: "All houses have been reset" });
@@ -1516,7 +1593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get students by house
-  app.get("/api/houses/:houseId/students", async (req, res) => {
+  app.get("/api/houses/:houseId/students", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const { houseId } = req.params;
       const students = await storage.getStudentsByHouse(houseId);
@@ -2468,32 +2545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Administrator middleware (moved up before password change route)
-  const authenticateAdmin = async (req: any, res: any, next: any) => {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token) {
-      return res.status(401).json({ message: "No token provided" });
-    }
 
-    try {
-      // Use consistent deployment-compatible secret
-      const jwtSecret = "bhsa-admin-secret-2025-stable";
-      const decoded: any = jwt.verify(token, jwtSecret);
-      const session = await storage.getAdminSession(token);
-      if (!session) {
-        return res.status(401).json({ message: "Invalid session" });
-      }
-      
-      const admin = await storage.getAdministratorByEmail(decoded.email);
-      if (!admin) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-      req.admin = admin;
-      next();
-    } catch (error) {
-      res.status(401).json({ message: "Invalid token" });
-    }
-  };
 
   // Administrator password change route
   app.post("/api/admin/change-password", authenticateAdmin, async (req: any, res) => {

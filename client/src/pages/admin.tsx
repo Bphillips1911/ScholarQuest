@@ -343,13 +343,13 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar - Access Main System */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="bg-blue-600 text-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center space-x-6">
               <button
                 onClick={() => setLocation('/dashboard')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
                 data-testid="nav-dashboard"
               >
                 <Home className="h-4 w-4" />
@@ -357,7 +357,7 @@ export default function Admin() {
               </button>
               <button
                 onClick={() => setLocation('/tutorial')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
                 data-testid="nav-tutorial"
               >
                 <BookOpen className="h-4 w-4" />
@@ -365,7 +365,7 @@ export default function Admin() {
               </button>
               <button
                 onClick={() => setLocation('/houses')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
                 data-testid="nav-houses"
               >
                 <Trophy className="h-4 w-4" />
@@ -373,7 +373,7 @@ export default function Admin() {
               </button>
               <button
                 onClick={() => setLocation('/pbis')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
                 data-testid="nav-pbis"
               >
                 <Award className="h-4 w-4" />
@@ -381,7 +381,7 @@ export default function Admin() {
               </button>
               <button
                 onClick={() => setLocation('/monthly-pbis')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
                 data-testid="nav-monthly"
               >
                 <Calendar className="h-4 w-4" />
@@ -389,7 +389,7 @@ export default function Admin() {
               </button>
               <button
                 onClick={() => setLocation('/pledge')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
                 data-testid="nav-pledge"
               >
                 <Heart className="h-4 w-4" />
@@ -397,7 +397,7 @@ export default function Admin() {
               </button>
               <button
                 onClick={() => setLocation('/parent-letter')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
                 data-testid="nav-parent-letter"
               >
                 <FileText className="h-4 w-4" />
@@ -405,7 +405,7 @@ export default function Admin() {
               </button>
               <button
                 onClick={() => setLocation('/house-sorting')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
                 data-testid="nav-house-sorting"
               >
                 <Shuffle className="h-4 w-4" />

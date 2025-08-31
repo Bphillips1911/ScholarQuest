@@ -684,21 +684,49 @@ export default function TeacherDashboard() {
         zIndex: 9998,
         backgroundColor: '#0000ff',
         color: 'white',
-        padding: '20px',
+        padding: '10px 20px',
         display: 'flex',
         gap: '15px',
         justifyContent: 'center',
-        flexWrap: 'wrap',
+        alignItems: 'center',
         border: '3px solid #ffffff'
       }}>
-        <button onClick={() => window.location.href = '/dashboard'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Dashboard</button>
-        <button onClick={() => window.location.href = '/tutorial'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Tutorial</button>
-        <button onClick={() => window.location.href = '/houses'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Houses</button>
-        <button onClick={() => window.location.href = '/pbis'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>PBIS</button>
-        <button onClick={() => window.location.href = '/monthly-pbis'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Monthly Tracking</button>
-        <button onClick={() => window.location.href = '/pledge'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>House Pledge</button>
-        <button onClick={() => window.location.href = '/parent-letter'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Parent Letter</button>
-        <button onClick={() => window.location.href = '/house-sorting'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>House Sorting</button>
+        <Select onValueChange={(value) => window.location.href = value}>
+          <SelectTrigger style={{width: '150px', backgroundColor: '#1d4ed8', color: 'white', border: 'none'}}>
+            <SelectValue placeholder="Main Pages" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="/dashboard">Dashboard</SelectItem>
+            <SelectItem value="/tutorial">Tutorial</SelectItem>
+            <SelectItem value="/houses">Houses</SelectItem>
+            <SelectItem value="/pbis">PBIS</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Select onValueChange={(value) => window.location.href = value}>
+          <SelectTrigger style={{width: '150px', backgroundColor: '#1d4ed8', color: 'white', border: 'none'}}>
+            <SelectValue placeholder="Reports & Tools" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="/monthly-pbis">Monthly Tracking</SelectItem>
+            <SelectItem value="/house-sorting">House Sorting</SelectItem>
+            <SelectItem value="/parent-letter">Parent Letter</SelectItem>
+            <SelectItem value="/pledge">House Pledge</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <button onClick={handleLogout} style={{
+          color: 'white', 
+          backgroundColor: '#dc2626', 
+          border: 'none', 
+          padding: '8px 16px', 
+          borderRadius: '6px', 
+          fontSize: '14px', 
+          cursor: 'pointer', 
+          fontWeight: 'bold'
+        }}>
+          Logout
+        </button>
       </div>
       <div style={{marginTop: '200px'}}></div>
       {/* Main Navigation Bar */}

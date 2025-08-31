@@ -526,6 +526,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Photo upload routes
   // Get all PBIS photos
+  app.get("/api/pbis-photos", async (_req, res) => {
+    try {
+      const photos = await storage.getPbisPhotos();
+      res.json(photos);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch PBIS photos" });
+    }
+  });
+
+  // Backward compatibility route
   app.get("/api/pbis/photos", async (_req, res) => {
     try {
       const photos = await storage.getPbisPhotos();
@@ -535,7 +545,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload PBIS photo
+  // Upload PBIS photo for teachers
+  app.post("/api/upload-pbis-photo", upload.single('photo'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No photo file uploaded" });
+      }
+
+      const photoData = {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        description: req.body.description || undefined,
+        uploadedBy: req.body.uploadedBy || "Unknown User",
+      };
+
+      const validatedData = insertPbisPhotoSchema.parse(photoData);
+      const photo = await storage.createPbisPhoto(validatedData);
+      res.status(201).json(photo);
+    } catch (error) {
+      console.error("Photo upload error:", error);
+      res.status(400).json({ message: "Failed to upload photo" });
+    }
+  });
+
+  // Upload PBIS photo (backward compatibility)
   app.post("/api/pbis/photos", upload.single('photo'), async (req, res) => {
     try {
       if (!req.file) {
@@ -553,6 +586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const photo = await storage.createPbisPhoto(validatedData);
       res.status(201).json(photo);
     } catch (error) {
+      console.error("Photo upload error:", error);
       res.status(400).json({ message: "Failed to upload photo" });
     }
   });

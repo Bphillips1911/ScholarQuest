@@ -9,7 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 
 interface Teacher {
@@ -42,6 +44,10 @@ export default function TeacherDashboard() {
   const [selectedScholar, setSelectedScholar] = useState<Scholar | null>(null);
   const [deactivationReason, setDeactivationReason] = useState("");
   const [activeView, setActiveView] = useState<'scholars' | 'messages'>('scholars');
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [photoDescription, setPhotoDescription] = useState("");
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -386,6 +392,66 @@ export default function TeacherDashboard() {
     },
   });
 
+  // Fetch gallery photos
+  const { data: galleryPhotos = [] } = useQuery({
+    queryKey: ["/api/pbis-photos"],
+    queryFn: async () => {
+      const response = await fetch("/api/pbis-photos");
+      if (!response.ok) throw new Error("Failed to fetch photos");
+      return response.json();
+    },
+  });
+
+  // Photo upload mutation
+  const uploadPhotoMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch("/api/upload-pbis-photo", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("teacherToken")}`,
+        },
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Failed to upload photo");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pbis-photos"] });
+      setShowUploadModal(false);
+      setUploadedFile(null);
+      setPhotoDescription("");
+      toast({
+        title: "Photo uploaded successfully",
+        description: "Your photo has been added to the gallery.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePhotoUpload = () => {
+    if (!uploadedFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a photo to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("photo", uploadedFile);
+    formData.append("description", photoDescription);
+    formData.append("uploadedBy", teacher?.name || "Teacher");
+
+    uploadPhotoMutation.mutate(formData);
+  };
+
   // Add scholar mutation with enhanced deployment error handling
   const addScholarMutation = useMutation({
     mutationFn: async (scholarData: any) => {
@@ -729,76 +795,90 @@ export default function TeacherDashboard() {
         </button>
       </div>
       <div style={{marginTop: '200px'}}></div>
-      {/* Main Navigation Bar */}
+      {/* Main Navigation Bar with Dropdown Menus */}
       <div className="bg-blue-600 text-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-12">
-            <div className="flex items-center space-x-6">
-              <button
-                onClick={() => setLocation('/dashboard')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
-                data-testid="nav-dashboard"
+            <div className="flex items-center space-x-4">
+              
+              {/* Main Pages Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="text-white hover:text-blue-200 hover:bg-blue-700">
+                    <Home className="h-4 w-4 mr-2" />
+                    Main Pages
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-white">
+                  <DropdownMenuItem onClick={() => setLocation('/dashboard')}>
+                    <Home className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation('/tutorial')}>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Tutorial
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation('/houses')}>
+                    <Trophy className="h-4 w-4 mr-2" />
+                    Houses
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation('/pbis')}>
+                    <Award className="h-4 w-4 mr-2" />
+                    PBIS
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation('/pledge')}>
+                    <Heart className="h-4 w-4 mr-2" />
+                    House Pledge
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Reports & Tools Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="text-white hover:text-blue-200 hover:bg-blue-700">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Reports & Tools
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-white">
+                  <DropdownMenuItem onClick={() => setLocation('/monthly-pbis')}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Monthly Tracking
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation('/house-sorting')}>
+                    <Shuffle className="h-4 w-4 mr-2" />
+                    House Sorting
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation('/parent-letter')}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Parent Letter
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Teacher Messaging */}
+              <Button 
+                variant="ghost" 
+                className="text-white hover:text-blue-200 hover:bg-blue-700"
+                onClick={() => setLocation('/teacher-messages')}
               >
-                <Home className="h-4 w-4" />
-                <span>Dashboard</span>
-              </button>
-              <button
-                onClick={() => setLocation('/tutorial')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
-                data-testid="nav-tutorial"
-              >
-                <BookOpen className="h-4 w-4" />
-                <span>Tutorial</span>
-              </button>
-              <button
-                onClick={() => setLocation('/houses')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
-                data-testid="nav-houses"
-              >
-                <Trophy className="h-4 w-4" />
-                <span>Houses</span>
-              </button>
-              <button
-                onClick={() => setLocation('/pbis')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
-                data-testid="nav-pbis"
-              >
-                <Award className="h-4 w-4" />
-                <span>PBIS</span>
-              </button>
-              <button
-                onClick={() => setLocation('/monthly-pbis')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
-                data-testid="nav-monthly"
-              >
-                <Calendar className="h-4 w-4" />
-                <span>Monthly Tracking</span>
-              </button>
-              <button
-                onClick={() => setLocation('/pledge')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
-                data-testid="nav-pledge"
-              >
-                <Heart className="h-4 w-4" />
-                <span>House Pledge</span>
-              </button>
-              <button
-                onClick={() => setLocation('/parent-letter')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
-                data-testid="nav-parent-letter"
-              >
-                <FileText className="h-4 w-4" />
-                <span>Parent Letter</span>
-              </button>
-              <button
-                onClick={() => setLocation('/house-sorting')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white hover:text-blue-200 transition-colors bg-blue-700 hover:bg-blue-800 rounded"
-                data-testid="nav-house-sorting"
-              >
-                <Shuffle className="h-4 w-4" />
-                <span>House Sorting</span>
-              </button>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Messages
+              </Button>
+
             </div>
+            
+            <Button 
+              variant="ghost" 
+              className="text-white hover:text-red-200 hover:bg-red-600"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
       </div>
@@ -836,33 +916,123 @@ export default function TeacherDashboard() {
           </CardHeader>
         </Card>
 
-        {/* Grade Selection */}
-        {teacher.canSeeGrades?.length > 1 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Select Grade Level</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                {teacher.canSeeGrades.map((grade) => (
-                  <Button
-                    key={grade}
-                    variant={selectedGrade === grade ? "default" : "outline"}
-                    onClick={() => setSelectedGrade(grade)}
-                    data-testid={`button-grade-${grade}`}
-                  >
-                    Grade {grade}
-                  </Button>
+        {/* Main Teacher Dashboard Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="scholars">Scholars</TabsTrigger>
+            <TabsTrigger value="upload">Upload Photos</TabsTrigger>
+            <TabsTrigger value="gallery">Gallery</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* Grade Selection */}
+            {teacher.canSeeGrades?.length > 1 && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Select Grade Level</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    {teacher.canSeeGrades.map((grade) => (
+                      <Button
+                        key={grade}
+                        variant={selectedGrade === grade ? "default" : "outline"}
+                        onClick={() => setSelectedGrade(grade)}
+                        data-testid={`button-grade-${grade}`}
+                      >
+                        Grade {grade}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* House Statistics Dashboard */}
+            {houses && houses.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                {houses.map((house) => (
+                  <Card key={house.id} className="text-center">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg" style={{ color: house.color }}>
+                        {house.icon} {house.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>Academic:</strong> {house.academicPoints || 0}</p>
+                        <p><strong>Attendance:</strong> {house.attendancePoints || 0}</p>
+                        <p><strong>Behavior:</strong> {house.behaviorPoints || 0}</p>
+                        <p className="font-bold">
+                          <strong>Total:</strong> {(house.academicPoints || 0) + (house.attendancePoints || 0) + (house.behaviorPoints || 0)}
+                        </p>
+                        <p className="text-gray-600">Members: {house.memberCount || 0}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </TabsContent>
 
-        {/* Navigation Tabs - Always show when teacher is loaded */}
-        {teacher && (
-          <div className="mb-6">
-            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+          <TabsContent value="scholars" className="space-y-6">
+            {/* Grade Selection for Scholars Tab */}
+            {teacher.canSeeGrades?.length > 1 && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Select Grade Level</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    {teacher.canSeeGrades.map((grade) => (
+                      <Button
+                        key={grade}
+                        variant={selectedGrade === grade ? "default" : "outline"}
+                        onClick={() => setSelectedGrade(grade)}
+                        data-testid={`button-grade-${grade}`}
+                      >
+                        Grade {grade}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Action Buttons for Scholars Tab */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Button
+                onClick={() => setShowAddScholar(true)}
+                className="flex items-center gap-2"
+                data-testid="button-add-scholar"
+              >
+                <Plus className="h-4 w-4" />
+                Add Scholar
+              </Button>
+              <Button
+                onClick={() => setShowAwardPoints(true)}
+                disabled={!selectedScholar}
+                className="flex items-center gap-2"
+                data-testid="button-award-points"
+              >
+                <Award className="h-4 w-4" />
+                Award MUSTANG Points
+              </Button>
+              <Button
+                onClick={() => setShowDeactivateStudent(true)}
+                disabled={!selectedScholar}
+                variant="destructive"
+                className="flex items-center gap-2"
+                data-testid="button-deactivate-student"
+              >
+                <UserX className="h-4 w-4" />
+                Deactivate Student
+              </Button>
+            </div>
+
+            {/* Scholars Content */}
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
               <button
                 onClick={() => setActiveView('scholars')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -892,99 +1062,178 @@ export default function TeacherDashboard() {
                 )}
               </button>
             </div>
-          </div>
-        )}
 
-        {/* Actions */}
-        {teacher && activeView === 'scholars' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Button
-              onClick={() => setShowAddScholar(true)}
-              className="flex items-center gap-2"
-              data-testid="button-add-scholar"
-            >
-              <Plus className="h-4 w-4" />
-              Add Scholar
-            </Button>
-            <Button
-              onClick={() => setShowAwardPoints(true)}
-              disabled={!selectedScholar}
-              className="flex items-center gap-2"
-              data-testid="button-award-points"
-            >
-              <Award className="h-4 w-4" />
-              Award MUSTANG Points
-            </Button>
-            <Button
-              onClick={() => setShowDeactivateStudent(true)}
-              disabled={!selectedScholar}
-              variant="destructive"
-              className="flex items-center gap-2"
-              data-testid="button-deactivate-student"
-            >
-              <UserX className="h-4 w-4" />
-              Deactivate Student
-            </Button>
-          </div>
-        )}
+            {/* Scholars and Messages Content would go here - keeping existing content */}
+          </TabsContent>
 
-        {/* House Standings - Always visible */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-yellow-600" />
-              House Standings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {Array.isArray(houses) && houses.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {houses.map((house: any) => (
-                  <div 
-                    key={house.id} 
-                    className="p-4 rounded-lg border-2 transition-all hover:shadow-md"
-                    style={{ borderColor: house.color }}
-                    data-testid={`house-card-${house.id}`}
-                  >
-                    <div className="text-center">
-                      <div className="text-3xl mb-2">{house.icon}</div>
-                      <h3 className="font-bold text-sm" style={{ color: house.color }}>
-                        {house.name}
-                      </h3>
-                      <p className="text-xs text-gray-600 italic mb-3">{house.motto}</p>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span>Academic:</span>
-                          <span className="font-semibold">{house.academicPoints}</span>
+          <TabsContent value="upload" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="h-5 w-5" />
+                  Upload Activity Photos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="photo-input">Select Photo</Label>
+                  <Input
+                    id="photo-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
+                    className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="photo-description">Description</Label>
+                  <textarea
+                    id="photo-description"
+                    className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="Describe the activity or event in this photo..."
+                    value={photoDescription}
+                    onChange={(e) => setPhotoDescription(e.target.value)}
+                  />
+                </div>
+                {uploadedFile && (
+                  <div className="space-y-2">
+                    <Label>Preview</Label>
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <p className="text-sm text-gray-600 mb-2">
+                        <strong>File:</strong> {uploadedFile.name}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Size:</strong> {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <Button 
+                  onClick={handlePhotoUpload}
+                  disabled={!uploadedFile || uploadPhotoMutation.isPending}
+                  className="w-full"
+                >
+                  {uploadPhotoMutation.isPending ? (
+                    "Uploading..."
+                  ) : (
+                    <>
+                      <Camera className="h-4 w-4 mr-2" />
+                      Upload Photo
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="gallery" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Image className="h-5 w-5" />
+                  Activity Gallery ({galleryPhotos?.length || 0} photos)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {galleryPhotos && galleryPhotos.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {galleryPhotos.map((photo: any) => (
+                      <div key={photo.id} className="border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                          <img 
+                            src={`/uploads/${photo.filename}`}
+                            alt={photo.description || 'Activity photo'}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling!.style.display = 'flex';
+                            }}
+                          />
+                          <div className="hidden w-full h-full items-center justify-center text-gray-400">
+                            <Image className="h-12 w-12" />
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Attendance:</span>
-                          <span className="font-semibold">{house.attendancePoints}</span>
+                        <div className="p-4">
+                          <p className="text-sm text-gray-600 mb-2">{photo.description || 'No description'}</p>
+                          <div className="flex justify-between items-center text-xs text-gray-500">
+                            <span>By: {photo.uploadedBy}</span>
+                            <span>{photo.createdAt ? new Date(photo.createdAt).toLocaleDateString() : 'Recently'}</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Behavior:</span>
-                          <span className="font-semibold">{house.behaviorPoints}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Image className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500 text-lg">No photos uploaded yet</p>
+                    <p className="text-gray-400 text-sm">Upload your first activity photo using the Upload Photos tab</p>
+                    <Button 
+                      onClick={() => setActiveTab('upload')}
+                      className="mt-4"
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      Upload Photos
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Content for existing sections would continue here */}
+        {teacher && activeView === 'scholars' && selectedGrade && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Grade {selectedGrade} Scholars</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {scholars && scholars.length > 0 ? (
+                <div className="space-y-2">
+                  {scholars.map((scholar: Scholar) => (
+                    <div
+                      key={scholar.id}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedScholar?.id === scholar.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setSelectedScholar(scholar)}
+                      data-testid={`scholar-card-${scholar.id}`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-medium">{scholar.name}</h4>
+                          <p className="text-sm text-gray-600">ID: {scholar.studentId}</p>
                         </div>
-                        <div className="flex justify-between border-t pt-1 mt-2">
-                          <span className="font-bold">Total:</span>
-                          <span className="font-bold text-lg" style={{ color: house.color }}>
-                            {house.academicPoints + house.attendancePoints + house.behaviorPoints}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-gray-500">
-                          <span>Members:</span>
-                          <span>{house.memberCount}</span>
+                        <div className="text-right text-sm">
+                          <p><strong>Academic:</strong> {scholar.academicPoints}</p>
+                          <p><strong>Attendance:</strong> {scholar.attendancePoints}</p>
+                          <p><strong>Behavior:</strong> {scholar.behaviorPoints}</p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">Loading house standings...</p>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No scholars found for this grade level.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {teacher && activeView === 'messages' && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Messages</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Message content goes here */}
+              <p className="text-gray-500">Message functionality will be displayed here.</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Scholars List */}
         {teacher && activeView === 'scholars' && (

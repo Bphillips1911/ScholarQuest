@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image } from "lucide-react";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -78,6 +78,17 @@ export default function AdminNew() {
         },
       });
       if (!response.ok) throw new Error("Failed to fetch messages");
+      return response.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  // Fetch gallery photos for admin
+  const { data: galleryPhotos = [] } = useQuery({
+    queryKey: ["/api/pbis-photos"],
+    queryFn: async () => {
+      const response = await fetch("/api/pbis-photos");
+      if (!response.ok) throw new Error("Failed to fetch photos");
       return response.json();
     },
     enabled: isAuthenticated,
@@ -378,11 +389,12 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
               <TabsTrigger value="houses">Houses</TabsTrigger>
               <TabsTrigger value="messaging">Messages</TabsTrigger>
+              <TabsTrigger value="gallery">Gallery</TabsTrigger>
               <TabsTrigger value="exports">Data Export</TabsTrigger>
             </TabsList>
 
@@ -745,6 +757,116 @@ export default function AdminNew() {
                       </div>
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="gallery" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Image className="h-5 w-5" />
+                    Activity Photo Gallery ({galleryPhotos?.length || 0} photos)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {galleryPhotos && galleryPhotos.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {galleryPhotos.map((photo: any) => (
+                        <div key={photo.id} className="border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+                          <div className="aspect-video bg-gray-100 flex items-center justify-center relative group">
+                            <img 
+                              src={`/uploads/${photo.filename}`}
+                              alt={photo.description || 'Activity photo'}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.style.display = 'flex';
+                              }}
+                            />
+                            <div className="hidden w-full h-full items-center justify-center text-gray-400">
+                              <Image className="h-12 w-12" />
+                            </div>
+                            {/* Admin Download Button */}
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `/uploads/${photo.filename}`;
+                                  link.download = photo.originalName || photo.filename;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  toast({
+                                    title: "Download Started",
+                                    description: `Downloading ${photo.originalName || 'photo'}`,
+                                  });
+                                }}
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Download
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                              {photo.description || 'No description provided'}
+                            </p>
+                            <div className="flex justify-between items-center text-xs text-gray-500">
+                              <span className="font-medium">By: {photo.uploadedBy}</span>
+                              <span>
+                                {photo.createdAt 
+                                  ? new Date(photo.createdAt).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })
+                                  : 'Recently'
+                                }
+                              </span>
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-gray-100">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `/uploads/${photo.filename}`;
+                                  link.download = photo.originalName || photo.filename;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  toast({
+                                    title: "Download Started",
+                                    description: `Downloading ${photo.originalName || 'photo'}`,
+                                  });
+                                }}
+                              >
+                                <Download className="h-3 w-3 mr-2" />
+                                Download Original
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Image className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Photos Yet</h3>
+                      <p className="text-gray-500 mb-4">
+                        Teachers haven't uploaded any activity photos yet. Photos uploaded by teachers will appear here.
+                      </p>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-sm text-blue-700">
+                          <strong>For Teachers:</strong> Use the "Upload Photos" tab in your teacher dashboard to add activity photos that will appear in this gallery.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

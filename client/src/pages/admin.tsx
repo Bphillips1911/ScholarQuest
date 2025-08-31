@@ -343,6 +343,9 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ⭐ MAIN SYSTEM NAVIGATION ⭐ */}
+      <div className="bg-red-600 text-white shadow-lg border-b-4 border-red-800 p-4 mb-4">
+        <h2 className="text-xl font-bold text-center">🔹 MAIN SYSTEM NAVIGATION - CLICK BELOW 🔹</h2>
+      </div>
       <div className="bg-blue-600 text-white shadow-lg border-b-4 border-blue-800" style={{height: '60px'}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-full py-3">

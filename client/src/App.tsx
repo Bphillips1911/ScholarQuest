@@ -30,6 +30,7 @@ import TeacherDashboard from "@/pages/teacher-dashboard";
 import TeacherMessages from "@/pages/teacher-messages";
 import HouseSorting from "@/pages/house-sorting";
 import Admin from "@/pages/admin";
+import AdminNew from "@/pages/admin-new";
 import AdminClean from "@/pages/admin-clean";
 import AdminSettings from "@/pages/admin-settings";
 import EmailTroubleshooting from "@/pages/email-troubleshooting";
@@ -65,6 +66,7 @@ function Router() {
         <Route path="/teacher-messages" component={TeacherMessages} />
         <Route path="/admin" component={AdminClean} />
         <Route path="/admin-full" component={Admin} />
+        <Route path="/admin-test" component={AdminNew} />
         <Route path="/admin-settings" component={AdminSettings} />
         <Route path="/admin-pbis" component={PBIS} />
         <Route path="/admin-sorting" component={HouseSorting} />

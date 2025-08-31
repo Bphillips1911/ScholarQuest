@@ -342,11 +342,22 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ⭐ MAIN SYSTEM NAVIGATION ⭐ */}
-      <div className="bg-red-600 text-white shadow-lg border-b-4 border-red-800 p-4 mb-4">
-        <h2 className="text-xl font-bold text-center">🔹 MAIN SYSTEM NAVIGATION - CLICK BELOW 🔹</h2>
+      {/* MAIN SYSTEM NAVIGATION */}
+      <div style={{backgroundColor: '#dc2626', color: 'white', padding: '20px', marginBottom: '10px', textAlign: 'center', fontSize: '20px', fontWeight: 'bold'}}>
+        MAIN SYSTEM NAVIGATION - USE LINKS BELOW
       </div>
-      <div className="bg-blue-600 text-white shadow-lg border-b-4 border-blue-800" style={{height: '60px'}}>
+      <div style={{backgroundColor: '#2563eb', color: 'white', padding: '15px', display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap'}}>
+        <a href="/dashboard" style={{color: 'white', textDecoration: 'none', padding: '10px 15px', backgroundColor: '#1d4ed8', borderRadius: '5px'}}>Dashboard</a>
+        <a href="/tutorial" style={{color: 'white', textDecoration: 'none', padding: '10px 15px', backgroundColor: '#1d4ed8', borderRadius: '5px'}}>Tutorial</a>
+        <a href="/houses" style={{color: 'white', textDecoration: 'none', padding: '10px 15px', backgroundColor: '#1d4ed8', borderRadius: '5px'}}>Houses</a>
+        <a href="/pbis" style={{color: 'white', textDecoration: 'none', padding: '10px 15px', backgroundColor: '#1d4ed8', borderRadius: '5px'}}>PBIS</a>
+        <a href="/monthly-pbis" style={{color: 'white', textDecoration: 'none', padding: '10px 15px', backgroundColor: '#1d4ed8', borderRadius: '5px'}}>Monthly Tracking</a>
+        <a href="/pledge" style={{color: 'white', textDecoration: 'none', padding: '10px 15px', backgroundColor: '#1d4ed8', borderRadius: '5px'}}>House Pledge</a>
+        <a href="/parent-letter" style={{color: 'white', textDecoration: 'none', padding: '10px 15px', backgroundColor: '#1d4ed8', borderRadius: '5px'}}>Parent Letter</a>
+        <a href="/house-sorting" style={{color: 'white', textDecoration: 'none', padding: '10px 15px', backgroundColor: '#1d4ed8', borderRadius: '5px'}}>House Sorting</a>
+      </div>
+
+      <div className="bg-blue-600 text-white shadow-lg border-b-4 border-blue-800" style={{height: '60px', display: 'none'}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-full py-3">
             <div className="flex items-center space-x-6">

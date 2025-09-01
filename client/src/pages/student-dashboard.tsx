@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest } from "@/lib/queryClient";
+import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession } from "@/lib/studentAuth";
 import { 
   Trophy, 
   Star, 
@@ -84,20 +86,38 @@ export default function StudentDashboard() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    const token = localStorage.getItem("studentToken");
-    const student = localStorage.getItem("studentData");
-    
-    if (!token || !student) {
+    // Check authentication using new utilities
+    if (!isStudentAuthenticated()) {
+      clearStudentAuth();
       setLocation("/student-login");
       return;
     }
     
-    try {
-      setStudentData(JSON.parse(student));
-    } catch (error) {
-      console.error("Error parsing student data:", error);
-      setLocation("/student-login");
+    // Maintain session
+    maintainStudentSession();
+    
+    // Set up session maintenance interval
+    const interval = setInterval(() => {
+      if (isStudentAuthenticated()) {
+        maintainStudentSession();
+      } else {
+        clearStudentAuth();
+        setLocation("/student-login");
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    const student = localStorage.getItem("studentData");
+    if (student) {
+      try {
+        setStudentData(JSON.parse(student));
+      } catch (error) {
+        console.error("Error parsing student data:", error);
+        clearStudentAuth();
+        setLocation("/student-login");
+      }
     }
+
+    return () => clearInterval(interval);
   }, [setLocation]);
 
   // Fetch scholar details with authentication
@@ -126,9 +146,8 @@ export default function StudentDashboard() {
   });
 
   const handleLogout = () => {
-    localStorage.removeItem("studentToken");
-    localStorage.removeItem("studentData");
-    setLocation("/student-login");
+    clearStudentAuth();
+    setLocation("/");
   };
 
   if (!studentData) {

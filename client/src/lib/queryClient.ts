@@ -20,6 +20,11 @@ export async function apiRequest(
   const parentToken = localStorage.getItem("parentToken");
   const adminToken = localStorage.getItem("adminToken");
   
+  // Debug logging for student token
+  if (url.includes('/api/mood/') || url.includes('/api/progress/') || url.includes('/api/reflection/') || url.includes('/api/student/')) {
+    console.log("Student API request:", { url, hasToken: !!studentToken, tokenLength: studentToken?.length });
+  }
+  
   // Student routes (including mood tracking, progress, and reflection endpoints)
   if ((url.startsWith('/api/student/') || url.startsWith('/api/mood/') || 
        url.startsWith('/api/progress/') || url.startsWith('/api/reflection/')) && studentToken) {
@@ -41,10 +46,18 @@ export async function apiRequest(
 
   // Handle token expiration by clearing localStorage
   if (res.status === 401) {
-    localStorage.removeItem("teacherToken");
-    localStorage.removeItem("parentToken");
-    localStorage.removeItem("studentToken");
-    localStorage.removeItem("adminToken");
+    // Only clear tokens for specific routes to avoid clearing valid tokens
+    if (url.includes('/api/teacher/')) {
+      localStorage.removeItem("teacherToken");
+    } else if (url.includes('/api/parent/')) {
+      localStorage.removeItem("parentToken");
+    } else if (url.includes('/api/student/') || url.includes('/api/mood/') || 
+               url.includes('/api/progress/') || url.includes('/api/reflection/')) {
+      localStorage.removeItem("studentToken");
+      localStorage.removeItem("studentData");
+    } else if (url.includes('/api/admin/')) {
+      localStorage.removeItem("adminToken");
+    }
   }
   
   await throwIfResNotOk(res);
@@ -65,6 +78,11 @@ export const getQueryFn: <T>(options: {
     const teacherToken = localStorage.getItem("teacherToken");
     const parentToken = localStorage.getItem("parentToken");
     const adminToken = localStorage.getItem("adminToken");
+    
+    // Debug logging for student token in queries
+    if (url.includes('/api/mood/') || url.includes('/api/progress/') || url.includes('/api/reflection/') || url.includes('/api/student/')) {
+      console.log("Student query request:", { url, hasToken: !!studentToken, tokenLength: studentToken?.length });
+    }
     
     // Student routes (including mood tracking, progress, and reflection endpoints)
     if ((url.includes('/api/student/') || url.includes('/api/mood/') || 

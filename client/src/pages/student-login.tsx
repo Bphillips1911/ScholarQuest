@@ -32,9 +32,14 @@ export default function StudentLogin() {
     },
     onSuccess: (data: any) => {
       console.log("Login successful:", data);
-      // Store token and student info
+      // Store token and student info with expiration tracking
       localStorage.setItem("studentToken", data.token);
       localStorage.setItem("studentData", JSON.stringify(data.student));
+      localStorage.setItem("studentTokenExpiry", String(Date.now() + (30 * 24 * 60 * 60 * 1000))); // 30 days
+      
+      // Verify token was stored properly
+      const storedToken = localStorage.getItem("studentToken");
+      console.log("Token stored successfully:", !!storedToken);
       
       toast({
         title: "Login Successful",

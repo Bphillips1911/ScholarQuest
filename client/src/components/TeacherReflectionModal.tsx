@@ -38,10 +38,7 @@ export function TeacherReflectionModal({
 
   const reviewReflection = useMutation({
     mutationFn: async ({ status, feedbackText }: { status: 'approved' | 'rejected'; feedbackText?: string }) => {
-      return apiRequest(`/api/teacher/reflections/${reflection.id}/review`, {
-        method: "POST",
-        body: { status, feedback: feedbackText }
-      });
+      return apiRequest("POST", `/api/teacher/reflections/${reflection.id}/review`, { status, feedback: feedbackText });
     },
     onSuccess: (_, variables) => {
       toast({
@@ -62,9 +59,7 @@ export function TeacherReflectionModal({
 
   const sendToParent = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/teacher/reflections/${reflection.id}/send-to-parent`, {
-        method: "POST"
-      });
+      return apiRequest("POST", `/api/teacher/reflections/${reflection.id}/send-to-parent`);
     },
     onSuccess: () => {
       toast({

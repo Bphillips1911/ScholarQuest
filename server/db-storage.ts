@@ -1404,6 +1404,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getReflectionsForParent(parentId: string): Promise<any[]> {
+    // Get parent's scholar IDs first
+    const [parent] = await db.select({
+      scholarIds: parents.scholarIds
+    })
+    .from(parents)
+    .where(eq(parents.id, parentId));
+    
+    if (!parent || !parent.scholarIds || parent.scholarIds.length === 0) {
+      console.log('📧 PARENT REFLECTIONS: No scholars found for parent:', parentId);
+      return [];
+    }
+    
+    console.log('📧 PARENT REFLECTIONS: Parent scholar IDs:', parent.scholarIds);
+    
+    // Get reflections for all linked scholars
     return await db.select({
       id: reflections.id,
       prompt: reflections.prompt,
@@ -1414,12 +1429,12 @@ export class DatabaseStorage implements IStorage {
       submittedAt: reflections.submittedAt,
       approvedAt: reflections.approvedAt,
       dueDate: reflections.dueDate,
-      studentName: sql<string>`${scholars.firstName} || ' ' || ${scholars.lastName}`,
+      studentName: scholars.name,
       studentId: scholars.id
     })
     .from(reflections)
     .innerJoin(scholars, eq(reflections.scholarId, scholars.id))
-    .where(eq(scholars.parentId, parentId))
+    .where(inArray(scholars.id, parent.scholarIds))
     .orderBy(desc(reflections.assignedAt));
   }
 

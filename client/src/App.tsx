@@ -51,6 +51,7 @@ function Router() {
         <Route path="/parent-signup" component={ParentSignup} />
         <Route path="/parent-login" component={ParentLogin} />
         <Route path="/parent-portal" component={ParentPortalEnhanced} />
+        <Route path="/parent-portal-enhanced" component={ParentPortalEnhanced} />
         
         {/* Authentication routes without navigation */}
         <Route path="/teacher-login" component={TeacherLogin} />

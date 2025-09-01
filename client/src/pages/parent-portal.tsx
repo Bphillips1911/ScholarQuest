@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { User, Star, TrendingUp, Calendar, LogOut, UserPlus, Award, MessageCircle, Clock, Send } from "lucide-react";
+import { User, Star, TrendingUp, Calendar, LogOut, UserPlus, Award, MessageCircle, Clock, Send, FileText, CheckCircle, AlertCircle, Clock3 } from "lucide-react";
 import type { Scholar, PbisEntry } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
@@ -28,7 +28,7 @@ export default function ParentPortal() {
   const [selectedScholarId, setSelectedScholarId] = useState<string>("");
   const [studentIdInput, setStudentIdInput] = useState("");
   const [showAddScholar, setShowAddScholar] = useState(false);
-  const [activeView, setActiveView] = useState<'scholars' | 'messages'>('scholars');
+  const [activeView, setActiveView] = useState<'scholars' | 'messages' | 'reflections'>('scholars');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -75,6 +75,19 @@ export default function ParentPortal() {
       return response.json();
     },
     enabled: !!parentData?.id,
+  });
+
+  // Fetch reflections for the parent
+  const { data: reflections = [] } = useQuery({
+    queryKey: ["/api/parent/reflections"],
+    queryFn: async () => {
+      const response = await fetch("/api/parent/reflections", {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch reflections");
+      return response.json();
+    },
+    enabled: !!parentData,
   });
 
   const { data: scholarDetail } = useQuery<ScholarDetail>({
@@ -239,6 +252,18 @@ export default function ParentPortal() {
                   {messages.length}
                 </Badge>
               )}
+            </button>
+            <button
+              onClick={() => setActiveView('reflections')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeView === 'reflections'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-reflections"
+            >
+              <FileText className="h-4 w-4 inline mr-2" />
+              Reflections
             </button>
           </div>
         </div>
@@ -563,6 +588,101 @@ export default function ParentPortal() {
                       <strong>✅ Database Active:</strong> Messages are now being stored in the database and will persist across sessions.
                     </p>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Reflections Content */}
+        {activeView === 'reflections' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Behavioral Reflections
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-2">
+                View your child's behavioral reflection assignments and responses
+              </p>
+            </CardHeader>
+            <CardContent>
+              {reflections.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No reflections assigned yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reflections.map((reflection: any) => (
+                    <Card key={reflection.id} className="border-l-4 border-l-blue-500">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              {reflection.status === 'assigned' && (
+                                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                              )}
+                              {reflection.status === 'submitted' && (
+                                <Clock3 className="h-5 w-5 text-blue-500" />
+                              )}
+                              {reflection.status === 'approved' && (
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                              )}
+                              <span className="font-medium">{reflection.studentName}</span>
+                            </div>
+                            <Badge variant={
+                              reflection.status === 'assigned' ? 'destructive' :
+                              reflection.status === 'submitted' ? 'secondary' :
+                              reflection.status === 'approved' ? 'default' : 'outline'
+                            }>
+                              {reflection.status === 'assigned' ? 'Needs Response' :
+                               reflection.status === 'submitted' ? 'Under Review' :
+                               reflection.status === 'approved' ? 'Completed' : reflection.status}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(reflection.assignedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium text-gray-900 mb-2">Assignment:</h4>
+                            <p className="text-gray-700 bg-gray-50 p-3 rounded-md italic">
+                              "{reflection.prompt}"
+                            </p>
+                          </div>
+                          
+                          {reflection.response && (
+                            <div>
+                              <h4 className="font-medium text-gray-900 mb-2">Student Response:</h4>
+                              <p className="text-gray-700 bg-blue-50 p-3 rounded-md">
+                                {reflection.response}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {reflection.teacherFeedback && (
+                            <div>
+                              <h4 className="font-medium text-gray-900 mb-2">Teacher Feedback:</h4>
+                              <p className="text-gray-700 bg-green-50 p-3 rounded-md">
+                                {reflection.teacherFeedback}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {reflection.dueDate && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Clock className="h-4 w-4" />
+                              Due: {new Date(reflection.dueDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </CardContent>

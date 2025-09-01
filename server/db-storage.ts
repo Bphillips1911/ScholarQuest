@@ -1285,6 +1285,26 @@ export class DatabaseStorage implements IStorage {
       prompt,
       dueDate,
     }).returning();
+
+    // Send email notification to parent
+    try {
+      const scholar = await this.getScholar(scholarId);
+      if (scholar) {
+        const parent = await this.getParentByScholarId(scholarId);
+        if (parent) {
+          const { sendReflectionAssignedNotification } = await import('./emailService');
+          await sendReflectionAssignedNotification(
+            parent.email,
+            `${parent.firstName} ${parent.lastName}`,
+            `${scholar.firstName} ${scholar.lastName}`,
+            prompt
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error sending reflection assignment notification:", error);
+    }
+
     return reflection;
   }
 
@@ -1322,6 +1342,30 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(reflections.id, reflectionId))
       .returning();
+
+    // Send email notification to parent when reflection is approved
+    if (status === 'approved') {
+      try {
+        const scholar = await this.getScholar(reflection.scholarId);
+        if (scholar && reflection.response) {
+          const parent = await this.getParentByScholarId(reflection.scholarId);
+          if (parent) {
+            const { sendReflectionApprovedNotification } = await import('./emailService');
+            await sendReflectionApprovedNotification(
+              parent.email,
+              `${parent.firstName} ${parent.lastName}`,
+              `${scholar.firstName} ${scholar.lastName}`,
+              reflection.prompt,
+              reflection.response,
+              feedback
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error sending reflection approved notification:", error);
+      }
+    }
+
     return reflection;
   }
 
@@ -1333,6 +1377,41 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(reflections.id, reflectionId));
     return (result.rowCount || 0) > 0;
+  }
+
+  async getParentByScholarId(scholarId: string): Promise<any | undefined> {
+    // Get the scholar's parent through the parent-scholar relationship
+    const [result] = await db.select({
+      id: parents.id,
+      email: parents.email,
+      firstName: parents.firstName,
+      lastName: parents.lastName
+    })
+    .from(parents)
+    .innerJoin(scholars, eq(parents.id, scholars.parentId))
+    .where(eq(scholars.id, scholarId));
+    
+    return result || undefined;
+  }
+
+  async getReflectionsForParent(parentId: string): Promise<any[]> {
+    return await db.select({
+      id: reflections.id,
+      prompt: reflections.prompt,
+      response: reflections.response,
+      status: reflections.status,
+      teacherFeedback: reflections.teacherFeedback,
+      assignedAt: reflections.assignedAt,
+      submittedAt: reflections.submittedAt,
+      approvedAt: reflections.approvedAt,
+      dueDate: reflections.dueDate,
+      studentName: sql<string>`${scholars.firstName} || ' ' || ${scholars.lastName}`,
+      studentId: scholars.id
+    })
+    .from(reflections)
+    .innerJoin(scholars, eq(reflections.scholarId, scholars.id))
+    .where(eq(scholars.parentId, parentId))
+    .orderBy(desc(reflections.assignedAt));
   }
 
   // Add this method to DatabaseStorage class

@@ -714,4 +714,110 @@ export async function sendParentReplyNotification(replyData: {
     html,
     text
   });
+}export async function sendReflectionAssignedNotification(parentEmail: string, parentName: string, studentName: string, reflectionPrompt: string): Promise<boolean> {
+  const subject = "Behavioral Reflection Assigned - " + studentName;
+  const text = `Dear ${parentName},
+
+A behavioral reflection has been assigned to your child, ${studentName}, at Bush Hills STEAM Academy.
+
+Reflection Assignment:
+"${reflectionPrompt}"
+
+Your child will need to complete this reflection as part of our Positive Behavioral Interventions and Supports (PBIS) program. This is an opportunity for ${studentName} to reflect on their behavior and develop strategies for improvement.
+
+You can view the reflection status in your parent portal. We will notify you when the reflection has been completed and reviewed.
+
+If you have any questions or concerns, please don't hesitate to contact us.
+
+Best regards,
+Bush Hills STEAM Academy`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">🏫 Bush Hills STEAM Academy - Behavioral Reflection Assigned</h2>
+      <p>Dear ${parentName},</p>
+      <p>A behavioral reflection has been assigned to your child, <strong>${studentName}</strong>, at Bush Hills STEAM Academy.</p>
+      
+      <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #856404;">Reflection Assignment:</h3>
+        <p style="font-style: italic; margin-bottom: 0;">"${reflectionPrompt}"</p>
+      </div>
+      
+      <p>Your child will need to complete this reflection as part of our Positive Behavioral Interventions and Supports (PBIS) program. This is an opportunity for ${studentName} to reflect on their behavior and develop strategies for improvement.</p>
+      
+      <p>You can view the reflection status in your parent portal. We will notify you when the reflection has been completed and reviewed.</p>
+      
+      <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
+      
+      <p>Best regards,<br>Bush Hills STEAM Academy</p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: parentEmail,
+    from: FROM_EMAIL,
+    subject,
+    text,
+    html
+  });
+}
+
+export async function sendReflectionApprovedNotification(parentEmail: string, parentName: string, studentName: string, reflectionPrompt: string, studentResponse: string, teacherFeedback?: string): Promise<boolean> {
+  const subject = "Reflection Completed and Approved - " + studentName;
+  const text = `Dear ${parentName},
+
+Your child, ${studentName}, has successfully completed their behavioral reflection assignment at Bush Hills STEAM Academy.
+
+Original Assignment:
+"${reflectionPrompt}"
+
+Student Response:
+"${studentResponse}"
+
+${teacherFeedback ? `Teacher Feedback:
+"${teacherFeedback}"` : ''}
+
+This reflection demonstrates ${studentName}'s commitment to growth and positive behavior. Thank you for supporting our PBIS program at home.
+
+You can view the complete reflection in your parent portal.
+
+Best regards,
+Bush Hills STEAM Academy`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">✅ Bush Hills STEAM Academy - Reflection Approved</h2>
+      <p>Dear ${parentName},</p>
+      <p>Your child, <strong>${studentName}</strong>, has successfully completed their behavioral reflection assignment at Bush Hills STEAM Academy.</p>
+      
+      <div style="background: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #155724;">Original Assignment:</h3>
+        <p style="font-style: italic;">"${reflectionPrompt}"</p>
+      </div>
+      
+      <div style="background: #f8f9fa; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #0c5460;">Student Response:</h3>
+        <p style="font-style: italic;">"${studentResponse}"</p>
+      </div>
+      
+      ${teacherFeedback ? `<div style="background: #f8f9fa; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #856404;">Teacher Feedback:</h3>
+        <p style="font-style: italic;">"${teacherFeedback}"</p>
+      </div>` : ''}
+      
+      <p>This reflection demonstrates ${studentName}'s commitment to growth and positive behavior. Thank you for supporting our PBIS program at home.</p>
+      
+      <p>You can view the complete reflection in your parent portal.</p>
+      
+      <p>Best regards,<br>Bush Hills STEAM Academy</p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: parentEmail,
+    from: FROM_EMAIL,
+    subject,
+    text,
+    html
+  });
 }

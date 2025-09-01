@@ -4004,6 +4004,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get reflections for parent
+  app.get('/api/parent/reflections', authenticateParent, async (req, res) => {
+    try {
+      const parentId = req.session.parentId;
+      const reflections = await storage.getReflectionsForParent(parentId);
+      res.json(reflections);
+    } catch (error) {
+      console.error('Error fetching parent reflections:', error);
+      res.status(500).json({ error: 'Failed to fetch reflections' });
+    }
+  });
+
+  // Get all approved reflections for admin
+  app.get('/api/admin/reflections', authenticateAdmin, async (req, res) => {
+    try {
+      const allReflections = await storage.getAllReflections();
+      const approvedReflections = allReflections.filter(r => r.status === 'approved');
+      res.json(approvedReflections);
+    } catch (error) {
+      console.error('Error fetching admin reflections:', error);
+      res.status(500).json({ error: 'Failed to fetch reflections' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

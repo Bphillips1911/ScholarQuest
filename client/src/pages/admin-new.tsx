@@ -83,11 +83,11 @@ export default function AdminNew() {
         };
       case 'light':
         return {
-          background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 50%, #e2e8f0 100%)',
+          background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%)',
           cardBg: '#ffffff',
-          textPrimary: '#1a202c',
-          textSecondary: '#4a5568',
-          border: '#e2e8f0'
+          textPrimary: '#14532d',
+          textSecondary: '#166534',
+          border: '#22c55e'
         };
       default: // normal
         return {
@@ -372,8 +372,8 @@ export default function AdminNew() {
                 variant="outline"
                 className="flex items-center gap-2"
                 style={{
-                  backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#f7fafc' : '#ffffff',
-                  color: currentTheme === 'dark' ? '#f7fafc' : '#1a202c',
+                  backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#22c55e' : '#ffffff',
+                  color: currentTheme === 'dark' ? '#f7fafc' : currentTheme === 'light' ? '#ffffff' : '#1a202c',
                   borderColor: themeStyles.border
                 }}
                 data-testid="button-theme-toggle"
@@ -444,7 +444,7 @@ export default function AdminNew() {
                   {pendingTeachers && pendingTeachers.length > 0 ? (
                     <div className="space-y-4">
                       {pendingTeachers.map((teacher) => (
-                        <div key={teacher.id} className="flex items-center justify-between p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : '#f9fafb', borderColor: themeStyles.border}}>
+                        <div key={teacher.id} className="flex items-center justify-between p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
                           <div className="flex-1">
                             <p className="font-medium" style={{color: themeStyles.textPrimary}}>{teacher.firstName} {teacher.lastName}</p>
                             <p className="text-sm" style={{color: themeStyles.textSecondary}}>{teacher.email}</p>
@@ -484,7 +484,7 @@ export default function AdminNew() {
                   {houses && houses.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {houses.map((house) => (
-                        <div key={house.id} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : '#ffffff', borderColor: themeStyles.border}}>
+                        <div key={house.id} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}>
                           <h3 className="font-bold" style={{color: house.color}}>
                             {house.name}
                           </h3>

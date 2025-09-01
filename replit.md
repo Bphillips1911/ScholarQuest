@@ -55,6 +55,7 @@ Preferred communication style: Simple, everyday language.
 - **Comprehensive Authentication**: Robust and consistent teacher and parent login across all environments, with a focus on deployment stability.
 - **Administrator Dashboard**: Full functionality including CSV/Excel export, QR generator, email settings, parent portal info, semester reset, teacher management, and a dedicated data export center.
 - **Comprehensive Mustang Points System**: Enhanced award/deduct system with detailed academic, attendance, and behavior criteria.
+- **Behavioral Reflection System**: Complete teacher-to-parent reflection workflow with assignment, student response, teacher approval, and parent notification via email and parent portal display.
 
 # External Dependencies
 

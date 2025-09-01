@@ -464,3 +464,82 @@ export type ParentTeacherMessage = typeof parentTeacherMessages.$inferSelect;
 export type SmsNotification = typeof smsNotifications.$inferSelect;
 export type InsertParentTeacherMessage = z.infer<typeof insertParentTeacherMessageSchema>;
 export type InsertSmsNotification = typeof smsNotifications.$inferInsert;
+
+// Mood and Progress Tracking Tables
+export const moodEntries = pgTable("mood_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  mood: text("mood").notNull(), // 'amazing', 'happy', 'okay', 'stressed', 'sad'
+  moodEmoji: text("mood_emoji").notNull(), // '😍', '😊', '😐', '😰', '😢'
+  energyLevel: integer("energy_level").notNull(), // 1-5 scale
+  focusLevel: integer("focus_level").notNull(), // 1-5 scale
+  notes: text("notes"), // Optional student notes
+  date: timestamp("date").notNull(), // The date this mood entry is for
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const progressGoals = pgTable("progress_goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  category: text("category").notNull(), // 'academic', 'behavioral', 'personal', 'social'
+  title: text("title").notNull(),
+  description: text("description"),
+  targetValue: integer("target_value").notNull(), // Target number (e.g., 5 for "Get 5 positive points this week")
+  currentValue: integer("current_value").notNull().default(0),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  status: text("status").notNull().default("active"), // 'active', 'completed', 'paused'
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const dailyReflections = pgTable("daily_reflections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  date: timestamp("date").notNull(),
+  proudMoment: text("proud_moment"), // What they're proud of today
+  challengeFaced: text("challenge_faced"), // Challenge they faced
+  tomorrowGoal: text("tomorrow_goal"), // Goal for tomorrow
+  gratitude: text("gratitude"), // What they're grateful for
+  helpNeeded: text("help_needed"), // What help they need
+  overallRating: integer("overall_rating").notNull(), // 1-5 star rating for the day
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Add insert schemas for mood tracking
+export const insertMoodEntrySchema = createInsertSchema(moodEntries).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  mood: z.enum(["amazing", "happy", "okay", "stressed", "sad"]),
+  moodEmoji: z.enum(["😍", "😊", "😐", "😰", "😢"]),
+  energyLevel: z.number().min(1).max(5),
+  focusLevel: z.number().min(1).max(5),
+  notes: z.string().optional(),
+});
+
+export const insertProgressGoalSchema = createInsertSchema(progressGoals).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+}).extend({
+  category: z.enum(["academic", "behavioral", "personal", "social"]),
+  title: z.string().min(1),
+  targetValue: z.number().min(1),
+  status: z.enum(["active", "completed", "paused"]).default("active"),
+});
+
+export const insertDailyReflectionSchema = createInsertSchema(dailyReflections).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  overallRating: z.number().min(1).max(5),
+});
+
+// Add type exports for mood tracking
+export type MoodEntry = typeof moodEntries.$inferSelect;
+export type ProgressGoal = typeof progressGoals.$inferSelect;
+export type DailyReflection = typeof dailyReflections.$inferSelect;
+export type InsertMoodEntry = typeof moodEntries.$inferInsert;
+export type InsertProgressGoal = typeof progressGoals.$inferInsert;
+export type InsertDailyReflection = typeof dailyReflections.$inferInsert;

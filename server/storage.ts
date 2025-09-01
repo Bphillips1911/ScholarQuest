@@ -12,6 +12,9 @@ import {
   type PasswordResetRequest,
   type Administrator,
   type AdminSession,
+  type MoodEntry,
+  type ProgressGoal,
+  type DailyReflection,
   type InsertHouse, 
   type InsertScholar, 
   type InsertTeacher, 
@@ -25,6 +28,9 @@ import {
   type InsertPasswordResetRequest,
   type InsertAdministrator,
   type InsertAdminSession,
+  type InsertMoodEntry,
+  type InsertProgressGoal,
+  type InsertDailyReflection,
   houses, 
   scholars, 
   teachers, 
@@ -37,7 +43,10 @@ import {
   studentSessions,
   passwordResetRequests,
   administrators,
-  adminSessions
+  adminSessions,
+  moodEntries,
+  progressGoals,
+  dailyReflections
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -207,6 +216,31 @@ export interface IStorage {
 
   // Utility
   getHouseStandings(): Promise<House[]>;
+  
+  // Mood and Progress Tracking
+  createMoodEntry(moodEntry: InsertMoodEntry): Promise<MoodEntry>;
+  getMoodEntries(scholarId: string): Promise<MoodEntry[]>;
+  getMoodEntriesByDateRange(scholarId: string, startDate: Date, endDate: Date): Promise<MoodEntry[]>;
+  getTodayMoodEntry(scholarId: string): Promise<MoodEntry | undefined>;
+  updateMoodEntry(moodEntryId: string, moodEntry: Partial<InsertMoodEntry>): Promise<MoodEntry | undefined>;
+  
+  createProgressGoal(progressGoal: InsertProgressGoal): Promise<ProgressGoal>;
+  getProgressGoals(scholarId: string): Promise<ProgressGoal[]>;
+  getActiveProgressGoals(scholarId: string): Promise<ProgressGoal[]>;
+  updateProgressGoal(goalId: string, progressGoal: Partial<InsertProgressGoal>): Promise<ProgressGoal | undefined>;
+  markProgressGoalComplete(goalId: string): Promise<boolean>;
+  updateProgressGoalProgress(goalId: string, currentValue: number): Promise<boolean>;
+  
+  createDailyReflection(dailyReflection: InsertDailyReflection): Promise<DailyReflection>;
+  getDailyReflections(scholarId: string): Promise<DailyReflection[]>;
+  getDailyReflectionsByDateRange(scholarId: string, startDate: Date, endDate: Date): Promise<DailyReflection[]>;
+  getTodayDailyReflection(scholarId: string): Promise<DailyReflection | undefined>;
+  updateDailyReflection(reflectionId: string, dailyReflection: Partial<InsertDailyReflection>): Promise<DailyReflection | undefined>;
+  
+  // Weekly/Monthly analytics for teachers/admins
+  getScholarMoodAnalytics(scholarId: string): Promise<any>;
+  getClassMoodAnalytics(grade: number): Promise<any>;
+  getHouseMoodAnalytics(houseId: string): Promise<any>;
 }
 
 export class MemStorage implements IStorage {

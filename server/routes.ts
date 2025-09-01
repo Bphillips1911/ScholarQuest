@@ -127,6 +127,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
+  const authenticateStudent = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+      const jwtSecret = "bhsa-student-secret-2025-stable";
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const student = await storage.getStudentById(decoded.studentId);
+      
+      if (!student) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      
+      req.student = {
+        id: student.id,
+        name: student.name,
+        username: student.username
+      };
+      next();
+    } catch (error) {
+      res.status(401).json({ message: "Invalid token" });
+    }
+  };
+
   const authenticateTeacherOrAdmin = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token) {
@@ -4023,6 +4049,240 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching admin reflections:', error);
       res.status(500).json({ error: 'Failed to fetch reflections' });
+    }
+  });
+
+  // ===== MOOD AND PROGRESS TRACKING API ROUTES =====
+  
+  // Mood Entries
+  app.post('/api/mood/entry', authenticateStudent, async (req: any, res) => {
+    try {
+      const moodData = {
+        scholarId: req.student.id,
+        mood: req.body.mood,
+        moodEmoji: req.body.moodEmoji,
+        energyLevel: req.body.energyLevel,
+        focusLevel: req.body.focusLevel,
+        notes: req.body.notes,
+        date: new Date()
+      };
+      
+      const moodEntry = await storage.createMoodEntry(moodData);
+      res.json(moodEntry);
+    } catch (error) {
+      console.error("Create mood entry error:", error);
+      res.status(500).json({ message: "Failed to create mood entry" });
+    }
+  });
+
+  app.get('/api/mood/entries/:scholarId', authenticateTeacher, async (req, res) => {
+    try {
+      const entries = await storage.getMoodEntries(req.params.scholarId);
+      res.json(entries);
+    } catch (error) {
+      console.error("Get mood entries error:", error);
+      res.status(500).json({ message: "Failed to get mood entries" });
+    }
+  });
+
+  app.get('/api/mood/today', authenticateStudent, async (req: any, res) => {
+    try {
+      const todayEntry = await storage.getTodayMoodEntry(req.student.id);
+      res.json(todayEntry || null);
+    } catch (error) {
+      console.error("Get today mood entry error:", error);
+      res.status(500).json({ message: "Failed to get today's mood entry" });
+    }
+  });
+
+  app.put('/api/mood/entry/:id', authenticateStudent, async (req: any, res) => {
+    try {
+      const moodData = {
+        mood: req.body.mood,
+        moodEmoji: req.body.moodEmoji,
+        energyLevel: req.body.energyLevel,
+        focusLevel: req.body.focusLevel,
+        notes: req.body.notes
+      };
+      
+      const updatedEntry = await storage.updateMoodEntry(req.params.id, moodData);
+      res.json(updatedEntry);
+    } catch (error) {
+      console.error("Update mood entry error:", error);
+      res.status(500).json({ message: "Failed to update mood entry" });
+    }
+  });
+
+  // Progress Goals
+  app.post('/api/progress/goal', authenticateStudent, async (req: any, res) => {
+    try {
+      const goalData = {
+        scholarId: req.student.id,
+        category: req.body.category,
+        title: req.body.title,
+        description: req.body.description,
+        targetValue: req.body.targetValue,
+        currentValue: 0,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        status: 'active'
+      };
+      
+      const goal = await storage.createProgressGoal(goalData);
+      res.json(goal);
+    } catch (error) {
+      console.error("Create progress goal error:", error);
+      res.status(500).json({ message: "Failed to create progress goal" });
+    }
+  });
+
+  app.get('/api/progress/goals', authenticateStudent, async (req: any, res) => {
+    try {
+      const goals = await storage.getProgressGoals(req.student.id);
+      res.json(goals);
+    } catch (error) {
+      console.error("Get progress goals error:", error);
+      res.status(500).json({ message: "Failed to get progress goals" });
+    }
+  });
+
+  app.get('/api/progress/goals/active', authenticateStudent, async (req: any, res) => {
+    try {
+      const goals = await storage.getActiveProgressGoals(req.student.id);
+      res.json(goals);
+    } catch (error) {
+      console.error("Get active progress goals error:", error);
+      res.status(500).json({ message: "Failed to get active progress goals" });
+    }
+  });
+
+  app.put('/api/progress/goal/:id', authenticateStudent, async (req, res) => {
+    try {
+      const goalData = {
+        title: req.body.title,
+        description: req.body.description,
+        targetValue: req.body.targetValue,
+        currentValue: req.body.currentValue,
+        status: req.body.status
+      };
+      
+      const updatedGoal = await storage.updateProgressGoal(req.params.id, goalData);
+      res.json(updatedGoal);
+    } catch (error) {
+      console.error("Update progress goal error:", error);
+      res.status(500).json({ message: "Failed to update progress goal" });
+    }
+  });
+
+  app.post('/api/progress/goal/:id/complete', authenticateStudent, async (req, res) => {
+    try {
+      const success = await storage.markProgressGoalComplete(req.params.id);
+      res.json({ success });
+    } catch (error) {
+      console.error("Complete progress goal error:", error);
+      res.status(500).json({ message: "Failed to complete progress goal" });
+    }
+  });
+
+  app.post('/api/progress/goal/:id/update-progress', authenticateStudent, async (req, res) => {
+    try {
+      const success = await storage.updateProgressGoalProgress(req.params.id, req.body.currentValue);
+      res.json({ success });
+    } catch (error) {
+      console.error("Update progress goal progress error:", error);
+      res.status(500).json({ message: "Failed to update progress goal progress" });
+    }
+  });
+
+  // Daily Reflections
+  app.post('/api/reflection/daily', authenticateStudent, async (req: any, res) => {
+    try {
+      const reflectionData = {
+        scholarId: req.student.id,
+        date: new Date(),
+        proudMoment: req.body.proudMoment,
+        challengeFaced: req.body.challengeFaced,
+        tomorrowGoal: req.body.tomorrowGoal,
+        gratitude: req.body.gratitude,
+        helpNeeded: req.body.helpNeeded,
+        overallRating: req.body.overallRating
+      };
+      
+      const reflection = await storage.createDailyReflection(reflectionData);
+      res.json(reflection);
+    } catch (error) {
+      console.error("Create daily reflection error:", error);
+      res.status(500).json({ message: "Failed to create daily reflection" });
+    }
+  });
+
+  app.get('/api/reflection/daily/today', authenticateStudent, async (req: any, res) => {
+    try {
+      const todayReflection = await storage.getTodayDailyReflection(req.student.id);
+      res.json(todayReflection || null);
+    } catch (error) {
+      console.error("Get today daily reflection error:", error);
+      res.status(500).json({ message: "Failed to get today's daily reflection" });
+    }
+  });
+
+  app.get('/api/reflection/daily/:scholarId', authenticateTeacher, async (req, res) => {
+    try {
+      const reflections = await storage.getDailyReflections(req.params.scholarId);
+      res.json(reflections);
+    } catch (error) {
+      console.error("Get daily reflections error:", error);
+      res.status(500).json({ message: "Failed to get daily reflections" });
+    }
+  });
+
+  app.put('/api/reflection/daily/:id', authenticateStudent, async (req, res) => {
+    try {
+      const reflectionData = {
+        proudMoment: req.body.proudMoment,
+        challengeFaced: req.body.challengeFaced,
+        tomorrowGoal: req.body.tomorrowGoal,
+        gratitude: req.body.gratitude,
+        helpNeeded: req.body.helpNeeded,
+        overallRating: req.body.overallRating
+      };
+      
+      const updatedReflection = await storage.updateDailyReflection(req.params.id, reflectionData);
+      res.json(updatedReflection);
+    } catch (error) {
+      console.error("Update daily reflection error:", error);
+      res.status(500).json({ message: "Failed to update daily reflection" });
+    }
+  });
+
+  // Analytics endpoints for teachers and admins
+  app.get('/api/analytics/mood/scholar/:scholarId', authenticateTeacher, async (req, res) => {
+    try {
+      const analytics = await storage.getScholarMoodAnalytics(req.params.scholarId);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Get scholar mood analytics error:", error);
+      res.status(500).json({ message: "Failed to get scholar mood analytics" });
+    }
+  });
+
+  app.get('/api/analytics/mood/class/:grade', authenticateTeacher, async (req, res) => {
+    try {
+      const analytics = await storage.getClassMoodAnalytics(parseInt(req.params.grade));
+      res.json(analytics);
+    } catch (error) {
+      console.error("Get class mood analytics error:", error);
+      res.status(500).json({ message: "Failed to get class mood analytics" });
+    }
+  });
+
+  app.get('/api/analytics/mood/house/:houseId', authenticateAdmin, async (req, res) => {
+    try {
+      const analytics = await storage.getHouseMoodAnalytics(req.params.houseId);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Get house mood analytics error:", error);
+      res.status(500).json({ message: "Failed to get house mood analytics" });
     }
   });
 

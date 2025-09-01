@@ -13,6 +13,9 @@ import {
   type Administrator,
   type AdminSession,
   type Reflection,
+  type MoodEntry,
+  type ProgressGoal,
+  type DailyReflection,
   type InsertReflection,
   type InsertHouse, 
   type InsertScholar, 
@@ -28,6 +31,9 @@ import {
   type InsertAdministrator,
   type InsertAdminSession,
   type InsertReflection,
+  type InsertMoodEntry,
+  type InsertProgressGoal,
+  type InsertDailyReflection,
 } from "@shared/schema";
 import * as schema from "@shared/schema";
 import { 
@@ -44,7 +50,10 @@ import {
   teacherSessions,
   teachers,
   passwordResetRequests,
-  reflections
+  reflections,
+  moodEntries,
+  progressGoals,
+  dailyReflections
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -1441,6 +1450,227 @@ export class DatabaseStorage implements IStorage {
   // Add this method to DatabaseStorage class
   async getHouseStandings(): Promise<House[]> {
     return await db.select().from(houses).orderBy(desc(sql`academic_points + attendance_points + behavior_points`));
+  }
+
+  // Mood and Progress Tracking Implementation
+  async createMoodEntry(moodEntry: InsertMoodEntry): Promise<MoodEntry> {
+    const [entry] = await db.insert(moodEntries)
+      .values({
+        id: randomUUID(),
+        ...moodEntry,
+        createdAt: new Date()
+      })
+      .returning();
+    return entry;
+  }
+
+  async getMoodEntries(scholarId: string): Promise<MoodEntry[]> {
+    return await db.select()
+      .from(moodEntries)
+      .where(eq(moodEntries.scholarId, scholarId))
+      .orderBy(desc(moodEntries.date));
+  }
+
+  async getMoodEntriesByDateRange(scholarId: string, startDate: Date, endDate: Date): Promise<MoodEntry[]> {
+    return await db.select()
+      .from(moodEntries)
+      .where(
+        and(
+          eq(moodEntries.scholarId, scholarId),
+          sql`${moodEntries.date} >= ${startDate}`,
+          sql`${moodEntries.date} <= ${endDate}`
+        )
+      )
+      .orderBy(desc(moodEntries.date));
+  }
+
+  async getTodayMoodEntry(scholarId: string): Promise<MoodEntry | undefined> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [entry] = await db.select()
+      .from(moodEntries)
+      .where(
+        and(
+          eq(moodEntries.scholarId, scholarId),
+          sql`${moodEntries.date} >= ${today}`,
+          sql`${moodEntries.date} < ${tomorrow}`
+        )
+      )
+      .limit(1);
+    return entry;
+  }
+
+  async updateMoodEntry(moodEntryId: string, moodEntry: Partial<InsertMoodEntry>): Promise<MoodEntry | undefined> {
+    const [entry] = await db.update(moodEntries)
+      .set(moodEntry)
+      .where(eq(moodEntries.id, moodEntryId))
+      .returning();
+    return entry;
+  }
+
+  async createProgressGoal(progressGoal: InsertProgressGoal): Promise<ProgressGoal> {
+    const [goal] = await db.insert(progressGoals)
+      .values({
+        id: randomUUID(),
+        ...progressGoal,
+        createdAt: new Date()
+      })
+      .returning();
+    return goal;
+  }
+
+  async getProgressGoals(scholarId: string): Promise<ProgressGoal[]> {
+    return await db.select()
+      .from(progressGoals)
+      .where(eq(progressGoals.scholarId, scholarId))
+      .orderBy(desc(progressGoals.createdAt));
+  }
+
+  async getActiveProgressGoals(scholarId: string): Promise<ProgressGoal[]> {
+    return await db.select()
+      .from(progressGoals)
+      .where(
+        and(
+          eq(progressGoals.scholarId, scholarId),
+          eq(progressGoals.status, 'active')
+        )
+      )
+      .orderBy(desc(progressGoals.createdAt));
+  }
+
+  async updateProgressGoal(goalId: string, progressGoal: Partial<InsertProgressGoal>): Promise<ProgressGoal | undefined> {
+    const [goal] = await db.update(progressGoals)
+      .set(progressGoal)
+      .where(eq(progressGoals.id, goalId))
+      .returning();
+    return goal;
+  }
+
+  async markProgressGoalComplete(goalId: string): Promise<boolean> {
+    const result = await db.update(progressGoals)
+      .set({
+        status: 'completed',
+        completedAt: new Date()
+      })
+      .where(eq(progressGoals.id, goalId));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async updateProgressGoalProgress(goalId: string, currentValue: number): Promise<boolean> {
+    const result = await db.update(progressGoals)
+      .set({ currentValue })
+      .where(eq(progressGoals.id, goalId));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async createDailyReflection(dailyReflection: InsertDailyReflection): Promise<DailyReflection> {
+    const [reflection] = await db.insert(dailyReflections)
+      .values({
+        id: randomUUID(),
+        ...dailyReflection,
+        createdAt: new Date()
+      })
+      .returning();
+    return reflection;
+  }
+
+  async getDailyReflections(scholarId: string): Promise<DailyReflection[]> {
+    return await db.select()
+      .from(dailyReflections)
+      .where(eq(dailyReflections.scholarId, scholarId))
+      .orderBy(desc(dailyReflections.date));
+  }
+
+  async getDailyReflectionsByDateRange(scholarId: string, startDate: Date, endDate: Date): Promise<DailyReflection[]> {
+    return await db.select()
+      .from(dailyReflections)
+      .where(
+        and(
+          eq(dailyReflections.scholarId, scholarId),
+          sql`${dailyReflections.date} >= ${startDate}`,
+          sql`${dailyReflections.date} <= ${endDate}`
+        )
+      )
+      .orderBy(desc(dailyReflections.date));
+  }
+
+  async getTodayDailyReflection(scholarId: string): Promise<DailyReflection | undefined> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [reflection] = await db.select()
+      .from(dailyReflections)
+      .where(
+        and(
+          eq(dailyReflections.scholarId, scholarId),
+          sql`${dailyReflections.date} >= ${today}`,
+          sql`${dailyReflections.date} < ${tomorrow}`
+        )
+      )
+      .limit(1);
+    return reflection;
+  }
+
+  async updateDailyReflection(reflectionId: string, dailyReflection: Partial<InsertDailyReflection>): Promise<DailyReflection | undefined> {
+    const [reflection] = await db.update(dailyReflections)
+      .set(dailyReflection)
+      .where(eq(dailyReflections.id, reflectionId))
+      .returning();
+    return reflection;
+  }
+
+  // Analytics methods for teachers/admins
+  async getScholarMoodAnalytics(scholarId: string): Promise<any> {
+    const entries = await this.getMoodEntries(scholarId);
+    const weekEntries = entries.filter(e => {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return new Date(e.date) >= weekAgo;
+    });
+
+    return {
+      totalEntries: entries.length,
+      weekEntries: weekEntries.length,
+      averageEnergy: weekEntries.reduce((sum, e) => sum + e.energyLevel, 0) / Math.max(weekEntries.length, 1),
+      averageFocus: weekEntries.reduce((sum, e) => sum + e.focusLevel, 0) / Math.max(weekEntries.length, 1),
+      moodDistribution: weekEntries.reduce((acc, e) => {
+        acc[e.mood] = (acc[e.mood] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    };
+  }
+
+  async getClassMoodAnalytics(grade: number): Promise<any> {
+    const classScholars = await this.getScholarsByGrade(grade);
+    const analytics = await Promise.all(
+      classScholars.map(scholar => this.getScholarMoodAnalytics(scholar.id))
+    );
+
+    return {
+      totalStudents: classScholars.length,
+      classAverageEnergy: analytics.reduce((sum, a) => sum + a.averageEnergy, 0) / Math.max(analytics.length, 1),
+      classAverageFocus: analytics.reduce((sum, a) => sum + a.averageFocus, 0) / Math.max(analytics.length, 1),
+      studentsWithEntries: analytics.filter(a => a.totalEntries > 0).length
+    };
+  }
+
+  async getHouseMoodAnalytics(houseId: string): Promise<any> {
+    const houseScholars = await this.getScholarsByHouse(houseId);
+    const analytics = await Promise.all(
+      houseScholars.map(scholar => this.getScholarMoodAnalytics(scholar.id))
+    );
+
+    return {
+      totalStudents: houseScholars.length,
+      houseAverageEnergy: analytics.reduce((sum, a) => sum + a.averageEnergy, 0) / Math.max(analytics.length, 1),
+      houseAverageFocus: analytics.reduce((sum, a) => sum + a.averageFocus, 0) / Math.max(analytics.length, 1),
+      studentsWithEntries: analytics.filter(a => a.totalEntries > 0).length
+    };
   }
 }
 

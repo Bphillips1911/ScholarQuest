@@ -189,15 +189,26 @@ export default function StudentDashboard() {
                 <p className="text-gray-600 text-sm">Bush Hills STEAM Academy</p>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="flex items-center space-x-2"
-              data-testid="button-logout"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Sign Out</span>
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setLocation("/student-mood-tracker")}
+                className="flex items-center space-x-2"
+                data-testid="button-mood-tracker"
+              >
+                <Heart className="h-4 w-4" />
+                <span>Mood Tracker</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="flex items-center space-x-2"
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sign Out</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>

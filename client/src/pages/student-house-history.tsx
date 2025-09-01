@@ -326,12 +326,12 @@ export default function StudentHouseHistory() {
     }
   }, [autoPlay, isPlaying, currentChapter, currentStories.length]);
 
-  // Auto-read when chapter changes and audio is enabled
+  // Auto-read when chapter changes and audio is enabled (only if autoPlay is active)
   useEffect(() => {
-    if (currentStory && isPlaying && !isMuted) {
+    if (currentStory && isPlaying && autoPlay && !isMuted) {
       setTimeout(() => readStoryContent(currentStory), 1000);
     }
-  }, [currentChapter, currentStory, isPlaying, isMuted]);
+  }, [currentChapter, currentStory, isPlaying, autoPlay, isMuted]);
 
   if (!studentData) {
     return (
@@ -446,8 +446,20 @@ export default function StudentHouseHistory() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setIsPlaying(!isPlaying);
-                          if (!isPlaying) setAutoPlay(true);
+                          const newPlayingState = !isPlaying;
+                          
+                          // Stop any current reading when toggling play
+                          if (!newPlayingState) {
+                            stopReading();
+                          }
+                          
+                          setIsPlaying(newPlayingState);
+                          setAutoPlay(newPlayingState);
+                          
+                          // Start reading immediately when play is pressed
+                          if (newPlayingState && currentStory && !isMuted) {
+                            setTimeout(() => readStoryContent(currentStory), 500);
+                          }
                         }}
                         className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                       >
@@ -468,7 +480,14 @@ export default function StudentHouseHistory() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => readStoryContent(currentStory)}
+                        onClick={() => {
+                          // Stop autoplay if it's running to prevent interference
+                          if (isPlaying) {
+                            setIsPlaying(false);
+                            setAutoPlay(false);
+                          }
+                          readStoryContent(currentStory);
+                        }}
                         disabled={isReading}
                         className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                       >

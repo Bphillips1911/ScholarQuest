@@ -3622,6 +3622,307 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Badge System API Routes
+  // Get all badges
+  app.get("/api/badges", async (req, res) => {
+    try {
+      const badges = await storage.getAllBadges();
+      res.json(badges);
+    } catch (error) {
+      console.error("Get badges error:", error);
+      res.status(500).json({ message: "Failed to fetch badges" });
+    }
+  });
+
+  // Get student badges
+  app.get("/api/student/badges", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const badges = await storage.getScholarBadges(session.studentId);
+      res.json(badges);
+    } catch (error) {
+      console.error("Get student badges error:", error);
+      res.status(500).json({ message: "Failed to fetch student badges" });
+    }
+  });
+
+  // Get badges by house
+  app.get("/api/houses/:houseId/badges", async (req, res) => {
+    try {
+      const { houseId } = req.params;
+      const badges = await storage.getBadgesByHouse(houseId);
+      res.json(badges);
+    } catch (error) {
+      console.error("Get house badges error:", error);
+      res.status(500).json({ message: "Failed to fetch house badges" });
+    }
+  });
+
+  // Game System API Routes
+  // Get all games
+  app.get("/api/games", async (req, res) => {
+    try {
+      const games = await storage.getAllGames();
+      res.json(games);
+    } catch (error) {
+      console.error("Get games error:", error);
+      res.status(500).json({ message: "Failed to fetch games" });
+    }
+  });
+
+  // Get games with access for student
+  app.get("/api/student/games", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const games = await storage.getGamesWithAccess(session.studentId);
+      res.json(games);
+    } catch (error) {
+      console.error("Get student games error:", error);
+      res.status(500).json({ message: "Failed to fetch student games" });
+    }
+  });
+
+  // Grant game access (teacher)
+  app.post("/api/teacher/games/grant-access", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getTeacherSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const { studentId, gameId, expiresAt } = req.body;
+      if (!studentId || !gameId) {
+        return res.status(400).json({ message: "Student ID and Game ID required" });
+      }
+
+      const gameAccess = await storage.grantGameAccess(
+        studentId, 
+        gameId, 
+        session.teacherId, 
+        expiresAt ? new Date(expiresAt) : undefined
+      );
+
+      res.json(gameAccess);
+    } catch (error) {
+      console.error("Grant game access error:", error);
+      res.status(500).json({ message: "Failed to grant game access" });
+    }
+  });
+
+  // Record game session
+  app.post("/api/student/games/session", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const { gameId, score, duration, completed } = req.body;
+      if (!gameId || score === undefined || duration === undefined) {
+        return res.status(400).json({ message: "Game ID, score, and duration required" });
+      }
+
+      const gameSession = await storage.recordGameSession(
+        session.studentId,
+        gameId,
+        score,
+        duration,
+        completed || false
+      );
+
+      // Check and award badges after game completion
+      if (completed) {
+        await storage.checkAndAwardBadges(session.studentId);
+      }
+
+      res.json(gameSession);
+    } catch (error) {
+      console.error("Record game session error:", error);
+      res.status(500).json({ message: "Failed to record game session" });
+    }
+  });
+
+  // Reflection System API Routes
+  // Get student reflections
+  app.get("/api/student/reflections", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const reflections = await storage.getReflectionsForStudent(session.studentId);
+      res.json(reflections);
+    } catch (error) {
+      console.error("Get student reflections error:", error);
+      res.status(500).json({ message: "Failed to fetch reflections" });
+    }
+  });
+
+  // Submit reflection
+  app.post("/api/student/reflections/:reflectionId/submit", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const { reflectionId } = req.params;
+      const { response } = req.body;
+
+      if (!response || response.trim().length === 0) {
+        return res.status(400).json({ message: "Response required" });
+      }
+
+      await storage.submitReflection(reflectionId, response);
+      res.json({ message: "Reflection submitted successfully" });
+    } catch (error) {
+      console.error("Submit reflection error:", error);
+      res.status(500).json({ message: "Failed to submit reflection" });
+    }
+  });
+
+  // Get teacher reflections
+  app.get("/api/teacher/reflections", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getTeacherSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const reflections = await storage.getReflectionsForTeacher(session.teacherId);
+      res.json(reflections);
+    } catch (error) {
+      console.error("Get teacher reflections error:", error);
+      res.status(500).json({ message: "Failed to fetch reflections" });
+    }
+  });
+
+  // Assign reflection (teacher)
+  app.post("/api/teacher/reflections/assign", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getTeacherSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const { studentId, pbisEntryId, prompt, dueDate } = req.body;
+      if (!studentId || !pbisEntryId || !prompt) {
+        return res.status(400).json({ message: "Student ID, PBIS Entry ID, and prompt required" });
+      }
+
+      const reflection = await storage.assignReflection(
+        studentId,
+        pbisEntryId,
+        session.teacherId,
+        prompt,
+        dueDate ? new Date(dueDate) : undefined
+      );
+
+      res.json(reflection);
+    } catch (error) {
+      console.error("Assign reflection error:", error);
+      res.status(500).json({ message: "Failed to assign reflection" });
+    }
+  });
+
+  // Review reflection (teacher)
+  app.post("/api/teacher/reflections/:reflectionId/review", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getTeacherSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const { reflectionId } = req.params;
+      const { status, feedback } = req.body;
+
+      if (!status || !['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Valid status required (approved/rejected)" });
+      }
+
+      await storage.reviewReflection(reflectionId, status, session.teacherId, feedback);
+      res.json({ message: `Reflection ${status} successfully` });
+    } catch (error) {
+      console.error("Review reflection error:", error);
+      res.status(500).json({ message: "Failed to review reflection" });
+    }
+  });
+
+  // Check and award badges endpoint (called after point changes)
+  app.post("/api/student/badges/check", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const newBadges = await storage.checkAndAwardBadges(session.studentId);
+      res.json({ newBadges });
+    } catch (error) {
+      console.error("Check badges error:", error);
+      res.status(500).json({ message: "Failed to check badges" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

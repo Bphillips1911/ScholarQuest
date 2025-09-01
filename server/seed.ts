@@ -205,7 +205,11 @@ export async function seedDatabase() {
     // Initialize admin users
     await seedAdminUsers();
     
-    console.log("Database seeded successfully with houses, scholars, teachers, and administrators");
+    // Initialize badges and games
+    const { seedBadgesAndGames } = await import('./seed-badges-games');
+    await seedBadgesAndGames();
+    
+    console.log("Database seeded successfully with houses, scholars, teachers, administrators, badges, and games");
   } catch (error) {
     console.error("Error seeding database:", error);
   }

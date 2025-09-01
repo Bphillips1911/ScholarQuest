@@ -76,6 +76,106 @@ export const pbisEntries = pgTable("pbis_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Badge system for PBIS achievements
+export const badges = pgTable("badges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(), // "Bronze Scholar", "Silver Champion", "Gold Mustang", etc.
+  description: text("description").notNull(),
+  houseId: varchar("house_id").references(() => houses.id), // House-specific badges
+  category: text("category").notNull(), // 'academic', 'attendance', 'behavior', 'overall'
+  pointsRequired: integer("points_required").notNull(), // Points needed to earn badge
+  level: integer("level").notNull(), // 1=Bronze, 2=Silver, 3=Gold, 4=Platinum, 5=Diamond
+  iconPath: text("icon_path").notNull(), // Path to badge graphic
+  animationType: text("animation_type").default("pulse"), // 'pulse', 'glow', 'rotate', 'bounce'
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Scholar badges earned/lost
+export const scholarBadges = pgTable("scholar_badges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  badgeId: varchar("badge_id").notNull().references(() => badges.id),
+  earnedAt: timestamp("earned_at").defaultNow(),
+  isActive: boolean("is_active").notNull().default(true), // Can be revoked if points lost
+  revokedAt: timestamp("revoked_at"),
+  revokedReason: text("revoked_reason"),
+});
+
+// Interactive games system
+export const games = pgTable("games", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(), // 'sports', 'puzzle', 'arcade', 'strategy'
+  difficulty: text("difficulty").notNull().default("easy"), // 'easy', 'medium', 'hard'
+  badgeRequired: varchar("badge_required").references(() => badges.id), // Badge needed to unlock
+  pointsRequired: integer("points_required").default(0), // Alternative: points needed to unlock
+  iconPath: text("icon_path").notNull(),
+  gamePath: text("game_path").notNull(), // Path to game component
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Game access permissions granted by teachers
+export const gameAccess = pgTable("game_access", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  gameId: varchar("game_id").notNull().references(() => games.id),
+  grantedBy: varchar("granted_by").notNull().references(() => teacherAuth.id),
+  grantedAt: timestamp("granted_at").defaultNow(),
+  expiresAt: timestamp("expires_at"), // Optional expiration
+  isActive: boolean("is_active").notNull().default(true),
+  revokedAt: timestamp("revoked_at"),
+  revokedBy: varchar("revoked_by").references(() => teacherAuth.id),
+  revokedReason: text("revoked_reason"),
+});
+
+// Scholar game sessions
+export const gameSessions = pgTable("game_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  gameId: varchar("game_id").notNull().references(() => games.id),
+  score: integer("score").default(0),
+  duration: integer("duration_seconds").default(0), // Game session length
+  completed: boolean("completed").notNull().default(false),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Reflection system for negative behaviors
+export const reflections = pgTable("reflections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  pbisEntryId: varchar("pbis_entry_id").notNull().references(() => pbisEntries.id), // Linked to negative PBIS entry
+  assignedBy: varchar("assigned_by").notNull().references(() => teacherAuth.id),
+  prompt: text("prompt").notNull(), // Teacher's reflection prompt/question
+  response: text("response"), // Student's reflection response
+  status: text("status").notNull().default("assigned"), // 'assigned', 'submitted', 'approved', 'rejected'
+  teacherFeedback: text("teacher_feedback"), // Teacher's comments
+  approvedBy: varchar("approved_by").references(() => teacherAuth.id),
+  sentToParent: boolean("sent_to_parent").notNull().default(false),
+  sentToParentAt: timestamp("sent_to_parent_at"),
+  dueDate: timestamp("due_date"),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  submittedAt: timestamp("submitted_at"),
+  approvedAt: timestamp("approved_at"),
+});
+
+// Export types for all new tables
+export type Badge = typeof badges.$inferSelect;
+export type InsertBadge = typeof badges.$inferInsert;
+export type ScholarBadge = typeof scholarBadges.$inferSelect;
+export type InsertScholarBadge = typeof scholarBadges.$inferInsert;
+export type Game = typeof games.$inferSelect;
+export type InsertGame = typeof games.$inferInsert;
+export type GameAccess = typeof gameAccess.$inferSelect;
+export type InsertGameAccess = typeof gameAccess.$inferInsert;
+export type GameSession = typeof gameSessions.$inferSelect;
+export type InsertGameSession = typeof gameSessions.$inferInsert;
+export type Reflection = typeof reflections.$inferSelect;
+export type InsertReflection = typeof reflections.$inferInsert;
+
 export const pbisPhotos = pgTable("pbis_photos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   filename: text("filename").notNull(),

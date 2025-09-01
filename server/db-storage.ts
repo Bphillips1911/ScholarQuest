@@ -1025,6 +1025,238 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Badge System Methods
+  async getAllBadges(): Promise<schema.Badge[]> {
+    return await db.select().from(schema.badges).where(eq(schema.badges.isActive, true));
+  }
+
+  async getBadgesByHouse(houseId: string): Promise<schema.Badge[]> {
+    return await db.select().from(schema.badges)
+      .where(and(eq(schema.badges.houseId, houseId), eq(schema.badges.isActive, true)));
+  }
+
+  async getScholarBadges(scholarId: string): Promise<(schema.ScholarBadge & { badge: schema.Badge })[]> {
+    return await db.select().from(schema.scholarBadges)
+      .innerJoin(schema.badges, eq(schema.scholarBadges.badgeId, schema.badges.id))
+      .where(and(
+        eq(schema.scholarBadges.scholarId, scholarId),
+        eq(schema.scholarBadges.isActive, true)
+      ));
+  }
+
+  async awardBadge(scholarId: string, badgeId: string): Promise<schema.ScholarBadge> {
+    const [scholarBadge] = await db.insert(schema.scholarBadges)
+      .values({ scholarId, badgeId })
+      .returning();
+    return scholarBadge;
+  }
+
+  async revokeBadge(scholarId: string, badgeId: string, reason: string): Promise<void> {
+    await db.update(schema.scholarBadges)
+      .set({ 
+        isActive: false, 
+        revokedAt: new Date(), 
+        revokedReason: reason 
+      })
+      .where(and(
+        eq(schema.scholarBadges.scholarId, scholarId),
+        eq(schema.scholarBadges.badgeId, badgeId),
+        eq(schema.scholarBadges.isActive, true)
+      ));
+  }
+
+  // Game System Methods
+  async getAllGames(): Promise<schema.Game[]> {
+    return await db.select().from(schema.games).where(eq(schema.games.isActive, true));
+  }
+
+  async getGamesWithAccess(scholarId: string): Promise<any[]> {
+    const games = await db.select().from(schema.games).where(eq(schema.games.isActive, true));
+    
+    const gamesWithAccess = await Promise.all(games.map(async (game) => {
+      // Check if student has access
+      const [access] = await db.select().from(schema.gameAccess)
+        .where(and(
+          eq(schema.gameAccess.scholarId, scholarId),
+          eq(schema.gameAccess.gameId, game.id),
+          eq(schema.gameAccess.isActive, true)
+        ));
+
+      // Check if student meets requirements
+      const scholar = await this.getScholarById(scholarId);
+      if (!scholar) return { ...game, isUnlocked: false, canPlay: false };
+
+      const totalPoints = scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints;
+      const hasRequiredPoints = game.pointsRequired ? totalPoints >= game.pointsRequired : true;
+      
+      // Check badge requirement
+      let hasRequiredBadge = true;
+      if (game.badgeRequired) {
+        const scholarBadges = await this.getScholarBadges(scholarId);
+        hasRequiredBadge = scholarBadges.some(sb => sb.badge.id === game.badgeRequired);
+      }
+
+      const isUnlocked = hasRequiredPoints && hasRequiredBadge;
+      const canPlay = isUnlocked && !!access;
+
+      return {
+        ...game,
+        access,
+        isUnlocked,
+        canPlay
+      };
+    }));
+
+    return gamesWithAccess;
+  }
+
+  async grantGameAccess(scholarId: string, gameId: string, grantedBy: string, expiresAt?: Date): Promise<schema.GameAccess> {
+    const [gameAccess] = await db.insert(schema.gameAccess)
+      .values({ scholarId, gameId, grantedBy, expiresAt })
+      .returning();
+    return gameAccess;
+  }
+
+  async revokeGameAccess(scholarId: string, gameId: string, revokedBy: string, reason: string): Promise<void> {
+    await db.update(schema.gameAccess)
+      .set({ 
+        isActive: false, 
+        revokedAt: new Date(), 
+        revokedBy, 
+        revokedReason: reason 
+      })
+      .where(and(
+        eq(schema.gameAccess.scholarId, scholarId),
+        eq(schema.gameAccess.gameId, gameId),
+        eq(schema.gameAccess.isActive, true)
+      ));
+  }
+
+  async recordGameSession(
+    scholarId: string, 
+    gameId: string, 
+    score: number, 
+    duration: number, 
+    completed: boolean
+  ): Promise<schema.GameSession> {
+    const [gameSession] = await db.insert(schema.gameSessions)
+      .values({ 
+        scholarId, 
+        gameId, 
+        score, 
+        duration_seconds: duration, 
+        completed,
+        completedAt: completed ? new Date() : undefined
+      })
+      .returning();
+    return gameSession;
+  }
+
+  // Reflection System Methods
+  async assignReflection(
+    scholarId: string,
+    pbisEntryId: string,
+    assignedBy: string,
+    prompt: string,
+    dueDate?: Date
+  ): Promise<schema.Reflection> {
+    const [reflection] = await db.insert(schema.reflections)
+      .values({ scholarId, pbisEntryId, assignedBy, prompt, dueDate })
+      .returning();
+    return reflection;
+  }
+
+  async getReflectionsForStudent(scholarId: string): Promise<schema.Reflection[]> {
+    return await db.select().from(schema.reflections)
+      .where(eq(schema.reflections.scholarId, scholarId))
+      .orderBy(desc(schema.reflections.assignedAt));
+  }
+
+  async getReflectionsForTeacher(teacherId: string): Promise<any[]> {
+    return await db.select({
+      reflection: schema.reflections,
+      student: schema.scholars,
+      pbisEntry: schema.pbisEntries
+    })
+    .from(schema.reflections)
+    .innerJoin(schema.scholars, eq(schema.reflections.scholarId, schema.scholars.id))
+    .leftJoin(schema.pbisEntries, eq(schema.reflections.pbisEntryId, schema.pbisEntries.id))
+    .where(eq(schema.reflections.assignedBy, teacherId))
+    .orderBy(desc(schema.reflections.assignedAt));
+  }
+
+  async submitReflection(reflectionId: string, response: string): Promise<void> {
+    await db.update(schema.reflections)
+      .set({ 
+        response, 
+        status: 'submitted', 
+        submittedAt: new Date() 
+      })
+      .where(eq(schema.reflections.id, reflectionId));
+  }
+
+  async reviewReflection(
+    reflectionId: string, 
+    status: 'approved' | 'rejected', 
+    approvedBy: string, 
+    feedback?: string
+  ): Promise<void> {
+    const updateData: any = {
+      status,
+      approvedBy,
+      approvedAt: new Date()
+    };
+
+    if (feedback) {
+      updateData.teacherFeedback = feedback;
+    }
+
+    if (status === 'approved') {
+      updateData.sentToParent = true;
+      updateData.sentToParentAt = new Date();
+    }
+
+    await db.update(schema.reflections)
+      .set(updateData)
+      .where(eq(schema.reflections.id, reflectionId));
+  }
+
+  // Badge Auto-Award System
+  async checkAndAwardBadges(scholarId: string): Promise<schema.ScholarBadge[]> {
+    const scholar = await this.getScholarById(scholarId);
+    if (!scholar) return [];
+
+    const totalPoints = scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints;
+    const availableBadges = await this.getBadgesByHouse(scholar.houseId || '');
+    const currentBadges = await this.getScholarBadges(scholarId);
+    const currentBadgeIds = currentBadges.map(sb => sb.badge.id);
+
+    const newBadges: schema.ScholarBadge[] = [];
+
+    for (const badge of availableBadges) {
+      if (currentBadgeIds.includes(badge.id)) continue;
+
+      let qualifies = false;
+
+      if (badge.category === 'overall') {
+        qualifies = totalPoints >= badge.pointsRequired;
+      } else if (badge.category === 'academic') {
+        qualifies = scholar.academicPoints >= badge.pointsRequired;
+      } else if (badge.category === 'attendance') {
+        qualifies = scholar.attendancePoints >= badge.pointsRequired;
+      } else if (badge.category === 'behavior') {
+        qualifies = scholar.behaviorPoints >= badge.pointsRequired;
+      }
+
+      if (qualifies) {
+        const newBadge = await this.awardBadge(scholarId, badge.id);
+        newBadges.push(newBadge);
+      }
+    }
+
+    return newBadges;
+  }
 }
 
 // Force deployment sync - ensure latest fixes are deployed

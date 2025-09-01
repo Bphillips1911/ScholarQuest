@@ -4661,6 +4661,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import gamified learning routes
+  const {
+    getStudentStickerCollections,
+    getStudentRecentStickers,
+    getTodaysChallenges,
+    getWeeklyChallenges,
+    getChallengeStreak,
+    completeChallenge,
+    getTodaysMoodCheckin,
+    createMoodCheckin,
+    getMoodRecommendations,
+    completeActivity
+  } = await import('./gamified-learning-routes');
+
+  // GAMIFIED LEARNING ROUTES
+
+  // Sticker Collection Routes
+  app.get('/api/student/stickers/collections/:studentId', getStudentStickerCollections);
+  app.get('/api/student/stickers/recent/:studentId', getStudentRecentStickers);
+
+  // Daily Challenges Routes
+  app.get('/api/student/challenges/today/:studentId/:grade', getTodaysChallenges);
+  app.get('/api/student/challenges/week/:studentId', getWeeklyChallenges);
+  app.get('/api/student/challenges/streak/:studentId', getChallengeStreak);
+  app.post('/api/student/challenges/complete', completeChallenge);
+
+  // Mood-Based Learning Routes
+  app.get('/api/student/mood/today/:studentId', getTodaysMoodCheckin);
+  app.post('/api/student/mood/checkin', createMoodCheckin);
+  app.get('/api/student/mood/recommendations/:studentId/:mood/:energyLevel', getMoodRecommendations);
+  app.post('/api/student/mood/complete-activity', completeActivity);
+
   const httpServer = createServer(app);
   return httpServer;
 }

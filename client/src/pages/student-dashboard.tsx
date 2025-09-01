@@ -362,6 +362,17 @@ function StudentDashboardContent() {
               <InteractiveScale>
                 <Button 
                   variant="outline" 
+                  onClick={() => setLocation("/gamified-learning")}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-400 hover:from-purple-600 hover:to-pink-600"
+                  data-testid="button-gamified-learning"
+                >
+                  <Trophy className="h-4 w-4" />
+                  <span>Game Zone</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
                   onClick={() => setThemesModalOpen(true)}
                   className="flex items-center space-x-2"
                   data-testid="button-themes"

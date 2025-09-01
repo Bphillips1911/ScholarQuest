@@ -112,15 +112,9 @@ export default function StudentMoodTracker() {
   const moodMutation = useMutation({
     mutationFn: async (moodData: any) => {
       if (todayMood) {
-        return apiRequest(`/api/mood/entry/${todayMood.id}`, {
-          method: "PUT",
-          body: moodData,
-        });
+        return apiRequest("PUT", `/api/mood/entry/${todayMood.id}`, moodData);
       } else {
-        return apiRequest("/api/mood/entry", {
-          method: "POST",
-          body: moodData,
-        });
+        return apiRequest("POST", "/api/mood/entry", moodData);
       }
     },
     onSuccess: () => {
@@ -145,13 +139,10 @@ export default function StudentMoodTracker() {
       const startDate = new Date().toISOString();
       const endDate = new Date(goalData.endDate).toISOString();
       
-      return apiRequest("/api/progress/goal", {
-        method: "POST",
-        body: {
-          ...goalData,
-          startDate,
-          endDate,
-        },
+      return apiRequest("POST", "/api/progress/goal", {
+        ...goalData,
+        startDate,
+        endDate,
       });
     },
     onSuccess: () => {
@@ -182,15 +173,9 @@ export default function StudentMoodTracker() {
   const reflectionMutation = useMutation({
     mutationFn: async (reflectionData: any) => {
       if (todayReflection) {
-        return apiRequest(`/api/reflection/daily/${todayReflection.id}`, {
-          method: "PUT",
-          body: reflectionData,
-        });
+        return apiRequest("PUT", `/api/reflection/daily/${todayReflection.id}`, reflectionData);
       } else {
-        return apiRequest("/api/reflection/daily", {
-          method: "POST",
-          body: reflectionData,
-        });
+        return apiRequest("POST", "/api/reflection/daily", reflectionData);
       }
     },
     onSuccess: () => {
@@ -213,10 +198,7 @@ export default function StudentMoodTracker() {
   // Update progress goal mutation
   const updateProgressMutation = useMutation({
     mutationFn: async ({ goalId, currentValue }: { goalId: string; currentValue: number }) => {
-      return apiRequest(`/api/progress/goal/${goalId}/update-progress`, {
-        method: "POST",
-        body: { currentValue },
-      });
+      return apiRequest("POST", `/api/progress/goal/${goalId}/update-progress`, { currentValue });
     },
     onSuccess: () => {
       toast({
@@ -230,9 +212,7 @@ export default function StudentMoodTracker() {
   // Complete goal mutation
   const completeGoalMutation = useMutation({
     mutationFn: async (goalId: string) => {
-      return apiRequest(`/api/progress/goal/${goalId}/complete`, {
-        method: "POST",
-      });
+      return apiRequest("POST", `/api/progress/goal/${goalId}/complete`);
     },
     onSuccess: () => {
       toast({

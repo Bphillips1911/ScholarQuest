@@ -20,7 +20,9 @@ export async function apiRequest(
   const parentToken = localStorage.getItem("parentToken");
   const adminToken = localStorage.getItem("adminToken");
   
-  if (url.startsWith('/api/student/') && studentToken) {
+  // Student routes (including mood tracking, progress, and reflection endpoints)
+  if ((url.startsWith('/api/student/') || url.startsWith('/api/mood/') || 
+       url.startsWith('/api/progress/') || url.startsWith('/api/reflection/')) && studentToken) {
     headers.Authorization = `Bearer ${studentToken}`;
   } else if (url.startsWith('/api/teacher/') && teacherToken) {
     headers.Authorization = `Bearer ${teacherToken}`;
@@ -64,7 +66,9 @@ export const getQueryFn: <T>(options: {
     const parentToken = localStorage.getItem("parentToken");
     const adminToken = localStorage.getItem("adminToken");
     
-    if (url.includes('/api/student/') && studentToken) {
+    // Student routes (including mood tracking, progress, and reflection endpoints)
+    if ((url.includes('/api/student/') || url.includes('/api/mood/') || 
+         url.includes('/api/progress/') || url.includes('/api/reflection/')) && studentToken) {
       headers.Authorization = `Bearer ${studentToken}`;
     } else if (url.includes('/api/teacher/') && teacherToken) {
       headers.Authorization = `Bearer ${teacherToken}`;

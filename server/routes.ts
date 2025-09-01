@@ -502,15 +502,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (entry.points < 0 || entry.entryType === 'negative') {
         try {
           console.log(`🔴 NEGATIVE CHARACTERISTIC: Assigning reflection for PBIS entry ${entry.id}`);
+          
+          // Find the teacher ID from the teacher name to ensure proper assignment tracking
+          let teacherId = entry.teacherName; // fallback to name if ID not found
+          try {
+            const allTeachers = await storage.getAllTeacherAuth();
+            const teacher = allTeachers.find(t => t.name === entry.teacherName);
+            if (teacher) {
+              teacherId = teacher.id;
+              console.log(`📋 REFLECTION: Found teacher ID ${teacherId} for ${entry.teacherName}`);
+            } else {
+              console.log(`⚠️ REFLECTION: Could not find teacher ID for ${entry.teacherName}, using name as fallback`);
+            }
+          } catch (teacherLookupError) {
+            console.error("Teacher lookup error:", teacherLookupError);
+          }
+
           const defaultPrompt = `Please reflect on your behavior today regarding: ${entry.subcategory}. What happened, how did it affect others, and what will you do differently next time?`;
           const reflection = await storage.assignReflection(
             entry.scholarId,
             entry.id,
-            entry.teacherName,
+            teacherId,
             defaultPrompt,
             new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Due in 7 days
           );
-          console.log(`✅ REFLECTION: Assigned reflection ${reflection.id} to scholar ${entry.scholarId}`);
+          console.log(`✅ REFLECTION: Assigned reflection ${reflection.id} to scholar ${entry.scholarId}, assigned by teacher ${teacherId}`);
         } catch (reflectionError) {
           console.error("Failed to assign reflection:", reflectionError);
           // Continue even if reflection assignment fails

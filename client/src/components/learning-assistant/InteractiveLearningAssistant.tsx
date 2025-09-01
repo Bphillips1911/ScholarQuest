@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CharacterAnimations, houseCharacters } from './CharacterAnimations';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { MessageSquare, HelpCircle, BookOpen, Trophy, Target, Sparkles } from 'lucide-react';
+import { MessageSquare, HelpCircle, BookOpen, Trophy, Target, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
 
 interface LearningTip {
   id: string;
@@ -34,6 +34,9 @@ export function InteractiveLearningAssistant({
   );
   const [currentMessage, setCurrentMessage] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechEnabled, setSpeechEnabled] = useState(true);
+  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [learningTips] = useState<LearningTip[]>([
     {
       id: '1',
@@ -81,11 +84,73 @@ export function InteractiveLearningAssistant({
     `Need some study tips or want to know more about your house? I'm here to help!`
   ];
 
+  // Text-to-speech functionality
+  const speakMessage = (message: string) => {
+    if (!speechEnabled || !('speechSynthesis' in window)) return;
+
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    utterance.volume = 0.8;
+
+    // Try to find a friendly voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice => 
+      voice.name.includes('Female') || 
+      voice.name.includes('Samantha') ||
+      voice.name.includes('Karen') ||
+      voice.lang.includes('en-US')
+    );
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    speechRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
+  const toggleSpeech = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+    } else if (currentMessage) {
+      speakMessage(currentMessage);
+    }
+  };
+
   useEffect(() => {
     if (isOpen && !currentMessage) {
-      setCurrentMessage(welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)]);
+      const welcomeMsg = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+      setCurrentMessage(welcomeMsg);
+      
+      // Auto-speak welcome message after a short delay
+      setTimeout(() => {
+        if (speechEnabled) {
+          speakMessage(welcomeMsg);
+        }
+      }, 1000);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    // Speak new messages when they change
+    if (currentMessage && isOpen && speechEnabled) {
+      setTimeout(() => {
+        speakMessage(currentMessage);
+      }, 500);
+    }
+  }, [currentMessage, speechEnabled]);
 
   const handleCharacterClick = () => {
     setIsOpen(!isOpen);
@@ -156,14 +221,33 @@ export function InteractiveLearningAssistant({
                     <p className="text-xs text-gray-500">Learning Assistant</p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </Button>
+                <div className="flex items-center space-x-2">
+                  {/* Speech Controls */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleSpeech}
+                    className={`${isSpeaking ? 'text-green-600' : 'text-gray-400'} hover:text-gray-600`}
+                    disabled={!currentMessage}
+                    title={isSpeaking ? 'Stop speaking' : 'Read message aloud'}
+                  >
+                    {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </Button>
+                  
+                  {/* Close Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      stopSpeaking();
+                      setIsOpen(false);
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                    title="Close assistant"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               {/* Quick Actions */}
@@ -253,19 +337,38 @@ export function InteractiveLearningAssistant({
                 </div>
               </div>
 
-              {/* Character Selector */}
+              {/* Settings */}
               <div className="mt-4 pt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-gray-500">Assistant Settings:</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSpeechEnabled(!speechEnabled)}
+                    className={`text-xs px-2 py-1 ${speechEnabled ? 'text-green-600' : 'text-gray-400'}`}
+                  >
+                    {speechEnabled ? 'Voice: ON' : 'Voice: OFF'}
+                  </Button>
+                </div>
+                
+                {/* Character Selector */}
                 <p className="text-xs text-gray-500 mb-2">Choose your learning buddy:</p>
                 <div className="flex space-x-2">
                   {houseCharacters.map((character) => (
                     <button
                       key={character.id}
-                      onClick={() => setCurrentCharacter(character)}
+                      onClick={() => {
+                        setCurrentCharacter(character);
+                        if (speechEnabled) {
+                          speakMessage(`Hi! I'm ${character.name}, your new ${character.house} learning buddy!`);
+                        }
+                      }}
                       className={`w-8 h-8 rounded-full border-2 ${
                         currentCharacter.id === character.id
                           ? `border-${character.color}-400`
                           : 'border-gray-200'
                       } flex items-center justify-center text-sm hover:scale-110 transition-transform`}
+                      title={`${character.name} from ${character.house}`}
                     >
                       {character.avatar}
                     </button>
@@ -274,6 +377,22 @@ export function InteractiveLearningAssistant({
               </div>
             </Card>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Click-away overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="fixed inset-0 bg-transparent z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              stopSpeaking();
+              setIsOpen(false);
+            }}
+          />
         )}
       </AnimatePresence>
     </div>

@@ -1151,7 +1151,62 @@ export default function AdminNew() {
             </TabsContent>
 
             <TabsContent value="exports" className="space-y-6">
-              <DataExportCenter />
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Data Export Center</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      onClick={() => window.open('/api/admin/export/scholars', '_blank')}
+                      className="flex items-center gap-2 h-20"
+                      variant="outline"
+                    >
+                      <Download className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-semibold">Export Students</div>
+                        <div className="text-sm opacity-75">Download all student data</div>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.open('/api/admin/export/pbis', '_blank')}
+                      className="flex items-center gap-2 h-20"
+                      variant="outline"
+                    >
+                      <Download className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-semibold">Export PBIS Data</div>
+                        <div className="text-sm opacity-75">Download all PBIS entries</div>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.open('/api/admin/export/houses', '_blank')}
+                      className="flex items-center gap-2 h-20"
+                      variant="outline"
+                    >
+                      <Download className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-semibold">Export House Data</div>
+                        <div className="text-sm opacity-75">Download house standings</div>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.open('/api/admin/export/reflections', '_blank')}
+                      className="flex items-center gap-2 h-20"
+                      variant="outline"
+                    >
+                      <Download className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-semibold">Export Reflections</div>
+                        <div className="text-sm opacity-75">Download reflection logs</div>
+                      </div>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 

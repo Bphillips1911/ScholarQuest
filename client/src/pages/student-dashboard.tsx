@@ -26,11 +26,17 @@ import {
   Edit3,
   Book,
   Palette,
-  TrendingUp
+  TrendingUp,
+  HelpCircle
 } from "lucide-react";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
 import { ReflectionModal } from "@/components/ReflectionModal";
 import { DashboardThemes } from "@/components/DashboardThemes";
+import { InteractiveLearningAssistant } from "@/components/learning-assistant/InteractiveLearningAssistant";
+import { LearningAssistantProvider, useLearningAssistant, useCelebrationTrigger, useAutoTips } from "@/components/learning-assistant/LearningAssistantProvider";
+import { AnimatedTutorials, tutorialLibrary } from "@/components/learning-assistant/AnimatedTutorials";
+import { GamifiedHelpSystem } from "@/components/learning-assistant/GamifiedHelpSystem";
+import { LearningAssistantIntegration } from "@/components/learning-assistant/LearningAssistantIntegration";
 import { 
   InteractiveScale, 
   SlideIn, 
@@ -93,12 +99,18 @@ interface Reflection {
   submittedAt: string | null;
 }
 
-export default function StudentDashboard() {
+function StudentDashboardContent() {
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [themesModalOpen, setThemesModalOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
+  const [showHelpSystem, setShowHelpSystem] = useState(false);
+  const [showTutorial, setShowTutorial] = useState<string | null>(null);
+  
+  // Learning assistant hooks
+  const { triggerCelebration } = useCelebrationTrigger();
+  const { triggerAutoTip } = useAutoTips();
 
   // Theme configurations
   const getThemeStyles = (themeId: string) => {
@@ -356,6 +368,17 @@ export default function StudentDashboard() {
                 >
                   <Palette className="h-4 w-4" />
                   <span>Themes</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowHelpSystem(true)}
+                  className="flex items-center space-x-2"
+                  data-testid="button-help-quests"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Help Quests</span>
                 </Button>
               </InteractiveScale>
               <InteractiveScale>
@@ -647,6 +670,83 @@ export default function StudentDashboard() {
         onThemeChange={handleThemeChange}
         studentData={scholar}
       />
+
+      {/* Learning Assistant Integration (invisible helper) */}
+      <LearningAssistantIntegration
+        studentPoints={{
+          academic: scholar?.academicPoints || 0,
+          behavior: scholar?.behaviorPoints || 0,
+          attendance: scholar?.attendancePoints || 0
+        }}
+      />
+
+      {/* Interactive Learning Assistant */}
+      <InteractiveLearningAssistant
+        studentHouse={house?.name || 'franklin'}
+        studentPoints={{
+          academic: scholar?.academicPoints || 0,
+          behavior: scholar?.behaviorPoints || 0,
+          attendance: scholar?.attendancePoints || 0
+        }}
+        onHelpRequest={(topic) => {
+          console.log('Help requested for:', topic);
+          // Trigger appropriate tutorial or help content
+          if (topic.includes('house system')) {
+            setShowTutorial('house-system');
+          } else if (topic.includes('earning points')) {
+            setShowTutorial('dashboard-navigation');
+          } else if (topic.includes('MUSTANG traits')) {
+            setShowTutorial('learning-assistant');
+          }
+        }}
+      />
+
+      {/* Gamified Help System Modal */}
+      {showHelpSystem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-800">Learning Quests</h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowHelpSystem(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </Button>
+            </div>
+            <GamifiedHelpSystem
+              onQuestComplete={(questId) => {
+                triggerCelebration(`completing the ${questId} quest`, 50);
+              }}
+              studentLevel={Math.floor(((scholar?.academicPoints || 0) + (scholar?.behaviorPoints || 0) + (scholar?.attendancePoints || 0)) / 100) + 1}
+              studentXP={(scholar?.academicPoints || 0) + (scholar?.behaviorPoints || 0) + (scholar?.attendancePoints || 0)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Animated Tutorial System */}
+      {showTutorial && tutorialLibrary[showTutorial as keyof typeof tutorialLibrary] && (
+        <AnimatedTutorials
+          tutorialId={showTutorial}
+          steps={tutorialLibrary[showTutorial as keyof typeof tutorialLibrary].steps}
+          onComplete={() => {
+            setShowTutorial(null);
+            triggerCelebration(`completing the ${showTutorial} tutorial`, 25);
+          }}
+          autoPlay={true}
+        />
+      )}
     </div>
+  );
+}
+
+// Main component wrapped with Learning Assistant Provider
+export default function StudentDashboard() {
+  return (
+    <LearningAssistantProvider>
+      <StudentDashboardContent />
+    </LearningAssistantProvider>
   );
 }

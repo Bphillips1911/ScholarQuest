@@ -173,6 +173,11 @@ export class DatabaseStorage implements IStorage {
     return scholar || undefined;
   }
 
+  async getStudentById(id: string): Promise<Scholar | undefined> {
+    const [scholar] = await db.select().from(schema.scholars).where(eq(schema.scholars.id, id));
+    return scholar || undefined;
+  }
+
   async createScholar(scholarData: InsertScholar): Promise<Scholar> {
     // Generate unique username if not provided
     let username = scholarData.username;

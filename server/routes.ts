@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema, insertParentTeacherMessageSchema, teacherAuth } from "@shared/schema";
+import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema, insertParentTeacherMessageSchema, teacherAuth, type Scholar, type House } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import multer from "multer";
@@ -495,8 +495,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create PBIS entry
   app.post("/api/pbis", async (req, res) => {
     try {
-      const validatedData = insertPbisEntrySchema.parse(req.body);
-      const entry = await storage.createPbisEntry(validatedData);
+      console.log("PBIS ENTRY REQUEST:", req.body);
+      
+      // Transform universal_negative category to behavior for database storage
+      let processedData = { ...req.body };
+      if (processedData.category === 'universal_negative') {
+        processedData.category = 'behavior';
+        processedData.entryType = 'negative';
+        console.log("PBIS TRANSFORM: Converting universal_negative to behavior category with negative type");
+      }
+      
+      console.log("PBIS VALIDATION: Attempting to validate processed data:", processedData);
+      
+      const validationResult = insertPbisEntrySchema.safeParse(processedData);
+      if (!validationResult.success) {
+        console.error("PBIS VALIDATION ERROR:", validationResult.error.issues);
+        return res.status(400).json({ 
+          message: "Invalid PBIS entry data", 
+          errors: validationResult.error.issues 
+        });
+      }
+      
+      const entry = await storage.createPbisEntry(validationResult.data);
       
       // Update scholar points based on entry type and category
       if (entry.scholarId) {
@@ -584,14 +604,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await sendParentPbisNotification({
               parentEmail: parent.email,
               parentName: `${parent.firstName} ${parent.lastName}`,
-              studentName: `${scholar.firstName} ${scholar.lastName}`,
+              studentName: scholar.name, // Use name field instead of firstName/lastName
               teacherName: entry.teacherName,
               points: entry.points,
               mustangTrait: entry.mustangTrait,
               category: entry.category,
               subcategory: entry.subcategory,
               reason: entry.reason || undefined,
-              entryType: entry.entryType || 'positive'
+              entryType: (entry.entryType as 'positive' | 'negative') || 'positive'
             });
           }
         }
@@ -602,7 +622,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(entry);
     } catch (error) {
-      res.status(400).json({ message: "Invalid PBIS entry data" });
+      console.error("PBIS ENTRY ERROR:", error);
+      res.status(400).json({ message: "Invalid PBIS entry data", error: error.message });
     }
   });
 

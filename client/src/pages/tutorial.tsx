@@ -67,7 +67,7 @@ export default function Tutorial() {
                 <p className="text-gray-700">
                   Start at the main page to see the new title: <strong>"Bush Hills STEAM Academy PBIS House of Champions"</strong>
                 </p>
-                <p className="text-gray-700">Explore the five houses: Franklin, Courie, West, Blackwell, and Berruguete</p>
+                <p className="text-gray-700">Explore the five houses: Franklin, Tesla, Curie, Nobel, and Lovelace</p>
               </div>
 
               <div className="bg-white rounded-lg p-5 border border-gray-200">

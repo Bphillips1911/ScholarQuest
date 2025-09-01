@@ -2,19 +2,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { HandHeart, Shield, Star, Leaf, Mountain, Flame } from "lucide-react";
 
 const houses = [
-  { id: "franklin", name: "Franklin", icon: "🐎", color: "house-franklin", bg: "bg-house-franklin" },
-  { id: "courie", name: "Courie", icon: "🦉", color: "house-courie", bg: "bg-house-courie" },
-  { id: "west", name: "West", icon: "🐺", color: "house-west", bg: "bg-house-west" },
-  { id: "blackwell", name: "Blackwell", icon: "🦅", color: "house-blackwell", bg: "bg-house-blackwell" },
-  { id: "berruguete", name: "Berruguete", icon: "🦁", color: "house-berruguete", bg: "bg-house-berruguete" },
+  { id: "franklin", name: "Franklin", icon: "🔬", color: "house-franklin", bg: "bg-house-franklin" },
+  { id: "tesla", name: "Tesla", icon: "⚡", color: "house-tesla", bg: "bg-house-tesla" },
+  { id: "curie", name: "Curie", icon: "🧪", color: "house-curie", bg: "bg-house-curie" },
+  { id: "nobel", name: "Nobel", icon: "🎯", color: "house-nobel", bg: "bg-house-nobel" },
+  { id: "lovelace", name: "Lovelace", icon: "💻", color: "house-lovelace", bg: "bg-house-lovelace" },
 ];
 
 const houseValues = {
-  franklin: "Leadership",
-  courie: "Courage", 
-  west: "Wisdom",
-  blackwell: "Strength",
-  berruguete: "Creativity",
+  franklin: "Discovery",
+  tesla: "Excellence", 
+  curie: "Progress",
+  nobel: "Achievement",
+  lovelace: "Innovation",
 };
 
 export default function Pledge() {
@@ -46,8 +46,8 @@ export default function Pledge() {
             <p data-testid="pledge-line-4">
               and to <span className="font-semibold text-purple-600">positive behavior</span> that reflects our character.
             </p>
-            <p data-testid="pledge-line-5">Whether we stand with Franklin's leadership, Courie's courage,</p>
-            <p data-testid="pledge-line-6">West's wisdom, Blackwell's strength, or Berruguete's creativity,</p>
+            <p data-testid="pledge-line-5">Whether we stand with Franklin's discovery, Tesla's excellence,</p>
+            <p data-testid="pledge-line-6">Curie's progress, Nobel's achievement, or Lovelace's innovation,</p>
             <p data-testid="pledge-line-7">we are united in our commitment to growth, respect, and service.</p>
             <p className="font-semibold text-xl text-gray-900" data-testid="pledge-closing">
               Together, we rise. Together, we succeed."
@@ -59,12 +59,12 @@ export default function Pledge() {
           {houses.map((house) => {
             // Use direct emoji icon
             const houseBgLightClass = {
-              franklin: "bg-red-50",
-              courie: "bg-purple-50", 
-              west: "bg-emerald-50",
-              blackwell: "bg-gray-50",
-              berruguete: "bg-orange-50",
-            }[house.id] || "bg-red-50";
+              franklin: "bg-blue-50",
+              tesla: "bg-purple-50", 
+              curie: "bg-red-50",
+              nobel: "bg-green-50",
+              lovelace: "bg-orange-50",
+            }[house.id] || "bg-blue-50";
 
             return (
               <div key={house.id} className={`text-center p-4 ${houseBgLightClass} rounded-lg`} data-testid={`house-value-${house.id}`}>

@@ -35,11 +35,11 @@ const badgeDefinitions = [
     animationType: "rotate"
   },
   
-  // Courie House Badges (Seekers of Knowledge) - Teal theme
+  // Tesla House Badges (Electrifying Excellence) - Purple theme
   {
-    name: "Courie Bronze Seeker",
-    description: "Beginning the quest for knowledge",
-    houseId: "courie",
+    name: "Tesla Bronze Pioneer",
+    description: "Beginning the quest for excellence",
+    houseId: "tesla",
     category: "academic",
     pointsRequired: 10,
     level: 1,
@@ -47,9 +47,9 @@ const badgeDefinitions = [
     animationType: "pulse"
   },
   {
-    name: "Courie Silver Scholar",
-    description: "Advanced knowledge pursuits",
-    houseId: "courie", 
+    name: "Tesla Silver Inventor",
+    description: "Advanced innovation pursuits",
+    houseId: "tesla", 
     category: "academic",
     pointsRequired: 25,
     level: 2,
@@ -57,9 +57,9 @@ const badgeDefinitions = [
     animationType: "glow"
   },
   {
-    name: "Courie Gold Scientist",
-    description: "Master of scientific excellence",
-    houseId: "courie",
+    name: "Tesla Gold Electrifier",
+    description: "Master of electrifying excellence",
+    houseId: "tesla",
     category: "academic",
     pointsRequired: 50,
     level: 3,
@@ -67,11 +67,11 @@ const badgeDefinitions = [
     animationType: "bounce"
   },
 
-  // West House Badges (Leaders of Change) - Orange theme
+  // Curie House Badges (Pioneering Progress) - Red theme
   {
-    name: "West Bronze Leader",
-    description: "Showing leadership potential",
-    houseId: "west",
+    name: "Curie Bronze Explorer",
+    description: "Showing research potential",
+    houseId: "curie",
     category: "behavior",
     pointsRequired: 10,
     level: 1,
@@ -79,9 +79,9 @@ const badgeDefinitions = [
     animationType: "pulse"
   },
   {
-    name: "West Silver Commander", 
-    description: "Demonstrating strong leadership",
-    houseId: "west",
+    name: "Curie Silver Researcher", 
+    description: "Demonstrating strong scientific methods",
+    houseId: "curie",
     category: "behavior",
     pointsRequired: 25,
     level: 2,
@@ -89,9 +89,9 @@ const badgeDefinitions = [
     animationType: "glow"
   },
   {
-    name: "West Gold Champion",
-    description: "Exceptional leadership and character",
-    houseId: "west",
+    name: "Curie Gold Scientist",
+    description: "Exceptional scientific achievement",
+    houseId: "curie",
     category: "behavior",
     pointsRequired: 50,
     level: 3,
@@ -99,11 +99,11 @@ const badgeDefinitions = [
     animationType: "rotate"
   },
 
-  // Blackwell House Badges (Guardians of Excellence) - Black theme
+  // Nobel House Badges (Excellence in Achievement) - Green theme
   {
-    name: "Blackwell Bronze Guardian",
-    description: "Protecting excellence in attendance",
-    houseId: "blackwell",
+    name: "Nobel Bronze Achiever",
+    description: "Excellent attendance foundation",
+    houseId: "nobel",
     category: "attendance",
     pointsRequired: 10,
     level: 1,
@@ -111,9 +111,9 @@ const badgeDefinitions = [
     animationType: "pulse"
   },
   {
-    name: "Blackwell Silver Protector",
-    description: "Consistent attendance excellence",
-    houseId: "blackwell",
+    name: "Nobel Silver Champion",
+    description: "Consistent excellence in attendance",
+    houseId: "nobel",
     category: "attendance", 
     pointsRequired: 25,
     level: 2,
@@ -121,9 +121,9 @@ const badgeDefinitions = [
     animationType: "glow"
   },
   {
-    name: "Blackwell Gold Sentinel",
-    description: "Perfect attendance mastery",
-    houseId: "blackwell",
+    name: "Nobel Gold Master",
+    description: "Perfect attendance achievement",
+    houseId: "nobel",
     category: "attendance",
     pointsRequired: 50,
     level: 3,
@@ -131,11 +131,11 @@ const badgeDefinitions = [
     animationType: "bounce"
   },
 
-  // Berruguete House Badges (Artists of Tomorrow) - Purple theme  
+  // Lovelace House Badges (Coding the Future) - Orange theme  
   {
-    name: "Berruguete Bronze Artist",
-    description: "Creative spirit emerging",
-    houseId: "berruguete",
+    name: "Lovelace Bronze Coder",
+    description: "Programming foundation emerging",
+    houseId: "lovelace",
     category: "overall",
     pointsRequired: 30,
     level: 1,
@@ -143,9 +143,9 @@ const badgeDefinitions = [
     animationType: "pulse"
   },
   {
-    name: "Berruguete Silver Creator",
-    description: "Well-rounded excellence",
-    houseId: "berruguete",
+    name: "Lovelace Silver Developer",
+    description: "Well-rounded technical excellence",
+    houseId: "lovelace",
     category: "overall",
     pointsRequired: 75,
     level: 2,
@@ -153,9 +153,9 @@ const badgeDefinitions = [
     animationType: "glow"
   },
   {
-    name: "Berruguete Gold Master",
-    description: "Complete artistic excellence",
-    houseId: "berruguete",
+    name: "Lovelace Gold Architect",
+    description: "Complete programming excellence",
+    houseId: "lovelace",
     category: "overall",
     pointsRequired: 150,
     level: 3,

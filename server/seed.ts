@@ -85,7 +85,7 @@ export async function seedDatabase() {
     const existingHouses = await db.select().from(houses);
     if (existingHouses.length > 0) {
       // Update existing houses with new icons
-      await db.update(houses).set({ icon: "🐎" }).where(eq(houses.id, "franklin"));
+      await db.update(houses).set({ icon: "🔬" }).where(eq(houses.id, "franklin"));
       await db.update(houses).set({ icon: "🦉" }).where(eq(houses.id, "courie"));
       await db.update(houses).set({ icon: "🐺" }).where(eq(houses.id, "west"));
       await db.update(houses).set({ icon: "🦅" }).where(eq(houses.id, "blackwell"));
@@ -101,7 +101,7 @@ export async function seedDatabase() {
         id: "franklin",
         name: "House of Franklin",
         color: "#3B82F6", // Blue
-        icon: "🐎", // Mustang
+        icon: "🔬", // Innovation
         motto: "Innovation Through Discovery",
         academicPoints: 0,
         attendancePoints: 0,

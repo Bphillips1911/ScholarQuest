@@ -11,6 +11,10 @@ import { BasketballGame } from "./Basketball";
 import { RacingGame } from "./RacingGame";
 import { BrickBreaker } from "./BrickBreaker";
 import { MemoryMatch } from "./MemoryMatch";
+import { SoccerPenalty } from "./SoccerPenalty";
+import { ConnectFour } from "./ConnectFour";
+import { WordSearch } from "./WordSearch";
+import { PacMan } from "./PacMan";
 
 interface GameModalProps {
   game: {
@@ -63,7 +67,7 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
     }
     
     if (gameName.includes('connect') || gameName.includes('four')) {
-      return <TicTacToe onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+      return <ConnectFour onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
     if (gameName.includes('racing') || gameName.includes('championship')) {
@@ -71,11 +75,11 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
     }
     
     if (gameName.includes('soccer') || gameName.includes('penalty')) {
-      return <BasketballGame onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+      return <SoccerPenalty onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
     if (gameName.includes('word') || gameName.includes('search')) {
-      return <PuzzleSlider onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+      return <WordSearch onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
     if (gameName.includes('math') || gameName.includes('challenge')) {
@@ -91,7 +95,7 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
     }
     
     if (gameName.includes('pac') || gameName.includes('man')) {
-      return <WhackAMole onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+      return <PacMan onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
     if (gameName.includes('snake') || gameName.includes('adventure')) {

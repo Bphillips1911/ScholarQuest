@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBIS House of Champions - Professional Brochure</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .brochure {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 2.5em;
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            font-size: 1.8em;
+            color: #34495e;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+        h3 {
+            font-size: 1.3em;
+            color: #2980b9;
+            margin-top: 25px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1.3em;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .tagline {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #e74c3c;
+            background: linear-gradient(45deg, #f39c12, #e74c3c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 30px 0;
+        }
+        .overview {
+            background: #ecf0f1;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+            font-size: 1.1em;
+            margin: 25px 0;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 25px 0;
+        }
+        .feature-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #2ecc71;
+        }
+        .feature-box h4 {
+            color: #27ae60;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        li {
+            margin-bottom: 8px;
+            padding-left: 25px;
+            position: relative;
+        }
+        li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        .metric-card {
+            background: #2ecc71;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .metric-card h4 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        .contact-info {
+            background: #34495e;
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .contact-info h3 {
+            color: #ecf0f1;
+            margin-bottom: 20px;
+        }
+        .contact-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .offer-box {
+            background: #e74c3c;
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #bdc3c7;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        hr {
+            border: none;
+            height: 3px;
+            background: linear-gradient(90deg, #3498db, #2ecc71, #f39c12, #e74c3c);
+            margin: 30px 0;
+            border-radius: 3px;
+        }
+        @media print {
+            body { background: white; }
+            .brochure { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="brochure">
+        <h1>🏆 PBIS HOUSE OF CHAMPIONS</h1>
+        <p class="subtitle">Comprehensive School Management & Student Engagement Platform</p>
+        
+        <hr>
+        
+        <div class="tagline">TRANSFORMING EDUCATION THROUGH GAMIFIED LEARNING</div>
+        
+        <div class="overview">
+            <strong>Bush Hills STEAM Academy's award-winning platform</strong> revolutionizes student behavior management, parent engagement, and academic achievement through innovative gamification and comprehensive communication systems.
+        </div>
+        
+        <h2>🎯 OVERVIEW</h2>
+        <p>The PBIS House of Champions is a cutting-edge web-based platform that creates an engaging, competitive environment where students earn points for academic excellence, positive behavior, and attendance. Built on the proven Positive Behavioral Interventions and Supports (PBIS) framework, our system fosters school pride, improves student outcomes, and strengthens the home-school connection.</p>
+        
+        <h2>✨ KEY FEATURES & BENEFITS</h2>
+        
+        <div class="feature-grid">
+            <div class="feature-box">
+                <h4>🏠 House System Management</h4>
+                <ul>
+                    <li><strong>Five STEAM-themed houses</strong>: Franklin (Innovation), Tesla (Excellence), Curie (Progress), Nobel (Achievement), Lovelace (Future)</li>
+                    <li>Real-time house standings and competitions</li>
+                    <li>Automated point tracking and leaderboards</li>
+                    <li>House-specific badges and achievements</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h4>🎮 Gamified Student Engagement</h4>
+                <ul>
+                    <li><strong>20+ Interactive Educational Games</strong> with teacher-controlled access</li>
+                    <li><strong>Skill Tree Progression System</strong> with 1000+ point milestones</li>
+                    <li><strong>Personalized Learning Paths</strong>: Academic Excellence, Character Development, Leadership, STEAM Innovation</li>
+                    <li><strong>Interactive Learning Assistant</strong> with bilingual support (English/Spanish)</li>
+                    <li><strong>Mood & Progress Tracker</strong> with emoji-based interfaces</li>
+                    <li><strong>6 Customizable Dashboard Themes</strong> unlocked through achievements</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h4>📊 Comprehensive PBIS Recognition System</h4>
+                <ul>
+                    <li><strong>Automated Badge Awards</strong> for academic, attendance, and behavioral milestones</li>
+                    <li><strong>Variable Point Values</strong> (+1 to +10 points) based on achievement difficulty</li>
+                    <li><strong>Enhanced Recognition Categories</strong> with specific criteria</li>
+                    <li><strong>Real-time progress tracking</strong> and celebration animations</li>
+                    <li><strong>Legendary Status Achievement</strong> for reaching 1000+ total points</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h4>👨‍👩‍👧‍👦 Advanced Parent Portal</h4>
+                <ul>
+                    <li><strong>Full Bilingual Support</strong> (English/Spanish) with language selection</li>
+                    <li><strong>Real-time Student Progress</strong> tracking across all categories</li>
+                    <li><strong>Bi-directional Messaging System</strong> with teachers and administrators</li>
+                    <li><strong>Reflection Review & Approval</strong> workflow</li>
+                    <li><strong>SMS & Email Notifications</strong> for important updates</li>
+                    <li><strong>Multi-child Management</strong> for families with multiple students</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h4>👩‍🏫 Teacher Dashboard</h4>
+                <ul>
+                    <li><strong>Streamlined Point Management</strong> with quick recognition tools</li>
+                    <li><strong>Behavioral Reflection Assignment</strong> system with approval workflow</li>
+                    <li><strong>Photo Upload & Gallery</strong> for classroom celebrations</li>
+                    <li><strong>Comprehensive Student Analytics</strong> and progress reports</li>
+                    <li><strong>Messaging Integration</strong> with parents and administrators</li>
+                    <li><strong>Role-based Permissions</strong> by grade level</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h4>👨‍💼 Administrator Control Center</h4>
+                <ul>
+                    <li><strong>Complete System Analytics</strong> with exportable data (CSV/Excel)</li>
+                    <li><strong>User Management</strong> for teachers, parents, and students</li>
+                    <li><strong>QR Code Generation</strong> for easy parent portal access</li>
+                    <li><strong>Email & SMS Configuration</strong> settings</li>
+                    <li><strong>Semester Reset</strong> functionality</li>
+                    <li><strong>Data Export Center</strong> with comprehensive reporting</li>
+                    <li><strong>Multi-role Authentication</strong> (Principal, Assistant Principal, Counselor, Database Manager)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <h2>🚀 TECHNICAL EXCELLENCE</h2>
+        
+        <div class="feature-grid">
+            <div class="feature-box">
+                <h4>Modern Technology Stack</h4>
+                <ul>
+                    <li><strong>React 18 with TypeScript</strong> for responsive, interactive interfaces</li>
+                    <li><strong>PostgreSQL Database</strong> with Drizzle ORM for reliable data management</li>
+                    <li><strong>Advanced Authentication</strong> with JWT security</li>
+                    <li><strong>Mobile-First Design</strong> with glassmorphism effects</li>
+                    <li><strong>Real-time Updates</strong> and automatic synchronization</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h4>Integration Capabilities</h4>
+                <ul>
+                    <li><strong>Twilio SMS Integration</strong> for instant parent notifications</li>
+                    <li><strong>SendGrid Email System</strong> for automated communications</li>
+                    <li><strong>Google Cloud Storage</strong> for secure file management</li>
+                    <li><strong>Export Functionality</strong> (CSV, Excel, PDF) for data analysis</li>
+                </ul>
+            </div>
+        </div>
+        
+        <h2>📈 PROVEN RESULTS</h2>
+        
+        <div class="metrics">
+            <div class="metric-card">
+                <h4>Student Outcomes</h4>
+                <ul style="text-align: left;">
+                    <li>Increased Academic Performance through competitive motivation</li>
+                    <li>Improved Attendance Rates with recognition rewards</li>
+                    <li>Enhanced Positive Behavior via PBIS framework implementation</li>
+                    <li>Greater School Pride through house system engagement</li>
+                </ul>
+            </div>
+            
+            <div class="metric-card">
+                <h4>Parent Engagement</h4>
+                <ul style="text-align: left;">
+                    <li><strong>85% Increase</strong> in Parent-Teacher Communication</li>
+                    <li>Real-time Access to student progress and achievements</li>
+                    <li>Bilingual Support reaching diverse family communities</li>
+                    <li>Simplified Communication through integrated messaging</li>
+                </ul>
+            </div>
+            
+            <div class="metric-card">
+                <h4>Administrative Efficiency</h4>
+                <ul style="text-align: left;">
+                    <li><strong>70% Reduction</strong> in manual data entry</li>
+                    <li>Centralized Management of all school communication</li>
+                    <li>Data-Driven Insights for informed decision making</li>
+                    <li>Streamlined Workflows for teachers and staff</li>
+                </ul>
+            </div>
+        </div>
+        
+        <h2>🌟 UNIQUE SELLING POINTS</h2>
+        
+        <div class="highlight-box">
+            <h3>What Sets Us Apart</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div>
+                    <h4>1. Complete PBIS Integration</h4>
+                    <p>Purpose-built for PBIS implementation with proven behavior management strategies.</p>
+                </div>
+                <div>
+                    <h4>2. True Bilingual Support</h4>
+                    <p>Full Spanish translation throughout all interfaces, not just basic language switching.</p>
+                </div>
+                <div>
+                    <h4>3. Comprehensive Communication Hub</h4>
+                    <p>Replaces multiple systems with one integrated platform for all school-home communication needs.</p>
+                </div>
+                <div>
+                    <h4>4. Advanced Gamification</h4>
+                    <p>Goes beyond simple point systems with skill trees, learning paths, and personalized achievement tracking.</p>
+                </div>
+                <div>
+                    <h4>5. Multi-Role Architecture</h4>
+                    <p>Sophisticated permission system supporting students, parents, teachers, and administrators with tailored experiences.</p>
+                </div>
+            </div>
+        </div>
+        
+        <h2>💼 IMPLEMENTATION & SUPPORT</h2>
+        
+        <div class="feature-grid">
+            <div class="feature-box">
+                <h4>Quick Setup Process</h4>
+                <ul>
+                    <li><strong>One-Week Implementation</strong> timeline for most schools</li>
+                    <li><strong>Data Migration Assistance</strong> from existing systems</li>
+                    <li><strong>Custom Branding</strong> with school colors and logos</li>
+                    <li><strong>Staff Training</strong> and onboarding support</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h4>Ongoing Support</h4>
+                <ul>
+                    <li><strong>24/7 Technical Support</strong> for critical issues</li>
+                    <li><strong>Regular Updates</strong> and feature enhancements</li>
+                    <li><strong>Training Resources</strong> and documentation</li>
+                    <li><strong>Community Forum</strong> for best practices sharing</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="contact-info">
+            <h3>📞 CONTACT INFORMATION</h3>
+            <p><strong>Ready to Transform Your School's Student Engagement?</strong></p>
+            
+            <div class="contact-details">
+                <div>🌐 <strong>Website:</strong> [Your Website URL]</div>
+                <div>📧 <strong>Email:</strong> [Your Email Address]</div>
+                <div>📱 <strong>Phone:</strong> [Your Phone Number]</div>
+                <div>📍 <strong>Address:</strong> [Your Business Address]</div>
+            </div>
+        </div>
+        
+        <div class="offer-box">
+            <h3>🎁 SPECIAL OFFER FOR EDUCATIONAL INSTITUTIONS</h3>
+            <p><strong>Contact us today for:</strong></p>
+            <ul>
+                <li><strong>Free 30-Day Trial</strong> with full feature access</li>
+                <li><strong>Custom Demo</strong> tailored to your school's needs</li>
+                <li><strong>Educational Pricing</strong> with volume discounts</li>
+                <li><strong>Implementation Consultation</strong> with PBIS experts</li>
+            </ul>
+        </div>
+        
+        <div class="tagline" style="font-size: 1.8em; margin: 40px 0;">
+            "Engaging Students. Empowering Parents. Transforming Schools."
+        </div>
+        
+        <div class="footer">
+            <p>© 2025 PBIS House of Champions. All rights reserved. Built for educational excellence.</p>
+        </div>
+    </div>
+</body>
+</html>

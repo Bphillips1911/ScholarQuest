@@ -360,6 +360,43 @@ export class DatabaseStorage implements IStorage {
       ...pbisData,
       createdAt: new Date(),
     }).returning();
+
+    // Update scholar points and house points
+    const scholar = await this.getScholarById(pbisData.scholarId);
+    if (scholar) {
+      const pointsToAdd = pbisData.entryType === "positive" ? pbisData.points : -pbisData.points;
+      
+      // Update scholar points
+      const updates: any = {};
+      switch (pbisData.category) {
+        case 'academic':
+          updates.academicPoints = scholar.academicPoints + pointsToAdd;
+          break;
+        case 'attendance':
+          updates.attendancePoints = scholar.attendancePoints + pointsToAdd;
+          break;
+        case 'behavior':
+          updates.behaviorPoints = scholar.behaviorPoints + pointsToAdd;
+          break;
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        await db.update(scholars)
+          .set(updates)
+          .where(eq(scholars.id, pbisData.scholarId));
+        
+        // Update house points
+        if (scholar.houseId) {
+          await this.updateHousePoints(scholar.houseId, pbisData.category, pointsToAdd);
+        }
+        
+        // Check and award badges after points update
+        await this.checkAndAwardBadges(pbisData.scholarId);
+        
+        console.log(`🎯 PBIS POINTS: ${scholar.name} earned ${pointsToAdd} ${pbisData.category} points (Total: ${(scholar as any)[pbisData.category + 'Points'] + pointsToAdd})`);
+      }
+    }
+
     return entry;
   }
 
@@ -693,6 +730,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAllScholars(): Promise<Scholar[]> {
     return await db.select().from(scholars);
+  }
+
+  async getScholarById(id: string): Promise<Scholar | undefined> {
+    const [scholar] = await db.select().from(scholars).where(eq(scholars.id, id));
+    return scholar || undefined;
   }
 
   async getPointEntriesByHouse(houseId: string): Promise<PointEntry[]> {
@@ -1091,6 +1133,64 @@ export class DatabaseStorage implements IStorage {
         eq(schema.scholarBadges.badgeId, badgeId),
         eq(schema.scholarBadges.isActive, true)
       ));
+  }
+
+  // Check and award badges based on scholar's current points
+  async checkAndAwardBadges(scholarId: string): Promise<void> {
+    try {
+      const scholar = await this.getScholarById(scholarId);
+      if (!scholar) return;
+
+      // Get all available badges
+      const allBadges = await this.getAllBadges();
+      const scholarBadges = await this.getScholarBadges(scholarId);
+      const currentBadgeIds = new Set(scholarBadges.map(sb => sb.badge.id));
+
+      for (const badge of allBadges) {
+        // Skip if scholar already has this badge
+        if (currentBadgeIds.has(badge.id)) continue;
+
+        // Check if scholar qualifies for this badge
+        const qualifies = await this.scholarQualifiesForBadge(scholar, badge);
+        
+        if (qualifies) {
+          console.log(`🏆 BADGE AWARD: ${scholar.name} earned "${badge.name}" (${badge.pointsRequired} ${badge.category} points)`);
+          await this.awardBadge(scholarId, badge.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking and awarding badges:', error);
+    }
+  }
+
+  // Check if scholar qualifies for a specific badge
+  private async scholarQualifiesForBadge(scholar: any, badge: any): Promise<boolean> {
+    let requiredPoints = 0;
+    
+    switch (badge.category) {
+      case 'academic':
+        requiredPoints = scholar.academicPoints;
+        break;
+      case 'behavior':
+        requiredPoints = scholar.behaviorPoints;
+        break;
+      case 'attendance':
+        requiredPoints = scholar.attendancePoints;
+        break;
+      case 'overall':
+        requiredPoints = scholar.academicPoints + scholar.behaviorPoints + scholar.attendancePoints;
+        break;
+      default:
+        return false;
+    }
+
+    // Check if scholar meets point requirement
+    if (requiredPoints < badge.pointsRequired) return false;
+
+    // Check house-specific badges
+    if (badge.houseId && badge.houseId !== scholar.houseId) return false;
+
+    return true;
   }
 
   // Game System Methods

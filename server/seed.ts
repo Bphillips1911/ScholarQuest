@@ -3,6 +3,7 @@ import { houses, scholars, teacherAuth, administrators } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
+import { seedBadgesAndGames } from "./seed-badges-games";
 
 export async function seedDatabase() {
   try {

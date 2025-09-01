@@ -43,7 +43,7 @@ const badgeDefinitions = [
     category: "academic",
     pointsRequired: 10,
     level: 1,
-    iconPath: "/badges/courie-bronze-academic.svg",
+    iconPath: "/badges/tesla-bronze-academic.svg",
     animationType: "pulse"
   },
   {
@@ -53,7 +53,7 @@ const badgeDefinitions = [
     category: "academic",
     pointsRequired: 25,
     level: 2,
-    iconPath: "/badges/courie-silver-academic.svg",
+    iconPath: "/badges/tesla-silver-academic.svg",
     animationType: "glow"
   },
   {
@@ -63,7 +63,7 @@ const badgeDefinitions = [
     category: "academic",
     pointsRequired: 50,
     level: 3,
-    iconPath: "/badges/courie-gold-academic.svg",
+    iconPath: "/badges/tesla-gold-academic.svg",
     animationType: "bounce"
   },
 
@@ -75,7 +75,7 @@ const badgeDefinitions = [
     category: "behavior",
     pointsRequired: 10,
     level: 1,
-    iconPath: "/badges/west-bronze-behavior.svg",
+    iconPath: "/badges/curie-bronze-behavior.svg",
     animationType: "pulse"
   },
   {
@@ -85,7 +85,7 @@ const badgeDefinitions = [
     category: "behavior",
     pointsRequired: 25,
     level: 2,
-    iconPath: "/badges/west-silver-behavior.svg",
+    iconPath: "/badges/curie-silver-behavior.svg",
     animationType: "glow"
   },
   {
@@ -95,7 +95,7 @@ const badgeDefinitions = [
     category: "behavior",
     pointsRequired: 50,
     level: 3,
-    iconPath: "/badges/west-gold-behavior.svg",
+    iconPath: "/badges/curie-gold-behavior.svg",
     animationType: "rotate"
   },
 
@@ -107,7 +107,7 @@ const badgeDefinitions = [
     category: "attendance",
     pointsRequired: 10,
     level: 1,
-    iconPath: "/badges/blackwell-bronze-attendance.svg",
+    iconPath: "/badges/nobel-bronze-attendance.svg",
     animationType: "pulse"
   },
   {
@@ -117,7 +117,7 @@ const badgeDefinitions = [
     category: "attendance", 
     pointsRequired: 25,
     level: 2,
-    iconPath: "/badges/blackwell-silver-attendance.svg",
+    iconPath: "/badges/nobel-silver-attendance.svg",
     animationType: "glow"
   },
   {
@@ -127,7 +127,7 @@ const badgeDefinitions = [
     category: "attendance",
     pointsRequired: 50,
     level: 3,
-    iconPath: "/badges/blackwell-gold-attendance.svg",
+    iconPath: "/badges/nobel-gold-attendance.svg",
     animationType: "bounce"
   },
 
@@ -139,7 +139,7 @@ const badgeDefinitions = [
     category: "overall",
     pointsRequired: 30,
     level: 1,
-    iconPath: "/badges/berruguete-bronze-overall.svg",
+    iconPath: "/badges/lovelace-bronze-overall.svg",
     animationType: "pulse"
   },
   {
@@ -149,7 +149,7 @@ const badgeDefinitions = [
     category: "overall",
     pointsRequired: 75,
     level: 2,
-    iconPath: "/badges/berruguete-silver-overall.svg",
+    iconPath: "/badges/lovelace-silver-overall.svg",
     animationType: "glow"
   },
   {
@@ -159,27 +159,57 @@ const badgeDefinitions = [
     category: "overall",
     pointsRequired: 150,
     level: 3,
-    iconPath: "/badges/berruguete-gold-overall.svg",
+    iconPath: "/badges/lovelace-gold-overall.svg",
     animationType: "rotate"
   },
 
-  // Universal High Achievement Badges
+  // Universal PBIS Milestone Badges - Key Progress Markers
   {
-    name: "MUSTANG Platinum Champion",
-    description: "Exceptional all-around MUSTANG traits",
+    name: "PBIS Bronze Scholar",
+    description: "First milestone: 50 total points achieved",
     houseId: null,
     category: "overall",
-    pointsRequired: 200,
+    pointsRequired: 50,
+    level: 1,
+    iconPath: "/badges/pbis-bronze-scholar.svg",
+    animationType: "pulse"
+  },
+  {
+    name: "PBIS Silver Achiever",
+    description: "Strong progress: 150 total points achieved", 
+    houseId: null,
+    category: "overall",
+    pointsRequired: 150,
+    level: 2,
+    iconPath: "/badges/pbis-silver-achiever.svg",
+    animationType: "glow"
+  },
+  {
+    name: "PBIS Gold Champion",
+    description: "Excellent standing: 250 total points achieved",
+    houseId: null,
+    category: "overall",
+    pointsRequired: 250,
+    level: 3,
+    iconPath: "/badges/pbis-gold-champion.svg",
+    animationType: "rotate"
+  },
+  {
+    name: "MUSTANG Platinum Champion",
+    description: "Outstanding achievement: 500 total points",
+    houseId: null,
+    category: "overall",
+    pointsRequired: 500,
     level: 4,
     iconPath: "/badges/mustang-platinum-champion.svg",
     animationType: "glow"
   },
   {
     name: "MUSTANG Diamond Legend",
-    description: "Legendary MUSTANG excellence",
+    description: "Legendary status: 1000 total points - Ultimate achievement!",
     houseId: null,
     category: "overall",
-    pointsRequired: 500,
+    pointsRequired: 1000,
     level: 5,
     iconPath: "/badges/mustang-diamond-legend.svg",
     animationType: "bounce"

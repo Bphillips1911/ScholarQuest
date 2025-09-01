@@ -326,8 +326,8 @@ export function InteractiveLearningAssistant({
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="w-full max-w-md max-h-[80vh]">
-              <Card className={`shadow-xl border-2 border-${currentCharacter.color}-200 bg-white h-full flex flex-col overflow-hidden`}>
+            <div className="w-full max-w-md max-h-[80vh] flex flex-col">
+              <Card className={`shadow-xl border-2 border-${currentCharacter.color}-200 bg-white flex-1 flex flex-col overflow-hidden`}>
               {/* Header - Fixed at top */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center space-x-2">
@@ -382,7 +382,7 @@ export function InteractiveLearningAssistant({
               </div>
 
               {/* Scrollable Content Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(80vh - 80px)' }}>
                 {/* Message Display */}
                 <div className={`p-3 rounded-lg bg-${currentCharacter.color}-50 border border-${currentCharacter.color}-200`}>
                   <p className="text-sm text-gray-700 whitespace-pre-wrap">

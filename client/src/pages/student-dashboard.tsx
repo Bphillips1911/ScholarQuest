@@ -23,10 +23,24 @@ import {
   Clock,
   Heart,
   FileText,
-  Edit3
+  Edit3,
+  Book,
+  Palette,
+  TrendingUp
 } from "lucide-react";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
 import { ReflectionModal } from "@/components/ReflectionModal";
+import { DashboardThemes } from "@/components/DashboardThemes";
+import { 
+  InteractiveScale, 
+  SlideIn, 
+  FadeIn,
+  StaggerContainer, 
+  StaggerItem,
+  SparkleEffect,
+  Bounce
+} from "@/components/MicroAnimations";
+import { motion } from "framer-motion";
 
 interface StudentData {
   id: string;
@@ -83,6 +97,8 @@ export default function StudentDashboard() {
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [themesModalOpen, setThemesModalOpen] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState('default');
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -209,42 +225,72 @@ export default function StudentDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline" 
-                onClick={() => setLocation("/student-mood-tracker")}
-                className="flex items-center space-x-2"
-                data-testid="button-mood-tracker"
-              >
-                <Heart className="h-4 w-4" />
-                <span>Mood Tracker</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setLocation("/student-learning-path")}
-                className="flex items-center space-x-2"
-                data-testid="button-learning-path"
-              >
-                <Target className="h-4 w-4" />
-                <span>Learning Path</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setLocation("/student-skill-tree")}
-                className="flex items-center space-x-2"
-                data-testid="button-skill-tree"
-              >
-                <Star className="h-4 w-4" />
-                <span>Skill Tree</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleLogout}
-                className="flex items-center space-x-2"
-                data-testid="button-logout"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Sign Out</span>
-              </Button>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLocation("/student-mood-tracker")}
+                  className="flex items-center space-x-2"
+                  data-testid="button-mood-tracker"
+                >
+                  <Heart className="h-4 w-4" />
+                  <span>Mood Tracker</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLocation("/student-learning-path")}
+                  className="flex items-center space-x-2"
+                  data-testid="button-learning-path"
+                >
+                  <Target className="h-4 w-4" />
+                  <span>Learning Path</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLocation("/student-skill-tree")}
+                  className="flex items-center space-x-2"
+                  data-testid="button-skill-tree"
+                >
+                  <Star className="h-4 w-4" />
+                  <span>Skill Tree</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLocation("/student-house-history")}
+                  className="flex items-center space-x-2"
+                  data-testid="button-house-history"
+                >
+                  <Book className="h-4 w-4" />
+                  <span>House History</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setThemesModalOpen(true)}
+                  className="flex items-center space-x-2"
+                  data-testid="button-themes"
+                >
+                  <Palette className="h-4 w-4" />
+                  <span>Themes</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Sign Out</span>
+                </Button>
+              </InteractiveScale>
             </div>
           </div>
         </div>
@@ -252,14 +298,20 @@ export default function StudentDashboard() {
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2" data-testid="welcome-message">
-            Welcome back, {studentData.name}!
-          </h2>
-          <p className="text-gray-600">
-            {scholar ? `Grade ${scholar.gradeLevel} • ${scholar.username}` : "Loading your information..."}
-          </p>
-        </div>
+        <SlideIn delay={0.1}>
+          <div className="mb-8">
+            <Bounce>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2" data-testid="welcome-message">
+                Welcome back, {studentData.name}!
+              </h2>
+            </Bounce>
+            <FadeIn delay={0.3}>
+              <p className="text-gray-600">
+                {scholar ? `Grade ${scholar.gradeLevel} • ${scholar.username}` : "Loading your information..."}
+              </p>
+            </FadeIn>
+          </div>
+        </SlideIn>
 
         {scholarLoading ? (
           <div className="text-center py-12">
@@ -273,17 +325,20 @@ export default function StudentDashboard() {
             </AlertDescription>
           </Alert>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            {/* House Information */}
-            {currentHouse && (
-              <Card className="col-span-1 md:col-span-2 lg:col-span-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Home className="mr-2 h-5 w-5 text-purple-600" />
-                    Your House
-                  </CardTitle>
-                </CardHeader>
+          <StaggerContainer>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              
+              {/* House Information */}
+              {currentHouse && (
+                <StaggerItem>
+                  <SparkleEffect>
+                    <Card className="col-span-1 md:col-span-2 lg:col-span-1">
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Home className="mr-2 h-5 w-5 text-purple-600" />
+                          Your House
+                        </CardTitle>
+                      </CardHeader>
                 <CardContent>
                   <div className="text-center space-y-3">
                     <div className="text-2xl font-bold text-gray-800">{currentHouse.name}</div>
@@ -302,7 +357,9 @@ export default function StudentDashboard() {
                     </Badge>
                   </div>
                 </CardContent>
-              </Card>
+                    </Card>
+                  </SparkleEffect>
+                </StaggerItem>
             )}
 
             {/* Personal Points Summary */}
@@ -455,7 +512,8 @@ export default function StudentDashboard() {
               </Card>
             )}
 
-          </div>
+            </div>
+          </StaggerContainer>
         )}
       </div>
 
@@ -471,6 +529,15 @@ export default function StudentDashboard() {
           isStudent={true}
         />
       )}
+
+      {/* Dashboard Themes Modal */}
+      <DashboardThemes
+        isOpen={themesModalOpen}
+        onClose={() => setThemesModalOpen(false)}
+        currentTheme={currentTheme}
+        onThemeChange={setCurrentTheme}
+        studentData={scholar}
+      />
     </div>
   );
 }

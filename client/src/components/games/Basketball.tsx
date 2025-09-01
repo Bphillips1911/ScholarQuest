@@ -33,14 +33,14 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
   const gameLoopRef = useRef<number>();
   const timerRef = useRef<number>();
 
-  const CANVAS_WIDTH = 900;
+  const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 500;
   const BASKET_X = 650;
   const BASKET_Y = 150;
   const BASKET_WIDTH = 80;
   const BASKET_HEIGHT = 40;
   const PLAYER_X = 100;
-  const PLAYER_Y = 300;
+  const PLAYER_Y = 380;
 
   // Start game
   const startGame = useCallback(() => {
@@ -193,42 +193,84 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
     // Clear canvas
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+    // Draw sky background
+    ctx.fillStyle = '#87CEEB';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT - 100);
+
     // Draw court
     ctx.fillStyle = '#8B4513';
-    ctx.fillRect(0, 350, CANVAS_WIDTH, 50);
+    ctx.fillRect(0, CANVAS_HEIGHT - 100, CANVAS_WIDTH, 100);
 
-    // Draw basket
+    // Draw court lines
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, CANVAS_HEIGHT - 100);
+    ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT - 100);
+    ctx.stroke();
+
+    // Draw backboard
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(BASKET_X - 5, BASKET_Y - 50, 10, 50);
+
+    // Draw basket rim
     ctx.fillStyle = '#FF4500';
-    ctx.fillRect(BASKET_X, BASKET_Y, BASKET_WIDTH, 10);
-    ctx.fillStyle = '#000';
-    ctx.fillRect(BASKET_X + 10, BASKET_Y + 10, BASKET_WIDTH - 20, BASKET_HEIGHT - 10);
+    ctx.fillRect(BASKET_X, BASKET_Y, BASKET_WIDTH, 8);
+    
+    // Draw basket net
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      ctx.beginPath();
+      ctx.moveTo(BASKET_X + (i * BASKET_WIDTH / 5), BASKET_Y + 8);
+      ctx.lineTo(BASKET_X + (i * BASKET_WIDTH / 5) + 5, BASKET_Y + 25);
+      ctx.stroke();
+    }
 
     // Draw player
     ctx.fillStyle = '#0066CC';
     ctx.beginPath();
     ctx.arc(PLAYER_X, PLAYER_Y, 20, 0, 2 * Math.PI);
     ctx.fill();
+    
+    // Player details
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(PLAYER_X - 6, PLAYER_Y - 6, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(PLAYER_X + 6, PLAYER_Y - 6, 3, 0, 2 * Math.PI);
+    ctx.fill();
 
     // Draw angle indicator
-    const angleRad = (shootAngle * Math.PI) / 180;
-    ctx.strokeStyle = '#FF0000';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(PLAYER_X, PLAYER_Y);
-    ctx.lineTo(
-      PLAYER_X + Math.cos(angleRad) * 60,
-      PLAYER_Y - Math.sin(angleRad) * 60
-    );
-    ctx.stroke();
+    if (gameState === 'playing') {
+      const angleRad = (shootAngle * Math.PI) / 180;
+      ctx.strokeStyle = '#FF0000';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(PLAYER_X, PLAYER_Y);
+      ctx.lineTo(
+        PLAYER_X + Math.cos(angleRad) * 60,
+        PLAYER_Y - Math.sin(angleRad) * 60
+      );
+      ctx.stroke();
+    }
 
     // Draw balls
     balls.forEach(ball => {
       ctx.fillStyle = ball.scored ? '#FFD700' : '#FF6600';
       ctx.beginPath();
-      ctx.arc(ball.x, ball.y, 8, 0, 2 * Math.PI);
+      ctx.arc(ball.x, ball.y, 12, 0, 2 * Math.PI);
       ctx.fill();
+      
+      // Ball details
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, 12, 0, 2 * Math.PI);
+      ctx.stroke();
     });
-  }, [balls, shootAngle]);
+  }, [balls, shootAngle, gameState]);
 
   return (
     <div className="w-full h-full flex flex-col">

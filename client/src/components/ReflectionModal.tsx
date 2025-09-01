@@ -34,10 +34,7 @@ export function ReflectionModal({ reflection, isOpen, onClose, isStudent = false
       if (response.length < 100) {
         throw new Error("Response must be at least 100 characters");
       }
-      return apiRequest(`/api/student/reflections/${reflection.id}/submit`, {
-        method: "POST",
-        body: { response }
-      });
+      return apiRequest("POST", `/api/student/reflections/${reflection.id}/submit`, { response });
     },
     onSuccess: () => {
       toast({

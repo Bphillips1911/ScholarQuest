@@ -3861,19 +3861,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get teacher reflections
-  app.get("/api/teacher/reflections", async (req, res) => {
+  app.get("/api/teacher/reflections", authenticateTeacher, async (req: any, res) => {
     try {
-      const token = req.headers.authorization?.replace("Bearer ", "");
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
-
-      const session = await storage.getTeacherSession(token);
-      if (!session) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-
-      const reflections = await storage.getReflectionsForTeacher(session.teacherId);
+      const reflections = await storage.getReflectionsForTeacher(req.teacher.id);
       res.json(reflections);
     } catch (error) {
       console.error("Get teacher reflections error:", error);
@@ -3882,18 +3872,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Assign reflection (teacher)
-  app.post("/api/teacher/reflections/assign", async (req, res) => {
+  app.post("/api/teacher/reflections/assign", authenticateTeacher, async (req: any, res) => {
     try {
-      const token = req.headers.authorization?.replace("Bearer ", "");
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
-
-      const session = await storage.getTeacherSession(token);
-      if (!session) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-
       const { scholarId, pbisEntryId, prompt, dueDate } = req.body;
       if (!scholarId || !pbisEntryId || !prompt) {
         return res.status(400).json({ message: "Scholar ID, PBIS Entry ID, and prompt required" });
@@ -3902,7 +3882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const reflection = await storage.assignReflection(
         scholarId,
         pbisEntryId,
-        session.teacherId,
+        req.teacher.id,
         prompt,
         dueDate ? new Date(dueDate) : undefined
       );
@@ -3915,17 +3895,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Review reflection (teacher)
-  app.post("/api/teacher/reflections/:reflectionId/review", async (req, res) => {
+  app.post("/api/teacher/reflections/:reflectionId/review", authenticateTeacher, async (req: any, res) => {
     try {
-      const token = req.headers.authorization?.replace("Bearer ", "");
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
-
-      const session = await storage.getTeacherSession(token);
-      if (!session) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
 
       const { reflectionId } = req.params;
       const { status, feedback } = req.body;

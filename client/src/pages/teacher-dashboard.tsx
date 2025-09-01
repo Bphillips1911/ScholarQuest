@@ -103,6 +103,7 @@ export default function TeacherDashboard() {
     points: 10,
     pointType: "positive", // positive or negative
     reason: "",
+    reasonType: "dropdown", // dropdown or custom
   });
 
   // Reply modal state
@@ -555,7 +556,7 @@ export default function TeacherDashboard() {
       queryClient.invalidateQueries({ queryKey: ["houses"] });
       setShowAwardPoints(false);
       setSelectedScholar(null);
-      setPbisForm({ category: "behavior", mustangTrait: "", points: 10, pointType: "positive", reason: "" });
+      setPbisForm({ category: "behavior", mustangTrait: "", points: 10, pointType: "positive", reason: "", reasonType: "dropdown" });
       toast({
         title: pbisForm.pointType === "positive" ? "Points Awarded" : "Points Deducted",
         description: `Points have been successfully ${pbisForm.pointType === "positive" ? "awarded" : "deducted"}. Parent notification sent.`,
@@ -757,12 +758,55 @@ export default function TeacherDashboard() {
 
   const academicCriteria = [
     "Scoring Green on I-Ready assessments",
+    "Show growth on I-Ready and ACAP Practice Test",
     "Passing required pathway lessons", 
     "Scoring proficient on ACAP Practice Test 1 and 2",
     "Passing teacher assessments",
     "Turning in homework consistently",
     "Completing projects on time",
     "Achieving A/B honor roll status"
+  ];
+
+  const attendanceCriteria = [
+    "Perfect attendance for the week",
+    "Arriving to class on time",
+    "Being prepared for class",
+    "Attend school between 90%-100% during each month"
+  ];
+
+  const positiveReasons = [
+    "Demonstrated excellent MUSTANG trait behavior",
+    "Helped a classmate with their work",
+    "Showed outstanding leadership skills",
+    "Completed work above expectations",
+    "Participated actively in class discussion",
+    "Showed improvement in academic performance",
+    "Demonstrated good sportsmanship",
+    "Followed directions immediately",
+    "Showed respect to teachers and peers",
+    "Went above and beyond on assignment",
+    "Perfect attendance for the week",
+    "Arrived to class on time consistently",
+    "Came to class prepared every day",
+    "Scored Green on I-Ready assessment",
+    "Showed growth on standardized tests",
+    "Completed all homework assignments",
+    "Achieved honor roll status"
+  ];
+
+  const negativeReasons = [
+    "Disruptive behavior in class",
+    "Did not follow classroom rules",
+    "Incomplete or missing homework",
+    "Disrespectful to teacher or peers",
+    "Not prepared for class",
+    "Excessive tardiness",
+    "Poor academic effort",
+    "Inappropriate language or behavior",
+    "Not participating in class activities",
+    "Violating school dress code",
+    "Using phone during class time",
+    "Sleeping or not paying attention"
   ];
 
   return (
@@ -1702,9 +1746,14 @@ export default function TeacherDashboard() {
                 {pbisForm.category === "attendance" && (
                   <div className="bg-green-50 p-3 rounded-lg">
                     <Label className="text-sm font-medium text-green-800">Attendance Criteria</Label>
-                    <p className="text-xs text-green-700 mt-2">
-                      Award points for excellent attendance, punctuality, and being prepared for class.
-                    </p>
+                    <ul className="text-xs text-green-700 mt-2 space-y-1">
+                      {attendanceCriteria.map((criteria, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-green-600 mr-2">•</span>
+                          {criteria}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
@@ -1741,14 +1790,55 @@ export default function TeacherDashboard() {
 
                 <div>
                   <Label htmlFor="reason">Reason (Required)</Label>
-                  <Input
-                    id="reason"
-                    value={pbisForm.reason}
-                    onChange={(e) => setPbisForm({...pbisForm, reason: e.target.value})}
-                    placeholder="Describe what the scholar did"
-                    data-testid="input-reason"
-                    className={!pbisForm.reason.trim() ? "border-red-300" : ""}
-                  />
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={pbisForm.reasonType === "dropdown" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPbisForm({...pbisForm, reasonType: "dropdown", reason: ""})}
+                        className="text-xs"
+                      >
+                        Select from List
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={pbisForm.reasonType === "custom" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPbisForm({...pbisForm, reasonType: "custom", reason: ""})}
+                        className="text-xs"
+                      >
+                        Type Custom
+                      </Button>
+                    </div>
+                    
+                    {pbisForm.reasonType === "dropdown" ? (
+                      <Select 
+                        value={pbisForm.reason} 
+                        onValueChange={(value) => setPbisForm({...pbisForm, reason: value})}
+                      >
+                        <SelectTrigger data-testid="select-reason">
+                          <SelectValue placeholder="Select a reason" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(pbisForm.pointType === "positive" ? positiveReasons : negativeReasons).map((reason, index) => (
+                            <SelectItem key={index} value={reason}>
+                              {reason}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id="reason"
+                        value={pbisForm.reason}
+                        onChange={(e) => setPbisForm({...pbisForm, reason: e.target.value})}
+                        placeholder="Type your own reason"
+                        data-testid="input-reason"
+                        className={!pbisForm.reason.trim() ? "border-red-300" : ""}
+                      />
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">
                     This will be included in the parent notification
                   </p>

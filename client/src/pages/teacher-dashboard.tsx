@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { TeacherReflectionModal } from "@/components/TeacherReflectionModal";
+import { PBISCategorySelector } from "@/components/PBISCategorySelector";
 
 interface Teacher {
   id: string;
@@ -115,14 +116,12 @@ export default function TeacherDashboard() {
     password: "",
   });
 
-  // PBIS form state
+  // PBIS form state - Updated for new category system
   const [pbisForm, setPbisForm] = useState({
-    category: "behavior",
-    mustangTrait: "",
-    points: 10,
-    pointType: "positive", // positive or negative
-    reason: "",
-    reasonType: "dropdown", // dropdown or custom
+    category: "",
+    subcategory: "",
+    customReason: "",
+    points: 0
   });
 
   // Reply modal state
@@ -616,32 +615,41 @@ export default function TeacherDashboard() {
     },
   });
 
-  // Award PBIS points mutation
+  // Award PBIS points mutation - Updated for new system
   const awardPointsMutation = useMutation({
-    mutationFn: async (pbisData: any) => {
-      const response = await fetch("/api/teacher/pbis", {
+    mutationFn: async (pbisData: {
+      scholarId: string;
+      teacherName: string;
+      teacherRole: string;
+      mustangTrait: string;
+      points: number;
+      reason: string;
+    }) => {
+      const response = await fetch("/api/pbis", {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(pbisData),
       });
-      if (!response.ok) throw new Error("Failed to award/deduct points");
+      if (!response.ok) throw new Error("Failed to award PBIS points");
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
       queryClient.invalidateQueries({ queryKey: ["houses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pbis"] });
       setShowAwardPoints(false);
       setSelectedScholar(null);
-      setPbisForm({ category: "behavior", mustangTrait: "", points: 10, pointType: "positive", reason: "", reasonType: "dropdown" });
+      const pointValue = pbisForm.points;
+      setPbisForm({ category: "", subcategory: "", customReason: "", points: 0 });
       toast({
-        title: pbisForm.pointType === "positive" ? "Points Awarded" : "Points Deducted",
-        description: `Points have been successfully ${pbisForm.pointType === "positive" ? "awarded" : "deducted"}. Parent notification sent.`,
+        title: "PBIS Recognition Added",
+        description: `${selectedScholar?.name} has been recognized with ${pointValue > 0 ? 'positive' : 'corrective'} points.`,
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to award/deduct points",
+        description: "Failed to award PBIS points",
         variant: "destructive",
       });
     },
@@ -766,33 +774,24 @@ export default function TeacherDashboard() {
       return;
     }
 
-    if (pbisForm.category === "behavior" && !pbisForm.mustangTrait) {
+    if (!pbisForm.category || !pbisForm.subcategory) {
       toast({
         title: "Missing Information",
-        description: "Please select a MUSTANG trait for behavior points",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!pbisForm.reason.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide a reason for the point change",
+        description: "Please select a recognition category and specific recognition",
         variant: "destructive",
       });
       return;
     }
     
-    const finalPoints = pbisForm.pointType === "negative" ? -Math.abs(pbisForm.points) : Math.abs(pbisForm.points);
+    const finalReason = pbisForm.customReason.trim() ? pbisForm.customReason : pbisForm.subcategory;
     
     awardPointsMutation.mutate({
       scholarId: selectedScholar.id,
-      category: pbisForm.category,
-      mustangTrait: pbisForm.category === "behavior" ? pbisForm.mustangTrait : undefined,
-      points: finalPoints,
-      pointType: pbisForm.pointType,
-      reason: pbisForm.reason,
+      teacherName: teacher?.name || "Unknown Teacher",
+      teacherRole: teacher?.gradeRole as "6th Grade" | "7th Grade" | "8th Grade" | "Unified Arts" | "Administration" | "Counselor",
+      mustangTrait: (pbisForm.category.charAt(0).toUpperCase() + pbisForm.category.slice(1)) as "Motivated" | "Understanding" | "Safe" | "Teamwork" | "Accountable" | "Noble" | "Growth",
+      points: pbisForm.points,
+      reason: finalReason,
     });
   };
 
@@ -1886,184 +1885,28 @@ export default function TeacherDashboard() {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="category">Point Category</Label>
-                  <Select 
-                    value={pbisForm.category} 
-                    onValueChange={(value) => setPbisForm({...pbisForm, category: value, mustangTrait: ""})}
-                  >
-                    <SelectTrigger data-testid="select-category">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pointCategories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* PBIS Recognition Categories */}
+                <PBISCategorySelector
+                  selectedCategory={pbisForm.category}
+                  selectedSubcategory={pbisForm.subcategory}
+                  onCategorySelect={(categoryId) => setPbisForm({...pbisForm, category: categoryId, subcategory: ""})}
+                  onSubcategorySelect={(subcategoryId, points) => setPbisForm({...pbisForm, subcategory: subcategoryId, points: points})}
+                  onReasonChange={(reason) => setPbisForm({...pbisForm, customReason: reason})}
+                  customReason={pbisForm.customReason}
+                />
 
-                {pbisForm.category === "behavior" && (
-                  <div>
-                    <Label htmlFor="mustangTrait">MUSTANG Trait</Label>
-                    <Select 
-                      value={pbisForm.mustangTrait} 
-                      onValueChange={(value) => setPbisForm({...pbisForm, mustangTrait: value})}
-                    >
-                      <SelectTrigger data-testid="select-mustang-trait">
-                        <SelectValue placeholder="Select MUSTANG trait" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mustangTraits.map((trait) => (
-                          <SelectItem key={trait.value} value={trait.value}>
-                            {trait.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
 
-                {pbisForm.category === "academic" && (
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <Label className="text-sm font-medium text-blue-800">Academic Performance Criteria</Label>
-                    <ul className="text-xs text-blue-700 mt-2 space-y-1">
-                      {academicCriteria.map((criteria, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-blue-600 mr-2">•</span>
-                          {criteria}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
 
-                {pbisForm.category === "attendance" && (
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <Label className="text-sm font-medium text-green-800">Attendance Criteria</Label>
-                    <ul className="text-xs text-green-700 mt-2 space-y-1">
-                      {attendanceCriteria.map((criteria, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-green-600 mr-2">•</span>
-                          {criteria}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
 
-                <div>
-                  <Label htmlFor="pointType">Point Action</Label>
-                  <Select 
-                    value={pbisForm.pointType} 
-                    onValueChange={(value) => setPbisForm({...pbisForm, pointType: value})}
-                  >
-                    <SelectTrigger data-testid="select-point-type">
-                      <SelectValue placeholder="Select action" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="positive">Award Points (Positive Behavior)</SelectItem>
-                      <SelectItem value="negative">Deduct Points (Negative Behavior)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div>
-                  <Label htmlFor="points">Points (Universal: 10)</Label>
-                  <Input
-                    id="points"
-                    type="number"
-                    value={10}
-                    disabled
-                    className="bg-gray-100"
-                    data-testid="input-points"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    All point awards/deductions are standardized to 10 points
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="reason">Reason (Required)</Label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={pbisForm.reasonType === "dropdown" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setPbisForm({...pbisForm, reasonType: "dropdown", reason: ""})}
-                        className="text-xs"
-                      >
-                        Select from List
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={pbisForm.reasonType === "custom" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setPbisForm({...pbisForm, reasonType: "custom", reason: ""})}
-                        className="text-xs"
-                      >
-                        Type Custom
-                      </Button>
-                    </div>
-                    
-                    {pbisForm.reasonType === "dropdown" ? (
-                      <Select 
-                        value={pbisForm.reason} 
-                        onValueChange={(value) => setPbisForm({...pbisForm, reason: value})}
-                      >
-                        <SelectTrigger data-testid="select-reason">
-                          <SelectValue placeholder="Select a reason" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(pbisForm.pointType === "positive" ? positiveReasons : negativeReasons).map((reason, index) => (
-                            <SelectItem key={index} value={reason}>
-                              {reason}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        id="reason"
-                        value={pbisForm.reason}
-                        onChange={(e) => setPbisForm({...pbisForm, reason: e.target.value})}
-                        placeholder="Type your own reason"
-                        data-testid="input-reason"
-                        className={!pbisForm.reason.trim() ? "border-red-300" : ""}
-                      />
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This will be included in the parent notification
-                  </p>
-                </div>
-
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button 
-                    onClick={handleAwardPoints}
-                    disabled={awardPointsMutation.isPending}
-                    data-testid="button-award-points-confirm"
-                    className={`flex-1 font-semibold text-white ${
-                      pbisForm.pointType === "positive" 
-                        ? "bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl" 
-                        : "bg-red-600 hover:bg-red-700 shadow-lg hover:shadow-xl"
-                    }`}
-                  >
-                    {awardPointsMutation.isPending ? "Processing..." : 
-                     pbisForm.pointType === "positive" ? "✓ Award 10 Points" : "✗ Deduct 10 Points"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowAwardPoints(false)}
-                    data-testid="button-cancel-points"
-                    className="flex-1 border-2 border-gray-400 hover:bg-gray-100"
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <Button 
+                  onClick={handleAwardPoints}
+                  disabled={!pbisForm.category || !pbisForm.subcategory || !selectedScholar || awardPointsMutation.isPending}
+                  className="w-full"
+                  data-testid="button-award-points"
+                >
+                  {awardPointsMutation.isPending ? "Awarding..." : "Award MUSTANG Points"}
+                </Button>
               </CardContent>
             </Card>
           </div>

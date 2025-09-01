@@ -276,30 +276,35 @@ export default function StudentHouseHistory() {
 
   // Audio narration function
   const readStoryContent = (story: HouseStory) => {
-    if (!speechSynthesisRef.current || isMuted) return;
+    if (!speechSynthesisRef.current || isMuted || isReading) return;
 
-    // Stop any current speech
+    // Stop any current speech with delay to prevent stuttering
     speechSynthesisRef.current.cancel();
-
-    const textToRead = `
-      Chapter ${story.chapter}: ${story.title}.
-      ${story.content}
-      Historical Fact: ${story.historicalFact}
-      Modern Connection: ${story.modernConnection}
-      Achievements: ${story.achievements.join(', ')}.
-      ${story.quotes.join(' ')}
-    `;
-
-    const utterance = new SpeechSynthesisUtterance(textToRead);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.volume = 1;
     
-    utterance.onstart = () => setIsReading(true);
-    utterance.onend = () => setIsReading(false);
-    utterance.onerror = () => setIsReading(false);
+    // Add delay to prevent rapid-fire calls
+    setTimeout(() => {
+      if (!speechSynthesisRef.current || speechSynthesisRef.current.speaking) return;
+      
+      const textToRead = `
+        Chapter ${story.chapter}: ${story.title}.
+        ${story.content}
+        Historical Fact: ${story.historicalFact}
+        Modern Connection: ${story.modernConnection}
+        Achievements: ${story.achievements.join(', ')}.
+        ${story.quotes.join(' ')}
+      `;
 
-    speechSynthesisRef.current.speak(utterance);
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      utterance.onstart = () => setIsReading(true);
+      utterance.onend = () => setIsReading(false);
+      utterance.onerror = () => setIsReading(false);
+
+      speechSynthesisRef.current.speak(utterance);
+    }, 300);
   };
 
   // Stop audio reading
@@ -451,14 +456,17 @@ export default function StudentHouseHistory() {
                           // Stop any current reading when toggling play
                           if (!newPlayingState) {
                             stopReading();
+                            setAutoPlay(false);
                           }
                           
                           setIsPlaying(newPlayingState);
-                          setAutoPlay(newPlayingState);
                           
-                          // Start reading immediately when play is pressed
-                          if (newPlayingState && currentStory && !isMuted) {
-                            setTimeout(() => readStoryContent(currentStory), 500);
+                          // Start reading with proper delay when play is pressed
+                          if (newPlayingState && currentStory && !isMuted && !isReading) {
+                            setAutoPlay(true);
+                            setTimeout(() => {
+                              if (!isReading) readStoryContent(currentStory);
+                            }, 800);
                           }
                         }}
                         className="bg-white/10 border-white/20 text-white hover:bg-white/20"

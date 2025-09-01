@@ -282,63 +282,67 @@ export default function StudentDashboard() {
   return (
     <div className={`min-h-screen ${themeStyles.background}`}>
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-sm border-b relative z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 min-w-0 flex-shrink-0">
               <img 
                 src={logoPath} 
                 alt="BHSA Mustangs Logo" 
-                className="w-12 h-12 object-contain"
+                className="w-12 h-12 object-contain flex-shrink-0"
               />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Student Portal</h1>
-                <p className="text-gray-600 text-sm">Bush Hills STEAM Academy</p>
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold text-gray-800 truncate">Student Portal</h1>
+                <p className="text-gray-600 text-xs md:text-sm truncate">Bush Hills STEAM Academy</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 md:space-x-3 flex-wrap">
               <InteractiveScale>
                 <Button 
                   variant="outline" 
                   onClick={() => setLocation("/student-mood-tracker")}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-1 md:space-x-2 text-xs md:text-sm px-2 md:px-4"
                   data-testid="button-mood-tracker"
                 >
-                  <Heart className="h-4 w-4" />
-                  <span>Mood Tracker</span>
+                  <Heart className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Mood Tracker</span>
+                  <span className="sm:hidden">Mood</span>
                 </Button>
               </InteractiveScale>
               <InteractiveScale>
                 <Button 
                   variant="outline" 
                   onClick={() => setLocation("/student-learning-path")}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-1 md:space-x-2 text-xs md:text-sm px-2 md:px-4"
                   data-testid="button-learning-path"
                 >
-                  <Target className="h-4 w-4" />
-                  <span>Learning Path</span>
+                  <Target className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Learning Path</span>
+                  <span className="sm:hidden">Learn</span>
                 </Button>
               </InteractiveScale>
               <InteractiveScale>
                 <Button 
                   variant="outline" 
                   onClick={() => setLocation("/student-skill-tree")}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-1 md:space-x-2 text-xs md:text-sm px-2 md:px-4"
                   data-testid="button-skill-tree"
                 >
-                  <Star className="h-4 w-4" />
-                  <span>Skill Tree</span>
+                  <Star className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Skill Tree</span>
+                  <span className="sm:hidden">Skills</span>
                 </Button>
               </InteractiveScale>
               <InteractiveScale>
                 <Button 
                   variant="outline" 
                   onClick={() => setLocation("/student-house-history")}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-1 md:space-x-2 text-xs md:text-sm px-2 md:px-4"
                   data-testid="button-house-history"
                 >
-                  <Book className="h-4 w-4" />
-                  <span>House History</span>
+                  <Book className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">House History</span>
+                  <span className="sm:hidden">History</span>
                 </Button>
               </InteractiveScale>
               <InteractiveScale>

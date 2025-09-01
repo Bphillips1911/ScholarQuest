@@ -146,6 +146,30 @@ export default function AdminNew() {
     enabled: isAuthenticated,
   });
 
+  // Fetch badges data
+  const { data: allBadges = [] } = useQuery({
+    queryKey: ["/api/badges"],
+    enabled: isAuthenticated,
+  });
+
+  // Fetch games data
+  const { data: allGames = [] } = useQuery({
+    queryKey: ["/api/games"],
+    enabled: isAuthenticated,
+  });
+
+  // Fetch scholar badges (badges earned by students)
+  const { data: scholarBadges = [] } = useQuery({
+    queryKey: ["/api/scholar-badges"],
+    enabled: isAuthenticated,
+  });
+
+  // Fetch game access data
+  const { data: gameAccess = [] } = useQuery({
+    queryKey: ["/api/game-access"],
+    enabled: isAuthenticated,
+  });
+
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminData");
@@ -424,9 +448,11 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+            <TabsList className="grid w-full grid-cols-7" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
               <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary}}>Teachers</TabsTrigger>
               <TabsTrigger value="houses" style={{color: themeStyles.textPrimary}}>Houses</TabsTrigger>
+              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary}}>Badges</TabsTrigger>
+              <TabsTrigger value="games" style={{color: themeStyles.textPrimary}}>Games</TabsTrigger>
               <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary}}>Messages</TabsTrigger>
               <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
               <TabsTrigger value="exports" style={{color: themeStyles.textPrimary}}>Data Export</TabsTrigger>
@@ -502,6 +528,149 @@ export default function AdminNew() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="badges" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                  <CardHeader>
+                    <CardTitle style={{color: themeStyles.textPrimary}}>Badge Overview ({allBadges?.length || 0} Total)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {allBadges && allBadges.length > 0 ? (
+                        allBadges.map((badge: any) => (
+                          <div key={badge.id} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}>
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>{badge.name}</h4>
+                                <p className="text-sm" style={{color: themeStyles.textSecondary}}>{badge.description}</p>
+                              </div>
+                              <Badge variant={badge.category === 'overall' ? 'default' : 'secondary'}>
+                                Level {badge.level}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span style={{color: themeStyles.textSecondary}}>
+                                {badge.category} • {badge.pointsRequired} points
+                              </span>
+                              <span style={{color: themeStyles.textSecondary}}>
+                                {badge.houseId ? badge.houseId.charAt(0).toUpperCase() + badge.houseId.slice(1) : 'Universal'}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <Award className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                          <p style={{color: themeStyles.textSecondary}}>No badges found</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                  <CardHeader>
+                    <CardTitle style={{color: themeStyles.textPrimary}}>Badge Categories</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {['academic', 'behavior', 'attendance', 'overall'].map(category => {
+                        const categoryBadges = allBadges?.filter((b: any) => b.category === category) || [];
+                        return (
+                          <div key={category} className="p-3 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium capitalize" style={{color: themeStyles.textPrimary}}>
+                                {category}
+                              </span>
+                              <Badge variant="outline">
+                                {categoryBadges.length} badges
+                              </Badge>
+                            </div>
+                            <p className="text-xs mt-1" style={{color: themeStyles.textSecondary}}>
+                              {categoryBadges.map((b: any) => `${b.pointsRequired}pts`).join(', ')}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="games" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                  <CardHeader>
+                    <CardTitle style={{color: themeStyles.textPrimary}}>Game Library ({allGames?.length || 0} Games)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {allGames && allGames.length > 0 ? (
+                        allGames.map((game: any) => (
+                          <div key={game.id} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}>
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>{game.name}</h4>
+                                <p className="text-sm" style={{color: themeStyles.textSecondary}}>{game.description}</p>
+                              </div>
+                              <Badge variant={game.difficulty === 'easy' ? 'default' : game.difficulty === 'medium' ? 'secondary' : 'destructive'}>
+                                {game.difficulty}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span style={{color: themeStyles.textSecondary}}>
+                                {game.category} • {game.pointsRequired} points required
+                              </span>
+                              <span className={`px-2 py-1 rounded ${game.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {game.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <GraduationCap className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                          <p style={{color: themeStyles.textSecondary}}>No games found</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                  <CardHeader>
+                    <CardTitle style={{color: themeStyles.textPrimary}}>Game Categories</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {['sports', 'puzzle', 'strategy', 'arcade', 'adventure', 'racing'].map(category => {
+                        const categoryGames = allGames?.filter((g: any) => g.category === category) || [];
+                        return (
+                          <div key={category} className="p-3 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium capitalize" style={{color: themeStyles.textPrimary}}>
+                                {category}
+                              </span>
+                              <Badge variant="outline">
+                                {categoryGames.length} games
+                              </Badge>
+                            </div>
+                            {categoryGames.length > 0 && (
+                              <p className="text-xs mt-1" style={{color: themeStyles.textSecondary}}>
+                                {categoryGames.map((g: any) => g.name).slice(0, 2).join(', ')}
+                                {categoryGames.length > 2 && ` +${categoryGames.length - 2} more`}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="messaging" className="space-y-6">

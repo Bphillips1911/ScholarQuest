@@ -1045,6 +1045,13 @@ export class DatabaseStorage implements IStorage {
       ));
   }
 
+  async getAllScholarBadges(): Promise<(schema.ScholarBadge & { badge: schema.Badge, scholar: schema.Scholar })[]> {
+    return await db.select().from(schema.scholarBadges)
+      .innerJoin(schema.badges, eq(schema.scholarBadges.badgeId, schema.badges.id))
+      .innerJoin(schema.scholars, eq(schema.scholarBadges.scholarId, schema.scholars.id))
+      .where(eq(schema.scholarBadges.isActive, true));
+  }
+
   async awardBadge(scholarId: string, badgeId: string): Promise<schema.ScholarBadge> {
     const [scholarBadge] = await db.insert(schema.scholarBadges)
       .values({ scholarId, badgeId })
@@ -1131,6 +1138,13 @@ export class DatabaseStorage implements IStorage {
         eq(schema.gameAccess.gameId, gameId),
         eq(schema.gameAccess.isActive, true)
       ));
+  }
+
+  async getAllGameAccess(): Promise<(schema.GameAccess & { game: schema.Game, scholar: schema.Scholar })[]> {
+    return await db.select().from(schema.gameAccess)
+      .innerJoin(schema.games, eq(schema.gameAccess.gameId, schema.games.id))
+      .innerJoin(schema.scholars, eq(schema.gameAccess.scholarId, schema.scholars.id))
+      .where(eq(schema.gameAccess.isActive, true));
   }
 
   async recordGameSession(

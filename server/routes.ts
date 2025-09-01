@@ -3667,6 +3667,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all scholar badges (admin endpoint)
+  app.get("/api/scholar-badges", async (req, res) => {
+    try {
+      const scholarBadges = await storage.getAllScholarBadges();
+      res.json(scholarBadges);
+    } catch (error) {
+      console.error("Get all scholar badges error:", error);
+      res.status(500).json({ message: "Failed to fetch scholar badges" });
+    }
+  });
+
+  // Get all game access records (admin endpoint)
+  app.get("/api/game-access", async (req, res) => {
+    try {
+      const gameAccess = await storage.getAllGameAccess();
+      res.json(gameAccess);
+    } catch (error) {
+      console.error("Get all game access error:", error);
+      res.status(500).json({ message: "Failed to fetch game access records" });
+    }
+  });
+
   // Game System API Routes
   // Get all games
   app.get("/api/games", async (req, res) => {

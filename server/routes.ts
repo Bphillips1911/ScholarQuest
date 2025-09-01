@@ -498,6 +498,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertPbisEntrySchema.parse(req.body);
       const entry = await storage.createPbisEntry(validatedData);
       
+      // Update scholar points based on entry type and category
+      if (entry.scholarId) {
+        const scholar = await storage.getScholar(entry.scholarId);
+        if (scholar) {
+          // Determine if points should be positive or negative
+          const pointsToAdd = entry.entryType === 'negative' || entry.points < 0 ? -Math.abs(entry.points) : Math.abs(entry.points);
+          
+          // Update points based on category
+          const updates: Partial<Scholar> = {};
+          if (entry.category === "behavior") {
+            updates.behaviorPoints = (scholar.behaviorPoints || 0) + pointsToAdd;
+          } else if (entry.category === "academic") {
+            updates.academicPoints = (scholar.academicPoints || 0) + pointsToAdd;
+          } else if (entry.category === "attendance") {
+            updates.attendancePoints = (scholar.attendancePoints || 0) + pointsToAdd;
+          }
+          
+          console.log(`📊 PBIS POINTS: Updating ${entry.category} points by ${pointsToAdd} for scholar ${scholar.name}`);
+          await storage.updateScholar(entry.scholarId, updates);
+          
+          // Update house points if scholar belongs to a house
+          if (scholar.houseId && entry.category) {
+            const house = await storage.getHouse(scholar.houseId);
+            if (house) {
+              const houseUpdates: Partial<House> = {};
+              if (entry.category === "behavior") {
+                houseUpdates.behaviorPoints = (house.behaviorPoints || 0) + pointsToAdd;
+              } else if (entry.category === "academic") {
+                houseUpdates.academicPoints = (house.academicPoints || 0) + pointsToAdd;
+              } else if (entry.category === "attendance") {
+                houseUpdates.attendancePoints = (house.attendancePoints || 0) + pointsToAdd;
+              }
+              
+              console.log(`🏠 HOUSE POINTS: Updating ${entry.category} points by ${pointsToAdd} for house ${house.name}`);
+              await storage.updateHouse(scholar.houseId, houseUpdates);
+            }
+          }
+        }
+      }
+      
       // Check if this is a negative characteristic and assign reflection
       if (entry.points < 0 || entry.entryType === 'negative') {
         try {

@@ -842,6 +842,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (fixError) {
         console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Auth consistency check failed:", fixError.message);
       }
+      
+      // PASSWORD FIX: Ensure all parent passwords are properly hashed
+      try {
+        const { fixAllParentPasswords } = await import('./parent-password-fix');
+        await fixAllParentPasswords();
+      } catch (passwordFixError) {
+        console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Password fix check failed:", passwordFixError.message);
+      }
 
       console.log("👨‍👩‍👧‍👦 PARENT LOGIN: Looking up parent in storage...");
       const parent = await storage.getParentByEmail(email);
@@ -906,6 +914,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await ensureParentAuthConsistency();
       } catch (fixError) {
         console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Auth consistency check failed:", fixError.message);
+      }
+      
+      // PASSWORD FIX: Ensure all parent passwords are properly hashed
+      try {
+        const { fixAllParentPasswords } = await import('./parent-password-fix');
+        await fixAllParentPasswords();
+      } catch (passwordFixError) {
+        console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Password fix check failed:", passwordFixError.message);
       }
 
       console.log("👨‍👩‍👧‍👦 PARENT-AUTH LOGIN: Looking up parent in storage...");

@@ -72,6 +72,16 @@ app.use((req, res, next) => {
         log("DEPLOYMENT: Debug error (non-critical):", error.message);
       }
       
+      // Initialize parent password security system
+      try {
+        log("STARTUP: Initializing parent password security...");
+        const { initializeParentPasswordSecurity } = await import("./parent-password-fix");
+        await initializeParentPasswordSecurity();
+        log("STARTUP: Parent password security initialized successfully");
+      } catch (error) {
+        log("STARTUP: Parent password security error (non-critical):", error.message);
+      }
+      
       try {
         const { forceDeploymentDatabaseSync } = await import("./deployment-database-fix");
         await forceDeploymentDatabaseSync();

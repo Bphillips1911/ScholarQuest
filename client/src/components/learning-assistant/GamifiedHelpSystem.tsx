@@ -49,67 +49,107 @@ export function GamifiedHelpSystem({
 
   const helpQuests: HelpQuest[] = [
     {
-      id: 'house-basics',
-      title: 'House System Explorer',
-      description: 'Learn the fundamentals of the house system and how to earn points.',
-      category: 'house',
+      id: 'mood-tracker-guide',
+      title: 'Mood Tracker Explorer',
+      description: 'Learn how to use the Mood Tracker to monitor your emotional well-being and set daily goals.',
+      category: 'system',
       difficulty: 'easy',
       xpReward: 50,
-      completed: completedQuests.includes('house-basics'),
-      icon: <Trophy className="w-5 h-5" />,
+      completed: completedQuests.includes('mood-tracker-guide'),
+      icon: <HelpCircle className="w-5 h-5" />,
       steps: [
-        'Understand what houses are and which one you belong to',
-        'Learn about the different ways to earn house points',
-        'Discover MUSTANG traits and their importance',
-        'See how your points contribute to house competition'
+        'Understand what the Mood Tracker is and why it helps your learning',
+        'Learn how to log your daily mood using the emoji scale',
+        'Discover how to set and track daily progress goals',
+        'See how mood tracking connects to your academic success',
+        'Practice using daily reflections to improve your mindset'
       ]
     },
     {
-      id: 'academic-excellence',
-      title: 'Academic Achievement Master',
-      description: 'Master the art of academic success and point earning.',
+      id: 'learning-path-master',
+      title: 'Learning Path Navigator',
+      description: 'Master the personalized Learning Path system to accelerate your educational journey.',
       category: 'academic',
       difficulty: 'medium',
       xpReward: 75,
-      completed: completedQuests.includes('academic-excellence'),
-      icon: <BookOpen className="w-5 h-5" />,
+      completed: completedQuests.includes('learning-path-master'),
+      icon: <Target className="w-5 h-5" />,
       steps: [
-        'Learn effective study techniques',
-        'Understand how academic points are awarded',
-        'Discover resources for homework help',
-        'Master time management skills'
+        'Explore the four Learning Path tracks: Academic Excellence, Character Development, House Leadership, and STEAM Innovation',
+        'Learn how your PBIS points unlock new learning opportunities',
+        'Understand milestone progression and achievement badges',
+        'Discover how to set personalized learning goals',
+        'See how Learning Paths connect to your house competition'
       ]
     },
     {
-      id: 'behavior-champion',
-      title: 'MUSTANG Behavior Champion',
-      description: 'Become an expert in positive behavior and earn behavior points.',
-      category: 'behavior',
+      id: 'skill-tree-champion',
+      title: 'Skill Tree Master',
+      description: 'Navigate the gamified Skill Tree to unlock achievements and track your growth across all areas.',
+      category: 'achievement',
       difficulty: 'medium',
       xpReward: 75,
-      completed: completedQuests.includes('behavior-champion'),
+      completed: completedQuests.includes('skill-tree-champion'),
       icon: <Star className="w-5 h-5" />,
       steps: [
-        'Master all 7 MUSTANG traits',
-        'Learn conflict resolution strategies',
-        'Practice kindness and respect',
-        'Become a peer helper'
+        'Understand the four skill categories: Academic, Behavioral, Social, and Leadership',
+        'Learn how earning points unlocks new skill nodes and abilities',
+        'Discover achievement animations and unlock celebrations',
+        'See how skills connect between different areas of growth',
+        'Master the horizontal scrolling navigation to explore all skills',
+        'Understand the path to Bush Hills STEAM Academy legendary status'
       ]
     },
     {
-      id: 'system-navigator',
-      title: 'Platform Navigation Expert',
-      description: 'Become a pro at using all platform features and tools.',
+      id: 'house-history-explorer',
+      title: 'House History Storyteller',
+      description: 'Dive deep into your house history and learn about the legendary figures who inspire your house.',
+      category: 'house',
+      difficulty: 'easy',
+      xpReward: 60,
+      completed: completedQuests.includes('house-history-explorer'),
+      icon: <BookOpen className="w-5 h-5" />,
+      steps: [
+        'Explore the immersive storytelling mode for your house',
+        'Learn about your house founder: Franklin, Tesla, Curie, Nobel, or Lovelace',
+        'Discover historical achievements and contributions of your house inspiration',
+        'Use the audio narration feature to hear stories read aloud',
+        'Understand how your house values connect to STEAM education',
+        'See how historical figures overcame challenges to achieve greatness'
+      ]
+    },
+    {
+      id: 'dashboard-features',
+      title: 'Student Dashboard Expert',
+      description: 'Master all dashboard features including themes, navigation, and personal customization.',
       category: 'system',
-      difficulty: 'hard',
-      xpReward: 100,
-      completed: completedQuests.includes('system-navigator'),
+      difficulty: 'easy',
+      xpReward: 40,
+      completed: completedQuests.includes('dashboard-features'),
       icon: <Zap className="w-5 h-5" />,
       steps: [
-        'Master dashboard navigation',
-        'Learn to use all learning tools',
-        'Understand the achievement system',
-        'Help others navigate the platform'
+        'Navigate all dashboard sections: points overview, recent achievements, reflections',
+        'Learn to use the personalized theme system with 6 color options',
+        'Understand how themes unlock based on your point achievements',
+        'Master quick navigation between all student portal features',
+        'Discover how to track your progress toward legendary status'
+      ]
+    },
+    {
+      id: 'mustang-behavior',
+      title: 'MUSTANG Traits Champion',
+      description: 'Master the 7 MUSTANG traits that define excellence at Bush Hills STEAM Academy.',
+      category: 'behavior',
+      difficulty: 'medium',
+      xpReward: 80,
+      completed: completedQuests.includes('mustang-behavior'),
+      icon: <Trophy className="w-5 h-5" />,
+      steps: [
+        'Learn all 7 MUSTANG traits: Make good choices, Use kind words, Show school pride, Tolerant of others, Aim for excellence, Need to be responsible, Give 100% everyday',
+        'Understand how each trait earns you behavior points',
+        'Practice applying MUSTANG traits in daily school situations',
+        'See how behavior points contribute to your house success',
+        'Become a positive role model for other students'
       ]
     }
   ];

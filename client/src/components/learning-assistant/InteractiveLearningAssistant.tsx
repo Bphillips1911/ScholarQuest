@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CharacterAnimations, houseCharacters } from './CharacterAnimations';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { MessageSquare, HelpCircle, BookOpen, Trophy, Target, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
+import { MessageSquare, HelpCircle, BookOpen, Trophy, Target, Sparkles, Volume2, VolumeX, X, Heart, Star } from 'lucide-react';
 
 interface LearningTip {
   id: string;
@@ -36,46 +36,69 @@ export function InteractiveLearningAssistant({
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(true);
+  const [showQuickHelp, setShowQuickHelp] = useState(true);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [learningTips] = useState<LearningTip[]>([
     {
-      id: '1',
+      id: 'mood-tracker-tip',
       category: 'academic',
-      title: 'Study Smart Tips',
-      content: 'Break your study sessions into 25-minute chunks with 5-minute breaks. This helps your brain focus better!',
+      title: 'Mood Tracker Benefits',
+      content: 'The Mood Tracker helps you understand how your emotions affect your learning. Log your mood daily and set goals to improve your mindset and academic performance!',
     },
     {
-      id: '2',
-      category: 'behavior',
-      title: 'MUSTANG Traits',
-      content: 'Remember: Make good choices, Use kind words, Show school pride, Tolerant of others, Aim for excellence, Need to be responsible, Give 100% everyday!',
+      id: 'learning-path-tip',
+      category: 'academic', 
+      title: 'Learning Path Power',
+      content: 'Your Learning Path is personalized just for you! Choose from Academic Excellence, Character Development, House Leadership, or STEAM Innovation tracks to boost your growth.',
     },
     {
-      id: '3',
-      category: 'house',
-      title: 'House Points Strategy',
-      content: 'Earn points by participating in class, helping classmates, and showing excellent behavior. Every point counts toward your house victory!',
-      houseSpecific: 'franklin'
-    },
-    {
-      id: '4',
+      id: 'skill-tree-tip',
       category: 'achievement',
-      title: 'Goal Setting',
-      content: 'Set SMART goals: Specific, Measurable, Achievable, Relevant, and Time-bound. Track your progress daily!',
+      title: 'Skill Tree Mastery',
+      content: 'The Skill Tree shows your progress across Academic, Behavioral, Social, and Leadership skills. Earn points to unlock new achievements and work toward legendary status!',
     },
     {
-      id: '5',
-      category: 'academic',
-      title: 'Note-Taking Magic',
-      content: 'Use the Cornell Note-taking system: divide your page into notes, cues, and summary sections for better organization!',
+      id: 'house-history-tip',
+      category: 'house',
+      title: 'House History Magic',
+      content: 'Discover the amazing stories of your house founder! Learn how Franklin, Tesla, Curie, Nobel, or Lovelace changed the world through STEAM innovation and perseverance.',
     },
     {
-      id: '6',
+      id: 'mustang-traits-tip',
       category: 'behavior',
-      title: 'Conflict Resolution',
-      content: 'When facing conflicts, use the STOP method: Stop and think, Take a breath, Observe the situation, Proceed with kindness.',
+      title: 'MUSTANG Power',
+      content: 'MUSTANG traits are your guide to success: Make good choices, Use kind words, Show school pride, Tolerant of others, Aim for excellence, Need to be responsible, Give 100% everyday!',
+    },
+    {
+      id: 'dashboard-themes-tip',
+      category: 'achievement',
+      title: 'Dashboard Themes',
+      content: 'Unlock beautiful dashboard themes by earning points! Choose from Traditional, Kelly Green, Gold, Orange, Midnight Scholar, Sunrise Energy, and MUSTANG Champion themes.',
     }
   ]);
+
+  const featureExplanations = {
+    'mood-tracker': {
+      title: 'Mood Tracker',
+      explanation: 'Track your daily emotions and set personal goals to improve your mindset and academic performance. Use emojis to log how you feel and reflect on your day!',
+      benefits: ['Better self-awareness', 'Improved emotional intelligence', 'Academic performance insights', 'Daily goal setting']
+    },
+    'learning-path': {
+      title: 'Learning Path',
+      explanation: 'Follow personalized learning journeys designed to help you grow academically and personally. Choose from four exciting tracks based on your interests and goals!',
+      benefits: ['Personalized education', 'Clear progression milestones', 'Achievement badges', 'Skill development']
+    },
+    'skill-tree': {
+      title: 'Skill Tree',
+      explanation: 'Visualize your growth across Academic, Behavioral, Social, and Leadership skills. Earn points to unlock new achievements and progress toward legendary status!',
+      benefits: ['Gamified learning', 'Visual progress tracking', 'Skill connections', 'Achievement celebrations']
+    },
+    'house-history': {
+      title: 'House History',
+      explanation: 'Explore immersive stories about your house founder and learn how they changed the world through innovation, perseverance, and STEAM excellence!',
+      benefits: ['Historical inspiration', 'Audio narration', 'House pride building', 'STEAM connection']
+    }
+  };
 
   const welcomeMessages = [
     `Hi there! I'm ${currentCharacter.name}, your ${currentCharacter.house} learning buddy!`,
@@ -173,8 +196,20 @@ export function InteractiveLearningAssistant({
   };
 
   const handleHelpRequest = (topic: string) => {
-    setCurrentMessage(`Great question about ${topic}! Let me help you with that...`);
+    if (featureExplanations[topic as keyof typeof featureExplanations]) {
+      const feature = featureExplanations[topic as keyof typeof featureExplanations];
+      setCurrentMessage(`📚 ${feature.title}: ${feature.explanation} Benefits include: ${feature.benefits.join(', ')}. Want to explore this feature now?`);
+    } else {
+      setCurrentMessage(`Great question about ${topic}! Let me help you with that...`);
+    }
     onHelpRequest?.(topic);
+  };
+
+  const handleFeatureExplanation = (featureName: string) => {
+    const feature = featureExplanations[featureName as keyof typeof featureExplanations];
+    if (feature) {
+      setCurrentMessage(`📚 ${feature.title}: ${feature.explanation} Key benefits: ${feature.benefits.join(', ')}. Ready to try it?`);
+    }
   };
 
   const getMotivationalMessage = () => {
@@ -250,48 +285,105 @@ export function InteractiveLearningAssistant({
                 </div>
               </div>
 
-              {/* Quick Actions */}
-              <div className="grid grid-cols-2 gap-2 mb-4">
+              {/* Quick Help Toggle */}
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-semibold text-gray-700">How can I help you?</h4>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => handleCategorySelect('academic')}
-                  className={`flex items-center space-x-1 border-${currentCharacter.color}-200 hover:bg-${currentCharacter.color}-50`}
+                  onClick={() => setShowQuickHelp(!showQuickHelp)}
+                  className={`text-xs px-2 py-1 ${showQuickHelp ? 'text-blue-600' : 'text-gray-400'}`}
                 >
-                  <BookOpen className="w-3 h-3" />
-                  <span className="text-xs">Study Tips</span>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCategorySelect('behavior')}
-                  className={`flex items-center space-x-1 border-${currentCharacter.color}-200 hover:bg-${currentCharacter.color}-50`}
-                >
-                  <Target className="w-3 h-3" />
-                  <span className="text-xs">MUSTANG Tips</span>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCategorySelect('house')}
-                  className={`flex items-center space-x-1 border-${currentCharacter.color}-200 hover:bg-${currentCharacter.color}-50`}
-                >
-                  <Trophy className="w-3 h-3" />
-                  <span className="text-xs">House Points</span>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCategorySelect('achievement')}
-                  className={`flex items-center space-x-1 border-${currentCharacter.color}-200 hover:bg-${currentCharacter.color}-50`}
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span className="text-xs">Goals</span>
+                  {showQuickHelp ? 'Quick Help' : 'Feature Help'}
                 </Button>
               </div>
+
+              {/* Quick Help or Feature Explanations */}
+              {showQuickHelp ? (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCategorySelect('academic')}
+                    className={`flex items-center space-x-1 border-${currentCharacter.color}-200 hover:bg-${currentCharacter.color}-50`}
+                  >
+                    <BookOpen className="w-3 h-3" />
+                    <span className="text-xs">Study Tips</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCategorySelect('behavior')}
+                    className={`flex items-center space-x-1 border-${currentCharacter.color}-200 hover:bg-${currentCharacter.color}-50`}
+                  >
+                    <Target className="w-3 h-3" />
+                    <span className="text-xs">MUSTANG Tips</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCategorySelect('house')}
+                    className={`flex items-center space-x-1 border-${currentCharacter.color}-200 hover:bg-${currentCharacter.color}-50`}
+                  >
+                    <Trophy className="w-3 h-3" />
+                    <span className="text-xs">House Points</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCategorySelect('achievement')}
+                    className={`flex items-center space-x-1 border-${currentCharacter.color}-200 hover:bg-${currentCharacter.color}-50`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span className="text-xs">Goals</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFeatureExplanation('mood-tracker')}
+                    className="w-full justify-start text-xs p-2 h-auto border-blue-200 hover:bg-blue-50"
+                  >
+                    <Heart className="w-3 h-3 mr-2" />
+                    <span>What is Mood Tracker?</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFeatureExplanation('learning-path')}
+                    className="w-full justify-start text-xs p-2 h-auto border-green-200 hover:bg-green-50"
+                  >
+                    <Target className="w-3 h-3 mr-2" />
+                    <span>How does Learning Path work?</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFeatureExplanation('skill-tree')}
+                    className="w-full justify-start text-xs p-2 h-auto border-purple-200 hover:bg-purple-50"
+                  >
+                    <Star className="w-3 h-3 mr-2" />
+                    <span>Explain the Skill Tree system</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFeatureExplanation('house-history')}
+                    className="w-full justify-start text-xs p-2 h-auto border-orange-200 hover:bg-orange-50"
+                  >
+                    <BookOpen className="w-3 h-3 mr-2" />
+                    <span>Tell me about House History</span>
+                  </Button>
+                </div>
+              )}
 
               {/* Motivational Section */}
               <div className={`bg-${currentCharacter.color}-50 rounded-lg p-3 mb-4`}>

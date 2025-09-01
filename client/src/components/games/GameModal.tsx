@@ -8,6 +8,9 @@ import { TicTacToe } from "./TicTacToe";
 import { WhackAMole } from "./WhackAMole";
 import { PuzzleSlider } from "./PuzzleSlider";
 import { BasketballGame } from "./Basketball";
+import { RacingGame } from "./RacingGame";
+import { BrickBreaker } from "./BrickBreaker";
+import { MemoryMatch } from "./MemoryMatch";
 
 interface GameModalProps {
   game: {
@@ -56,7 +59,7 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
     
     // Map other games to appropriate existing components
     if (gameName.includes('memory') || gameName.includes('match')) {
-      return <PuzzleSlider onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+      return <MemoryMatch onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
     if (gameName.includes('connect') || gameName.includes('four')) {
@@ -64,7 +67,7 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
     }
     
     if (gameName.includes('racing') || gameName.includes('championship')) {
-      return <WhackAMole onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+      return <RacingGame onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
     if (gameName.includes('soccer') || gameName.includes('penalty')) {
@@ -96,7 +99,7 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
     }
     
     if (gameName.includes('brick') || gameName.includes('breaker')) {
-      return <BasketballGame onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+      return <BrickBreaker onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
     // Default to Tic Tac Toe for strategy games

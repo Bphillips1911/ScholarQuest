@@ -453,8 +453,9 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+            <TabsList className="grid w-full grid-cols-8" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
               <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary}}>Teachers</TabsTrigger>
+              <TabsTrigger value="students" style={{color: themeStyles.textPrimary}}>Students</TabsTrigger>
               <TabsTrigger value="houses" style={{color: themeStyles.textPrimary}}>Houses</TabsTrigger>
               <TabsTrigger value="badges" style={{color: themeStyles.textPrimary}}>Badges</TabsTrigger>
               <TabsTrigger value="games" style={{color: themeStyles.textPrimary}}>Games</TabsTrigger>
@@ -502,6 +503,133 @@ export default function AdminNew() {
                       <p className="text-sm" style={{color: themeStyles.textSecondary}}>All teachers have been approved</p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="students" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Student Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-4">Manage student records and house assignments</p>
+                  
+                  {/* Student Statistics */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium" style={{color: themeStyles.textSecondary}}>Total Students</p>
+                          <p className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
+                            {allScholars?.length || 0}
+                          </p>
+                        </div>
+                        <Users className="h-8 w-8" style={{color: themeStyles.textSecondary}} />
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium" style={{color: themeStyles.textSecondary}}>Active Houses</p>
+                          <p className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
+                            {houses?.length || 0}
+                          </p>
+                        </div>
+                        <GraduationCap className="h-8 w-8" style={{color: themeStyles.textSecondary}} />
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                      <div>
+                        <p className="text-sm font-medium" style={{color: themeStyles.textSecondary}}>Badges Earned</p>
+                        <p className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
+                          {scholarBadges?.length || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Student List */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold" style={{color: themeStyles.textPrimary}}>All Students</h3>
+                      <Button 
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => {
+                          toast({
+                            title: "Add Student",
+                            description: "Student addition functionality can be implemented here.",
+                          });
+                        }}
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Add Student
+                      </Button>
+                    </div>
+
+                    {allScholars && allScholars.length > 0 ? (
+                      <div className="grid gap-4">
+                        {allScholars.map((scholar) => {
+                          const house = houses?.find(h => h.id === scholar.houseId);
+                          const studentBadges = scholarBadges?.filter((sb: any) => sb.scholarId === scholar.id) || [];
+                          
+                          return (
+                            <div 
+                              key={scholar.id} 
+                              className="flex items-center justify-between p-4 border rounded-lg" 
+                              style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3">
+                                  <div>
+                                    <p className="font-medium" style={{color: themeStyles.textPrimary}}>
+                                      {scholar.firstName} {scholar.lastName}
+                                    </p>
+                                    <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                                      ID: {scholar.id.slice(0, 8)}... • Grade: {scholar.grade}
+                                    </p>
+                                    <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                                      Username: {scholar.username}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center space-x-3">
+                                {house && (
+                                  <Badge 
+                                    className="text-white"
+                                    style={{backgroundColor: house.color}}
+                                  >
+                                    {house.name}
+                                  </Badge>
+                                )}
+                                <Badge variant="outline">
+                                  {studentBadges.length} badges
+                                </Badge>
+                                <div className="text-right">
+                                  <p className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>
+                                    {scholar.totalPoints || 0} points
+                                  </p>
+                                  <p className="text-xs" style={{color: themeStyles.textSecondary}}>
+                                    Joined: {scholar.createdAt ? new Date(scholar.createdAt).toLocaleDateString() : 'Recently'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <p style={{color: themeStyles.textSecondary}}>No students found</p>
+                        <p className="text-sm" style={{color: themeStyles.textSecondary}}>Students will appear here once they are added to the system</p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

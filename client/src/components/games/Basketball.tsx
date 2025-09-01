@@ -245,13 +245,15 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
 
       <div className="flex-1 flex flex-col space-y-4 p-4">
           {/* Game Canvas */}
-          <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
-            <canvas
-              ref={canvasRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
-              className="block"
-            />
+          <div className="flex justify-center">
+            <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
+              <canvas
+                ref={canvasRef}
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+                className="block"
+              />
+            </div>
           </div>
 
           {/* Game Controls */}

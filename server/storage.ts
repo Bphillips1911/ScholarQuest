@@ -121,6 +121,7 @@ export interface IStorage {
   
   // PBIS Entries
   getPbisEntries(): Promise<PbisEntry[]>;
+  getAllPbisEntries(): Promise<PbisEntry[]>;
   getPbisEntriesByScholar(scholarId: string): Promise<PbisEntry[]>;
   createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry>;
   
@@ -708,6 +709,10 @@ export class MemStorage implements IStorage {
   }
 
   async getPbisEntries(): Promise<PbisEntry[]> {
+    return Array.from(this.pbisEntries.values());
+  }
+
+  async getAllPbisEntries(): Promise<PbisEntry[]> {
     return Array.from(this.pbisEntries.values());
   }
 

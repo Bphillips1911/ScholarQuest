@@ -404,6 +404,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(pbisEntries).orderBy(desc(pbisEntries.createdAt));
   }
 
+  async getAllPbisEntries(): Promise<PbisEntry[]> {
+    return await db.select().from(pbisEntries).orderBy(desc(pbisEntries.createdAt));
+  }
+
   // PBIS Photo methods
   async createPbisPhoto(photoData: InsertPbisPhoto): Promise<PbisPhoto> {
     const [photo] = await db.insert(pbisPhotos).values({

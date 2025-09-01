@@ -2694,6 +2694,226 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export reflections data endpoint
+  app.get("/api/admin/export/reflections", async (req, res) => {
+    try {
+      const reflections = await storage.getAllReflections();
+      const scholars = await storage.getAllScholars();
+      
+      // Create a map for scholar names
+      const scholarMap = new Map(scholars.map(s => [s.id, s.name]));
+      
+      // Format the data for export
+      const exportData = reflections.map(reflection => ({
+        'Student Name': scholarMap.get(reflection.scholarId) || 'Unknown',
+        'Teacher Name': reflection.teacherName,
+        'Reflection Prompt': reflection.prompt,
+        'Student Response': reflection.studentResponse || 'No response yet',
+        'Status': reflection.status,
+        'Assigned Date': new Date(reflection.assignedAt).toLocaleDateString(),
+        'Submitted Date': reflection.submittedAt ? new Date(reflection.submittedAt).toLocaleDateString() : 'Not submitted',
+        'Reviewed Date': reflection.reviewedAt ? new Date(reflection.reviewedAt).toLocaleDateString() : 'Not reviewed',
+        'Teacher Feedback': reflection.teacherFeedback || 'No feedback',
+        'Due Date': new Date(reflection.dueDate).toLocaleDateString()
+      }));
+
+      const csv = stringify(exportData, { 
+        header: true,
+        columns: [
+          'Student Name',
+          'Teacher Name',
+          'Reflection Prompt',
+          'Student Response',
+          'Status',
+          'Assigned Date',
+          'Submitted Date',
+          'Reviewed Date',
+          'Teacher Feedback',
+          'Due Date'
+        ]
+      });
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="bhsa-reflections-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+      
+    } catch (error) {
+      console.error('Reflections export error:', error);
+      res.status(500).json({ message: 'Failed to export reflections data' });
+    }
+  });
+
+  // Export houses data endpoint
+  app.get("/api/admin/export/houses", async (req, res) => {
+    try {
+      const houses = await storage.getHouses();
+      const scholars = await storage.getAllScholars();
+      
+      // Calculate member counts for each house
+      const houseMemberCounts = new Map();
+      scholars.forEach(scholar => {
+        const count = houseMemberCounts.get(scholar.houseId) || 0;
+        houseMemberCounts.set(scholar.houseId, count + 1);
+      });
+      
+      // Format the data for export
+      const exportData = houses.map(house => ({
+        'House Name': house.name,
+        'House Color': house.color,
+        'House Icon': house.icon,
+        'House Motto': house.motto,
+        'Academic Points': house.academicPoints,
+        'Attendance Points': house.attendancePoints,
+        'Behavior Points': house.behaviorPoints,
+        'Total Points': house.academicPoints + house.attendancePoints + house.behaviorPoints,
+        'Member Count': houseMemberCounts.get(house.id) || 0,
+        'Average Points per Member': houseMemberCounts.get(house.id) > 0 ? 
+          Math.round((house.academicPoints + house.attendancePoints + house.behaviorPoints) / houseMemberCounts.get(house.id)) : 0
+      }));
+
+      const csv = stringify(exportData, { 
+        header: true,
+        columns: [
+          'House Name',
+          'House Color',
+          'House Icon',
+          'House Motto',
+          'Academic Points',
+          'Attendance Points',
+          'Behavior Points',
+          'Total Points',
+          'Member Count',
+          'Average Points per Member'
+        ]
+      });
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="bhsa-houses-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+      
+    } catch (error) {
+      console.error('Houses export error:', error);
+      res.status(500).json({ message: 'Failed to export houses data' });
+    }
+  });
+
+  // Export PBIS entries data endpoint
+  app.get("/api/admin/export/pbis", async (req, res) => {
+    try {
+      const pbisEntries = await storage.getAllPbisEntries();
+      const scholars = await storage.getAllScholars();
+      const houses = await storage.getHouses();
+      
+      // Create maps for names
+      const scholarMap = new Map(scholars.map(s => [s.id, { name: s.name, houseId: s.houseId }]));
+      const houseMap = new Map(houses.map(h => [h.id, h.name]));
+      
+      // Format the data for export
+      const exportData = pbisEntries.map(entry => {
+        const scholar = scholarMap.get(entry.scholarId);
+        return {
+          'Student Name': scholar?.name || 'Unknown',
+          'House': houseMap.get(scholar?.houseId || '') || 'Not Assigned',
+          'Teacher Name': entry.teacherName,
+          'Teacher Role': entry.teacherRole,
+          'Points Awarded': entry.points,
+          'Entry Type': entry.entryType,
+          'Category': entry.category,
+          'Subcategory': entry.subcategory || 'N/A',
+          'MUSTANG Trait': entry.mustangTrait,
+          'Reason': entry.reason,
+          'Date Awarded': new Date(entry.createdAt).toLocaleDateString(),
+          'Month': entry.month,
+          'Year': entry.year
+        };
+      });
+
+      const csv = stringify(exportData, { 
+        header: true,
+        columns: [
+          'Student Name',
+          'House',
+          'Teacher Name',
+          'Teacher Role',
+          'Points Awarded',
+          'Entry Type',
+          'Category',
+          'Subcategory',
+          'MUSTANG Trait',
+          'Reason',
+          'Date Awarded',
+          'Month',
+          'Year'
+        ]
+      });
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="bhsa-pbis-entries-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+      
+    } catch (error) {
+      console.error('PBIS export error:', error);
+      res.status(500).json({ message: 'Failed to export PBIS data' });
+    }
+  });
+
+  // Export badges data endpoint
+  app.get("/api/admin/export/badges", async (req, res) => {
+    try {
+      const scholarBadges = await storage.getAllScholarBadges();
+      const badges = await storage.getAllBadges();
+      const scholars = await storage.getAllScholars();
+      const houses = await storage.getHouses();
+      
+      // Create maps for names
+      const badgeMap = new Map(badges.map(b => [b.id, b]));
+      const scholarMap = new Map(scholars.map(s => [s.id, { name: s.name, houseId: s.houseId }]));
+      const houseMap = new Map(houses.map(h => [h.id, h.name]));
+      
+      // Format the data for export
+      const exportData = scholarBadges.map(scholarBadge => {
+        const badge = badgeMap.get(scholarBadge.badgeId);
+        const scholar = scholarMap.get(scholarBadge.scholarId);
+        return {
+          'Student Name': scholar?.name || 'Unknown',
+          'House': houseMap.get(scholar?.houseId || '') || 'Not Assigned',
+          'Badge Name': badge?.name || 'Unknown Badge',
+          'Badge Description': badge?.description || 'N/A',
+          'Badge Category': badge?.category || 'N/A',
+          'Points Required': badge?.pointsRequired || 0,
+          'Badge Level': badge?.level || 'N/A',
+          'Badge House': badge?.houseId ? houseMap.get(badge.houseId) : 'All Houses',
+          'Date Earned': new Date(scholarBadge.earnedAt).toLocaleDateString(),
+          'Is Active': scholarBadge.isActive ? 'Yes' : 'No'
+        };
+      });
+
+      const csv = stringify(exportData, { 
+        header: true,
+        columns: [
+          'Student Name',
+          'House',
+          'Badge Name',
+          'Badge Description',
+          'Badge Category',
+          'Points Required',
+          'Badge Level',
+          'Badge House',
+          'Date Earned',
+          'Is Active'
+        ]
+      });
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="bhsa-badges-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+      
+    } catch (error) {
+      console.error('Badges export error:', error);
+      res.status(500).json({ message: 'Failed to export badges data' });
+    }
+  });
+
   // Administrator Authentication Routes
   app.post("/api/admin/login", async (req, res) => {
     try {

@@ -485,65 +485,120 @@ export async function sendTeacherMessageNotification(messageData: {
   subject: string;
   message: string;
 }): Promise<boolean> {
-  const subject = `📨 Message from ${messageData.teacherName} about ${messageData.studentName}`;
+  const subject = `📨 Message from ${messageData.teacherName} - ${messageData.subject}`;
   
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="text-align: center; margin-bottom: 20px;">
-        <h2 style="color: #1f2937;">Bush Hills STEAM Academy</h2>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px;">
+      <!-- Header with School Branding -->
+      <div style="background-color: #1f2937; color: white; padding: 25px; border-radius: 8px 8px 0 0; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px;">🏫 Bush Hills STEAM Academy</h1>
+        <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 16px;">PBIS House of Champions</p>
       </div>
       
-      <h2 style="color: #1f2937; text-align: center;">
-        Teacher Message
-      </h2>
-      
-      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
-        <h3 style="color: #1e40af; margin-top: 0;">📨 New Message</h3>
-        <p><strong>From:</strong> ${messageData.teacherName}</p>
-        <p><strong>About:</strong> ${messageData.studentName}</p>
-        <p><strong>Subject:</strong> ${messageData.subject}</p>
-        <div style="margin-top: 15px; padding: 15px; background-color: white; border-radius: 6px;">
-          <h4 style="margin-top: 0; color: #374151;">Message:</h4>
-          <p style="line-height: 1.6; color: #4b5563;">${messageData.message}</p>
+      <!-- Main Content -->
+      <div style="background-color: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <h2 style="color: #374151; margin-top: 0; font-size: 22px; text-align: center;">📧 New Message from Your Child's Teacher</h2>
+        
+        <!-- Message Details Card -->
+        <div style="background-color: #f0f9ff; padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 5px solid #3b82f6;">
+          <h3 style="color: #1e40af; margin-top: 0; font-size: 18px; margin-bottom: 20px;">📨 Message Information</h3>
+          
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 10px 0; color: #6b7280; font-weight: bold; width: 30%;">From Teacher:</td>
+              <td style="padding: 10px 0; color: #1f2937; font-weight: 600;">${messageData.teacherName}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 10px 0; color: #6b7280; font-weight: bold;">To Parent:</td>
+              <td style="padding: 10px 0; color: #1f2937; font-weight: 600;">${messageData.parentName}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 10px 0; color: #6b7280; font-weight: bold;">About Student:</td>
+              <td style="padding: 10px 0; color: #1f2937; font-weight: 600;">${messageData.studentName}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 10px 0; color: #6b7280; font-weight: bold;">Subject:</td>
+              <td style="padding: 10px 0; color: #1f2937; font-weight: 600;">${messageData.subject}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; color: #6b7280; font-weight: bold;">Date:</td>
+              <td style="padding: 10px 0; color: #1f2937; font-weight: 600;">${new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+              })}</td>
+            </tr>
+          </table>
         </div>
-        <p><strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        })}</p>
+        
+        <!-- Message Content -->
+        <div style="background-color: #ffffff; padding: 25px; border-radius: 10px; border: 2px solid #e5e7eb; margin: 25px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+          <h4 style="color: #374151; margin-top: 0; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 20px;">💬 Message Content</h4>
+          <div style="white-space: pre-wrap; line-height: 1.7; color: #1f2937; font-size: 16px; padding: 15px; background-color: #f9fafb; border-radius: 8px; border-left: 4px solid #3b82f6;">${messageData.message}</div>
+        </div>
+        
+        <!-- Response Instructions -->
+        <div style="background-color: #dbeafe; padding: 25px; border-radius: 10px; border-left: 5px solid #3b82f6; margin: 25px 0;">
+          <h4 style="margin: 0 0 15px 0; color: #1e40af; font-size: 18px;">📱 How to Respond</h4>
+          <p style="margin: 0; color: #1e40af; line-height: 1.6; font-size: 15px;">
+            To reply to this message, please log into the <strong>Parent Portal</strong> on your child's school website. 
+            Your response will be delivered directly to <strong>${messageData.teacherName}</strong>, and they will receive an email notification.
+          </p>
+        </div>
+        
+        <!-- Important Notice -->
+        <div style="background-color: #fef3c7; padding: 20px; border-radius: 10px; border-left: 5px solid #f59e0b; margin: 25px 0;">
+          <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+            <strong>📧 Email Notification:</strong> This is an automated notification. Please do not reply directly to this email. 
+            Use the parent portal to ensure your response reaches ${messageData.teacherName}.
+          </p>
+        </div>
       </div>
       
-      <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e;">
-        <p style="margin: 0; color: #15803d;">
-          <strong>Reply Available:</strong> You can respond to this message through the Parent Portal. Your teacher will receive an email notification when you reply.
-        </p>
+      <!-- Footer -->
+      <div style="text-align: center; padding: 25px; color: #6b7280; font-size: 13px; line-height: 1.5;">
+        <p style="margin: 0; font-weight: 600;">Bush Hills STEAM Academy</p>
+        <p style="margin: 5px 0 0 0;">PBIS House of Champions Communication System</p>
+        <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.8;">Fostering positive behavior and academic excellence</p>
       </div>
-      
-      <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
-        You can view and respond to messages in the Parent Portal at any time.<br />
-        This is an automated notification from the Bush Hills STEAM Academy PBIS House of Champions.
-      </p>
     </div>
   `;
   
   const text = `
-    Bush Hills STEAM Academy - Teacher Message
+    BUSH HILLS STEAM ACADEMY - PBIS HOUSE OF CHAMPIONS
     
-    📨 New Message
+    📧 New Message from Your Child's Teacher
     
-    From: ${messageData.teacherName}
-    About: ${messageData.studentName}
+    MESSAGE INFORMATION:
+    From Teacher: ${messageData.teacherName}
+    To Parent: ${messageData.parentName}
+    About Student: ${messageData.studentName}
     Subject: ${messageData.subject}
+    Date: ${new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })}
     
-    Message:
+    💬 MESSAGE CONTENT:
     ${messageData.message}
     
-    Date: ${new Date().toLocaleDateString()}
+    📱 HOW TO RESPOND:
+    To reply to this message, please log into the Parent Portal on your child's school website. 
+    Your response will be delivered directly to ${messageData.teacherName}, and they will receive an email notification.
     
-    Reply Available: You can respond to this message through the Parent Portal. Your teacher will receive an email notification when you reply.
+    📧 IMPORTANT: This is an automated notification. Please do not reply directly to this email. 
+    Use the parent portal to ensure your response reaches ${messageData.teacherName}.
     
-    You can view and respond to messages in the Parent Portal at any time.
+    ---
+    Bush Hills STEAM Academy - PBIS House of Champions Communication System
+    Fostering positive behavior and academic excellence
   `;
 
   return await sendEmail({

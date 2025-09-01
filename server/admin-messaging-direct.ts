@@ -13,7 +13,18 @@ export const getAdminParentsDirect = async (): Promise<any[]> => {
     `);
     
     console.log(`DIRECT: Found ${result.rows?.length || 0} parents via direct query`);
-    return result.rows || [];
+    
+    // Map the raw database results to proper objects
+    const parents = result.rows?.map((row: any) => ({
+      id: row.id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      email: row.email,
+      phone: row.phone,
+      createdAt: row.created_at
+    })) || [];
+    
+    return parents;
   } catch (error) {
     console.error("DIRECT: Error in direct parent query:", error);
     return [];

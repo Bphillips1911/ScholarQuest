@@ -220,6 +220,15 @@ export default function StudentDashboard() {
               </Button>
               <Button 
                 variant="outline" 
+                onClick={() => setLocation("/student-learning-path")}
+                className="flex items-center space-x-2"
+                data-testid="button-learning-path"
+              >
+                <Target className="h-4 w-4" />
+                <span>Learning Path</span>
+              </Button>
+              <Button 
+                variant="outline" 
                 onClick={handleLogout}
                 className="flex items-center space-x-2"
                 data-testid="button-logout"

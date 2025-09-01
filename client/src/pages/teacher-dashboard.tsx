@@ -98,8 +98,10 @@ export default function TeacherDashboard() {
 
   // PBIS form state
   const [pbisForm, setPbisForm] = useState({
+    category: "behavior",
     mustangTrait: "",
-    points: 1,
+    points: 10,
+    pointType: "positive", // positive or negative
     reason: "",
   });
 
@@ -545,23 +547,24 @@ export default function TeacherDashboard() {
         headers: getAuthHeaders(),
         body: JSON.stringify(pbisData),
       });
-      if (!response.ok) throw new Error("Failed to award points");
+      if (!response.ok) throw new Error("Failed to award/deduct points");
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
+      queryClient.invalidateQueries({ queryKey: ["houses"] });
       setShowAwardPoints(false);
       setSelectedScholar(null);
-      setPbisForm({ mustangTrait: "", points: 1, reason: "" });
+      setPbisForm({ category: "behavior", mustangTrait: "", points: 10, pointType: "positive", reason: "" });
       toast({
-        title: "Points Awarded",
-        description: "MUSTANG points have been successfully awarded",
+        title: pbisForm.pointType === "positive" ? "Points Awarded" : "Points Deducted",
+        description: `Points have been successfully ${pbisForm.pointType === "positive" ? "awarded" : "deducted"}. Parent notification sent.`,
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to award points",
+        description: "Failed to award/deduct points",
         variant: "destructive",
       });
     },
@@ -677,18 +680,42 @@ export default function TeacherDashboard() {
   };
 
   const handleAwardPoints = () => {
-    if (!selectedScholar || !pbisForm.mustangTrait) {
+    if (!selectedScholar) {
       toast({
         title: "Missing Information",
-        description: "Please select a MUSTANG trait",
+        description: "Please select a student",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (pbisForm.category === "behavior" && !pbisForm.mustangTrait) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a MUSTANG trait for behavior points",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!pbisForm.reason.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide a reason for the point change",
         variant: "destructive",
       });
       return;
     }
     
+    const finalPoints = pbisForm.pointType === "negative" ? -Math.abs(pbisForm.points) : Math.abs(pbisForm.points);
+    
     awardPointsMutation.mutate({
       scholarId: selectedScholar.id,
-      ...pbisForm,
+      category: pbisForm.category,
+      mustangTrait: pbisForm.category === "behavior" ? pbisForm.mustangTrait : undefined,
+      points: finalPoints,
+      pointType: pbisForm.pointType,
+      reason: pbisForm.reason,
     });
   };
 
@@ -713,13 +740,19 @@ export default function TeacherDashboard() {
   }
 
   const mustangTraits = [
-    { value: "Motivated", label: "Motivated" },
-    { value: "Understanding", label: "Understanding" },
-    { value: "Safe", label: "Safe" },
-    { value: "Teamwork", label: "Teamwork" },
-    { value: "Accountable", label: "Accountable" },
-    { value: "Noble", label: "Noble" },
-    { value: "Growth", label: "Growth" },
+    { value: "Make Good Choices", label: "M - Make Good Choices" },
+    { value: "Use Kind Words", label: "U - Use Kind Words" },
+    { value: "Show School Pride", label: "S - Show School Pride" },
+    { value: "Tolerant of Others", label: "T - Tolerant of Others" },
+    { value: "Aim for Excellence", label: "A - Aim for Excellence" },
+    { value: "Need to be responsible", label: "N - Need to be responsible" },
+    { value: "Give 100% everyday", label: "G - Give 100% everyday" },
+  ];
+
+  const pointCategories = [
+    { value: "behavior", label: "Behavior (MUSTANG Traits)" },
+    { value: "academic", label: "Academic Performance" },
+    { value: "attendance", label: "Attendance" },
   ];
 
   return (
@@ -1603,52 +1636,100 @@ export default function TeacherDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="mustangTrait">MUSTANG Trait</Label>
+                  <Label htmlFor="category">Point Category</Label>
                   <Select 
-                    value={pbisForm.mustangTrait} 
-                    onValueChange={(value) => setPbisForm({...pbisForm, mustangTrait: value})}
+                    value={pbisForm.category} 
+                    onValueChange={(value) => setPbisForm({...pbisForm, category: value, mustangTrait: ""})}
                   >
-                    <SelectTrigger data-testid="select-mustang-trait">
-                      <SelectValue placeholder="Select MUSTANG trait" />
+                    <SelectTrigger data-testid="select-category">
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mustangTraits.map((trait) => (
-                        <SelectItem key={trait.value} value={trait.value}>
-                          {trait.label}
+                      {pointCategories.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {pbisForm.category === "behavior" && (
+                  <div>
+                    <Label htmlFor="mustangTrait">MUSTANG Trait</Label>
+                    <Select 
+                      value={pbisForm.mustangTrait} 
+                      onValueChange={(value) => setPbisForm({...pbisForm, mustangTrait: value})}
+                    >
+                      <SelectTrigger data-testid="select-mustang-trait">
+                        <SelectValue placeholder="Select MUSTANG trait" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mustangTraits.map((trait) => (
+                          <SelectItem key={trait.value} value={trait.value}>
+                            {trait.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div>
-                  <Label htmlFor="points">Points (1-10)</Label>
+                  <Label htmlFor="pointType">Point Action</Label>
+                  <Select 
+                    value={pbisForm.pointType} 
+                    onValueChange={(value) => setPbisForm({...pbisForm, pointType: value})}
+                  >
+                    <SelectTrigger data-testid="select-point-type">
+                      <SelectValue placeholder="Select action" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="positive">Award Points (Positive Behavior)</SelectItem>
+                      <SelectItem value="negative">Deduct Points (Negative Behavior)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="points">Points (Universal: 10)</Label>
                   <Input
                     id="points"
                     type="number"
-                    min="1"
-                    max="10"
-                    value={pbisForm.points}
-                    onChange={(e) => setPbisForm({...pbisForm, points: parseInt(e.target.value) || 1})}
+                    value={10}
+                    disabled
+                    className="bg-gray-100"
                     data-testid="input-points"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    All point awards/deductions are standardized to 10 points
+                  </p>
                 </div>
+
                 <div>
-                  <Label htmlFor="reason">Reason (Optional)</Label>
+                  <Label htmlFor="reason">Reason (Required)</Label>
                   <Input
                     id="reason"
                     value={pbisForm.reason}
                     onChange={(e) => setPbisForm({...pbisForm, reason: e.target.value})}
                     placeholder="Describe what the scholar did"
                     data-testid="input-reason"
+                    className={!pbisForm.reason.trim() ? "border-red-300" : ""}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    This will be included in the parent notification
+                  </p>
                 </div>
+
                 <div className="flex gap-2">
                   <Button 
                     onClick={handleAwardPoints}
                     disabled={awardPointsMutation.isPending}
                     data-testid="button-award-points-confirm"
+                    className={pbisForm.pointType === "positive" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
                   >
-                    {awardPointsMutation.isPending ? "Awarding..." : "Award Points"}
+                    {awardPointsMutation.isPending ? "Processing..." : 
+                     pbisForm.pointType === "positive" ? "Award Points" : "Deduct Points"}
                   </Button>
                   <Button 
                     variant="outline" 

@@ -503,6 +503,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Teacher PBIS endpoint - Enhanced for multiple categories and notifications
+  app.post("/api/teacher/pbis", authenticateTeacher, async (req: any, res) => {
+    try {
+      console.log("TEACHER PBIS: Request data:", req.body);
+      
+      const { scholarId, category, mustangTrait, points, pointType, reason } = req.body;
+      
+      if (!scholarId || !category || !reason) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      if (category === "behavior" && !mustangTrait) {
+        return res.status(400).json({ message: "MUSTANG trait required for behavior points" });
+      }
+
+      // Get teacher info
+      const teacher = await storage.getTeacher(req.teacher.id);
+      if (!teacher) {
+        return res.status(404).json({ message: "Teacher not found" });
+      }
+
+      // Create PBIS entry with enhanced data
+      const pbisData = {
+        scholarId,
+        teacherId: req.teacher.id,
+        teacherName: teacher.name,
+        category,
+        subcategory: category === "behavior" ? mustangTrait : category,
+        mustangTrait: category === "behavior" ? mustangTrait : null,
+        points: Math.abs(points) * (pointType === "negative" ? -1 : 1),
+        reason,
+        entryType: pointType === "negative" ? "negative" : "positive",
+      };
+
+      console.log("TEACHER PBIS: Creating entry:", pbisData);
+      const entry = await storage.createPbisEntry(pbisData);
+
+      // Update scholar points based on category
+      const scholar = await storage.getScholar(scholarId);
+      if (scholar) {
+        const pointsToAdd = pbisData.points;
+        
+        if (category === "behavior") {
+          scholar.behaviorPoints = (scholar.behaviorPoints || 0) + pointsToAdd;
+        } else if (category === "academic") {
+          scholar.academicPoints = (scholar.academicPoints || 0) + pointsToAdd;
+        } else if (category === "attendance") {
+          scholar.attendancePoints = (scholar.attendancePoints || 0) + pointsToAdd;
+        }
+
+        await storage.updateScholar(scholarId, scholar);
+
+        // Send parent notification
+        try {
+          const parents = await storage.getParentsByScholarId(scholarId);
+          
+          for (const parent of parents) {
+            const notificationData = {
+              parentEmail: parent.email,
+              parentName: `${parent.firstName} ${parent.lastName}`,
+              studentName: `${scholar.firstName} ${scholar.lastName}`,
+              teacherName: teacher.name,
+              points: pbisData.points,
+              mustangTrait: mustangTrait || null,
+              category,
+              subcategory: pbisData.subcategory,
+              reason,
+              entryType: pointType || 'positive'
+            };
+
+            await sendParentPbisNotification(notificationData);
+            console.log("TEACHER PBIS: Parent notification sent to:", parent.email);
+          }
+        } catch (emailError) {
+          console.error("TEACHER PBIS: Failed to send parent notification:", emailError);
+        }
+      }
+
+      res.status(201).json({
+        success: true,
+        entry,
+        message: `Points ${pointType === "negative" ? "deducted" : "awarded"} successfully`,
+      });
+
+    } catch (error) {
+      console.error("TEACHER PBIS ERROR:", error);
+      res.status(500).json({ message: "Failed to process PBIS entry" });
+    }
+  });
+
   // Get all scholars
   app.get("/api/scholars", async (_req, res) => {
     try {
@@ -1334,43 +1424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create PBIS entry with teacher authentication
-  app.post("/api/teacher/pbis", authenticateTeacher, async (req: any, res) => {
-    try {
-      const teacher = req.teacher;
-      const pbisData = {
-        ...req.body,
-        teacherName: teacher.name,
-        teacherRole: teacher.role,
-      };
-      
-      const validatedData = insertPbisEntrySchema.parse(pbisData);
-      
-      // Derive grade permissions from teacher's gradeRole
-      const getTeacherGrades = (gradeRole: string): number[] => {
-        switch (gradeRole) {
-          case '6th Grade': return [6];
-          case '7th Grade': return [7];
-          case '8th Grade': return [8];
-          case 'Unified Arts': return [6, 7, 8];
-          case 'Administration': return [6, 7, 8];
-          case 'Counselor': return [6, 7, 8];
-          default: return [];
-        }
-      };
 
-      // Verify teacher can see the scholar
-      const scholar = await storage.getScholar(validatedData.scholarId);
-      const allowedGrades = getTeacherGrades(teacher.gradeRole);
-      if (!scholar || !allowedGrades.includes(scholar.grade)) {
-        return res.status(403).json({ message: "You don't have permission to award points to this scholar" });
-      }
-
-      const entry = await storage.createPbisEntry(validatedData);
-      res.status(201).json(entry);
-    } catch (error) {
-      res.status(400).json({ message: "Failed to create PBIS entry" });
-    }
-  });
 
   // Add scholar to system (for teachers)
   app.post("/api/teacher/scholars", authenticateTeacher, async (req: any, res) => {

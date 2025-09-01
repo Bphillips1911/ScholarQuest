@@ -789,9 +789,14 @@ export default function TeacherDashboard() {
       scholarId: selectedScholar.id,
       teacherName: teacher?.name || "Unknown Teacher",
       teacherRole: teacher?.gradeRole as "6th Grade" | "7th Grade" | "8th Grade" | "Unified Arts" | "Administration" | "Counselor",
-      mustangTrait: (pbisForm.category.charAt(0).toUpperCase() + pbisForm.category.slice(1)) as "Motivated" | "Understanding" | "Safe" | "Teamwork" | "Accountable" | "Noble" | "Growth",
+      mustangTrait: "Make good choices",
+      category: pbisForm.category,
+      subcategory: pbisForm.subcategory,
       points: pbisForm.points,
       reason: finalReason,
+      entryType: pbisForm.points > 0 ? "positive" : "negative",
+      month: new Date().getMonth() + 1,
+      year: new Date().getFullYear(),
     });
   };
 

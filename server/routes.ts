@@ -1352,8 +1352,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parentsList = parents.map(p => ({
         id: p.id,
         name: `${p.firstName} ${p.lastName}`,
-        email: p.email
+        email: p.email,
+        scholarIds: Array.isArray(p.scholarIds) ? p.scholarIds : 
+                   Array.isArray(p.scholar_ids) ? p.scholar_ids : 
+                   p.scholarIds || p.scholar_ids || []  // Include scholar IDs for parent-student mapping
       }));
+      console.log("TEACHER-PARENTS: Returning", parentsList.length, "parents with scholar mappings");
       res.json(parentsList);
     } catch (error) {
       console.error("Get parents error:", error);

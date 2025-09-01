@@ -885,7 +885,7 @@ export default function ParentPortalEnhanced() {
       {/* Add Scholar Modal */}
       {showAddScholar && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               console.log("MODAL: Clicked outside, closing modal");
@@ -893,7 +893,7 @@ export default function ParentPortalEnhanced() {
             }
           }}
         >
-          <Card className="w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Add Your Child</CardTitle>

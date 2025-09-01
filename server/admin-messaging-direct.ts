@@ -7,7 +7,7 @@ export const getAdminParentsDirect = async (): Promise<any[]> => {
   
   try {
     const result = await db.execute(sql`
-      SELECT id, first_name, last_name, email, phone, created_at
+      SELECT id, first_name, last_name, email, phone, scholar_ids, created_at
       FROM parents 
       ORDER BY created_at DESC
     `);
@@ -21,6 +21,7 @@ export const getAdminParentsDirect = async (): Promise<any[]> => {
       lastName: row.last_name,
       email: row.email,
       phone: row.phone,
+      scholarIds: row.scholar_ids || [],
       createdAt: row.created_at
     })) || [];
     

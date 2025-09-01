@@ -682,7 +682,7 @@ function StudentDashboardContent() {
 
       {/* Interactive Learning Assistant */}
       <InteractiveLearningAssistant
-        studentHouse={house?.name || 'franklin'}
+        studentHouse={currentHouse?.name || 'franklin'}
         studentPoints={{
           academic: scholar?.academicPoints || 0,
           behavior: scholar?.behaviorPoints || 0,

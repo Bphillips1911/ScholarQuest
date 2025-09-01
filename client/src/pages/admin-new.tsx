@@ -15,7 +15,7 @@ import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function AdminNew() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("teachers");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -304,81 +304,7 @@ export default function AdminNew() {
       minHeight: '100vh',
       backgroundColor: '#f9fafb'
     }}>
-      {/* CRITICAL NAVIGATION - FORCED VISIBILITY */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 99999,
-        backgroundColor: '#ff0000',
-        color: 'white',
-        padding: '30px',
-        textAlign: 'center',
-        fontSize: '24px',
-        fontWeight: 'bold',
-        border: '5px solid #ffffff',
-        boxShadow: '0 0 20px rgba(255,0,0,0.8)',
-        width: '100%',
-        display: 'block'
-      }}>
-        ✅ ADMIN NAVIGATION RESTORED - ALL FEATURES ACTIVE
-      </div>
-      <div style={{
-        position: 'fixed',
-        top: '100px',
-        left: 0,
-        right: 0,
-        zIndex: 99998,
-        backgroundColor: '#0000ff',
-        color: 'white',
-        padding: '10px 20px',
-        display: 'flex',
-        gap: '15px',
-        justifyContent: 'center',
-        alignItems: 'center',
-        border: '3px solid #ffffff',
-        width: '100%'
-      }}>
-        <Select onValueChange={(value) => window.location.href = value}>
-          <SelectTrigger style={{width: '150px', backgroundColor: '#1d4ed8', color: 'white', border: 'none'}}>
-            <SelectValue placeholder="Main Pages" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="/dashboard">Dashboard</SelectItem>
-            <SelectItem value="/tutorial">Tutorial</SelectItem>
-            <SelectItem value="/houses">Houses</SelectItem>
-            <SelectItem value="/pbis">PBIS</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Select onValueChange={(value) => window.location.href = value}>
-          <SelectTrigger style={{width: '150px', backgroundColor: '#1d4ed8', color: 'white', border: 'none'}}>
-            <SelectValue placeholder="Reports & Tools" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="/monthly-pbis">Monthly Tracking</SelectItem>
-            <SelectItem value="/house-sorting">House Sorting</SelectItem>
-            <SelectItem value="/parent-letter">Parent Letter</SelectItem>
-            <SelectItem value="/pledge">House Pledge</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <button onClick={handleLogout} style={{
-          color: 'white', 
-          backgroundColor: '#dc2626', 
-          border: 'none', 
-          padding: '8px 16px', 
-          borderRadius: '6px', 
-          fontSize: '14px', 
-          cursor: 'pointer', 
-          fontWeight: 'bold'
-        }}>
-          Logout
-        </button>
-      </div>
-      
-      <div style={{marginTop: '170px', padding: '20px'}}>
+      <div style={{padding: '20px'}}>
         <Card className="bg-white rounded-2xl shadow-lg p-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
             <div className="flex items-center">
@@ -394,6 +320,30 @@ export default function AdminNew() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2 justify-start lg:justify-end">
+              <Select onValueChange={(value) => window.location.href = value}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Main Pages" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="/dashboard">Dashboard</SelectItem>
+                  <SelectItem value="/tutorial">Tutorial</SelectItem>
+                  <SelectItem value="/houses">Houses</SelectItem>
+                  <SelectItem value="/pbis">PBIS System</SelectItem>
+                  <SelectItem value="/house-sorting">House Sorting</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select onValueChange={(value) => window.location.href = value}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Reports & Tools" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="/monthly-pbis">Monthly Tracking</SelectItem>
+                  <SelectItem value="/parent-letter">Parent Letter</SelectItem>
+                  <SelectItem value="/pledge">House Pledge</SelectItem>
+                </SelectContent>
+              </Select>
+              
               <Button 
                 onClick={handleLogout}
                 variant="outline"
@@ -403,68 +353,11 @@ export default function AdminNew() {
                 <LogOut className="h-4 w-4" />
                 Sign Out
               </Button>
-              <Button 
-                onClick={() => window.location.href = '/admin-settings'}
-                className="bg-gray-600 text-white hover:bg-gray-700"
-                data-testid="button-admin-settings"
-              >
-                <User className="mr-2 h-4 w-4" />
-                Email Settings
-              </Button>
-              <Button 
-                onClick={() => window.open("/parent-letter", "_blank")}
-                className="bg-blue-600 text-white hover:bg-blue-700"
-                data-testid="button-parent-portal"
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Parent Portal Info
-              </Button>
-              <Button 
-                onClick={() => handleExportData('csv')}
-                className="bg-green-600 text-white hover:bg-green-700"
-                data-testid="button-export-csv"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
-              <Button 
-                onClick={() => handleExportData('excel')}
-                className="bg-green-700 text-white hover:bg-green-800"
-                data-testid="button-export-excel"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export Excel
-              </Button>
-              <Button 
-                onClick={() => window.location.href = '/qr-generator'}
-                className="bg-blue-600 text-white hover:bg-blue-700"
-                data-testid="button-qr-generator"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                QR Generator
-              </Button>
-              <Button 
-                onClick={() => {
-                  if (confirm("Are you sure you want to reset all semester points? This action cannot be undone.")) {
-                    // Add reset points functionality here
-                    toast({
-                      title: "Feature Coming Soon",
-                      description: "Semester reset functionality will be available soon.",
-                    });
-                  }
-                }}
-                variant="destructive"
-                data-testid="button-reset-points"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Reset Semester
-              </Button>
             </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
               <TabsTrigger value="houses">Houses</TabsTrigger>
               <TabsTrigger value="messaging">Messages</TabsTrigger>
@@ -472,92 +365,7 @@ export default function AdminNew() {
               <TabsTrigger value="exports">Data Export</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="dashboard" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{allScholars?.length || 0}</div>
-                    <p className="text-xs text-muted-foreground">Active scholars</p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Houses</CardTitle>
-                    <Award className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{houses?.length || 0}</div>
-                    <p className="text-xs text-muted-foreground">House system</p>
-                  </CardContent>
-                </Card>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pending Teachers</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{pendingTeachers?.length || 0}</div>
-                    <p className="text-xs text-muted-foreground">Awaiting approval</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">System Status</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">Active</div>
-                    <p className="text-xs text-muted-foreground">All systems operational</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Button onClick={() => window.location.href = '/houses'} className="w-full justify-start">
-                      <Award className="mr-2 h-4 w-4" />
-                      Manage Houses
-                    </Button>
-                    <Button onClick={() => window.location.href = '/pbis'} className="w-full justify-start">
-                      <GraduationCap className="mr-2 h-4 w-4" />
-                      PBIS System
-                    </Button>
-                    <Button onClick={() => window.location.href = '/house-sorting'} className="w-full justify-start">
-                      <Users className="mr-2 h-4 w-4" />
-                      House Sorting
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Navigation Active</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center text-green-600">
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Navigation system operational
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        Use the dropdown menus above to access all main system functions
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
 
             <TabsContent value="teachers" className="space-y-6">
               <Card>

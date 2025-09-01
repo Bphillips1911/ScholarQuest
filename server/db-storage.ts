@@ -52,6 +52,7 @@ import jwt from "jsonwebtoken";
 import { eq, desc, sql, and, or, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
+import { sendParentReflectionNotification, sendParentReflectionApproval } from "./emailService";
 
 export class DatabaseStorage implements IStorage {
   constructor() {
@@ -1292,13 +1293,13 @@ export class DatabaseStorage implements IStorage {
       if (scholar) {
         const parent = await this.getParentByScholarId(scholarId);
         if (parent) {
-          const { sendReflectionAssignedNotification } = await import('./emailService');
-          await sendReflectionAssignedNotification(
+          await sendParentReflectionNotification(
             parent.email,
-            `${parent.firstName} ${parent.lastName}`,
             `${scholar.firstName} ${scholar.lastName}`,
-            prompt
+            prompt,
+            dueDate
           );
+          console.log('📧 REFLECTION: Sent assignment notification to parent:', parent.email);
         }
       }
     } catch (error) {
@@ -1350,15 +1351,14 @@ export class DatabaseStorage implements IStorage {
         if (scholar && reflection.response) {
           const parent = await this.getParentByScholarId(reflection.scholarId);
           if (parent) {
-            const { sendReflectionApprovedNotification } = await import('./emailService');
-            await sendReflectionApprovedNotification(
+            await sendParentReflectionApproval(
               parent.email,
-              `${parent.firstName} ${parent.lastName}`,
               `${scholar.firstName} ${scholar.lastName}`,
               reflection.prompt,
               reflection.response,
               feedback
             );
+            console.log('📧 REFLECTION: Sent approval notification to parent:', parent.email);
           }
         }
       } catch (error) {

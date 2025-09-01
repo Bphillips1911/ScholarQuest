@@ -19,7 +19,9 @@ import {
   sendStudentRegistrationAlert, 
   sendPasswordResetAlert,
   sendParentPbisNotification,
-  sendTeacherPasswordResetAlert
+  sendTeacherPasswordResetAlert,
+  sendParentReflectionNotification,
+  sendParentReflectionApproval
 } from "./emailService";
 
 // Configure multer for file uploads

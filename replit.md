@@ -96,6 +96,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Comprehensive Reflection Rejection System Complete (September 2025)
+- **Implemented comprehensive reflection rejection workflow** with 7 predefined rejection reasons plus custom input option
+- **Enhanced teacher review interface** with two-step rejection process (select reason → confirm rejection) for better decision making
+- **Added parent email notifications** for reflection rejections with detailed information including original prompt, student response, and teacher feedback
+- **Automatic status reset functionality** ensures rejected reflections return to "assigned" status requiring student resubmission
+- **Fixed critical teacher ID vs teacher name bug** that prevented reflections from appearing in teacher review lists
+- **Predefined rejection reasons**: "Insufficient detail", "Off-topic response", "Inappropriate language", "Does not show understanding", "Needs more reflection on impact", "Response too brief", "Missing personal accountability", plus custom reason option
+- **Complete workflow integration** across teacher dashboard, student portal, and parent portal with proper status synchronization
+
 ## Student Portal Gamification System Complete (September 2025)
 - **Implemented comprehensive student token management** with permanent session persistence and automatic refresh mechanisms
 - **Created dedicated authentication utilities** (`client/src/lib/studentAuth.ts`) for robust token handling with expiration tracking

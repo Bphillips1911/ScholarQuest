@@ -755,6 +755,16 @@ export default function TeacherDashboard() {
     { value: "attendance", label: "Attendance" },
   ];
 
+  const academicCriteria = [
+    "Scoring Green on I-Ready assessments",
+    "Passing required pathway lessons", 
+    "Scoring proficient on ACAP Practice Test 1 and 2",
+    "Passing teacher assessments",
+    "Turning in homework consistently",
+    "Completing projects on time",
+    "Achieving A/B honor roll status"
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Main Navigation Bar with Dropdown Menus */}
@@ -1611,27 +1621,27 @@ export default function TeacherDashboard() {
         {/* Award Points Modal */}
         {showAwardPoints && selectedScholar && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setShowAwardPoints(false);
               }
             }}
           >
-            <Card className="w-full max-w-md">
-              <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              <CardHeader className="flex flex-row items-center justify-between border-b bg-gradient-to-r from-blue-50 to-purple-50">
                 <div>
-                  <CardTitle>Award MUSTANG Points</CardTitle>
-                  <p className="text-sm text-gray-600">Scholar: {selectedScholar.name}</p>
+                  <CardTitle className="text-lg font-bold text-gray-800">Award MUSTANG Points</CardTitle>
+                  <p className="text-sm text-gray-600 font-medium">Scholar: {selectedScholar.name}</p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowAwardPoints(false)}
-                  className="h-10 w-10 p-0 border-2 border-gray-400 bg-white hover:bg-red-50 hover:border-red-400"
+                  className="h-10 w-10 p-0 border-2 border-red-400 bg-white hover:bg-red-100 hover:border-red-600 flex-shrink-0"
                   data-testid="button-close-points-modal"
                 >
-                  <span className="text-xl font-bold text-gray-700 hover:text-red-600">✕</span>
+                  <span className="text-xl font-bold text-red-600 hover:text-red-800">✕</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1672,6 +1682,29 @@ export default function TeacherDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                )}
+
+                {pbisForm.category === "academic" && (
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <Label className="text-sm font-medium text-blue-800">Academic Performance Criteria</Label>
+                    <ul className="text-xs text-blue-700 mt-2 space-y-1">
+                      {academicCriteria.map((criteria, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-blue-600 mr-2">•</span>
+                          {criteria}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {pbisForm.category === "attendance" && (
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <Label className="text-sm font-medium text-green-800">Attendance Criteria</Label>
+                    <p className="text-xs text-green-700 mt-2">
+                      Award points for excellent attendance, punctuality, and being prepared for class.
+                    </p>
                   </div>
                 )}
 
@@ -1721,20 +1754,25 @@ export default function TeacherDashboard() {
                   </p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-4 border-t">
                   <Button 
                     onClick={handleAwardPoints}
                     disabled={awardPointsMutation.isPending}
                     data-testid="button-award-points-confirm"
-                    className={pbisForm.pointType === "positive" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+                    className={`flex-1 font-semibold text-white ${
+                      pbisForm.pointType === "positive" 
+                        ? "bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl" 
+                        : "bg-red-600 hover:bg-red-700 shadow-lg hover:shadow-xl"
+                    }`}
                   >
                     {awardPointsMutation.isPending ? "Processing..." : 
-                     pbisForm.pointType === "positive" ? "Award Points" : "Deduct Points"}
+                     pbisForm.pointType === "positive" ? "✓ Award 10 Points" : "✗ Deduct 10 Points"}
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => setShowAwardPoints(false)}
                     data-testid="button-cancel-points"
+                    className="flex-1 border-2 border-gray-400 hover:bg-gray-100"
                   >
                     Cancel
                   </Button>

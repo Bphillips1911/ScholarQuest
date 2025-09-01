@@ -195,6 +195,15 @@ export interface IStorage {
   sortStudentsIntoHouses(): Promise<{ sortedCount: number }>;
   resetAllHouses(): Promise<void>;
   
+  // Reflections
+  assignReflection(scholarId: string, pbisEntryId: string, assignedBy: string, prompt: string, dueDate?: Date): Promise<Reflection>;
+  getReflectionsForStudent(scholarId: string): Promise<Reflection[]>;
+  getReflectionsForTeacher(teacherId: string): Promise<Reflection[]>;
+  getAllReflections(): Promise<Reflection[]>;
+  submitReflection(reflectionId: string, response: string): Promise<Reflection>;
+  reviewReflection(reflectionId: string, status: string, reviewedBy: string, feedback?: string): Promise<Reflection>;
+  sendReflectionToParent(reflectionId: string): Promise<boolean>;
+
   // Utility
   getHouseStandings(): Promise<House[]>;
 }
@@ -213,6 +222,7 @@ export class MemStorage implements IStorage {
   private passwordResetRequests: Map<string, PasswordResetRequest>;
   private administrators: Map<string, Administrator>;
   private adminSessions: Map<string, AdminSession>;
+  private reflections: Map<string, Reflection>;
   private parentScholars: Map<string, string[]>; // parentId -> scholarIds
   private parentTeacherMessages: Map<string, any>;
   private messages: Map<string, any>;
@@ -232,6 +242,7 @@ export class MemStorage implements IStorage {
     this.passwordResetRequests = new Map();
     this.administrators = new Map();
     this.adminSessions = new Map();
+    this.reflections = new Map();
     this.parentScholars = new Map();
     this.parentTeacherMessages = new Map();
     this.messages = new Map();
@@ -2302,6 +2313,87 @@ class PersistentMemStorage extends MemStorage {
       console.error("Failed to sync PBIS entry to database:", error);
     }
     return newEntry;
+  }
+
+  // Reflection methods
+  async assignReflection(scholarId: string, pbisEntryId: string, assignedBy: string, prompt: string, dueDate?: Date): Promise<Reflection> {
+    const reflection = {
+      id: `refl_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      scholarId,
+      pbisEntryId,
+      assignedBy,
+      prompt,
+      response: null,
+      status: 'assigned' as const,
+      teacherFeedback: null,
+      approvedBy: null,
+      sentToParent: false,
+      sentToParentAt: null,
+      dueDate,
+      assignedAt: new Date(),
+      submittedAt: null,
+      approvedAt: null
+    };
+    
+    this.reflections.set(reflection.id, reflection);
+    return reflection;
+  }
+
+  async getReflectionsForStudent(scholarId: string): Promise<Reflection[]> {
+    return Array.from(this.reflections.values()).filter(r => r.scholarId === scholarId);
+  }
+
+  async getReflectionsForTeacher(teacherId: string): Promise<Reflection[]> {
+    return Array.from(this.reflections.values()).filter(r => r.assignedBy === teacherId);
+  }
+
+  async getAllReflections(): Promise<Reflection[]> {
+    return Array.from(this.reflections.values());
+  }
+
+  async submitReflection(reflectionId: string, response: string): Promise<Reflection> {
+    const reflection = this.reflections.get(reflectionId);
+    if (!reflection) throw new Error("Reflection not found");
+    
+    const updated = {
+      ...reflection,
+      response,
+      status: 'submitted' as const,
+      submittedAt: new Date()
+    };
+    
+    this.reflections.set(reflectionId, updated);
+    return updated;
+  }
+
+  async reviewReflection(reflectionId: string, status: string, reviewedBy: string, feedback?: string): Promise<Reflection> {
+    const reflection = this.reflections.get(reflectionId);
+    if (!reflection) throw new Error("Reflection not found");
+    
+    const updated = {
+      ...reflection,
+      status: status as 'approved' | 'rejected',
+      teacherFeedback: feedback || null,
+      approvedBy: reviewedBy,
+      approvedAt: new Date()
+    };
+    
+    this.reflections.set(reflectionId, updated);
+    return updated;
+  }
+
+  async sendReflectionToParent(reflectionId: string): Promise<boolean> {
+    const reflection = this.reflections.get(reflectionId);
+    if (!reflection) return false;
+    
+    const updated = {
+      ...reflection,
+      sentToParent: true,
+      sentToParentAt: new Date()
+    };
+    
+    this.reflections.set(reflectionId, updated);
+    return true;
   }
 }
 

@@ -557,6 +557,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         await storage.updateScholar(scholarId, scholar);
 
+        // Assign reflection for negative points
+        if (pointsToAdd < 0) {
+          try {
+            const defaultPrompt = `Please reflect on your behavior today. What happened, how did it affect others, and what will you do differently next time?`;
+            const reflection = await storage.assignReflection(
+              scholarId,
+              entry.id,
+              teacher.id,
+              defaultPrompt,
+              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Due in 7 days
+            );
+            console.log(`✅ REFLECTION: Assigned reflection ${reflection.id} to scholar ${scholarId}`);
+          } catch (reflectionError) {
+            console.error("Failed to assign reflection:", reflectionError);
+            // Continue even if reflection assignment fails
+          }
+        }
+
         // Send parent notification
         try {
           console.log("TEACHER PBIS: Getting parents for scholar:", scholarId);
@@ -3876,20 +3894,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid token" });
       }
 
-      const { studentId, pbisEntryId, prompt, dueDate } = req.body;
-      if (!studentId || !pbisEntryId || !prompt) {
-        return res.status(400).json({ message: "Student ID, PBIS Entry ID, and prompt required" });
+      const { scholarId, pbisEntryId, prompt, dueDate } = req.body;
+      if (!scholarId || !pbisEntryId || !prompt) {
+        return res.status(400).json({ message: "Scholar ID, PBIS Entry ID, and prompt required" });
       }
 
       const reflection = await storage.assignReflection(
-        studentId,
+        scholarId,
         pbisEntryId,
         session.teacherId,
         prompt,
         dueDate ? new Date(dueDate) : undefined
       );
 
-      res.json(reflection);
+      res.json({ success: true, reflection });
     } catch (error) {
       console.error("Assign reflection error:", error);
       res.status(500).json({ message: "Failed to assign reflection" });
@@ -3921,6 +3939,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Review reflection error:", error);
       res.status(500).json({ message: "Failed to review reflection" });
+    }
+  });
+
+  // Get student reflections
+  app.get("/api/student/reflections", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const reflections = await storage.getReflectionsForStudent(session.studentId);
+      res.json(reflections);
+    } catch (error) {
+      console.error("Get student reflections error:", error);
+      res.status(500).json({ message: "Failed to fetch reflections" });
+    }
+  });
+
+  // Submit reflection (student)
+  app.post("/api/student/reflections/:reflectionId/submit", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getStudentSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const { reflectionId } = req.params;
+      const { response } = req.body;
+
+      if (!response || response.length < 100) {
+        return res.status(400).json({ message: "Response must be at least 100 characters" });
+      }
+
+      const reflection = await storage.submitReflection(reflectionId, response);
+      res.json({ success: true, reflection });
+    } catch (error) {
+      console.error("Submit reflection error:", error);
+      res.status(500).json({ message: "Failed to submit reflection" });
+    }
+  });
+
+  // Get all reflections (admin)
+  app.get("/api/admin/reflections", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      if (!token) {
+        return res.status(401).json({ message: "Token required" });
+      }
+
+      const session = await storage.getAdminSession(token);
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      const reflections = await storage.getAllReflections();
+      res.json(reflections);
+    } catch (error) {
+      console.error("Get admin reflections error:", error);
+      res.status(500).json({ message: "Failed to fetch reflections" });
     }
   });
 

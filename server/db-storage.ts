@@ -12,6 +12,8 @@ import {
   type PasswordResetRequest,
   type Administrator,
   type AdminSession,
+  type Reflection,
+  type InsertReflection,
   type InsertHouse, 
   type InsertScholar, 
   type InsertTeacher, 
@@ -25,6 +27,7 @@ import {
   type InsertPasswordResetRequest,
   type InsertAdministrator,
   type InsertAdminSession,
+  type InsertReflection,
 } from "@shared/schema";
 import * as schema from "@shared/schema";
 import { 
@@ -40,7 +43,8 @@ import {
   teacherAuth,
   teacherSessions,
   teachers,
-  passwordResetRequests
+  passwordResetRequests,
+  reflections
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -1270,6 +1274,70 @@ export class DatabaseStorage implements IStorage {
     }
 
     return newBadges;
+  }
+
+  // Reflection System Methods
+  async assignReflection(scholarId: string, pbisEntryId: string, assignedBy: string, prompt: string, dueDate?: Date): Promise<Reflection> {
+    const [reflection] = await db.insert(reflections).values({
+      scholarId,
+      pbisEntryId,
+      assignedBy,
+      prompt,
+      dueDate,
+    }).returning();
+    return reflection;
+  }
+
+  async getReflectionsForStudent(scholarId: string): Promise<Reflection[]> {
+    return await db.select().from(reflections).where(eq(reflections.scholarId, scholarId));
+  }
+
+  async getReflectionsForTeacher(teacherId: string): Promise<Reflection[]> {
+    return await db.select().from(reflections).where(eq(reflections.assignedBy, teacherId));
+  }
+
+  async getAllReflections(): Promise<Reflection[]> {
+    return await db.select().from(reflections);
+  }
+
+  async submitReflection(reflectionId: string, response: string): Promise<Reflection> {
+    const [reflection] = await db.update(reflections)
+      .set({
+        response,
+        status: 'submitted',
+        submittedAt: new Date()
+      })
+      .where(eq(reflections.id, reflectionId))
+      .returning();
+    return reflection;
+  }
+
+  async reviewReflection(reflectionId: string, status: string, reviewedBy: string, feedback?: string): Promise<Reflection> {
+    const [reflection] = await db.update(reflections)
+      .set({
+        status,
+        teacherFeedback: feedback,
+        approvedBy: reviewedBy,
+        approvedAt: new Date()
+      })
+      .where(eq(reflections.id, reflectionId))
+      .returning();
+    return reflection;
+  }
+
+  async sendReflectionToParent(reflectionId: string): Promise<boolean> {
+    const result = await db.update(reflections)
+      .set({
+        sentToParent: true,
+        sentToParentAt: new Date()
+      })
+      .where(eq(reflections.id, reflectionId));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Add this method to DatabaseStorage class
+  async getHouseStandings(): Promise<House[]> {
+    return await db.select().from(houses).orderBy(desc(sql`academic_points + attendance_points + behavior_points`));
   }
 }
 

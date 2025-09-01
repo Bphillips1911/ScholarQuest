@@ -9,10 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
+import { TeacherReflectionModal } from "@/components/TeacherReflectionModal";
 
 interface Teacher {
   id: string;
@@ -35,6 +36,19 @@ interface Scholar {
   behaviorPoints: number;
 }
 
+interface Reflection {
+  id: string;
+  scholarId: string;
+  prompt: string;
+  response: string | null;
+  status: 'assigned' | 'submitted' | 'approved' | 'rejected';
+  teacherFeedback: string | null;
+  dueDate: string | null;
+  assignedAt: string;
+  submittedAt: string | null;
+  approvedAt: string | null;
+}
+
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
@@ -48,6 +62,8 @@ export default function TeacherDashboard() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [photoDescription, setPhotoDescription] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -370,6 +386,19 @@ export default function TeacherDashboard() {
       const data = response.json();
       console.log("🔍 FRONTEND: Administrators data received:", data);
       return data;
+    },
+    enabled: !!teacher?.id,
+  });
+
+  // Fetch reflections for teacher
+  const { data: reflections = [] } = useQuery({
+    queryKey: ["/api/teacher/reflections"],
+    queryFn: async () => {
+      const response = await fetch("/api/teacher/reflections", {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch reflections");
+      return response.json();
     },
     enabled: !!teacher?.id,
   });
@@ -1004,9 +1033,17 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+          <TabsList className="grid w-full grid-cols-5" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
             <TabsTrigger value="dashboard" style={{color: themeStyles.textPrimary}}>Dashboard</TabsTrigger>
             <TabsTrigger value="scholars" style={{color: themeStyles.textPrimary}}>Scholars</TabsTrigger>
+            <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary}}>
+              Reflections
+              {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
+                <span className="ml-1 px-1 bg-red-500 text-white text-xs rounded-full">
+                  {reflections.filter((r: Reflection) => r.status === 'submitted').length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="upload" style={{color: themeStyles.textPrimary}}>Upload Photos</TabsTrigger>
             <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
           </TabsList>
@@ -1150,6 +1187,96 @@ export default function TeacherDashboard() {
             </div>
 
             {/* Scholars and Messages Content would go here - keeping existing content */}
+          </TabsContent>
+
+          <TabsContent value="reflections" className="space-y-6">
+            <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2" style={{color: themeStyles.textPrimary}}>
+                  <FileText className="h-5 w-5" />
+                  Behavioral Reflections
+                  <span className="text-sm font-normal" style={{color: themeStyles.textSecondary}}>
+                    ({reflections.length} total)
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {reflections.length > 0 ? (
+                  <div className="space-y-3">
+                    {reflections.map((reflection: Reflection) => {
+                      const student = scholars.find((s: Scholar) => s.id === reflection.scholarId);
+                      return (
+                        <div 
+                          key={reflection.id}
+                          className="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                          style={{borderColor: themeStyles.border}}
+                          onClick={() => {
+                            setSelectedReflection(reflection);
+                            setShowReflectionModal(true);
+                          }}
+                          data-testid={`teacher-reflection-item-${reflection.id}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-shrink-0">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  reflection.status === 'assigned' ? 'bg-yellow-500' :
+                                  reflection.status === 'submitted' ? 'bg-blue-500' :
+                                  reflection.status === 'approved' ? 'bg-green-500' :
+                                  'bg-red-500'
+                                }`} />
+                              </div>
+                              <div>
+                                <p className="font-medium" style={{color: themeStyles.textPrimary}}>
+                                  {student?.name || 'Unknown Student'}
+                                </p>
+                                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                                  {reflection.status.charAt(0).toUpperCase() + reflection.status.slice(1)}
+                                  {reflection.status === 'submitted' && ' • Needs Review'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                              <div className="text-right">
+                                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                                  Assigned {new Date(reflection.assignedAt).toLocaleDateString()}
+                                </p>
+                                {reflection.submittedAt && (
+                                  <p className="text-xs" style={{color: themeStyles.textSecondary}}>
+                                    Submitted {new Date(reflection.submittedAt).toLocaleDateString()}
+                                  </p>
+                                )}
+                                {reflection.dueDate && (
+                                  <p className="text-xs text-orange-600">
+                                    Due {new Date(reflection.dueDate).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
+                              <Edit3 className="h-4 w-4" style={{color: themeStyles.textSecondary}} />
+                            </div>
+                          </div>
+                          {reflection.response && (
+                            <div className="mt-3 p-3 bg-gray-50 rounded text-sm" style={{color: themeStyles.textPrimary}}>
+                              <strong>Student Response:</strong> {reflection.response.substring(0, 100)}...
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <FileText className="h-16 w-16 mx-auto mb-4" style={{color: themeStyles.textSecondary}} />
+                    <h3 className="text-lg font-medium mb-2" style={{color: themeStyles.textPrimary}}>
+                      No reflections yet
+                    </h3>
+                    <p style={{color: themeStyles.textSecondary}}>
+                      Reflections are automatically assigned when students receive negative PBIS points.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-6">
@@ -2395,6 +2522,19 @@ export default function TeacherDashboard() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Teacher Reflection Modal */}
+        {selectedReflection && (
+          <TeacherReflectionModal
+            reflection={selectedReflection}
+            isOpen={showReflectionModal}
+            onClose={() => {
+              setShowReflectionModal(false);
+              setSelectedReflection(null);
+            }}
+            studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
+          />
         )}
         </div>
       </section>

@@ -19,9 +19,12 @@ import {
   Target,
   BookOpen,
   Clock,
-  Heart
+  Heart,
+  FileText,
+  Edit3
 } from "lucide-react";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
+import { ReflectionModal } from "@/components/ReflectionModal";
 
 interface StudentData {
   id: string;
@@ -63,8 +66,21 @@ interface PBISEntry {
   createdAt: string;
 }
 
+interface Reflection {
+  id: string;
+  prompt: string;
+  response: string | null;
+  status: 'assigned' | 'submitted' | 'approved' | 'rejected';
+  teacherFeedback: string | null;
+  dueDate: string | null;
+  assignedAt: string;
+  submittedAt: string | null;
+}
+
 export default function StudentDashboard() {
   const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -101,6 +117,12 @@ export default function StudentDashboard() {
   const { data: pbisEntries } = useQuery({
     queryKey: ["/api/pbis-entries", studentData?.id],
     enabled: !!studentData?.id,
+  });
+
+  // Fetch reflections for this student
+  const { data: reflections = [], isLoading: reflectionsLoading } = useQuery({
+    queryKey: ["/api/student/reflections"],
+    enabled: !!studentData,
   });
 
   const handleLogout = () => {
@@ -327,9 +349,80 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
 
+            {/* Behavioral Reflections */}
+            {reflections.length > 0 && (
+              <Card className="col-span-1 md:col-span-2 lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="mr-2 h-5 w-5 text-orange-600" />
+                    Behavioral Reflections
+                    <Badge variant={reflections.some((r: Reflection) => r.status === 'assigned') ? 'destructive' : 'secondary'} className="ml-2">
+                      {reflections.filter((r: Reflection) => r.status === 'assigned').length} pending
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {reflections.map((reflection: Reflection) => (
+                      <div 
+                        key={reflection.id} 
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setSelectedReflection(reflection);
+                          setShowReflectionModal(true);
+                        }}
+                        data-testid={`reflection-item-${reflection.id}`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className={`w-3 h-3 rounded-full ${
+                              reflection.status === 'assigned' ? 'bg-red-500' :
+                              reflection.status === 'submitted' ? 'bg-yellow-500' :
+                              reflection.status === 'approved' ? 'bg-green-500' :
+                              'bg-gray-400'
+                            }`} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {reflection.status === 'assigned' ? 'Response Required' :
+                               reflection.status === 'submitted' ? 'Under Review' :
+                               reflection.status === 'approved' ? 'Completed' :
+                               'Needs Revision'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Assigned {new Date(reflection.assignedAt).toLocaleDateString()}
+                              {reflection.dueDate && (
+                                <span className="ml-2">• Due {new Date(reflection.dueDate).toLocaleDateString()}</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <Edit3 className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
           </div>
         )}
       </div>
+
+      {/* Reflection Modal */}
+      {selectedReflection && (
+        <ReflectionModal
+          reflection={selectedReflection}
+          isOpen={showReflectionModal}
+          onClose={() => {
+            setShowReflectionModal(false);
+            setSelectedReflection(null);
+          }}
+          isStudent={true}
+        />
+      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
@@ -51,6 +51,9 @@ export default function TeacherDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Theme state
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'normal'>('normal');
 
   // Modal close helper function
   const closeAddScholarModal = () => {
@@ -180,9 +183,53 @@ export default function TeacherDashboard() {
     }
   };
 
+  // Theme toggle function
+  const toggleTheme = () => {
+    const themes: ('light' | 'dark' | 'normal')[] = ['normal', 'light', 'dark'];
+    const currentIndex = themes.indexOf(currentTheme);
+    const nextTheme = themes[(currentIndex + 1) % themes.length];
+    setCurrentTheme(nextTheme);
+    localStorage.setItem("teacherTheme", nextTheme);
+  };
+
+  // Theme styles
+  const getThemeStyles = () => {
+    switch (currentTheme) {
+      case 'dark':
+        return {
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          cardBg: '#2d3748',
+          textPrimary: '#f7fafc',
+          textSecondary: '#cbd5e0',
+          border: '#4a5568'
+        };
+      case 'light':
+        return {
+          background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%)',
+          cardBg: '#ffffff',
+          textPrimary: '#14532d',
+          textSecondary: '#166534',
+          border: '#22c55e'
+        };
+      default: // normal
+        return {
+          background: '#f9fafb',
+          cardBg: '#ffffff',
+          textPrimary: '#1f2937',
+          textSecondary: '#6b7280',
+          border: '#e5e7eb'
+        };
+    }
+  };
+
+  const themeStyles = getThemeStyles();
+
   useEffect(() => {
     const token = localStorage.getItem("teacherToken");
+    const savedTheme = localStorage.getItem("teacherTheme") as 'light' | 'dark' | 'normal' || 'normal';
     const isDeployment = window.location.hostname.includes('replit.app');
+    
+    setCurrentTheme(savedTheme);
     
     console.log("TEACHER DASHBOARD INIT:", {
       hasToken: !!token,
@@ -810,7 +857,7 @@ export default function TeacherDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{background: themeStyles.background}}>
       {/* Main Navigation Bar with Dropdown Menus */}
       <div className="bg-blue-600 text-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -887,14 +934,32 @@ export default function TeacherDashboard() {
 
             </div>
             
-            <Button 
-              variant="ghost" 
-              className="text-white hover:text-red-200 hover:bg-red-600"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center space-x-2">
+              {/* Theme Toggle Button */}
+              <Button
+                onClick={toggleTheme}
+                variant="outline"
+                className="flex items-center gap-2"
+                style={{
+                  backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#22c55e' : '#ffffff',
+                  color: currentTheme === 'dark' ? '#f7fafc' : currentTheme === 'light' ? '#ffffff' : '#1a202c',
+                  borderColor: themeStyles.border
+                }}
+                data-testid="button-theme-toggle"
+              >
+                <Palette className="h-4 w-4" />
+                {currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : 'Normal'}
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="text-white hover:text-red-200 hover:bg-red-600"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -903,7 +968,7 @@ export default function TeacherDashboard() {
       <section className="p-4" data-testid="teacher-dashboard-section">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-        <Card className="mb-6 bg-white shadow-lg">
+        <Card className="mb-6 shadow-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -914,15 +979,20 @@ export default function TeacherDashboard() {
                   data-testid="dashboard-school-logo"
                 />
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 school-name-3d">Teacher Dashboard</h1>
-                  <p className="text-sm text-gray-600 program-title-3d">Welcome, {teacher.name}</p>
-                  <p className="text-xs text-gray-500">{teacher.gradeRole} - {teacher.subject}</p>
+                  <h1 className="text-xl font-bold school-name-3d" style={{color: themeStyles.textPrimary}}>Teacher Dashboard</h1>
+                  <p className="text-sm program-title-3d" style={{color: themeStyles.textSecondary}}>Welcome, {teacher.name}</p>
+                  <p className="text-xs" style={{color: themeStyles.textSecondary}}>{teacher.gradeRole} - {teacher.subject}</p>
                 </div>
               </div>
               <Button 
                 variant="outline" 
                 onClick={handleLogout}
                 className="flex items-center gap-2"
+                style={{
+                  backgroundColor: themeStyles.cardBg,
+                  color: themeStyles.textPrimary,
+                  borderColor: themeStyles.border
+                }}
                 data-testid="button-logout"
               >
                 <LogOut className="h-4 w-4" />
@@ -934,19 +1004,19 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="scholars">Scholars</TabsTrigger>
-            <TabsTrigger value="upload">Upload Photos</TabsTrigger>
-            <TabsTrigger value="gallery">Gallery</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+            <TabsTrigger value="dashboard" style={{color: themeStyles.textPrimary}}>Dashboard</TabsTrigger>
+            <TabsTrigger value="scholars" style={{color: themeStyles.textPrimary}}>Scholars</TabsTrigger>
+            <TabsTrigger value="upload" style={{color: themeStyles.textPrimary}}>Upload Photos</TabsTrigger>
+            <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
             {/* Grade Selection */}
             {teacher.canSeeGrades?.length > 1 && (
-              <Card className="mb-6">
+              <Card className="mb-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
-                  <CardTitle>Select Grade Level</CardTitle>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Select Grade Level</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
@@ -969,7 +1039,7 @@ export default function TeacherDashboard() {
             {houses && houses.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 {houses.map((house) => (
-                  <Card key={house.id} className="text-center">
+                  <Card key={house.id} className="text-center" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg" style={{ color: house.color }}>
                         {house.icon} {house.name}
@@ -977,13 +1047,13 @@ export default function TeacherDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-1 text-sm">
-                        <p><strong>Academic:</strong> {house.academicPoints || 0}</p>
-                        <p><strong>Attendance:</strong> {house.attendancePoints || 0}</p>
-                        <p><strong>Behavior:</strong> {house.behaviorPoints || 0}</p>
-                        <p className="font-bold">
+                        <p style={{color: themeStyles.textPrimary}}><strong>Academic:</strong> {house.academicPoints || 0}</p>
+                        <p style={{color: themeStyles.textPrimary}}><strong>Attendance:</strong> {house.attendancePoints || 0}</p>
+                        <p style={{color: themeStyles.textPrimary}}><strong>Behavior:</strong> {house.behaviorPoints || 0}</p>
+                        <p className="font-bold" style={{color: themeStyles.textPrimary}}>
                           <strong>Total:</strong> {(house.academicPoints || 0) + (house.attendancePoints || 0) + (house.behaviorPoints || 0)}
                         </p>
-                        <p className="text-gray-600">Members: {house.memberCount || 0}</p>
+                        <p style={{color: themeStyles.textSecondary}}>Members: {house.memberCount || 0}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -995,9 +1065,9 @@ export default function TeacherDashboard() {
           <TabsContent value="scholars" className="space-y-6">
             {/* Grade Selection for Scholars Tab */}
             {teacher.canSeeGrades?.length > 1 && (
-              <Card className="mb-6">
+              <Card className="mb-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
-                  <CardTitle>Select Grade Level</CardTitle>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Select Grade Level</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">

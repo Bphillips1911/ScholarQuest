@@ -99,6 +99,78 @@ export default function StudentDashboard() {
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [themesModalOpen, setThemesModalOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
+
+  // Theme configurations
+  const getThemeStyles = (themeId: string) => {
+    const themes = {
+      'default': {
+        background: 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900',
+        accent: 'from-blue-600 to-purple-600',
+        cardBg: 'bg-white/90 backdrop-blur-sm',
+        textPrimary: 'text-gray-900',
+        textSecondary: 'text-gray-600'
+      },
+      'kelly-green': {
+        background: 'bg-gradient-to-br from-green-900 via-emerald-900 to-slate-900',
+        accent: 'from-green-500 to-emerald-500',
+        cardBg: 'bg-white/90 backdrop-blur-sm',
+        textPrimary: 'text-gray-900',
+        textSecondary: 'text-gray-600'
+      },
+      'gold': {
+        background: 'bg-gradient-to-br from-yellow-900 via-amber-900 to-orange-900',
+        accent: 'from-yellow-400 to-amber-400',
+        cardBg: 'bg-white/90 backdrop-blur-sm',
+        textPrimary: 'text-gray-900',
+        textSecondary: 'text-gray-600'
+      },
+      'orange': {
+        background: 'bg-gradient-to-br from-orange-900 via-red-900 to-slate-900',
+        accent: 'from-orange-500 to-red-500',
+        cardBg: 'bg-white/90 backdrop-blur-sm',
+        textPrimary: 'text-gray-900',
+        textSecondary: 'text-gray-600'
+      },
+      'dark': {
+        background: 'bg-gradient-to-br from-gray-900 via-slate-900 to-black',
+        accent: 'from-gray-600 to-slate-600',
+        cardBg: 'bg-gray-800/90 backdrop-blur-sm',
+        textPrimary: 'text-white',
+        textSecondary: 'text-gray-300'
+      },
+      'light': {
+        background: 'bg-gradient-to-br from-yellow-100 via-orange-100 to-pink-100',
+        accent: 'from-yellow-500 to-orange-500',
+        cardBg: 'bg-white/95 backdrop-blur-sm',
+        textPrimary: 'text-gray-900',
+        textSecondary: 'text-gray-700'
+      },
+      'champion': {
+        background: 'bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900',
+        accent: 'from-purple-400 to-blue-400',
+        cardBg: 'bg-white/90 backdrop-blur-sm',
+        textPrimary: 'text-gray-900',
+        textSecondary: 'text-gray-600'
+      }
+    };
+    return themes[themeId as keyof typeof themes] || themes['default'];
+  };
+
+  const themeStyles = getThemeStyles(currentTheme);
+
+  // Load saved theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('student-dashboard-theme');
+    if (savedTheme) {
+      setCurrentTheme(savedTheme);
+    }
+  }, []);
+
+  // Save theme to localStorage when changed
+  const handleThemeChange = (newTheme: string) => {
+    setCurrentTheme(newTheme);
+    localStorage.setItem('student-dashboard-theme', newTheme);
+  };
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -208,7 +280,7 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className={`min-h-screen ${themeStyles.background}`}>
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
@@ -332,9 +404,9 @@ export default function StudentDashboard() {
               {currentHouse && (
                 <StaggerItem>
                   <SparkleEffect>
-                    <Card className="col-span-1 md:col-span-2 lg:col-span-1">
+                    <Card className={`col-span-1 md:col-span-2 lg:col-span-1 ${themeStyles.cardBg} border-white/20`}>
                       <CardHeader>
-                        <CardTitle className="flex items-center">
+                        <CardTitle className={`flex items-center ${themeStyles.textPrimary}`}>
                           <Home className="mr-2 h-5 w-5 text-purple-600" />
                           Your House
                         </CardTitle>
@@ -363,14 +435,15 @@ export default function StudentDashboard() {
             )}
 
             {/* Personal Points Summary */}
-            <Card className="col-span-1 md:col-span-2 lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Target className="mr-2 h-5 w-5 text-blue-600" />
-                  Your Points Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <StaggerItem>
+              <Card className={`col-span-1 md:col-span-2 lg:col-span-2 ${themeStyles.cardBg} border-white/20`}>
+                <CardHeader>
+                  <CardTitle className={`flex items-center ${themeStyles.textPrimary}`}>
+                    <Target className="mr-2 h-5 w-5 text-blue-600" />
+                    Your Points Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
                     <BookOpen className="h-6 w-6 text-blue-600 mx-auto mb-2" />
@@ -392,20 +465,22 @@ export default function StudentDashboard() {
                     <div className="text-2xl font-bold text-yellow-800">{totalPoints}</div>
                     <div className="text-sm text-yellow-600">Total Points</div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </StaggerItem>
 
             {/* PBIS Recognition */}
-            <Card className="col-span-1 md:col-span-2 lg:col-span-3">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Award className="mr-2 h-5 w-5 text-green-600" />
-                  MUSTANG Traits Recognition
-                  <Badge variant="secondary" className="ml-2">{totalPBISPoints} PBIS Points</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <StaggerItem>
+              <Card className={`col-span-1 md:col-span-2 lg:col-span-3 ${themeStyles.cardBg} border-white/20`}>
+                <CardHeader>
+                  <CardTitle className={`flex items-center ${themeStyles.textPrimary}`}>
+                    <Award className="mr-2 h-5 w-5 text-green-600" />
+                    MUSTANG Traits Recognition
+                    <Badge variant="secondary" className="ml-2">{totalPBISPoints} PBIS Points</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                 {recentPBIS && recentPBIS.length > 0 ? (
                   <div className="space-y-4">
                     {recentPBIS.map((entry: PBISEntry) => (
@@ -445,20 +520,22 @@ export default function StudentDashboard() {
                     )}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className={`text-center py-8 ${themeStyles.textSecondary}`}>
                     <Award className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <p>No PBIS recognitions yet</p>
                     <p className="text-sm mt-1">Keep demonstrating MUSTANG traits to earn recognition!</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </StaggerItem>
 
             {/* Behavioral Reflections */}
             {reflections.length > 0 && (
-              <Card className="col-span-1 md:col-span-2 lg:col-span-3">
+              <StaggerItem>
+                <Card className={`col-span-1 md:col-span-2 lg:col-span-3 ${themeStyles.cardBg} border-white/20`}>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
+                  <CardTitle className={`flex items-center ${themeStyles.textPrimary}`}>
                     <FileText className="mr-2 h-5 w-5 text-orange-600" />
                     Behavioral Reflections
                     <Badge variant={reflections.some((r: Reflection) => r.status === 'assigned') ? 'destructive' : 'secondary'} className="ml-2">
@@ -509,7 +586,8 @@ export default function StudentDashboard() {
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </StaggerItem>
             )}
 
             </div>
@@ -535,7 +613,7 @@ export default function StudentDashboard() {
         isOpen={themesModalOpen}
         onClose={() => setThemesModalOpen(false)}
         currentTheme={currentTheme}
-        onThemeChange={setCurrentTheme}
+        onThemeChange={handleThemeChange}
         studentData={scholar}
       />
     </div>

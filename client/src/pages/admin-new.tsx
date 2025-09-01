@@ -454,16 +454,19 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary}}>Teachers</TabsTrigger>
-              <TabsTrigger value="students" style={{color: themeStyles.textPrimary}}>Students</TabsTrigger>
-              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary}}>Houses</TabsTrigger>
-              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary}}>Badges</TabsTrigger>
-              <TabsTrigger value="games" style={{color: themeStyles.textPrimary}}>Games</TabsTrigger>
-              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary}}>Messages</TabsTrigger>
-              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
-              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary}}>Reflections</TabsTrigger>
-              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary}}>Data Export</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 gap-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Teachers</TabsTrigger>
+              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Students</TabsTrigger>
+              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Houses</TabsTrigger>
+              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Badges</TabsTrigger>
+              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Games</TabsTrigger>
+            </TabsList>
+            
+            <TabsList className="grid w-full grid-cols-4 gap-2 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Messages</TabsTrigger>
+              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Reflections</TabsTrigger>
+              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Data Export</TabsTrigger>
             </TabsList>
 
 

@@ -320,25 +320,38 @@ export function InteractiveLearningAssistant({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed bottom-20 right-6 w-96 max-h-[80vh] z-50"
+            className="fixed bottom-20 right-6 w-96 max-h-[75vh] z-50"
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className={`p-4 shadow-xl border-2 border-${currentCharacter.color}-200 bg-white h-full flex flex-col overflow-hidden`}>
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
+            <Card className={`shadow-xl border-2 border-${currentCharacter.color}-200 bg-white h-full flex flex-col overflow-hidden`}>
+              {/* Header - Fixed at top */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center space-x-2">
                   <div className="text-2xl">{currentCharacter.avatar}</div>
                   <div>
                     <h3 className={`font-bold text-${currentCharacter.color}-600`}>
                       {currentCharacter.name}
                     </h3>
-                    <p className="text-xs text-gray-500">Learning Assistant</p>
+                    <p className="text-xs text-gray-500">
+                      {language === 'es' ? 'Asistente de Aprendizaje' : 'Learning Assistant'}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
+                  {/* Language Toggle - Make it prominent */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                    className={`text-xs px-2 py-1 font-semibold ${language === 'es' ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-blue-100 text-blue-700 border-blue-300'}`}
+                    title={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+                  >
+                    {language === 'es' ? '🇪🇸 ES' : '🇺🇸 EN'}
+                  </Button>
+                  
                   {/* Speech Controls */}
                   <Button
                     variant="ghost"
@@ -367,34 +380,36 @@ export function InteractiveLearningAssistant({
                 </div>
               </div>
 
-              {/* Message Display */}
-              <div className={`p-3 rounded-lg mb-4 bg-${currentCharacter.color}-50 border border-${currentCharacter.color}-200`}>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {currentMessage || `Hi! I'm ${currentCharacter.name}, ready to help you succeed! 🌟`}
-                </p>
-              </div>
+              {/* Scrollable Content Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Message Display */}
+                <div className={`p-3 rounded-lg bg-${currentCharacter.color}-50 border border-${currentCharacter.color}-200`}>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {currentMessage || `Hi! I'm ${currentCharacter.name}, ready to help you succeed! 🌟`}
+                  </p>
+                </div>
 
-              {/* Quick Help Toggle */}
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-semibold text-gray-700">
-                  {language === 'es' ? '¿Cómo puedo ayudarte?' : 'How can I help you?'}
-                </h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowQuickHelp(!showQuickHelp)}
-                  className={`text-xs px-2 py-1 ${showQuickHelp ? 'text-blue-600' : 'text-gray-400'}`}
-                >
-                  {showQuickHelp 
-                    ? (language === 'es' ? 'Ayuda Rápida' : 'Quick Help')
-                    : (language === 'es' ? 'Ayuda de Funciones' : 'Feature Help')
-                  }
-                </Button>
-              </div>
+                {/* Quick Help Toggle */}
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-700">
+                    {language === 'es' ? '¿Cómo puedo ayudarte?' : 'How can I help you?'}
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowQuickHelp(!showQuickHelp)}
+                    className={`text-xs px-2 py-1 ${showQuickHelp ? 'text-blue-600' : 'text-gray-400'}`}
+                  >
+                    {showQuickHelp 
+                      ? (language === 'es' ? 'Ayuda Rápida' : 'Quick Help')
+                      : (language === 'es' ? 'Ayuda de Funciones' : 'Feature Help')
+                    }
+                  </Button>
+                </div>
 
-              {/* Quick Help or Feature Explanations */}
-              {showQuickHelp ? (
-                <div className="grid grid-cols-2 gap-2 mb-4">
+                {/* Quick Help or Feature Explanations */}
+                {showQuickHelp ? (
+                  <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -443,8 +458,8 @@ export function InteractiveLearningAssistant({
                     </span>
                   </Button>
                 </div>
-              ) : (
-                <div className="space-y-2 mb-4">
+                ) : (
+                  <div className="space-y-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -495,116 +510,71 @@ export function InteractiveLearningAssistant({
                 </div>
               )}
 
-              {/* Tab Overview Section */}
-              <div className="mt-4 pt-3 border-t border-gray-200">
-                <h5 className="text-xs font-semibold text-gray-600 mb-2">
-                  {language === 'es' ? 'Vista General de Pestañas:' : 'Tab Overviews:'}
-                </h5>
-                <div className="grid grid-cols-2 gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleTabOverview('dashboard')}
-                    className="text-xs p-1 h-auto text-left justify-start"
-                  >
-                    Dashboard
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleTabOverview('mood-tracker')}
-                    className="text-xs p-1 h-auto text-left justify-start"
-                  >
-                    Mood Tracker
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleTabOverview('learning-path')}
-                    className="text-xs p-1 h-auto text-left justify-start"
-                  >
-                    Learning Path
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleTabOverview('skill-tree')}
-                    className="text-xs p-1 h-auto text-left justify-start"
-                  >
-                    Skill Tree
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleTabOverview('house-history')}
-                    className="text-xs p-1 h-auto text-left justify-start col-span-2"
-                  >
-                    House History
-                  </Button>
-                </div>
-              </div>
-
-              {/* Motivational Section */}
-              <div className={`bg-${currentCharacter.color}-50 rounded-lg p-3 mb-4`}>
-                <h4 className="text-sm font-semibold text-gray-700 mb-1">Your Progress</h4>
-                <p className="text-xs text-gray-600">
-                  {getMotivationalMessage()}
-                </p>
-              </div>
-
-              {/* Quick Help */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-gray-700">Quick Help</h4>
-                <div className="space-y-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleHelpRequest('house system')}
-                    className="w-full justify-start text-xs p-2 h-auto"
-                  >
-                    <HelpCircle className="w-3 h-3 mr-2" />
-                    How does the house system work?
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleHelpRequest('earning points')}
-                    className="w-full justify-start text-xs p-2 h-auto"
-                  >
-                    <HelpCircle className="w-3 h-3 mr-2" />
-                    How can I earn more points?
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleHelpRequest('MUSTANG traits')}
-                    className="w-full justify-start text-xs p-2 h-auto"
-                  >
-                    <HelpCircle className="w-3 h-3 mr-2" />
-                    What are MUSTANG traits?
-                  </Button>
-                </div>
-              </div>
-
-              {/* Settings */}
-              <div className="mt-4 pt-3 border-t border-gray-200">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs text-gray-500">
-                    {language === 'es' ? 'Configuraciones del Asistente:' : 'Assistant Settings:'}
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    {/* Language Toggle */}
+                {/* Tab Overview Section */}
+                <div className="pt-3 border-t border-gray-200">
+                  <h5 className="text-xs font-semibold text-gray-600 mb-2">
+                    {language === 'es' ? 'Vista General de Pestañas:' : 'Tab Overviews:'}
+                  </h5>
+                  <div className="grid grid-cols-2 gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                      className={`text-xs px-2 py-1 ${language === 'es' ? 'text-orange-600' : 'text-blue-600'}`}
+                      onClick={() => handleTabOverview('dashboard')}
+                      className="text-xs p-1 h-auto text-left justify-start"
                     >
-                      {language === 'es' ? '🇪🇸 ES' : '🇺🇸 EN'}
+                      {language === 'es' ? 'Tablero' : 'Dashboard'}
                     </Button>
-                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTabOverview('mood-tracker')}
+                      className="text-xs p-1 h-auto text-left justify-start"
+                    >
+                      {language === 'es' ? 'Estado de Ánimo' : 'Mood Tracker'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTabOverview('learning-path')}
+                      className="text-xs p-1 h-auto text-left justify-start"
+                    >
+                      {language === 'es' ? 'Ruta de Aprendizaje' : 'Learning Path'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTabOverview('skill-tree')}
+                      className="text-xs p-1 h-auto text-left justify-start"
+                    >
+                      {language === 'es' ? 'Árbol de Habilidades' : 'Skill Tree'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTabOverview('house-history')}
+                      className="text-xs p-1 h-auto text-left justify-start col-span-2"
+                    >
+                      {language === 'es' ? 'Historia de la Casa' : 'House History'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Motivational Section */}
+                <div className={`bg-${currentCharacter.color}-50 rounded-lg p-3`}>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                    {language === 'es' ? 'Tu Progreso' : 'Your Progress'}
+                  </h4>
+                  <p className="text-xs text-gray-600">
+                    {getMotivationalMessage()}
+                  </p>
+                </div>
+
+                {/* Settings */}
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs text-gray-500">
+                      {language === 'es' ? 'Configuraciones:' : 'Settings:'}
+                    </p>
                     {/* Voice Toggle */}
                     <Button
                       variant="ghost"
@@ -618,35 +588,35 @@ export function InteractiveLearningAssistant({
                       }
                     </Button>
                   </div>
-                </div>
-                
-                {/* Character Selector */}
-                <p className="text-xs text-gray-500 mb-2">
-                  {language === 'es' ? 'Elige tu compañero de aprendizaje:' : 'Choose your learning buddy:'}
-                </p>
-                <div className="flex space-x-2">
-                  {houseCharacters.map((character) => (
-                    <button
-                      key={character.id}
-                      onClick={() => {
-                        setCurrentCharacter(character);
-                        const message = language === 'es' 
-                          ? `¡Hola! Soy ${character.name}, tu nuevo compañero de aprendizaje de ${character.house}!`
-                          : `Hi! I'm ${character.name}, your new ${character.house} learning buddy!`;
-                        if (speechEnabled) {
-                          speakMessage(message);
-                        }
-                      }}
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        currentCharacter.id === character.id
-                          ? `border-${character.color}-400`
-                          : 'border-gray-200'
-                      } flex items-center justify-center text-sm hover:scale-110 transition-transform`}
-                      title={`${character.name} from ${character.house}`}
-                    >
-                      {character.avatar}
-                    </button>
-                  ))}
+                  
+                  {/* Character Selector */}
+                  <p className="text-xs text-gray-500 mb-2">
+                    {language === 'es' ? 'Elige tu compañero de aprendizaje:' : 'Choose your learning buddy:'}
+                  </p>
+                  <div className="flex space-x-2 pb-2">
+                    {houseCharacters.map((character) => (
+                      <button
+                        key={character.id}
+                        onClick={() => {
+                          setCurrentCharacter(character);
+                          const message = language === 'es' 
+                            ? `¡Hola! Soy ${character.name}, tu nuevo compañero de aprendizaje de ${character.house}!`
+                            : `Hi! I'm ${character.name}, your new ${character.house} learning buddy!`;
+                          if (speechEnabled) {
+                            speakMessage(message);
+                          }
+                        }}
+                        className={`w-8 h-8 rounded-full border-2 ${
+                          currentCharacter.id === character.id
+                            ? `border-${character.color}-400`
+                            : 'border-gray-200'
+                        } flex items-center justify-center text-sm hover:scale-110 transition-transform`}
+                        title={`${character.name} from ${character.house}`}
+                      >
+                        {character.avatar}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </Card>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,10 @@ import {
   Pause,
   SkipForward,
   Volume2,
+  VolumeX,
   Users,
-  Award
+  Award,
+  User
 } from "lucide-react";
 import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession } from "@/lib/studentAuth";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
@@ -34,6 +36,8 @@ interface HouseStory {
   timeline: string;
   achievements: string[];
   quotes: string[];
+  personImage?: string;
+  personName: string;
 }
 
 interface HouseHistoryData {
@@ -51,6 +55,9 @@ export default function StudentHouseHistory() {
   const [currentChapter, setCurrentChapter] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isReading, setIsReading] = useState(false);
+  const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
 
   // Authentication check
   useEffect(() => {
@@ -94,7 +101,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Curiosity', 'Innovation', 'Problem-Solving', 'Scientific Method'],
         timeline: '1706-1790',
         achievements: ['Founded first public library', 'Discovered electricity principles', 'Diplomat and statesman'],
-        quotes: ['"Tell me and I forget, teach me and I may remember, involve me and I learn."', '"An investment in knowledge pays the best interest."']
+        quotes: ['"Tell me and I forget, teach me and I may remember, involve me and I learn."', '"An investment in knowledge pays the best interest."'],
+        personName: 'Benjamin Franklin',
+        personImage: '👨‍🔬'
       },
       {
         id: 'franklin-2',
@@ -106,7 +115,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Courage', 'Scientific Inquiry', 'Risk Assessment', 'Discovery'],
         timeline: '1740-1752',
         achievements: ['Proved lightning is electricity', 'Invented lightning rod', 'Founded scientific societies'],
-        quotes: ['"Genius without education is like silver in the mine."', '"Energy and persistence conquer all things."']
+        quotes: ['"Genius without education is like silver in the mine."', '"Energy and persistence conquer all things."'],
+        personName: 'Benjamin Franklin',
+        personImage: '⚡'
       }
     ],
     tesla: [
@@ -120,7 +131,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Innovation', 'Electrical Excellence', 'Visionary Thinking', 'Technological Mastery'],
         timeline: '1856-1943',
         achievements: ['Invented AC motor', 'Developed radio technology', 'Created wireless power transmission'],
-        quotes: ['"The present is theirs; the future, for which I really worked, is mine."', '"Invention is the most important product of man\'s creative brain."']
+        quotes: ['"The present is theirs; the future, for which I really worked, is mine."', '"Invention is the most important product of man\'s creative brain."'],
+        personName: 'Nikola Tesla',
+        personImage: '🔬'
       },
       {
         id: 'tesla-2',
@@ -132,7 +145,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Perseverance', 'Global Thinking', 'Electrical Innovation', 'Future Focus'],
         timeline: '1884-1943',
         achievements: ['Won War of Currents', 'Powered World\'s Fair', 'Invented Tesla coil'],
-        quotes: ['"Be alone, that is the secret of invention; be alone, that is when ideas are born."', '"The scientists of today think deeply instead of clearly."']
+        quotes: ['"Be alone, that is the secret of invention; be alone, that is when ideas are born."', '"The scientists of today think deeply instead of clearly."'],
+        personName: 'Nikola Tesla',
+        personImage: '⚡'
       }
     ],
     curie: [
@@ -146,7 +161,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Scientific Excellence', 'Determination', 'Breaking Barriers', 'Research Innovation'],
         timeline: '1867-1934',
         achievements: ['First woman Nobel Prize winner', 'Discovered polonium and radium', 'Founded field of radioactivity'],
-        quotes: ['"Nothing in life is to be feared, it is only to be understood."', '"I was taught that the way of progress was neither swift nor easy."']
+        quotes: ['"Nothing in life is to be feared, it is only to be understood."', '"I was taught that the way of progress was neither swift nor easy."'],
+        personName: 'Marie Curie',
+        personImage: '👩‍🔬'
       },
       {
         id: 'curie-2',
@@ -158,7 +175,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Excellence', 'Legacy Building', 'Interdisciplinary Learning', 'Scientific Impact'],
         timeline: '1895-1934',
         achievements: ['Two Nobel Prizes', 'Founded Radium Institute', 'Advanced medical X-ray technology'],
-        quotes: ['"Science is the basis of human progress."', '"You cannot hope to build a better world without improving the individuals."']
+        quotes: ['"Science is the basis of human progress."', '"You cannot hope to build a better world without improving the individuals."'],
+        personName: 'Marie Curie',
+        personImage: '🧪'
       }
     ],
     nobel: [
@@ -172,7 +191,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Excellence in Achievement', 'Legacy Thinking', 'Global Impact', 'Humanitarian Values'],
         timeline: '1833-1896',
         achievements: ['355 patents', 'Invented dynamite', 'Established Nobel Prize'],
-        quotes: ['"Contentment is natural wealth, luxury is artificial poverty."', '"Hope is nature\'s veil for hiding truth\'s nakedness."']
+        quotes: ['"Contentment is natural wealth, luxury is artificial poverty."', '"Hope is nature\'s veil for hiding truth\'s nakedness."'],
+        personName: 'Alfred Nobel',
+        personImage: '🏆'
       },
       {
         id: 'nobel-2',
@@ -184,7 +205,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Recognition of Excellence', 'Global Citizenship', 'Philanthropic Spirit', 'Achievement Culture'],
         timeline: '1895-present',
         achievements: ['Nobel Prize establishment', 'Global recognition system', 'Centuries of inspiration'],
-        quotes: ['"If I have a thousand ideas and only one turns out to be good, I am satisfied."', '"Justice is truth in action."']
+        quotes: ['"If I have a thousand ideas and only one turns out to be good, I am satisfied."', '"Justice is truth in action."'],
+        personName: 'Alfred Nobel',
+        personImage: '🎯'
       }
     ],
     lovelace: [
@@ -198,7 +221,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Computational Thinking', 'Creative Problem-Solving', 'Future Innovation', 'Algorithmic Excellence'],
         timeline: '1815-1852',
         achievements: ['First computer program', 'Analytical Engine collaboration', 'Mathematical innovation'],
-        quotes: ['"The Analytical Engine might act upon other things besides number."', "That brain of mine is something more than merely mortal; as time will show."]
+        quotes: ['"The Analytical Engine might act upon other things besides number."', "That brain of mine is something more than merely mortal; as time will show."],
+        personName: 'Ada Lovelace',
+        personImage: '👩‍💻'
       },
       {
         id: 'lovelace-2',
@@ -210,7 +235,9 @@ export default function StudentHouseHistory() {
         houseValues: ['Visionary Programming', 'Creative Algorithms', 'Future Technology', 'Digital Innovation'],
         timeline: '1840-1852',
         achievements: ['Computer programming concepts', 'Algorithmic thinking', 'Technology vision'],
-        quotes: ['"Mathematical science shows us what is. It is the language of unseen relations between things."', '"I believe in the power of the analytical engine to revolutionize human thought."']
+        quotes: ['"Mathematical science shows us what is. It is the language of unseen relations between things."', '"I believe in the power of the analytical engine to revolutionize human thought."'],
+        personName: 'Ada Lovelace',
+        personImage: '💻'
       }
     ]
   };
@@ -240,6 +267,49 @@ export default function StudentHouseHistory() {
   const currentStories = houseHistories[selectedHouse as keyof HouseHistoryData] || [];
   const currentStory = currentStories[currentChapter];
 
+  // Initialize speech synthesis
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      speechSynthesisRef.current = window.speechSynthesis;
+    }
+  }, []);
+
+  // Audio narration function
+  const readStoryContent = (story: HouseStory) => {
+    if (!speechSynthesisRef.current || isMuted) return;
+
+    // Stop any current speech
+    speechSynthesisRef.current.cancel();
+
+    const textToRead = `
+      Chapter ${story.chapter}: ${story.title}.
+      ${story.content}
+      Historical Fact: ${story.historicalFact}
+      Modern Connection: ${story.modernConnection}
+      Achievements: ${story.achievements.join(', ')}.
+      ${story.quotes.join(' ')}
+    `;
+
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    utterance.onstart = () => setIsReading(true);
+    utterance.onend = () => setIsReading(false);
+    utterance.onerror = () => setIsReading(false);
+
+    speechSynthesisRef.current.speak(utterance);
+  };
+
+  // Stop audio reading
+  const stopReading = () => {
+    if (speechSynthesisRef.current) {
+      speechSynthesisRef.current.cancel();
+      setIsReading(false);
+    }
+  };
+
   // Auto-advance chapters
   useEffect(() => {
     if (autoPlay && isPlaying) {
@@ -255,6 +325,13 @@ export default function StudentHouseHistory() {
       return () => clearTimeout(timer);
     }
   }, [autoPlay, isPlaying, currentChapter, currentStories.length]);
+
+  // Auto-read when chapter changes and audio is enabled
+  useEffect(() => {
+    if (currentStory && isPlaying && !isMuted) {
+      setTimeout(() => readStoryContent(currentStory), 1000);
+    }
+  }, [currentChapter, currentStory, isPlaying, isMuted]);
 
   if (!studentData) {
     return (
@@ -387,16 +464,61 @@ export default function StudentHouseHistory() {
                         Next
                       </Button>
                     </div>
-                    <div className="flex items-center space-x-2 text-white">
-                      <Volume2 className="h-4 w-4" />
-                      <span className="text-sm">Audio Coming Soon</span>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => readStoryContent(currentStory)}
+                        disabled={isReading}
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      >
+                        <Volume2 className="h-4 w-4" />
+                        <span className="ml-2">{isReading ? 'Reading...' : 'Read Story'}</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={stopReading}
+                        disabled={!isReading}
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      >
+                        <VolumeX className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsMuted(!isMuted)}
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      >
+                        {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                        <span className="ml-2">{isMuted ? 'Unmute' : 'Mute'}</span>
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Main Story Content */}
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Historical Person Image */}
+                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      {currentStory.personName}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center space-y-4">
+                    <div className="text-6xl mb-4">
+                      {currentStory.personImage}
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-xl font-bold text-white mb-2">{currentStory.personName}</h3>
+                      <p className="text-gray-300 text-sm">{currentStory.timeline}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
@@ -437,7 +559,7 @@ export default function StudentHouseHistory() {
               </div>
 
               {/* Achievements and Quotes */}
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-6 mt-6">
                 <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">

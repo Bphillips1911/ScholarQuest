@@ -47,8 +47,8 @@ export function DashboardThemes({
   const themes: Theme[] = [
     {
       id: 'default',
-      name: 'BHSA Classic',
-      description: 'The traditional BHSA experience with school colors and branding',
+      name: 'BHSA Traditional',
+      description: 'The classic BHSA experience with traditional school colors',
       background: 'from-slate-900 via-purple-900 to-slate-900',
       accent: 'from-blue-600 to-purple-600',
       preview: 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)',
@@ -56,59 +56,34 @@ export function DashboardThemes({
       unlocked: true
     },
     {
-      id: 'franklin',
-      name: 'Franklin Discovery',
-      description: 'Inspired by Franklin\'s scientific curiosity and innovation',
-      background: 'from-blue-900 via-indigo-900 to-slate-900',
-      accent: 'from-blue-500 to-cyan-500',
-      preview: 'linear-gradient(135deg, #1e3a8a 0%, #312e81 50%, #0f172a 100%)',
-      icon: FlaskConical,
-      unlocked: studentData?.houseName?.toLowerCase() === 'franklin' || false,
-      requirement: 'Join House Franklin'
-    },
-    {
-      id: 'tesla',
-      name: 'Tesla Electric',
-      description: 'Electrifying design inspired by Tesla\'s innovations',
-      background: 'from-purple-900 via-violet-900 to-slate-900',
-      accent: 'from-purple-500 to-pink-500',
-      preview: 'linear-gradient(135deg, #581c87 0%, #7c3aed 50%, #0f172a 100%)',
-      icon: Zap,
-      unlocked: studentData?.houseName?.toLowerCase() === 'tesla' || false,
-      requirement: 'Join House Tesla'
-    },
-    {
-      id: 'curie',
-      name: 'Curie Laboratory',
-      description: 'Scientific excellence theme honoring Marie Curie\'s discoveries',
-      background: 'from-red-900 via-pink-900 to-slate-900',
-      accent: 'from-red-500 to-orange-500',
-      preview: 'linear-gradient(135deg, #7f1d1d 0%, #be185d 50%, #0f172a 100%)',
-      icon: FlaskConical,
-      unlocked: studentData?.houseName?.toLowerCase() === 'curie' || false,
-      requirement: 'Join House Curie'
-    },
-    {
-      id: 'nobel',
-      name: 'Nobel Achievement',
-      description: 'Excellence-focused theme celebrating Nobel\'s legacy',
+      id: 'kelly-green',
+      name: 'Kelly Green',
+      description: 'Fresh and vibrant green theme for nature lovers',
       background: 'from-green-900 via-emerald-900 to-slate-900',
-      accent: 'from-green-500 to-teal-500',
+      accent: 'from-green-500 to-emerald-500',
       preview: 'linear-gradient(135deg, #14532d 0%, #047857 50%, #0f172a 100%)',
       icon: Target,
-      unlocked: studentData?.houseName?.toLowerCase() === 'nobel' || false,
-      requirement: 'Join House Nobel'
+      unlocked: true
     },
     {
-      id: 'lovelace',
-      name: 'Lovelace Code',
-      description: 'Futuristic digital theme inspired by Ada Lovelace',
-      background: 'from-orange-900 via-amber-900 to-slate-900',
-      accent: 'from-orange-500 to-yellow-500',
-      preview: 'linear-gradient(135deg, #9a3412 0%, #d97706 50%, #0f172a 100%)',
+      id: 'gold',
+      name: 'Golden Excellence',
+      description: 'Luxurious gold theme representing achievement and success',
+      background: 'from-yellow-900 via-amber-900 to-orange-900',
+      accent: 'from-yellow-400 to-amber-400',
+      preview: 'linear-gradient(135deg, #78350f 0%, #d97706 50%, #ea580c 100%)',
+      icon: Star,
+      unlocked: true
+    },
+    {
+      id: 'orange',
+      name: 'Energetic Orange',
+      description: 'Vibrant orange theme for creativity and enthusiasm',
+      background: 'from-orange-900 via-red-900 to-slate-900',
+      accent: 'from-orange-500 to-red-500',
+      preview: 'linear-gradient(135deg, #9a3412 0%, #7f1d1d 50%, #0f172a 100%)',
       icon: Computer,
-      unlocked: studentData?.houseName?.toLowerCase() === 'lovelace' || false,
-      requirement: 'Join House Lovelace'
+      unlocked: true
     },
     {
       id: 'dark',
@@ -135,10 +110,10 @@ export function DashboardThemes({
     {
       id: 'champion',
       name: 'MUSTANG Champion',
-      description: 'Elite theme for top performers with golden accents',
-      background: 'from-yellow-900 via-amber-900 to-orange-900',
-      accent: 'from-yellow-400 to-amber-400',
-      preview: 'linear-gradient(135deg, #78350f 0%, #d97706 50%, #ea580c 100%)',
+      description: 'Elite theme for top performers with premium styling',
+      background: 'from-purple-900 via-indigo-900 to-blue-900',
+      accent: 'from-purple-400 to-blue-400',
+      preview: 'linear-gradient(135deg, #581c87 0%, #312e81 50%, #1e3a8a 100%)',
       icon: Star,
       unlocked: ((studentData?.academicPoints || 0) + (studentData?.behaviorPoints || 0)) >= 150,
       requirement: 'Earn 150+ Total Points'

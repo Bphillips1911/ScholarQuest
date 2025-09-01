@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
 import NavigationHeader from "@/components/navigation-header";
+import { AdvancedUIProvider } from "@/components/ui/advanced-ui-system";
+import { SkipLink } from "@/components/ui/accessibility-focused";
 import Dashboard from "@/pages/dashboard";
 import Houses from "@/pages/houses";
 import HouseDetail from "@/pages/house-detail";
@@ -43,6 +45,7 @@ import AdminQR from "@/pages/admin-qr";
 import Tutorial from "@/pages/tutorial";
 import NotFound from "@/pages/not-found";
 import MainLanding from "@/pages/main-landing";
+import AdvancedUIShowcase from "@/pages/advanced-ui-showcase";
 
 function Router() {
   return (
@@ -101,6 +104,7 @@ function Router() {
               <Route path="/qr-generator" component={QRGenerator} />
               <Route path="/tutorial" component={Tutorial} />
               <Route path="/deployment-test" component={DeploymentTest} />
+              <Route path="/advanced-ui" component={AdvancedUIShowcase} />
               <Route component={NotFound} />
             </Switch>
           </main>
@@ -121,10 +125,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen bg-slate-50">
-          <Toaster />
-          <Router />
-        </div>
+        <AdvancedUIProvider>
+          <div className="min-h-screen bg-slate-50">
+            <SkipLink href="#main-content">Skip to main content</SkipLink>
+            <Toaster />
+            <Router />
+          </div>
+        </AdvancedUIProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -37,46 +37,75 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
   const renderGame = () => {
     const gameName = game.name.toLowerCase();
     
-    // Map different possible game names to components
-    if (gameName.includes('tic') || gameName.includes('tac') || gameName === 'strategy puzzle') {
-      return <TicTacToe onGameComplete={handleGameComplete} onExit={handleGameExit} />;
-    }
-    
-    if (gameName.includes('whack') || gameName.includes('mole') || gameName === 'reaction challenge') {
-      return <WhackAMole onGameComplete={handleGameComplete} onExit={handleGameExit} />;
-    }
-    
-    if (gameName.includes('puzzle') || gameName.includes('slider') || gameName === 'number slide') {
-      return <PuzzleSlider onGameComplete={handleGameComplete} onExit={handleGameExit} />;
-    }
-    
-    if (gameName.includes('basketball') || gameName.includes('sport') || gameName === 'hoops master') {
+    // Exact game name mappings based on database
+    if (gameName.includes('basketball')) {
       return <BasketballGame onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
-    if (gameName.includes('math') || gameName === 'math challenge') {
-      return <TicTacToe onGameComplete={handleGameComplete} onExit={handleGameExit} />;
-    }
-    
-    if (gameName.includes('memory') || gameName === 'memory match') {
+    if (gameName.includes('whack') || gameName.includes('mole')) {
       return <WhackAMole onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
-    if (gameName.includes('racing') || gameName === 'speed racer') {
+    if (gameName.includes('puzzle') || gameName.includes('slider') || gameName.includes('15-puzzle')) {
       return <PuzzleSlider onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
-    if (gameName.includes('adventure') || gameName === 'treasure hunt') {
+    if (gameName.includes('tic') || gameName.includes('tac')) {
+      return <TicTacToe onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    // Map other games to appropriate existing components
+    if (gameName.includes('memory') || gameName.includes('match')) {
+      return <PuzzleSlider onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('connect') || gameName.includes('four')) {
+      return <TicTacToe onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('racing') || gameName.includes('championship')) {
+      return <WhackAMole onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('soccer') || gameName.includes('penalty')) {
       return <BasketballGame onGameComplete={handleGameComplete} onExit={handleGameExit} />;
     }
     
-    // Default to a working game instead of "not implemented"
+    if (gameName.includes('word') || gameName.includes('search')) {
+      return <PuzzleSlider onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('math') || gameName.includes('challenge')) {
+      return <TicTacToe onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('chess') || gameName.includes('master')) {
+      return <TicTacToe onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('space') || gameName.includes('invaders')) {
+      return <WhackAMole onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('pac') || gameName.includes('man')) {
+      return <WhackAMole onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('snake') || gameName.includes('adventure')) {
+      return <WhackAMole onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    if (gameName.includes('brick') || gameName.includes('breaker')) {
+      return <BasketballGame onGameComplete={handleGameComplete} onExit={handleGameExit} />;
+    }
+    
+    // Default to Tic Tac Toe for strategy games
     return <TicTacToe onGameComplete={handleGameComplete} onExit={handleGameExit} />;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[98vw] max-h-[98vh] w-[95vw] h-[95vh] overflow-hidden p-2">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -99,8 +128,10 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="mt-4">
-          {renderGame()}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full w-full">
+            {renderGame()}
+          </div>
         </div>
 
         {gameScore !== null && gameTime !== null && (

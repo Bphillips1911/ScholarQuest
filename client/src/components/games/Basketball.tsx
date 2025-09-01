@@ -33,8 +33,8 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
   const gameLoopRef = useRef<number>();
   const timerRef = useRef<number>();
 
-  const CANVAS_WIDTH = 800;
-  const CANVAS_HEIGHT = 400;
+  const CANVAS_WIDTH = 900;
+  const CANVAS_HEIGHT = 500;
   const BASKET_X = 650;
   const BASKET_Y = 150;
   const BASKET_WIDTH = 80;
@@ -231,23 +231,19 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
   }, [balls, shootAngle]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-      <Card className="w-full max-w-6xl mx-4 bg-white">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <Target className="w-6 h-6 text-orange-500" />
-              <span>Basketball Shootout</span>
-            </CardTitle>
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline">Score: {score}</Badge>
-              <Badge variant="outline">Time: {timeLeft}s</Badge>
-              <Button variant="ghost" onClick={onExit} size="sm">×</Button>
-            </div>
-          </div>
-        </CardHeader>
+    <div className="w-full h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center space-x-2">
+          <Target className="w-6 h-6 text-orange-500" />
+          <span className="text-xl font-bold">Basketball Shootout</span>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Badge variant="outline">Score: {score}</Badge>
+          <Badge variant="outline">Time: {timeLeft}s</Badge>
+        </div>
+      </div>
 
-        <CardContent className="space-y-4">
+      <div className="flex-1 flex flex-col space-y-4 p-4">
           {/* Game Canvas */}
           <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
             <canvas
@@ -382,8 +378,7 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
               <p>• Score as many baskets as possible in 60 seconds!</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

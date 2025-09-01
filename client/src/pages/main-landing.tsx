@@ -330,6 +330,20 @@ export default function MainLanding() {
             </Card>
           </div>
 
+          {/* Advanced UI Showcase Button */}
+          <div className="text-center mb-8">
+            <Button 
+              onClick={() => setLocation('/advanced-ui')}
+              className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-full text-lg shadow-2xl transform hover:scale-105 transition-all duration-300 animate-pulse-glow"
+              data-testid="button-advanced-ui-showcase"
+            >
+              ✨ Explore Advanced UI Features ✨
+            </Button>
+            <p className="text-gray-300 text-sm mt-2">
+              Experience the next-generation user interface enhancements
+            </p>
+          </div>
+
           {/* House Gallery */}
           <div className="text-center">
             <h2 className="text-3xl font-bold text-white mb-8">The Five Houses of Champions</h2>

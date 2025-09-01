@@ -35,6 +35,7 @@ import {
   type InsertProgressGoal,
   type InsertDailyReflection,
 } from "@shared/schema";
+import { sendParentReflectionNotification, sendReflectionApprovedNotification } from "./emailService";
 import * as schema from "@shared/schema";
 import { 
   houses, 

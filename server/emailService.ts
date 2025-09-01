@@ -714,9 +714,11 @@ export async function sendParentReplyNotification(replyData: {
     html,
     text
   });
-}export async function sendReflectionAssignedNotification(parentEmail: string, parentName: string, studentName: string, reflectionPrompt: string): Promise<boolean> {
+}
+
+export async function sendParentReflectionNotification(parentEmail: string, studentName: string, reflectionPrompt: string, dueDate?: Date): Promise<boolean> {
   const subject = "Behavioral Reflection Assigned - " + studentName;
-  const text = `Dear ${parentName},
+  const text = `Dear Parent/Guardian,
 
 A behavioral reflection has been assigned to your child, ${studentName}, at Bush Hills STEAM Academy.
 
@@ -735,7 +737,7 @@ Bush Hills STEAM Academy`;
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #333;">🏫 Bush Hills STEAM Academy - Behavioral Reflection Assigned</h2>
-      <p>Dear ${parentName},</p>
+      <p>Dear Parent/Guardian,</p>
       <p>A behavioral reflection has been assigned to your child, <strong>${studentName}</strong>, at Bush Hills STEAM Academy.</p>
       
       <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -822,63 +824,7 @@ Bush Hills STEAM Academy`;
   });
 }
 
-export async function sendParentReflectionNotification(parentEmail: string, studentName: string, prompt: string, dueDate?: Date) {
-  const subject = `📝 Behavioral Reflection Assignment for ${studentName}`;
-  const dueDateText = dueDate ? new Date(dueDate).toLocaleDateString() : "No specific due date";
-  
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9fafb; padding: 20px;">
-      <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #1f2937; margin: 0; font-size: 24px;">📝 Reflection Assignment</h1>
-        </div>
-        
-        <div style="background: #fef3c7; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-          <h2 style="color: #92400e; margin: 0 0 10px 0; font-size: 18px;">Reflection Assignment</h2>
-          <p style="color: #92400e; margin: 0; font-size: 16px;">
-            <strong>${studentName}</strong> has been assigned a behavioral reflection to complete.
-          </p>
-        </div>
-        
-        <div style="background: #f3f4f6; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-          <h3 style="color: #374151; margin: 0 0 15px 0;">Assignment Details:</h3>
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #6b7280;">Student:</strong> ${studentName}
-          </div>
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #6b7280;">Due Date:</strong> ${dueDateText}
-          </div>
-          <div>
-            <strong style="color: #6b7280;">Reflection Prompt:</strong>
-            <div style="background: #e5e7eb; border-radius: 6px; padding: 12px; margin-top: 8px; font-style: italic;">
-              "${prompt}"
-            </div>
-          </div>
-        </div>
-        
-        <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin-bottom: 20px;">
-          <p style="margin: 0; color: #1e40af;">
-            <strong>Next Steps:</strong> ${studentName} should complete this reflection thoughtfully. You can view the response and teacher feedback in your parent portal once submitted and reviewed.
-          </p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px;">
-          <p style="color: #6b7280; margin: 0; font-size: 14px;">
-            This is an automated notification from Bush Hills STEAM Academy<br>
-            Behavioral Reflection System
-          </p>
-        </div>
-      </div>
-    </div>
-  `;
 
-  await sendEmail({
-    to: parentEmail,
-    from: FROM_EMAIL,
-    subject,
-    html
-  });
-}
 
 export async function sendParentReflectionApproval(parentEmail: string, studentName: string, prompt: string, response: string, teacherFeedback?: string) {
   const subject = `✅ ${studentName}'s Reflection Approved`;

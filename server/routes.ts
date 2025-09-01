@@ -498,6 +498,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertPbisEntrySchema.parse(req.body);
       const entry = await storage.createPbisEntry(validatedData);
       
+      // Check if this is a negative characteristic and assign reflection
+      if (entry.points < 0 || entry.entryType === 'negative') {
+        try {
+          console.log(`🔴 NEGATIVE CHARACTERISTIC: Assigning reflection for PBIS entry ${entry.id}`);
+          const defaultPrompt = `Please reflect on your behavior today regarding: ${entry.subcategory}. What happened, how did it affect others, and what will you do differently next time?`;
+          const reflection = await storage.assignReflection(
+            entry.scholarId,
+            entry.id,
+            entry.teacherName,
+            defaultPrompt,
+            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Due in 7 days
+          );
+          console.log(`✅ REFLECTION: Assigned reflection ${reflection.id} to scholar ${entry.scholarId}`);
+        } catch (reflectionError) {
+          console.error("Failed to assign reflection:", reflectionError);
+          // Continue even if reflection assignment fails
+        }
+      }
+
       // Send parent notification after successful PBIS entry creation
       try {
         const scholar = await storage.getScholar(entry.scholarId);

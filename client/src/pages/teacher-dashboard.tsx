@@ -874,9 +874,13 @@ export default function TeacherDashboard() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-white">
+                  <DropdownMenuItem onClick={() => setLocation('/teacher-dashboard')}>
+                    <Home className="h-4 w-4 mr-2" />
+                    Return to Teacher Dashboard
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation('/dashboard')}>
                     <Home className="h-4 w-4 mr-2" />
-                    Dashboard
+                    Student Dashboard
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation('/tutorial')}>
                     <BookOpen className="h-4 w-4 mr-2" />

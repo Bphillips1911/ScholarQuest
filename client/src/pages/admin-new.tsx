@@ -387,7 +387,8 @@ export default function AdminNew() {
                   <SelectValue placeholder="Main Pages" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="/dashboard">Dashboard</SelectItem>
+                  <SelectItem value="/admin">Return to Admin Dashboard</SelectItem>
+                  <SelectItem value="/dashboard">Student Dashboard</SelectItem>
                   <SelectItem value="/tutorial">Tutorial</SelectItem>
                   <SelectItem value="/houses">Houses</SelectItem>
                   <SelectItem value="/pbis">PBIS System</SelectItem>

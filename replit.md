@@ -1,6 +1,6 @@
 # Overview
 
-The "PBIS House of Champions" is a web application for Bush Hills STEAM Academy to manage a house points system. It enables students, assigned to one of five houses, to earn points for academic, attendance, and behavioral achievements. The system provides a comprehensive Positive Behavioral Interventions and Supports (PBIS) framework, featuring individual teacher dashboards for recognizing "MUSTANG" traits, a house sorting generator, and photo upload capabilities. It also displays program information for parents, incorporates the official BHSA Mustangs Crest logo, and includes robust administrator authentication with role-based permissions. A fully operational bi-directional parent-teacher messaging system with database persistence and reply functionality is included. The project aims to foster positive behavior, academic achievement, and school pride within the student body.
+The "PBIS House of Champions" is a web application for Bush Hills STEAM Academy to manage a house points system. It enables students, assigned to one of five houses (Franklin, Tesla, Curie, Nobel, Lovelace), to earn points for academic, attendance, and behavioral achievements. The system provides a comprehensive Positive Behavioral Interventions and Supports (PBIS) framework, featuring individual teacher dashboards for recognizing "MUSTANG" traits, a house sorting generator, and photo upload capabilities. It also displays program information for parents, incorporates the official BHSA Mustangs Crest logo, and includes robust administrator authentication with role-based permissions. A fully operational bi-directional parent-teacher messaging system with database persistence and reply functionality is included. The project aims to foster positive behavior, academic achievement, and school pride within the student body.
 
 # User Preferences
 
@@ -93,3 +93,17 @@ Preferred communication style: Simple, everyday language.
 - **clsx & tailwind-merge**: Conditional CSS class composition.
 - **class-variance-authority**: Type-safe component variant handling.
 - **nanoid**: URL-safe unique ID generation.
+
+# Recent Changes
+
+## House System Migration (September 2025)
+- **Completed house name migration** from legacy names (Courie, West, Blackwell, Berruguete) to modern STEAM-themed names:
+  - **Franklin** (🔬) - Innovation Through Discovery (Blue #1e40af)
+  - **Tesla** (⚡) - Electrifying Excellence (Purple #7c3aed)
+  - **Curie** (🧪) - Pioneering Progress (Red #dc2626)
+  - **Nobel** (🎯) - Excellence in Achievement (Green #059669)
+  - **Lovelace** (💻) - Coding the Future (Orange #ea580c)
+- **Updated all system components**: Database schema, navigation dropdowns, pledge page, tutorial content, badge definitions, and scholar assignments
+- **Badge system redesigned** with house-specific themes (Tesla Electrifier, Curie Scientist, Nobel Master, Lovelace Architect)
+- **Database migration completed** with all 23 scholars successfully reassigned to new house structure
+- **Parent portal and enhanced portal** verified working with new house names in all functionalities

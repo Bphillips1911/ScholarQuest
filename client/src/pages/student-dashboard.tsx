@@ -118,12 +118,12 @@ export default function StudentDashboard() {
   }
 
   const scholar: ScholarData | undefined = scholarData as ScholarData;
-  const currentHouse = houses ? houses.find((h: HouseData) => h.id === scholar?.houseId) : undefined;
-  const recentPBIS = pbisEntries ? pbisEntries.slice(0, 5) : [];
+  const currentHouse = (houses && Array.isArray(houses)) ? houses.find((h: HouseData) => h.id === scholar?.houseId) : undefined;
+  const recentPBIS = (pbisEntries && Array.isArray(pbisEntries)) ? pbisEntries.slice(0, 5) : [];
 
   // Calculate total points
   const totalPoints = (scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0);
-  const totalPBISPoints = pbisEntries ? pbisEntries.reduce((sum: number, entry: PBISEntry) => sum + entry.points, 0) : 0;
+  const totalPBISPoints = (pbisEntries && Array.isArray(pbisEntries)) ? pbisEntries.reduce((sum: number, entry: PBISEntry) => sum + entry.points, 0) : 0;
 
   // MUSTANG trait definitions
   const mustangTraits = {
@@ -309,10 +309,10 @@ export default function StudentDashboard() {
                       </div>
                     ))}
                     
-                    {pbisEntries && pbisEntries.length > 5 && (
+                    {pbisEntries && Array.isArray(pbisEntries) && pbisEntries.length > 5 && (
                       <div className="text-center pt-4">
                         <p className="text-sm text-gray-600">
-                          Showing latest 5 recognitions out of {pbisEntries.length} total
+                          Showing latest 5 recognitions out of {pbisEntries?.length || 0} total
                         </p>
                       </div>
                     )}

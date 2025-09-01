@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Gamepad2, Basketball, Car, Rocket, Clock, Lock, 
+  Gamepad2, Car, Rocket, Clock, Lock, 
   Unlock, Star, Trophy, Puzzle, Target, Zap,
-  PlayCircle, Pause, RotateCcw, Volume2
+  PlayCircle, Pause, RotateCcw, Volume2, Circle
 } from "lucide-react";
 import type { Game, GameAccess, GameSession } from "@shared/schema";
 
@@ -26,7 +26,7 @@ interface GameWithAccess extends Game {
 
 // Game category icons
 const categoryIcons = {
-  sports: Basketball,
+  sports: Circle,
   puzzle: Puzzle,
   arcade: Target,
   strategy: Zap,

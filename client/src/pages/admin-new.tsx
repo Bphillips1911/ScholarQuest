@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { GameModal } from "@/components/games/GameModal";
 import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette } from "lucide-react";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
@@ -37,6 +38,10 @@ export default function AdminNew() {
 
   // Theme state
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'normal'>('normal');
+  
+  // Game modal state
+  const [selectedGame, setSelectedGame] = useState<any>(null);
+  const [showGameModal, setShowGameModal] = useState(false);
 
   useEffect(() => {
     console.log("AdminNew component mounted");
@@ -616,9 +621,22 @@ export default function AdminNew() {
                                 <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>{game.name}</h4>
                                 <p className="text-sm" style={{color: themeStyles.textSecondary}}>{game.description}</p>
                               </div>
-                              <Badge variant={game.difficulty === 'easy' ? 'default' : game.difficulty === 'medium' ? 'secondary' : 'destructive'}>
-                                {game.difficulty}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={game.difficulty === 'easy' ? 'default' : game.difficulty === 'medium' ? 'secondary' : 'destructive'}>
+                                  {game.difficulty}
+                                </Badge>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedGame(game);
+                                    setShowGameModal(true);
+                                  }}
+                                  style={{color: themeStyles.textPrimary, borderColor: themeStyles.border}}
+                                >
+                                  Test Game
+                                </Button>
+                              </div>
                             </div>
                             <div className="flex items-center justify-between text-xs">
                               <span style={{color: themeStyles.textSecondary}}>
@@ -1083,6 +1101,18 @@ export default function AdminNew() {
           )}
         </Card>
       </div>
+
+      {/* Game Modal */}
+      {selectedGame && (
+        <GameModal
+          game={selectedGame}
+          isOpen={showGameModal}
+          onClose={() => {
+            setShowGameModal(false);
+            setSelectedGame(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { translate, getParentLanguage, formatDateInLanguage, translateMustangTrait, type Language } from "@/lib/translations";
 import { 
   User, Star, TrendingUp, Calendar, LogOut, UserPlus, Award, 
   MessageCircle, Send, Phone, Bell, GraduationCap, Home,
@@ -25,6 +26,7 @@ interface ParentData {
   firstName: string;
   lastName: string;
   phone?: string;
+  preferredLanguage?: string;
 }
 
 interface ScholarDetail {
@@ -50,6 +52,9 @@ export default function ParentPortalEnhanced() {
   const [showSendMessage, setShowSendMessage] = useState(false);
   const [showAddPhone, setShowAddPhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
+  
+  // Language support
+  const [language, setLanguage] = useState<Language>("en");
 
   // MODAL CLOSE HELPER: Centralized function to close add scholar modal
   const closeAddScholarModal = () => {
@@ -58,6 +63,21 @@ export default function ParentPortalEnhanced() {
     setStudentCredentials({ username: "", password: "" });
     setStudentIdInput("");
   };
+
+  // LANGUAGE INITIALIZATION: Set language from parent data
+  useEffect(() => {
+    try {
+      const storedParentData = localStorage.getItem("parentData");
+      if (storedParentData) {
+        const parsedParent = JSON.parse(storedParentData);
+        setParentData(parsedParent);
+        setLanguage((parsedParent.preferredLanguage as Language) || "en");
+      }
+    } catch (error) {
+      console.warn("Could not parse parent data for language");
+      setLanguage("en");
+    }
+  }, []);
 
   // KEYBOARD SUPPORT: Handle escape key to close modals
   useEffect(() => {
@@ -510,18 +530,18 @@ export default function ParentPortalEnhanced() {
             <div className="flex items-center space-x-4">
               <img src={schoolLogoPath} alt="BHSA Logo" className="h-12 w-12 rounded-full" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Enhanced Parent Portal</h1>
-                <p className="text-gray-600">Welcome back, {parentData.firstName}!</p>
+                <h1 className="text-2xl font-bold text-gray-900">{translate("parentPortal", language)}</h1>
+                <p className="text-gray-600">{translate("welcomeBack", language)}, {parentData.firstName}!</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm" onClick={() => setShowSendMessage(true)}>
                 <MessageCircle className="h-4 w-4 mr-2" />
-                Send Message
+                {translate("sendMessage", language)}
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout} data-testid="button-logout">
                 <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                {translate("logout", language)}
               </Button>
             </div>
           </div>
@@ -532,20 +552,24 @@ export default function ParentPortalEnhanced() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="my-scholars">My Scholars</TabsTrigger>
-            <TabsTrigger value="progress">Progress & Achievements</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-            <TabsTrigger value="reflections">Reflections</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="my-scholars">{translate("myScholars", language)}</TabsTrigger>
+            <TabsTrigger value="progress">
+              {translate("academic", language)} & {translate("behavior", language)}
+            </TabsTrigger>
+            <TabsTrigger value="messages">{translate("messaging", language)}</TabsTrigger>
+            <TabsTrigger value="reflections">{translate("reflections", language)}</TabsTrigger>
+            <TabsTrigger value="notifications">
+              {language === "es" ? "Notificaciones" : "Notifications"}
+            </TabsTrigger>
           </TabsList>
 
           {/* My Scholars Tab */}
           <TabsContent value="my-scholars" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">My Children</h2>
+              <h2 className="text-xl font-semibold">{translate("myScholars", language)}</h2>
               <Button onClick={() => setShowAddScholar(true)} data-testid="button-add-scholar">
                 <UserPlus className="h-4 w-4 mr-2" />
-                Add Child
+                {translate("addScholar", language)}
               </Button>
             </div>
 
@@ -553,13 +577,16 @@ export default function ParentPortalEnhanced() {
               <Card>
                 <CardContent className="text-center py-12">
                   <GraduationCap className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No children linked yet</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{translate("noScholars", language)}</h3>
                   <p className="text-gray-600 mb-4">
-                    Add your child to view their progress, achievements, and communicate with teachers.
+                    {language === "es" 
+                      ? "Agregue a su estudiante para ver su progreso, logros y comunicarse con los maestros."
+                      : "Add your child to view their progress, achievements, and communicate with teachers."
+                    }
                   </p>
                   <Button onClick={() => setShowAddScholar(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
-                    Add Your Child
+                    {translate("addScholar", language)}
                   </Button>
                 </CardContent>
               </Card>
@@ -593,21 +620,21 @@ export default function ParentPortalEnhanced() {
                       <CardContent>
                         <div className="grid grid-cols-3 gap-2 text-center">
                           <div className="bg-blue-50 p-2 rounded">
-                            <p className="text-xs text-blue-600 font-medium">Academic</p>
+                            <p className="text-xs text-blue-600 font-medium">{translate("academic", language)}</p>
                             <p className="text-lg font-bold text-blue-800">{scholar.academicPoints}</p>
                           </div>
                           <div className="bg-green-50 p-2 rounded">
-                            <p className="text-xs text-green-600 font-medium">Attendance</p>
+                            <p className="text-xs text-green-600 font-medium">{translate("attendance", language)}</p>
                             <p className="text-lg font-bold text-green-800">{scholar.attendancePoints}</p>
                           </div>
                           <div className="bg-purple-50 p-2 rounded">
-                            <p className="text-xs text-purple-600 font-medium">Behavior</p>
+                            <p className="text-xs text-purple-600 font-medium">{translate("behavior", language)}</p>
                             <p className="text-lg font-bold text-purple-800">{scholar.behaviorPoints}</p>
                           </div>
                         </div>
                         <div className="mt-4">
                           <p className="text-sm font-medium text-gray-700">
-                            Total Points: {scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints}
+                            {translate("totalPoints", language)}: {scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints}
                           </p>
                         </div>
                       </CardContent>
@@ -1400,7 +1427,7 @@ export default function ParentPortalEnhanced() {
                 <Label htmlFor="replyPriority">Priority</Label>
                 <Select 
                   value={replyForm.priority} 
-                  onValueChange={(value) => setReplyForm({...replyForm, priority: value})}
+                  onValueChange={(value) => setReplyForm({...replyForm, priority: value as "low" | "normal" | "high" | "urgent"})}
                 >
                   <SelectTrigger data-testid="select-reply-priority">
                     <SelectValue placeholder="Select priority" />

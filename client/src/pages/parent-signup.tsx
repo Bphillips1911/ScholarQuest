@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Lock, Mail, User, Phone } from "lucide-react";
+import { UserPlus, Lock, Mail, User, Phone, Globe } from "lucide-react";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 interface ParentData {
@@ -14,6 +15,7 @@ interface ParentData {
   firstName: string;
   lastName: string;
   phone?: string;
+  preferredLanguage: string;
 }
 
 export default function ParentSignup() {
@@ -23,6 +25,7 @@ export default function ParentSignup() {
     firstName: "",
     lastName: "",
     phone: "",
+    preferredLanguage: "en",
   });
   const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
@@ -197,6 +200,32 @@ export default function ParentSignup() {
                   className="pl-10"
                   data-testid="input-phone"
                 />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="preferredLanguage" className="text-sm font-medium text-gray-700 mb-2">
+                Preferred Language *
+              </Label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
+                <Select 
+                  value={formData.preferredLanguage} 
+                  onValueChange={(value) => handleInputChange("preferredLanguage", value)}
+                  data-testid="select-language"
+                >
+                  <SelectTrigger className="pl-10">
+                    <SelectValue placeholder="Select your language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en" data-testid="option-english">
+                      🇺🇸 English
+                    </SelectItem>
+                    <SelectItem value="es" data-testid="option-spanish">
+                      🇪🇸 Español (Spanish)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

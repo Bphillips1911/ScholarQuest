@@ -193,6 +193,7 @@ export const parents = pgTable("parents", {
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   phone: varchar("phone"),
+  preferredLanguage: varchar("preferred_language").notNull().default("en"), // 'en' for English, 'es' for Spanish
   scholarIds: text("scholar_ids").array().default([]), // Array of scholar IDs this parent can view
   isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -402,6 +403,7 @@ export const insertParentSchema = createInsertSchema(parents).omit({
   password: z.string().min(6),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
+  preferredLanguage: z.enum(["en", "es"]).default("en"),
 });
 
 export const insertTeacherAuthSchema = createInsertSchema(teacherAuth).omit({

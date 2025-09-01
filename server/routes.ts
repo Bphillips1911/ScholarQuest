@@ -518,8 +518,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "MUSTANG trait required for behavior points" });
       }
 
-      // Get teacher info
-      const teacher = await storage.getTeacher(req.teacher.id);
+      // Get teacher info from request (already authenticated)
+      const teacher = req.teacher;
       if (!teacher) {
         return res.status(404).json({ message: "Teacher not found" });
       }
@@ -527,14 +527,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create PBIS entry with enhanced data
       const pbisData = {
         scholarId,
-        teacherId: req.teacher.id,
         teacherName: teacher.name,
+        teacherRole: teacher.gradeRole || teacher.role || "Teacher",
         category,
         subcategory: category === "behavior" ? mustangTrait : category,
-        mustangTrait: category === "behavior" ? mustangTrait : null,
+        mustangTrait: category === "behavior" ? mustangTrait : "General",
         points: Math.abs(points) * (pointType === "negative" ? -1 : 1),
         reason,
         entryType: pointType === "negative" ? "negative" : "positive",
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
       };
 
       console.log("TEACHER PBIS: Creating entry:", pbisData);

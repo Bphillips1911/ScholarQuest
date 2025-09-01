@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
+import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
 import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette } from "lucide-react";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
@@ -453,7 +454,7 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+            <TabsList className="grid w-full grid-cols-9" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
               <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary}}>Teachers</TabsTrigger>
               <TabsTrigger value="students" style={{color: themeStyles.textPrimary}}>Students</TabsTrigger>
               <TabsTrigger value="houses" style={{color: themeStyles.textPrimary}}>Houses</TabsTrigger>
@@ -461,6 +462,7 @@ export default function AdminNew() {
               <TabsTrigger value="games" style={{color: themeStyles.textPrimary}}>Games</TabsTrigger>
               <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary}}>Messages</TabsTrigger>
               <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary}}>Reflections</TabsTrigger>
               <TabsTrigger value="exports" style={{color: themeStyles.textPrimary}}>Data Export</TabsTrigger>
             </TabsList>
 
@@ -1142,6 +1144,14 @@ export default function AdminNew() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="reflections" className="space-y-6">
+              <ReflectionLogs />
+            </TabsContent>
+
+            <TabsContent value="exports" className="space-y-6">
+              <DataExportCenter />
             </TabsContent>
           </Tabs>
 

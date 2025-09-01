@@ -3889,6 +3889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dueDate ? new Date(dueDate) : undefined
       );
 
+      console.log('✅ REFLECTION: Successfully assigned and notification sent to parent');
       res.json({ success: true, reflection });
     } catch (error) {
       console.error("Assign reflection error:", error);
@@ -3964,26 +3965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all reflections (admin)
-  app.get("/api/admin/reflections", async (req, res) => {
-    try {
-      const token = req.headers.authorization?.replace("Bearer ", "");
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
 
-      const session = await storage.getAdminSession(token);
-      if (!session || session.expiresAt < new Date()) {
-        return res.status(401).json({ message: "Invalid or expired token" });
-      }
-
-      const reflections = await storage.getAllReflections();
-      res.json(reflections);
-    } catch (error) {
-      console.error("Get admin reflections error:", error);
-      res.status(500).json({ message: "Failed to fetch reflections" });
-    }
-  });
 
   // Check and award badges endpoint (called after point changes)
   app.post("/api/student/badges/check", async (req, res) => {
@@ -4021,8 +4003,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all approved reflections for admin
   app.get('/api/admin/reflections', authenticateAdmin, async (req, res) => {
     try {
-      const allReflections = await storage.getAllReflections();
-      const approvedReflections = allReflections.filter(r => r.status === 'approved');
+      console.log('ADMIN REFLECTIONS: Fetching approved reflections...');
+      const approvedReflections = await storage.getApprovedReflections();
+      console.log(`ADMIN REFLECTIONS: Found ${approvedReflections.length} approved reflections`);
       res.json(approvedReflections);
     } catch (error) {
       console.error('Error fetching admin reflections:', error);

@@ -42,15 +42,42 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
           subject: params.subject,
         }
       ],
-      from: { email: params.from },
+      from: { 
+        email: params.from,
+        name: "Bush Hills STEAM Academy" // Improve sender reputation
+      },
+      reply_to: {
+        email: "noreply@bhsahouses25.com", // Professional no-reply address
+        name: "Bush Hills STEAM Academy - Do Not Reply"
+      },
       content: [
         ...(params.text ? [{ type: 'text/plain', value: params.text }] : []),
         ...(params.html ? [{ type: 'text/html', value: params.html }] : [])
       ],
+      // Enhanced delivery settings to avoid spam
       mail_settings: {
         sandbox_mode: {
           enable: false
         }
+      },
+      tracking_settings: {
+        click_tracking: {
+          enable: true,
+          enable_text: false
+        },
+        open_tracking: {
+          enable: true,
+          substitution_tag: "%open-track%"
+        },
+        subscription_tracking: {
+          enable: false
+        }
+      },
+      // Add headers to improve deliverability
+      headers: {
+        "X-Priority": "3",
+        "X-MSMail-Priority": "Normal",
+        "Importance": "Normal"
       }
     };
     

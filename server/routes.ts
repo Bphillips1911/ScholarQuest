@@ -559,27 +559,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Send parent notification
         try {
+          console.log("TEACHER PBIS: Getting parents for scholar:", scholarId);
           const parents = await storage.getParentsByScholarId(scholarId);
+          console.log("TEACHER PBIS: Found", parents.length, "parents for notification");
           
           for (const parent of parents) {
+            console.log("TEACHER PBIS: Preparing notification for:", parent.email);
             const notificationData = {
               parentEmail: parent.email,
               parentName: `${parent.firstName} ${parent.lastName}`,
-              studentName: `${scholar.firstName} ${scholar.lastName}`,
+              studentName: scholar.name || `${scholar.firstName || 'Student'} ${scholar.lastName || ''}`.trim(),
               teacherName: teacher.name,
               points: pbisData.points,
-              mustangTrait: mustangTrait || null,
+              mustangTrait: pbisData.mustangTrait || "General",
               category,
               subcategory: pbisData.subcategory,
               reason,
-              entryType: pointType || 'positive'
+              entryType: pbisData.entryType
             };
 
-            await sendParentPbisNotification(notificationData);
-            console.log("TEACHER PBIS: Parent notification sent to:", parent.email);
+            console.log("TEACHER PBIS: Sending notification data:", notificationData);
+            const emailSent = await sendParentPbisNotification(notificationData);
+            
+            if (emailSent) {
+              console.log("✅ TEACHER PBIS: Parent notification sent successfully to:", parent.email);
+            } else {
+              console.log("❌ TEACHER PBIS: Failed to send parent notification to:", parent.email);
+            }
           }
         } catch (emailError) {
-          console.error("TEACHER PBIS: Failed to send parent notification:", emailError);
+          console.error("❌ TEACHER PBIS: Failed to send parent notification:", emailError);
         }
       }
 

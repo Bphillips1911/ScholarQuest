@@ -689,9 +689,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getParentsByScholarId(scholarId: string): Promise<Parent[]> {
-    // This would need a junction table in a real implementation
-    // For now, return empty array
-    return [];
+    try {
+      console.log(`DATABASE: Searching for parents with scholar ID: ${scholarId}`);
+      
+      // Test direct SQL first
+      const testQuery = await db.execute(sql`SELECT * FROM parents WHERE scholar_ids @> ARRAY[${scholarId}]::text[]`);
+      console.log(`DATABASE: Direct SQL test found ${testQuery.length} parents`);
+      
+      // Query parents where the scholar_ids array contains the given scholarId
+      const parentList = await db.select()
+        .from(parents)
+        .where(sql`scholar_ids @> ARRAY[${scholarId}]::text[]`);
+      
+      console.log(`DATABASE: Found ${parentList.length} parents for scholar ${scholarId}`);
+      
+      if (parentList.length > 0) {
+        console.log(`DATABASE: Parent emails:`, parentList.map(p => p.email));
+      }
+      
+      return parentList;
+    } catch (error) {
+      console.error("DATABASE: Error in getParentsByScholarId:", error);
+      console.error("DATABASE: Error details:", error.message);
+      return [];
+    }
   }
 
   async addScholarToParent(parentId: string, scholarId: string): Promise<boolean> {

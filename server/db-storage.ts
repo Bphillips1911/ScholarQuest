@@ -350,7 +350,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPointEntries(): Promise<PointEntry[]> {
-    return await db.select().from(pointEntries).orderBy(desc(pointEntries.createdAt));
+    return await db.select().from(pointEntries).orderBy(sql`${pointEntries.createdAt} DESC`);
   }
 
   // PBIS Entry methods
@@ -401,11 +401,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPbisEntries(): Promise<PbisEntry[]> {
-    return await db.select().from(pbisEntries).orderBy(desc(pbisEntries.createdAt));
+    return await db.select().from(pbisEntries).orderBy(sql`${pbisEntries.createdAt} DESC`);
   }
 
   async getAllPbisEntries(): Promise<PbisEntry[]> {
-    return await db.select().from(pbisEntries).orderBy(desc(pbisEntries.createdAt));
+    return await db.select().from(pbisEntries).orderBy(sql`${pbisEntries.createdAt} DESC`);
   }
 
   // PBIS Photo methods
@@ -419,7 +419,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPbisPhotos(): Promise<PbisPhoto[]> {
-    return await db.select().from(pbisPhotos).orderBy(desc(pbisPhotos.createdAt));
+    return await db.select().from(pbisPhotos).orderBy(sql`${pbisPhotos.createdAt} DESC`);
   }
 
   // Parent methods
@@ -1308,7 +1308,7 @@ export class DatabaseStorage implements IStorage {
   async getReflectionsForStudent(scholarId: string): Promise<schema.Reflection[]> {
     return await db.select().from(schema.reflections)
       .where(eq(schema.reflections.scholarId, scholarId))
-      .orderBy(desc(schema.reflections.assignedAt));
+      .orderBy(sql`${schema.reflections.assignedAt} DESC`);
   }
 
   async getReflectionsForTeacher(teacherId: string): Promise<any[]> {
@@ -1321,7 +1321,7 @@ export class DatabaseStorage implements IStorage {
     .innerJoin(schema.scholars, eq(schema.reflections.scholarId, schema.scholars.id))
     .leftJoin(schema.pbisEntries, eq(schema.reflections.pbisEntryId, schema.pbisEntries.id))
     .where(eq(schema.reflections.assignedBy, teacherId))
-    .orderBy(desc(schema.reflections.assignedAt));
+    .orderBy(sql`${schema.reflections.assignedAt} DESC`);
   }
 
   async submitReflection(reflectionId: string, response: string): Promise<void> {
@@ -1437,14 +1437,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllReflections(): Promise<Reflection[]> {
-    return await db.select().from(reflections).orderBy(desc(reflections.createdAt));
+    return await db.select().from(reflections).orderBy(sql`${reflections.createdAt} DESC`);
   }
 
   async getApprovedReflections(): Promise<Reflection[]> {
     console.log('DATABASE: Fetching approved reflections...');
     const approvedReflections = await db.select().from(reflections)
       .where(eq(reflections.status, 'approved'))
-      .orderBy(desc(reflections.approvedAt));
+      .orderBy(sql`${reflections.approvedAt} DESC`);
     console.log(`DATABASE: Found ${approvedReflections.length} approved reflections`);
     return approvedReflections;
   }
@@ -1581,12 +1581,12 @@ export class DatabaseStorage implements IStorage {
     .from(reflections)
     .innerJoin(scholars, eq(reflections.scholarId, scholars.id))
     .where(inArray(scholars.id, parent.scholarIds))
-    .orderBy(desc(reflections.assignedAt));
+    .orderBy(sql`${reflections.assignedAt} DESC`);
   }
 
   // Add this method to DatabaseStorage class
   async getHouseStandings(): Promise<House[]> {
-    return await db.select().from(houses).orderBy(desc(sql`academic_points + attendance_points + behavior_points`));
+    return await db.select().from(houses).orderBy(sql`academic_points + attendance_points + behavior_points DESC`);
   }
 
   // Mood and Progress Tracking Implementation
@@ -1605,7 +1605,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(moodEntries)
       .where(eq(moodEntries.scholarId, scholarId))
-      .orderBy(desc(moodEntries.date));
+      .orderBy(sql`${moodEntries.date} DESC`);
   }
 
   async getMoodEntriesByDateRange(scholarId: string, startDate: Date, endDate: Date): Promise<MoodEntry[]> {
@@ -1618,7 +1618,7 @@ export class DatabaseStorage implements IStorage {
           sql`${moodEntries.date} <= ${endDate}`
         )
       )
-      .orderBy(desc(moodEntries.date));
+      .orderBy(sql`${moodEntries.date} DESC`);
   }
 
   async getTodayMoodEntry(scholarId: string): Promise<MoodEntry | undefined> {
@@ -1663,7 +1663,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(progressGoals)
       .where(eq(progressGoals.scholarId, scholarId))
-      .orderBy(desc(progressGoals.createdAt));
+      .orderBy(sql`${progressGoals.createdAt} DESC`);
   }
 
   async getActiveProgressGoals(scholarId: string): Promise<ProgressGoal[]> {
@@ -1675,7 +1675,7 @@ export class DatabaseStorage implements IStorage {
           eq(progressGoals.status, 'active')
         )
       )
-      .orderBy(desc(progressGoals.createdAt));
+      .orderBy(sql`${progressGoals.createdAt} DESC`);
   }
 
   async updateProgressGoal(goalId: string, progressGoal: Partial<InsertProgressGoal>): Promise<ProgressGoal | undefined> {
@@ -1718,7 +1718,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(dailyReflections)
       .where(eq(dailyReflections.scholarId, scholarId))
-      .orderBy(desc(dailyReflections.date));
+      .orderBy(sql`${dailyReflections.date} DESC`);
   }
 
   async getDailyReflectionsByDateRange(scholarId: string, startDate: Date, endDate: Date): Promise<DailyReflection[]> {
@@ -1731,7 +1731,7 @@ export class DatabaseStorage implements IStorage {
           sql`${dailyReflections.date} <= ${endDate}`
         )
       )
-      .orderBy(desc(dailyReflections.date));
+      .orderBy(sql`${dailyReflections.date} DESC`);
   }
 
   async getTodayDailyReflection(scholarId: string): Promise<DailyReflection | undefined> {

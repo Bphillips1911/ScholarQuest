@@ -1920,19 +1920,19 @@ export class PersistentDatabaseStorage implements IStorage {
 
   // Point Entries
   async getPointEntries(): Promise<PointEntry[]> {
-    return await db.select().from(pointEntries).orderBy(desc(pointEntries.createdAt));
+    return await db.select().from(pointEntries).orderBy(sql`${pointEntries.createdAt} DESC`);
   }
 
   async getPointEntriesByHouse(houseId: string): Promise<PointEntry[]> {
     return await db.select().from(pointEntries)
       .where(eq(pointEntries.houseId, houseId))
-      .orderBy(desc(pointEntries.createdAt));
+      .orderBy(sql`${pointEntries.createdAt} DESC`);
   }
 
   async getPointEntriesByScholar(scholarId: string): Promise<PointEntry[]> {
     return await db.select().from(pointEntries)
       .where(eq(pointEntries.scholarId, scholarId))
-      .orderBy(desc(pointEntries.createdAt));
+      .orderBy(sql`${pointEntries.createdAt} DESC`);
   }
 
   async createPointEntry(entry: InsertPointEntry): Promise<PointEntry> {
@@ -1942,13 +1942,13 @@ export class PersistentDatabaseStorage implements IStorage {
 
   // PBIS Entries
   async getPbisEntries(): Promise<PbisEntry[]> {
-    return await db.select().from(pbisEntries).orderBy(desc(pbisEntries.createdAt));
+    return await db.select().from(pbisEntries).orderBy(sql`${pbisEntries.createdAt} DESC`);
   }
 
   async getPbisEntriesByScholar(scholarId: string): Promise<PbisEntry[]> {
     return await db.select().from(pbisEntries)
       .where(eq(pbisEntries.scholarId, scholarId))
-      .orderBy(desc(pbisEntries.createdAt));
+      .orderBy(sql`${pbisEntries.createdAt} DESC`);
   }
 
   async createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry> {

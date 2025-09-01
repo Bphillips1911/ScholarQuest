@@ -2617,7 +2617,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export scholars data endpoint
+  // Export scholars data endpoint (default to CSV)
+  app.get("/api/admin/export/scholars", async (req, res) => {
+    try {
+      const scholars = await storage.getAllScholars();
+      const houses = await storage.getHouses();
+      
+      // Create a map for house names
+      const houseMap = new Map(houses.map(h => [h.id, h.name]));
+      
+      // Format the data for export
+      const exportData = scholars.map(scholar => ({
+        'Student Name': scholar.name,
+        'Student ID': scholar.studentId,
+        'Grade Level': scholar.grade,
+        'House Assigned': houseMap.get(scholar.houseId) || 'Not Assigned',
+        'Academic Points': scholar.academicPoints,
+        'Attendance Points': scholar.attendancePoints,
+        'Behavior Points': scholar.behaviorPoints,
+        'Total Points': scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints,
+        'Date Added': scholar.createdAt ? new Date(scholar.createdAt).toLocaleDateString() : 'N/A'
+      }));
+
+      const csv = stringify(exportData, { 
+        header: true,
+        columns: [
+          'Student Name',
+          'Student ID', 
+          'Grade Level',
+          'House Assigned',
+          'Academic Points',
+          'Attendance Points',
+          'Behavior Points',
+          'Total Points',
+          'Date Added'
+        ]
+      });
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="bhsa-scholars-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ message: 'Failed to export scholar data' });
+    }
+  });
+
+  // Export scholars data endpoint with format parameter
   app.get("/api/admin/export/scholars/:format", async (req, res) => {
     try {
       const { format } = req.params;
@@ -3475,7 +3522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           END`
         })
         .from(parentTeacherMessages)
-        .orderBy(desc(parentTeacherMessages.createdAt))
+        .orderBy(sql`${parentTeacherMessages.createdAt} DESC`)
         .limit(50);
         
         messages = drizzleMessages;

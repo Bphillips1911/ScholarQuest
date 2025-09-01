@@ -296,6 +296,17 @@ export default function StudentLearningPath() {
           </p>
         </div>
 
+        {/* Quick Access Navigation */}
+        <div className="flex justify-center mb-6">
+          <Button 
+            onClick={() => setLocation("/student-skill-tree")}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 shadow-lg"
+          >
+            <Star className="h-5 w-5" />
+            <span>View Interactive Skill Tree</span>
+          </Button>
+        </div>
+
         <Tabs defaultValue="paths" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="paths" className="flex items-center gap-2">

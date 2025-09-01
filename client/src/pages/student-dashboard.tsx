@@ -229,6 +229,15 @@ export default function StudentDashboard() {
               </Button>
               <Button 
                 variant="outline" 
+                onClick={() => setLocation("/student-skill-tree")}
+                className="flex items-center space-x-2"
+                data-testid="button-skill-tree"
+              >
+                <Star className="h-4 w-4" />
+                <span>Skill Tree</span>
+              </Button>
+              <Button 
+                variant="outline" 
                 onClick={handleLogout}
                 className="flex items-center space-x-2"
                 data-testid="button-logout"

@@ -3992,7 +3992,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/parent/reflections', authenticateParent, async (req, res) => {
     try {
       const parentId = req.session.parentId;
+      console.log('📧 PARENT REFLECTIONS: Fetching reflections for parent:', parentId);
       const reflections = await storage.getReflectionsForParent(parentId);
+      console.log(`📧 PARENT REFLECTIONS: Found ${reflections.length} reflections for parent`);
+      console.log('📧 PARENT REFLECTIONS: Reflection statuses:', reflections.map(r => ({ id: r.id, status: r.status, studentName: r.studentName })));
+      
       res.json(reflections);
     } catch (error) {
       console.error('Error fetching parent reflections:', error);

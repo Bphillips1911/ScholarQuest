@@ -78,16 +78,20 @@ export default function ParentPortal() {
   });
 
   // Fetch reflections for the parent
-  const { data: reflections = [] } = useQuery({
+  const { data: reflections = [], refetch: refetchReflections } = useQuery({
     queryKey: ["/api/parent/reflections"],
     queryFn: async () => {
+      console.log('🔍 PARENT PORTAL: Fetching reflections...');
       const response = await fetch("/api/parent/reflections", {
         headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error("Failed to fetch reflections");
-      return response.json();
+      const data = await response.json();
+      console.log('🔍 PARENT PORTAL: Received reflections:', data);
+      return data;
     },
     enabled: !!parentData,
+    refetchInterval: 30000, // Auto-refresh every 30 seconds to check for new approved reflections
   });
 
   const { data: scholarDetail } = useQuery<ScholarDetail>({
@@ -263,7 +267,11 @@ export default function ParentPortal() {
               data-testid="tab-reflections"
             >
               <FileText className="h-4 w-4 inline mr-2" />
-              Reflections
+              Reflections {reflections.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {reflections.length}
+                </Badge>
+              )}
             </button>
           </div>
         </div>

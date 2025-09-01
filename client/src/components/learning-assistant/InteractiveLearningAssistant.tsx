@@ -320,13 +320,14 @@ export function InteractiveLearningAssistant({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed bottom-20 right-6 w-96 max-h-[75vh] z-50"
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className={`shadow-xl border-2 border-${currentCharacter.color}-200 bg-white h-full flex flex-col overflow-hidden`}>
+            <div className="w-full max-w-md max-h-[80vh]">
+              <Card className={`shadow-xl border-2 border-${currentCharacter.color}-200 bg-white h-full flex flex-col overflow-hidden`}>
               {/* Header - Fixed at top */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center space-x-2">
@@ -619,16 +620,17 @@ export function InteractiveLearningAssistant({
                   </div>
                 </div>
               </div>
-            </Card>
+              </Card>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Click-away overlay */}
+      {/* Background overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0 bg-transparent z-40"
+            className="fixed inset-0 bg-black bg-opacity-25 z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

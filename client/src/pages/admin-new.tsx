@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette } from "lucide-react";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -35,10 +35,16 @@ export default function AdminNew() {
   const [photoDescription, setPhotoDescription] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
 
+  // Theme state
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'normal'>('normal');
+
   useEffect(() => {
     console.log("AdminNew component mounted");
     const token = localStorage.getItem("adminToken");
     const data = localStorage.getItem("adminData");
+    const savedTheme = localStorage.getItem("adminTheme") as 'light' | 'dark' | 'normal' || 'normal';
+    
+    setCurrentTheme(savedTheme);
     
     if (token && data) {
       try {
@@ -54,6 +60,47 @@ export default function AdminNew() {
       setLocation("/admin-login");
     }
   }, [setLocation]);
+
+  // Theme toggle function
+  const toggleTheme = () => {
+    const themes: ('light' | 'dark' | 'normal')[] = ['normal', 'light', 'dark'];
+    const currentIndex = themes.indexOf(currentTheme);
+    const nextTheme = themes[(currentIndex + 1) % themes.length];
+    setCurrentTheme(nextTheme);
+    localStorage.setItem("adminTheme", nextTheme);
+  };
+
+  // Theme styles
+  const getThemeStyles = () => {
+    switch (currentTheme) {
+      case 'dark':
+        return {
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          cardBg: '#2d3748',
+          textPrimary: '#f7fafc',
+          textSecondary: '#cbd5e0',
+          border: '#4a5568'
+        };
+      case 'light':
+        return {
+          background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 50%, #e2e8f0 100%)',
+          cardBg: '#ffffff',
+          textPrimary: '#1a202c',
+          textSecondary: '#4a5568',
+          border: '#e2e8f0'
+        };
+      default: // normal
+        return {
+          background: '#f9fafb',
+          cardBg: '#ffffff',
+          textPrimary: '#1f2937',
+          textSecondary: '#6b7280',
+          border: '#e5e7eb'
+        };
+    }
+  };
+
+  const themeStyles = getThemeStyles();
 
   // Fetch data hooks
   const { data: houses } = useQuery<House[]>({
@@ -302,10 +349,10 @@ export default function AdminNew() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#f9fafb'
+      background: themeStyles.background
     }}>
       <div style={{padding: '20px'}}>
-        <Card className="bg-white rounded-2xl shadow-lg p-8">
+        <Card className="rounded-2xl shadow-lg p-8" style={{backgroundColor: themeStyles.cardBg, border: `1px solid ${themeStyles.border}`}}>
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
             <div className="flex items-center">
               <img 
@@ -315,13 +362,28 @@ export default function AdminNew() {
                 data-testid="admin-school-logo"
               />
               <div>
-                <h2 className="text-3xl font-bold text-gray-900" data-testid="admin-title">Administration Portal</h2>
-                <p className="text-gray-600">Welcome, {adminData?.firstName} {adminData?.lastName} ({adminData?.title})</p>
+                <h2 className="text-3xl font-bold" data-testid="admin-title" style={{color: themeStyles.textPrimary}}>Administration Portal</h2>
+                <p style={{color: themeStyles.textSecondary}}>Welcome, {adminData?.firstName} {adminData?.lastName} ({adminData?.title})</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 justify-start lg:justify-end">
+              <Button
+                onClick={toggleTheme}
+                variant="outline"
+                className="flex items-center gap-2"
+                style={{
+                  backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#f7fafc' : '#ffffff',
+                  color: currentTheme === 'dark' ? '#f7fafc' : '#1a202c',
+                  borderColor: themeStyles.border
+                }}
+                data-testid="button-theme-toggle"
+              >
+                <Palette className="h-4 w-4" />
+                {currentTheme === 'normal' ? 'Normal' : currentTheme === 'light' ? 'Light' : 'Dark'}
+              </Button>
+              
               <Select onValueChange={(value) => window.location.href = value}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40" style={{backgroundColor: themeStyles.cardBg, color: themeStyles.textPrimary, borderColor: themeStyles.border}}>
                   <SelectValue placeholder="Main Pages" />
                 </SelectTrigger>
                 <SelectContent>
@@ -334,7 +396,7 @@ export default function AdminNew() {
               </Select>
               
               <Select onValueChange={(value) => window.location.href = value}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40" style={{backgroundColor: themeStyles.cardBg, color: themeStyles.textPrimary, borderColor: themeStyles.border}}>
                   <SelectValue placeholder="Reports & Tools" />
                 </SelectTrigger>
                 <SelectContent>
@@ -348,6 +410,11 @@ export default function AdminNew() {
                 onClick={handleLogout}
                 variant="outline"
                 className="flex items-center gap-2"
+                style={{
+                  backgroundColor: themeStyles.cardBg,
+                  color: themeStyles.textPrimary,
+                  borderColor: themeStyles.border
+                }}
                 data-testid="button-logout"
               >
                 <LogOut className="h-4 w-4" />
@@ -357,32 +424,32 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="teachers">Teachers</TabsTrigger>
-              <TabsTrigger value="houses">Houses</TabsTrigger>
-              <TabsTrigger value="messaging">Messages</TabsTrigger>
-              <TabsTrigger value="gallery">Gallery</TabsTrigger>
-              <TabsTrigger value="exports">Data Export</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary}}>Teachers</TabsTrigger>
+              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary}}>Houses</TabsTrigger>
+              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary}}>Messages</TabsTrigger>
+              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
+              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary}}>Data Export</TabsTrigger>
             </TabsList>
 
 
 
             <TabsContent value="teachers" className="space-y-6">
-              <Card>
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
-                  <CardTitle>Teacher Management</CardTitle>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Teacher Management</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 mb-4">Manage teacher approvals and access</p>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-4">Manage teacher approvals and access</p>
                   {pendingTeachers && pendingTeachers.length > 0 ? (
                     <div className="space-y-4">
                       {pendingTeachers.map((teacher) => (
-                        <div key={teacher.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                        <div key={teacher.id} className="flex items-center justify-between p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : '#f9fafb', borderColor: themeStyles.border}}>
                           <div className="flex-1">
-                            <p className="font-medium">{teacher.firstName} {teacher.lastName}</p>
-                            <p className="text-sm text-gray-500">{teacher.email}</p>
-                            <p className="text-sm text-gray-600">{teacher.gradeRole} • {teacher.subject}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="font-medium" style={{color: themeStyles.textPrimary}}>{teacher.firstName} {teacher.lastName}</p>
+                            <p className="text-sm" style={{color: themeStyles.textSecondary}}>{teacher.email}</p>
+                            <p className="text-sm" style={{color: themeStyles.textSecondary}}>{teacher.gradeRole} • {teacher.subject}</p>
+                            <p className="text-xs" style={{color: themeStyles.textSecondary}}>
                               Applied: {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'Recently'}
                             </p>
                           </div>
@@ -400,8 +467,8 @@ export default function AdminNew() {
                   ) : (
                     <div className="text-center py-8">
                       <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-                      <p className="text-gray-500">No pending teacher approvals</p>
-                      <p className="text-sm text-gray-400">All teachers have been approved</p>
+                      <p style={{color: themeStyles.textSecondary}}>No pending teacher approvals</p>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>All teachers have been approved</p>
                     </div>
                   )}
                 </CardContent>
@@ -409,19 +476,19 @@ export default function AdminNew() {
             </TabsContent>
 
             <TabsContent value="houses" className="space-y-6">
-              <Card>
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
-                  <CardTitle>House Overview</CardTitle>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>House Overview</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {houses && houses.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {houses.map((house) => (
-                        <div key={house.id} className="p-4 border rounded-lg">
+                        <div key={house.id} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : '#ffffff', borderColor: themeStyles.border}}>
                           <h3 className="font-bold" style={{color: house.color}}>
                             {house.name}
                           </h3>
-                          <p className="text-sm text-gray-600">{house.description}</p>
+                          <p className="text-sm" style={{color: themeStyles.textSecondary}}>{house.description}</p>
                           <div className="mt-2">
                             <Badge>
                               {allScholars?.filter(s => s.houseId === house.id).length || 0} students
@@ -431,7 +498,7 @@ export default function AdminNew() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500">Loading houses...</p>
+                    <p style={{color: themeStyles.textSecondary}}>Loading houses...</p>
                   )}
                 </CardContent>
               </Card>

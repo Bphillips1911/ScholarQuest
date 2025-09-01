@@ -69,6 +69,32 @@ export default function StudentLearningPath() {
   const [studentData, setStudentData] = useState<any>(null);
   const [selectedPath, setSelectedPath] = useState<LearningPath | null>(null);
 
+  // Handler functions for Learning Path buttons
+  const handleContinueLearning = (path: LearningPath) => {
+    // Navigate based on path category to continue learning
+    switch (path.category) {
+      case 'academic':
+        setLocation("/student-skill-tree");
+        break;
+      case 'behavioral':
+        setLocation("/student-mood-tracker");
+        break;
+      case 'social':
+        setLocation("/student-skill-tree");
+        break;
+      case 'creative':
+        setLocation("/student-skill-tree");
+        break;
+      default:
+        setLocation("/student-dashboard");
+    }
+  };
+
+  const handleViewDetails = (path: LearningPath) => {
+    // Show detailed information about the learning path
+    alert(`Learning Path: ${path.title}\n\nDescription: ${path.description}\n\nNext Step: ${path.currentStep}\n\nSkills to Develop:\n${path.skills.join(', ')}\n\nNext Milestone: ${path.nextMilestone}`);
+  };
+
   // Authentication check
   useEffect(() => {
     if (!isStudentAuthenticated()) {
@@ -108,6 +134,11 @@ export default function StudentLearningPath() {
     enabled: !!studentData,
   });
 
+  // HIGH MILESTONE LEARNING PATHS - Set ambitious goals to motivate scholars
+  const ACADEMIC_MILESTONES = [50, 100, 200, 500, 1000];
+  const BEHAVIOR_MILESTONES = [30, 75, 150, 300, 600];
+  const HOUSE_MILESTONES = [100, 250, 500, 1000, 2000];
+
   // Generate personalized learning paths based on student data
   const generateLearningPaths = (): LearningPath[] => {
     if (!profile) return [];
@@ -116,69 +147,109 @@ export default function StudentLearningPath() {
     const academicPoints = profile.academicPoints || 0;
     const behaviorPoints = profile.behaviorPoints || 0;
     const attendancePoints = profile.attendancePoints || 0;
+    const totalPoints = academicPoints + behaviorPoints + attendancePoints;
 
-    // Academic Excellence Path
-    if (academicPoints < 50) {
+    // Academic Excellence Journey - HIGH MILESTONES
+    const getAcademicMilestone = () => {
+      const nextMilestone = ACADEMIC_MILESTONES.find(m => m > academicPoints);
+      return nextMilestone || 1000;
+    };
+    
+    const academicProgress = Math.min(academicPoints / getAcademicMilestone(), 1);
+    const academicSteps = Math.floor(academicProgress * 10);
+    
+    if (academicPoints < 1000) {
       paths.push({
         id: 'academic-excellence',
         title: 'Academic Excellence Journey',
-        description: 'Master core subjects and develop strong study habits',
+        description: 'Master core subjects through consistent excellence and achievement',
         category: 'academic',
         totalSteps: 10,
-        completedSteps: Math.max(0, Math.floor((academicPoints + 50) / 10)),
-        currentStep: 'Complete daily assignments consistently',
-        estimatedCompletion: '6 weeks',
-        difficulty: 'intermediate',
-        skills: ['Critical Thinking', 'Research Skills', 'Time Management'],
-        nextMilestone: 'Achieve 25 academic points'
+        completedSteps: academicSteps,
+        currentStep: academicPoints < 50 ? 'Demonstrate consistent daily performance' : 
+                    academicPoints < 200 ? 'Excel in challenging assignments and assessments' :
+                    'Lead academic projects and mentor peers',
+        estimatedCompletion: academicPoints < 100 ? '3-4 months' : academicPoints < 500 ? '6-8 months' : '1 year',
+        difficulty: academicPoints < 100 ? 'beginner' : academicPoints < 500 ? 'intermediate' : 'advanced',
+        skills: ['Critical Thinking', 'Research Excellence', 'Academic Leadership', 'Study Mastery'],
+        nextMilestone: `Reach ${getAcademicMilestone()} academic points`
       });
     }
 
-    // MUSTANG Character Path
-    if (behaviorPoints < 100) {
+    // MUSTANG Character Development - HIGH STANDARDS
+    const getBehaviorMilestone = () => {
+      const nextMilestone = BEHAVIOR_MILESTONES.find(m => m > behaviorPoints);
+      return nextMilestone || 600;
+    };
+    
+    const behaviorProgress = Math.min(behaviorPoints / getBehaviorMilestone(), 1);
+    const behaviorSteps = Math.floor(behaviorProgress * 7);
+    
+    if (behaviorPoints < 600) {
       paths.push({
         id: 'mustang-character',
         title: 'MUSTANG Character Development',
-        description: 'Embody the MUSTANG traits in daily interactions',
+        description: 'Embody all MUSTANG traits and become a character role model',
         category: 'behavioral',
         totalSteps: 7,
-        completedSteps: Math.floor(behaviorPoints / 15),
-        currentStep: 'Practice "Make good choices" consistently',
-        estimatedCompletion: '4 weeks',
-        difficulty: 'beginner',
-        skills: ['Leadership', 'Empathy', 'Responsibility'],
-        nextMilestone: 'Earn recognition for 3 MUSTANG traits'
+        completedSteps: behaviorSteps,
+        currentStep: behaviorPoints < 30 ? 'Practice basic MUSTANG traits daily' :
+                    behaviorPoints < 150 ? 'Consistently demonstrate character excellence' :
+                    'Mentor others in character development',
+        estimatedCompletion: behaviorPoints < 75 ? '2-3 months' : behaviorPoints < 300 ? '4-6 months' : '8-12 months',
+        difficulty: behaviorPoints < 75 ? 'beginner' : behaviorPoints < 300 ? 'intermediate' : 'advanced',
+        skills: ['Character Leadership', 'Integrity', 'Empathy', 'Responsibility', 'School Pride'],
+        nextMilestone: `Earn ${getBehaviorMilestone()} behavior points`
       });
     }
 
-    // House Leadership Path
-    paths.push({
-      id: 'house-leadership',
-      title: 'House Leadership Track',
-      description: 'Become a leader in your house community',
-      category: 'social',
-      totalSteps: 8,
-      completedSteps: Math.floor(Math.random() * 4) + 1,
-      currentStep: 'Mentor younger house members',
-      estimatedCompletion: '8 weeks',
-      difficulty: 'advanced',
-      skills: ['Communication', 'Teamwork', 'Mentoring'],
-      nextMilestone: 'Lead a house project'
-    });
+    // House Leadership Track - TOTAL CONTRIBUTION
+    const getHouseMilestone = () => {
+      const nextMilestone = HOUSE_MILESTONES.find(m => m > totalPoints);
+      return nextMilestone || 2000;
+    };
+    
+    const houseProgress = Math.min(totalPoints / getHouseMilestone(), 1);
+    const houseSteps = Math.floor(houseProgress * 8);
+    
+    if (totalPoints < 2000) {
+      paths.push({
+        id: 'house-leadership',
+        title: 'House Leadership Track',
+        description: 'Become a champion and leader who elevates your entire house',
+        category: 'social',
+        totalSteps: 8,
+        completedSteps: houseSteps,
+        currentStep: totalPoints < 100 ? 'Contribute consistently to house success' :
+                    totalPoints < 500 ? 'Take initiative in house activities' :
+                    'Lead major house initiatives and mentor members',
+        estimatedCompletion: totalPoints < 250 ? '4-6 months' : totalPoints < 1000 ? '8-12 months' : '1-2 years',
+        difficulty: totalPoints < 250 ? 'beginner' : totalPoints < 1000 ? 'intermediate' : 'advanced',
+        skills: ['House Leadership', 'Team Building', 'Mentoring', 'Strategic Thinking', 'Pride & Unity'],
+        nextMilestone: `Contribute ${getHouseMilestone()} total points to your house`
+      });
+    }
 
-    // STEAM Innovation Path
+    // STEAM Innovation Explorer - CREATIVE EXCELLENCE
+    const steamProgress = Math.min(academicPoints / 300, 1);
+    const steamSteps = Math.floor(steamProgress * 12);
+    
     paths.push({
       id: 'steam-innovation',
       title: 'STEAM Innovation Explorer',
-      description: 'Explore science, technology, engineering, arts, and math',
+      description: 'Apply science, technology, engineering, arts, and math to solve real-world challenges',
       category: 'creative',
       totalSteps: 12,
-      completedSteps: Math.floor(Math.random() * 6) + 2,
-      currentStep: 'Complete a design thinking project',
-      estimatedCompletion: '10 weeks',
-      difficulty: 'intermediate',
-      skills: ['Problem Solving', 'Creativity', 'Innovation'],
-      nextMilestone: 'Present project to school community'
+      completedSteps: steamSteps,
+      currentStep: academicPoints < 75 ? 'Complete foundational STEAM projects' :
+                  academicPoints < 200 ? 'Design and build innovative solutions' :
+                  'Lead community innovation projects',
+      estimatedCompletion: academicPoints < 150 ? '6-8 months' : academicPoints < 400 ? '10-12 months' : '1-2 years',
+      difficulty: academicPoints < 150 ? 'beginner' : academicPoints < 400 ? 'intermediate' : 'advanced',
+      skills: ['Innovation Design', 'Problem Solving', 'Technical Skills', 'Creative Thinking', 'Project Leadership'],
+      nextMilestone: academicPoints < 150 ? 'Complete first innovation project (150 academic points)' :
+                    academicPoints < 400 ? 'Lead a community innovation challenge (400 academic points)' :
+                    'Achieve STEAM Innovation Master status (750 academic points)'
     });
 
     return paths;
@@ -649,8 +720,18 @@ export default function StudentLearningPath() {
               </div>
 
               <div className="flex gap-2">
-                <Button className="flex-1">Continue Learning</Button>
-                <Button variant="outline">View Details</Button>
+                <Button 
+                  className="flex-1"
+                  onClick={() => handleContinueLearning(selectedPath)}
+                >
+                  Continue Learning
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleViewDetails(selectedPath)}
+                >
+                  View Details
+                </Button>
               </div>
             </CardContent>
           </Card>

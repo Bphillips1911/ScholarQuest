@@ -35,7 +35,7 @@ import {
   type InsertProgressGoal,
   type InsertDailyReflection,
 } from "@shared/schema";
-import { sendParentReflectionNotification, sendReflectionApprovedNotification } from "./emailService";
+import { sendParentReflectionNotification, sendReflectionApprovedNotification, sendReflectionRejectedNotification } from "./emailService";
 import * as schema from "@shared/schema";
 import { 
   houses, 
@@ -1357,26 +1357,33 @@ export class DatabaseStorage implements IStorage {
     return reflection;
   }
 
-  async reviewReflection(reflectionId: string, status: string, reviewedBy: string, feedback?: string): Promise<Reflection> {
+  async reviewReflection(reflectionId: string, status: string, reviewedBy: string, feedback?: string, rejectionReason?: string, customReason?: string): Promise<Reflection> {
+    const updateData: any = {
+      status: status === 'rejected' ? 'assigned' : status, // Reset to assigned if rejected so student can resubmit
+      teacherFeedback: feedback,
+      approvedBy: reviewedBy,
+    };
+
+    // Only set approvedAt for approved reflections
+    if (status === 'approved') {
+      updateData.approvedAt = new Date();
+    }
+
     const [reflection] = await db.update(reflections)
-      .set({
-        status,
-        teacherFeedback: feedback,
-        approvedBy: reviewedBy,
-        approvedAt: new Date()
-      })
+      .set(updateData)
       .where(eq(reflections.id, reflectionId))
       .returning();
 
-    // Send email notification to parent when reflection is approved
+    // Send email notification to parent
     if (status === 'approved') {
       try {
         const scholar = await this.getScholar(reflection.scholarId);
         if (scholar && reflection.response) {
           const parent = await this.getParentByScholarId(reflection.scholarId);
           if (parent) {
-            await sendParentReflectionApproval(
+            await sendReflectionApprovedNotification(
               parent.email,
+              `${parent.firstName} ${parent.lastName}`,
               `${scholar.firstName} ${scholar.lastName}`,
               reflection.prompt,
               reflection.response,
@@ -1387,6 +1394,26 @@ export class DatabaseStorage implements IStorage {
         }
       } catch (error) {
         console.error("Error sending reflection approved notification:", error);
+      }
+    } else if (status === 'rejected') {
+      try {
+        const scholar = await this.getScholar(reflection.scholarId);
+        if (scholar && reflection.response) {
+          const parent = await this.getParentByScholarId(reflection.scholarId);
+          if (parent) {
+            await sendReflectionRejectedNotification(
+              parent.email,
+              `${parent.firstName} ${parent.lastName}`,
+              `${scholar.firstName} ${scholar.lastName}`,
+              reflection.prompt,
+              reflection.response,
+              customReason || rejectionReason || feedback
+            );
+            console.log('📧 REFLECTION: Sent rejection notification to parent:', parent.email);
+          }
+        }
+      } catch (error) {
+        console.error("Error sending reflection rejected notification:", error);
       }
     }
 

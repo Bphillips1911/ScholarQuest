@@ -893,3 +893,67 @@ export async function sendParentReflectionApproval(parentEmail: string, studentN
     html
   });
 }
+
+export async function sendReflectionRejectedNotification(parentEmail: string, parentName: string, studentName: string, reflectionPrompt: string, studentResponse: string, rejectionReason?: string): Promise<boolean> {
+  const subject = "Reflection Needs Revision - " + studentName;
+  const text = `Dear ${parentName},
+
+The behavioral reflection submitted by your child, ${studentName}, at Bush Hills STEAM Academy requires revision before approval.
+
+Original Assignment:
+"${reflectionPrompt}"
+
+Student's Response:
+"${studentResponse}"
+
+Teacher's Feedback:
+${rejectionReason || "Please provide more detail and thoughtful reflection on the behavior and future improvements."}
+
+Your child will need to revise and resubmit their reflection. This is an opportunity for ${studentName} to provide a more thoughtful response that demonstrates understanding of the behavior and commitment to positive change.
+
+You can view the reflection status in your parent portal. We will notify you when the revised reflection has been submitted and reviewed.
+
+If you have any questions, please don't hesitate to contact us.
+
+Best regards,
+Bush Hills STEAM Academy`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">🔄 Bush Hills STEAM Academy - Reflection Needs Revision</h2>
+      <p>Dear ${parentName},</p>
+      <p>The behavioral reflection submitted by your child, <strong>${studentName}</strong>, at Bush Hills STEAM Academy requires revision before approval.</p>
+      
+      <div style="background: #f8f9fa; border-left: 4px solid #6c757d; padding: 15px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #495057;">Original Assignment:</h3>
+        <p style="font-style: italic;">"${reflectionPrompt}"</p>
+      </div>
+      
+      <div style="background: #f8f9fa; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #0c5460;">Student's Response:</h3>
+        <p style="font-style: italic;">"${studentResponse}"</p>
+      </div>
+      
+      <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #856404;">Teacher's Feedback:</h3>
+        <p style="margin-bottom: 0;">${rejectionReason || "Please provide more detail and thoughtful reflection on the behavior and future improvements."}</p>
+      </div>
+      
+      <p>Your child will need to revise and resubmit their reflection. This is an opportunity for ${studentName} to provide a more thoughtful response that demonstrates understanding of the behavior and commitment to positive change.</p>
+      
+      <p>You can view the reflection status in your parent portal. We will notify you when the revised reflection has been submitted and reviewed.</p>
+      
+      <p>If you have any questions, please don't hesitate to contact us.</p>
+      
+      <p>Best regards,<br>Bush Hills STEAM Academy</p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: parentEmail,
+    from: FROM_EMAIL,
+    subject,
+    text,
+    html
+  });
+}

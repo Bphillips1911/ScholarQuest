@@ -3,6 +3,7 @@ import { X, Clock, CheckCircle, XCircle, Send } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -33,12 +34,36 @@ export function TeacherReflectionModal({
   studentName = "Student" 
 }: TeacherReflectionModalProps) {
   const [feedback, setFeedback] = useState(reflection.teacherFeedback || "");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [showRejectOptions, setShowRejectOptions] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const predefinedReasons = [
+    "Insufficient detail",
+    "Off-topic response", 
+    "Inappropriate language",
+    "Does not show understanding",
+    "Needs more reflection on impact",
+    "Response too brief",
+    "Missing personal accountability",
+    "Custom reason"
+  ];
+
   const reviewReflection = useMutation({
-    mutationFn: async ({ status, feedbackText }: { status: 'approved' | 'rejected'; feedbackText?: string }) => {
-      return apiRequest("POST", `/api/teacher/reflections/${reflection.id}/review`, { status, feedback: feedbackText });
+    mutationFn: async ({ status, feedbackText, rejectionReason, customReason }: { 
+      status: 'approved' | 'rejected'; 
+      feedbackText?: string;
+      rejectionReason?: string;
+      customReason?: string;
+    }) => {
+      return apiRequest("POST", `/api/teacher/reflections/${reflection.id}/review`, { 
+        status, 
+        feedback: feedbackText,
+        rejectionReason,
+        customReason 
+      });
     },
     onSuccess: (_, variables) => {
       toast({
@@ -182,6 +207,44 @@ export function TeacherReflectionModal({
             )}
           </div>
 
+          {/* Rejection Reason Selection */}
+          {canReview && showRejectOptions && (
+            <div className="space-y-4 border-t pt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Reason for Rejection
+                </label>
+                <Select value={rejectionReason} onValueChange={setRejectionReason}>
+                  <SelectTrigger data-testid="select-rejection-reason">
+                    <SelectValue placeholder="Select a reason..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {predefinedReasons.map((reason) => (
+                      <SelectItem key={reason} value={reason}>
+                        {reason}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {rejectionReason === "Custom reason" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Custom Rejection Reason
+                  </label>
+                  <Textarea
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    placeholder="Please specify the reason for rejection..."
+                    className="min-h-[80px] resize-none"
+                    data-testid="textarea-custom-reason"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Timestamps */}
           <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 border-t pt-4">
             <div>Assigned: {new Date(reflection.assignedAt).toLocaleString()}</div>
@@ -220,15 +283,15 @@ export function TeacherReflectionModal({
               Close
             </Button>
             
-            {canReview && (
+            {canReview && !showRejectOptions && (
               <>
                 <Button
                   variant="destructive"
-                  onClick={() => reviewReflection.mutate({ status: 'rejected', feedbackText: feedback })}
+                  onClick={() => setShowRejectOptions(true)}
                   disabled={reviewReflection.isPending}
                   data-testid="button-reject-reflection"
                 >
-                  {reviewReflection.isPending ? 'Processing...' : 'Reject'}
+                  Reject
                 </Button>
                 <Button
                   onClick={() => reviewReflection.mutate({ status: 'approved', feedbackText: feedback })}
@@ -236,6 +299,45 @@ export function TeacherReflectionModal({
                   data-testid="button-approve-reflection"
                 >
                   {reviewReflection.isPending ? 'Processing...' : 'Approve'}
+                </Button>
+              </>
+            )}
+            
+            {canReview && showRejectOptions && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRejectOptions(false);
+                    setRejectionReason("");
+                    setCustomReason("");
+                  }}
+                  data-testid="button-cancel-reject"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (!rejectionReason && !customReason) {
+                      toast({
+                        title: "Error",
+                        description: "Please select a rejection reason",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    reviewReflection.mutate({ 
+                      status: 'rejected', 
+                      feedbackText: feedback,
+                      rejectionReason: rejectionReason === "Custom reason" ? undefined : rejectionReason,
+                      customReason: rejectionReason === "Custom reason" ? customReason : undefined
+                    });
+                  }}
+                  disabled={reviewReflection.isPending}
+                  data-testid="button-confirm-reject"
+                >
+                  {reviewReflection.isPending ? 'Processing...' : 'Confirm Rejection'}
                 </Button>
               </>
             )}

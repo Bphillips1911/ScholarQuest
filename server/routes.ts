@@ -3961,15 +3961,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Review reflection (teacher)
   app.post("/api/teacher/reflections/:reflectionId/review", authenticateTeacher, async (req: any, res) => {
     try {
-
       const { reflectionId } = req.params;
-      const { status, feedback } = req.body;
+      const { status, feedback, rejectionReason, customReason } = req.body;
 
       if (!status || !['approved', 'rejected'].includes(status)) {
         return res.status(400).json({ message: "Valid status required (approved/rejected)" });
       }
 
-      await storage.reviewReflection(reflectionId, status, req.teacher.id, feedback);
+      // For rejections, we need either a predefined reason or custom reason
+      if (status === 'rejected') {
+        if (!rejectionReason && !customReason) {
+          return res.status(400).json({ message: "Rejection reason required" });
+        }
+      }
+
+      const finalFeedback = status === 'rejected' 
+        ? (customReason || rejectionReason) 
+        : feedback;
+
+      await storage.reviewReflection(reflectionId, status, req.teacher.id, finalFeedback, rejectionReason, customReason);
       res.json({ message: `Reflection ${status} successfully` });
     } catch (error) {
       console.error("Review reflection error:", error);

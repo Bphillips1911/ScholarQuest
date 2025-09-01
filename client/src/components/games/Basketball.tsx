@@ -273,8 +273,8 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
   }, [balls, shootAngle, gameState]);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg">
+    <div className="w-full h-full flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Target className="w-6 h-6 text-orange-500" />
           <span className="text-xl font-bold">Basketball Shootout</span>
@@ -285,7 +285,8 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col space-y-4 p-4">
+      <div className="flex-1 overflow-auto">
+        <div className="flex flex-col space-y-4 p-4">
           {/* Game Canvas */}
           <div className="flex justify-center">
             <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
@@ -422,6 +423,7 @@ export function BasketballGame({ onGameComplete, onExit }: BasketballGameProps) 
               <p>• Score as many baskets as possible in 60 seconds!</p>
             </div>
           )}
+        </div>
       </div>
     </div>
   );

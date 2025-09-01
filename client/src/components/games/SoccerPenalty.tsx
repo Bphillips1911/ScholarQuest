@@ -192,8 +192,8 @@ export function SoccerPenalty({ onGameComplete, onExit }: SoccerPenaltyProps) {
   }, [gameState, score, attempts, onGameComplete]);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg">
+    <div className="w-full h-full flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Target className="w-6 h-6 text-green-500" />
           <span className="text-xl font-bold">Soccer Penalty Kicks</span>
@@ -204,7 +204,8 @@ export function SoccerPenalty({ onGameComplete, onExit }: SoccerPenaltyProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col space-y-4 p-4">
+      <div className="flex-1 overflow-auto">
+        <div className="flex flex-col space-y-4 p-4">
         <div className="flex justify-center">
           <canvas
             ref={canvasRef}
@@ -281,6 +282,7 @@ export function SoccerPenalty({ onGameComplete, onExit }: SoccerPenaltyProps) {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

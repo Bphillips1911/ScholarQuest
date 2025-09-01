@@ -112,44 +112,46 @@ export function GameModal({ game, isOpen, onClose }: GameModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] max-h-[98vh] w-[95vw] h-[95vh] overflow-hidden p-2">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <DialogTitle className="text-xl font-bold">{game.name}</DialogTitle>
-              <Badge variant={game.difficulty === 'easy' ? 'default' : game.difficulty === 'medium' ? 'secondary' : 'destructive'}>
-                {game.difficulty}
-              </Badge>
+      <DialogContent className="max-w-[98vw] max-h-[98vh] w-[95vw] h-[95vh] overflow-hidden p-0">
+        <div className="flex flex-col h-full">
+          <DialogHeader className="p-4 border-b bg-gray-50 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <DialogTitle className="text-xl font-bold">{game.name}</DialogTitle>
+                <Badge variant={game.difficulty === 'easy' ? 'default' : game.difficulty === 'medium' ? 'secondary' : 'destructive'}>
+                  {game.difficulty}
+                </Badge>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-8 w-8 hover:bg-gray-200"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-6 w-6"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <DialogDescription className="text-gray-600 text-left mt-2">
+              {game.description}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto">
+            <div className="h-full w-full p-2">
+              {renderGame()}
+            </div>
           </div>
-          <DialogDescription className="text-gray-600 text-left">
-            {game.description}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full w-full">
-            {renderGame()}
-          </div>
+          
+          {gameScore !== null && gameTime !== null && (
+            <div className="m-4 p-4 bg-green-50 rounded-lg border border-green-200 flex-shrink-0">
+              <h3 className="font-semibold text-green-800 mb-2">Game Complete!</h3>
+              <div className="flex gap-4 text-sm">
+                <span className="text-green-700">Score: {gameScore}</span>
+                <span className="text-green-700">Time: {Math.round(gameTime / 1000)}s</span>
+              </div>
+            </div>
+          )}
         </div>
-
-        {gameScore !== null && gameTime !== null && (
-          <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h3 className="font-semibold text-green-800 mb-2">Game Complete!</h3>
-            <div className="flex gap-4 text-sm">
-              <span className="text-green-700">Score: {gameScore}</span>
-              <span className="text-green-700">Time: {Math.round(gameTime / 1000)}s</span>
-            </div>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );

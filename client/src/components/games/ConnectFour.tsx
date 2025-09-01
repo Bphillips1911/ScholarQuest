@@ -119,8 +119,8 @@ export function ConnectFour({ onGameComplete, onExit }: ConnectFourProps) {
   }, [gameState, winner, startTime, onGameComplete]);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg">
+    <div className="w-full h-full flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Users className="w-6 h-6 text-blue-500" />
           <span className="text-xl font-bold">Connect Four</span>
@@ -137,7 +137,8 @@ export function ConnectFour({ onGameComplete, onExit }: ConnectFourProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col space-y-4 p-4">
+      <div className="flex-1 overflow-auto">
+        <div className="flex flex-col space-y-4 p-4">
         {gameState === 'ready' && (
           <div className="text-center space-y-4">
             <Button onClick={startGame} size="lg" className="bg-blue-600 hover:bg-blue-700">
@@ -212,6 +213,7 @@ export function ConnectFour({ onGameComplete, onExit }: ConnectFourProps) {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

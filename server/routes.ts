@@ -1039,6 +1039,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: parent.email,
           firstName: parent.firstName,
           lastName: parent.lastName,
+          preferredLanguage: parent.preferredLanguage,
         },
       });
     } catch (error) {
@@ -1112,6 +1113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: parent.firstName,
           lastName: parent.lastName,
           phone: parent.phone,
+          preferredLanguage: parent.preferredLanguage,
         },
       });
     } catch (error) {

@@ -539,6 +539,15 @@ export default function ParentPortalEnhanced() {
                 <MessageCircle className="h-4 w-4 mr-2" />
                 {translate("sendMessage", language)}
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setLanguage(language === "en" ? "es" : "en")}
+                data-testid="button-toggle-language"
+                title={language === "en" ? "Cambiar a Español" : "Switch to English"}
+              >
+                {language === "en" ? "ES" : "EN"}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleLogout} data-testid="button-logout">
                 <LogOut className="h-4 w-4 mr-2" />
                 {translate("logout", language)}
@@ -1389,10 +1398,12 @@ export default function ParentPortalEnhanced() {
             <CardContent className="space-y-4">
               {/* Original Message Reference */}
               <div className="bg-gray-50 p-4 rounded-lg border">
-                <h4 className="font-medium text-sm text-gray-700 mb-2">Original Message:</h4>
+                <h4 className="font-medium text-sm text-gray-700 mb-2">
+                  {language === "es" ? "Mensaje Original:" : "Original Message:"}
+                </h4>
                 <div className="text-sm">
-                  <p><strong>Subject:</strong> {selectedMessage.subject}</p>
-                  <p><strong>About:</strong> {selectedMessage.scholarName || 'General'}</p>
+                  <p><strong>{language === "es" ? "Asunto:" : "Subject:"}</strong> {selectedMessage.subject}</p>
+                  <p><strong>{language === "es" ? "Acerca de:" : "About:"}</strong> {selectedMessage.scholarName || (language === "es" ? "General" : "General")}</p>
                   <div className="mt-2 p-3 bg-white rounded border-l-4 border-blue-500">
                     <p className="text-gray-700">{selectedMessage.message}</p>
                   </div>
@@ -1401,42 +1412,42 @@ export default function ParentPortalEnhanced() {
 
               {/* Reply Form */}
               <div>
-                <Label htmlFor="replySubject">Subject</Label>
+                <Label htmlFor="replySubject">{language === "es" ? "Asunto" : "Subject"}</Label>
                 <Input
                   id="replySubject"
                   value={replyForm.subject}
                   onChange={(e) => setReplyForm({...replyForm, subject: e.target.value})}
-                  placeholder="Enter reply subject"
+                  placeholder={language === "es" ? "Ingrese el asunto de la respuesta" : "Enter reply subject"}
                   data-testid="input-reply-subject"
                 />
               </div>
               
               <div>
-                <Label htmlFor="replyMessage">Message</Label>
+                <Label htmlFor="replyMessage">{language === "es" ? "Mensaje" : "Message"}</Label>
                 <textarea
                   id="replyMessage"
                   value={replyForm.message}
                   onChange={(e) => setReplyForm({...replyForm, message: e.target.value})}
-                  placeholder="Type your reply message here..."
+                  placeholder={language === "es" ? "Escriba su mensaje de respuesta aquí..." : "Type your reply message here..."}
                   className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   data-testid="textarea-reply-message"
                 />
               </div>
 
               <div>
-                <Label htmlFor="replyPriority">Priority</Label>
+                <Label htmlFor="replyPriority">{language === "es" ? "Prioridad" : "Priority"}</Label>
                 <Select 
                   value={replyForm.priority} 
                   onValueChange={(value) => setReplyForm({...replyForm, priority: value as "low" | "normal" | "high" | "urgent"})}
                 >
                   <SelectTrigger data-testid="select-reply-priority">
-                    <SelectValue placeholder="Select priority" />
+                    <SelectValue placeholder={language === "es" ? "Seleccionar prioridad" : "Select priority"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="low">{language === "es" ? "Baja" : "Low"}</SelectItem>
+                    <SelectItem value="normal">{language === "es" ? "Normal" : "Normal"}</SelectItem>
+                    <SelectItem value="high">{language === "es" ? "Alta" : "High"}</SelectItem>
+                    <SelectItem value="urgent">{language === "es" ? "Urgente" : "Urgent"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1444,7 +1455,10 @@ export default function ParentPortalEnhanced() {
               <div className="bg-blue-50 p-3 rounded border border-blue-200">
                 <p className="text-sm text-blue-700">
                   <Phone className="h-4 w-4 inline mr-1" />
-                  You'll receive an SMS confirmation when your reply is sent.
+                  {language === "es" 
+                    ? "Recibirá confirmación por SMS cuando se envíe su respuesta."
+                    : "You'll receive an SMS confirmation when your reply is sent."
+                  }
                 </p>
               </div>
 
@@ -1453,8 +1467,10 @@ export default function ParentPortalEnhanced() {
                   onClick={() => {
                     if (!replyForm.subject.trim() || !replyForm.message.trim()) {
                       toast({
-                        title: "Missing information",
-                        description: "Please fill in both subject and message.",
+                        title: language === "es" ? "Información faltante" : "Missing information",
+                        description: language === "es" 
+                          ? "Por favor complete tanto el asunto como el mensaje."
+                          : "Please fill in both subject and message.",
                         variant: "destructive",
                       });
                       return;
@@ -1477,7 +1493,10 @@ export default function ParentPortalEnhanced() {
                   disabled={replyMutation.isPending || !replyForm.subject.trim() || !replyForm.message.trim()}
                   data-testid="button-send-reply"
                 >
-                  {replyMutation.isPending ? "Sending..." : "Send Reply"}
+                  {replyMutation.isPending 
+                    ? (language === "es" ? "Enviando..." : "Sending...")
+                    : (language === "es" ? "Enviar Respuesta" : "Send Reply")
+                  }
                 </Button>
                 <Button 
                   variant="outline" 
@@ -1487,7 +1506,7 @@ export default function ParentPortalEnhanced() {
                   }}
                   data-testid="button-cancel-reply"
                 >
-                  Cancel
+                  {language === "es" ? "Cancelar" : "Cancel"}
                 </Button>
               </div>
             </CardContent>

@@ -560,14 +560,22 @@ export default function ParentPortalEnhanced() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="my-scholars">{translate("myScholars", language)}</TabsTrigger>
-            <TabsTrigger value="progress">
-              {translate("academic", language)} & {translate("behavior", language)}
+          <TabsList className="grid w-full grid-cols-5 h-auto">
+            <TabsTrigger value="my-scholars" className="text-xs sm:text-sm px-2 py-2">
+              {translate("myScholars", language)}
             </TabsTrigger>
-            <TabsTrigger value="messages">{translate("messaging", language)}</TabsTrigger>
-            <TabsTrigger value="reflections">{translate("reflections", language)}</TabsTrigger>
-            <TabsTrigger value="notifications">
+            <TabsTrigger value="progress" className="text-xs sm:text-sm px-2 py-2">
+              <span className="text-center">
+                {language === "es" ? "Académico y Comportamiento" : "Progress & Achievements"}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="text-xs sm:text-sm px-2 py-2">
+              {translate("messaging", language)}
+            </TabsTrigger>
+            <TabsTrigger value="reflections" className="text-xs sm:text-sm px-2 py-2">
+              {translate("reflections", language)}
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs sm:text-sm px-2 py-2">
               {language === "es" ? "Notificaciones" : "Notifications"}
             </TabsTrigger>
           </TabsList>

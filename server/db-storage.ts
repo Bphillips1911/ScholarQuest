@@ -1318,7 +1318,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllReflections(): Promise<Reflection[]> {
-    return await db.select().from(reflections);
+    return await db.select().from(reflections).orderBy(desc(reflections.createdAt));
+  }
+
+  async getApprovedReflections(): Promise<Reflection[]> {
+    console.log('DATABASE: Fetching approved reflections...');
+    const approvedReflections = await db.select().from(reflections)
+      .where(eq(reflections.status, 'approved'))
+      .orderBy(desc(reflections.approvedAt));
+    console.log(`DATABASE: Found ${approvedReflections.length} approved reflections`);
+    return approvedReflections;
   }
 
   async submitReflection(reflectionId: string, response: string): Promise<Reflection> {

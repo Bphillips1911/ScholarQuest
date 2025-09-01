@@ -200,6 +200,7 @@ export interface IStorage {
   getReflectionsForStudent(scholarId: string): Promise<Reflection[]>;
   getReflectionsForTeacher(teacherId: string): Promise<Reflection[]>;
   getAllReflections(): Promise<Reflection[]>;
+  getApprovedReflections(): Promise<Reflection[]>;
   submitReflection(reflectionId: string, response: string): Promise<Reflection>;
   reviewReflection(reflectionId: string, status: string, reviewedBy: string, feedback?: string): Promise<Reflection>;
   sendReflectionToParent(reflectionId: string): Promise<boolean>;
@@ -2349,6 +2350,10 @@ class PersistentMemStorage extends MemStorage {
 
   async getAllReflections(): Promise<Reflection[]> {
     return Array.from(this.reflections.values());
+  }
+
+  async getApprovedReflections(): Promise<Reflection[]> {
+    return Array.from(this.reflections.values()).filter(r => r.status === 'approved');
   }
 
   async submitReflection(reflectionId: string, response: string): Promise<Reflection> {

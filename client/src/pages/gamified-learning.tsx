@@ -11,11 +11,18 @@ import { MoodLearningRecommendations } from '@/components/mood-learning-recommen
 import { DailyLearningChallenges } from '@/components/daily-learning-challenges';
 import { useAdvancedUI } from '@/components/ui/advanced-ui-system';
 
+interface StudentData {
+  id: string;
+  name: string;
+  username: string;
+}
+
 export default function GamifiedLearning() {
   const [, setLocation] = useLocation();
   const { showEmojiNotification, announce, enableMicroInteractions } = useAdvancedUI();
   const [activeTab, setActiveTab] = useState('stickers');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
 
   useEffect(() => {
     if (!isStudentAuthenticated()) {
@@ -23,7 +30,19 @@ export default function GamifiedLearning() {
       setLocation("/student-login");
       return;
     }
-    setIsAuthenticated(true);
+    
+    // Get student data from localStorage
+    const student = localStorage.getItem("studentData");
+    if (student) {
+      try {
+        setStudentData(JSON.parse(student));
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Error parsing student data:", error);
+        clearStudentAuth();
+        setLocation("/student-login");
+      }
+    }
   }, [setLocation]);
 
   if (!isAuthenticated) {
@@ -66,9 +85,9 @@ export default function GamifiedLearning() {
             >
               <span className="text-2xl">👋</span>
               <span className="font-medium text-blue-800">
-                Welcome back, {user.name}!
+                Welcome back, {studentData?.name || 'Student'}!
               </span>
-              <Badge variant="secondary">Grade {user.grade}</Badge>
+              <Badge variant="secondary">Learning Explorer</Badge>
             </motion.div>
           </motion.div>
         </div>
@@ -154,7 +173,7 @@ export default function GamifiedLearning() {
                 </Card>
 
                 <StickerCollector 
-                  studentId={user.id} 
+                  studentId={studentData?.id} 
                   className="mt-6"
                 />
               </motion.div>
@@ -193,8 +212,8 @@ export default function GamifiedLearning() {
                 </Card>
 
                 <MoodLearningRecommendations 
-                  studentId={user.id}
-                  grade={user.grade}
+                  studentId={studentData?.id}
+                  grade={8}
                   className="mt-6"
                 />
               </motion.div>
@@ -236,8 +255,8 @@ export default function GamifiedLearning() {
                 </Card>
 
                 <DailyLearningChallenges 
-                  studentId={user.id}
-                  grade={user.grade}
+                  studentId={studentData?.id}
+                  grade={8}
                   className="mt-6"
                 />
               </motion.div>

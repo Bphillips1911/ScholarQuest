@@ -250,9 +250,11 @@ export default function StudentDashboard() {
   const currentHouse = (houses && Array.isArray(houses)) ? houses.find((h: HouseData) => h.id === scholar?.houseId) : undefined;
   const recentPBIS = (pbisEntries && Array.isArray(pbisEntries)) ? pbisEntries.slice(0, 5) : [];
 
-  // Calculate total points
+  // Calculate total points and legendary progress
   const totalPoints = (scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0);
   const totalPBISPoints = (pbisEntries && Array.isArray(pbisEntries)) ? pbisEntries.reduce((sum: number, entry: PBISEntry) => sum + entry.points, 0) : 0;
+  const legendaryRequirement = 1000;
+  const legendaryProgress = Math.min(100, (totalPoints / legendaryRequirement) * 100);
 
   // MUSTANG trait definitions
   const mustangTraits = {
@@ -469,6 +471,31 @@ export default function StudentDashboard() {
                     <div className="text-2xl font-bold text-yellow-800">{totalPoints}</div>
                     <div className="text-sm text-yellow-600">Total Points</div>
                   </div>
+                  </div>
+                  
+                  {/* Legendary Status Progress */}
+                  <div className="mt-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <GraduationCap className="h-5 w-5 text-yellow-600" />
+                        <span className="font-semibold text-yellow-800">BHSA Legend Progress</span>
+                      </div>
+                      <span className="text-sm font-medium text-yellow-700">
+                        {totalPoints} / {legendaryRequirement} points
+                      </span>
+                    </div>
+                    <div className="w-full bg-yellow-200 rounded-full h-3 mb-2">
+                      <div 
+                        className="bg-gradient-to-r from-yellow-500 to-orange-500 h-3 rounded-full transition-all duration-300"
+                        style={{ width: `${legendaryProgress}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-yellow-700">
+                      {totalPoints < legendaryRequirement 
+                        ? `${legendaryRequirement - totalPoints} more points needed to achieve legendary status!`
+                        : '🏆 Congratulations! You have achieved BHSA Legend status!'
+                      }
+                    </p>
                   </div>
                 </CardContent>
               </Card>

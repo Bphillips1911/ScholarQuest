@@ -84,9 +84,15 @@ export default function StudentSkillTree() {
   const generateSkillTree = (): { nodes: SkillNode[], paths: SkillTreePath[] } => {
     if (!profile) return { nodes: [], paths: [] };
 
-    const academicPoints = Math.max(0, ((profile as any).academicPoints || 0) + 50);
-    const behaviorPoints = (profile as any).behaviorPoints || 0;
-    const attendancePoints = (profile as any).attendancePoints || 0;
+    // Use actual PBIS points from the profile (no bonus points)
+    const academicPoints = Math.max(0, (profile as any).academicPoints || 0);
+    const behaviorPoints = Math.max(0, (profile as any).behaviorPoints || 0);
+    const attendancePoints = Math.max(0, (profile as any).attendancePoints || 0);
+    
+    // Calculate total points across all categories for overall progress
+    const totalPoints = academicPoints + behaviorPoints + attendancePoints;
+    
+    // For PBIS entries calculation, use actual entries data
     const totalPBISPoints = Array.isArray(pbisEntries) ? pbisEntries.reduce((sum: number, entry: any) => sum + entry.points, 0) : 0;
 
     const nodes: SkillNode[] = [
@@ -98,7 +104,7 @@ export default function StudentSkillTree() {
         category: 'academic',
         level: 1,
         requiredPoints: 0,
-        currentPoints: Math.max(academicPoints, behaviorPoints, attendancePoints),
+        currentPoints: totalPoints,
         isUnlocked: true,
         isCompleted: true,
         position: { x: 600, y: 500 },
@@ -114,10 +120,10 @@ export default function StudentSkillTree() {
         category: 'academic',
         level: 2,
         prerequisite: 'foundation-student',
-        requiredPoints: 25,
+        requiredPoints: 50,
         currentPoints: academicPoints,
-        isUnlocked: academicPoints >= 25,
-        isCompleted: academicPoints >= 25,
+        isUnlocked: academicPoints >= 50,
+        isCompleted: academicPoints >= 50,
         position: { x: 300, y: 400 },
         icon: '📚',
         rewards: ['Academic achievement badge', '+5 bonus academic points']
@@ -129,10 +135,10 @@ export default function StudentSkillTree() {
         category: 'academic',
         level: 3,
         prerequisite: 'academic-explorer',
-        requiredPoints: 50,
+        requiredPoints: 150,
         currentPoints: academicPoints,
-        isUnlocked: academicPoints >= 50,
-        isCompleted: academicPoints >= 50,
+        isUnlocked: academicPoints >= 150,
+        isCompleted: academicPoints >= 150,
         position: { x: 150, y: 300 },
         icon: '🔬',
         rewards: ['Scholar recognition', 'Access to advanced projects', 'Tutor opportunities']
@@ -144,10 +150,10 @@ export default function StudentSkillTree() {
         category: 'academic',
         level: 4,
         prerequisite: 'scholar-specialist',
-        requiredPoints: 100,
+        requiredPoints: 250,
         currentPoints: academicPoints,
-        isUnlocked: academicPoints >= 100,
-        isCompleted: academicPoints >= 100,
+        isUnlocked: academicPoints >= 250,
+        isCompleted: academicPoints >= 250,
         position: { x: 50, y: 200 },
         icon: '👑',
         rewards: ['Academic Champion title', 'Leadership opportunities', 'Special recognition']
@@ -161,10 +167,10 @@ export default function StudentSkillTree() {
         category: 'behavioral',
         level: 2,
         prerequisite: 'foundation-student',
-        requiredPoints: 30,
+        requiredPoints: 50,
         currentPoints: behaviorPoints,
-        isUnlocked: behaviorPoints >= 30,
-        isCompleted: behaviorPoints >= 30,
+        isUnlocked: behaviorPoints >= 50,
+        isCompleted: behaviorPoints >= 50,
         position: { x: 900, y: 400 },
         icon: '🐎',
         rewards: ['MUSTANG recognition badge', 'Character spotlight']
@@ -176,10 +182,10 @@ export default function StudentSkillTree() {
         category: 'behavioral',
         level: 3,
         prerequisite: 'mustang-student',
-        requiredPoints: 60,
+        requiredPoints: 100,
         currentPoints: behaviorPoints,
-        isUnlocked: behaviorPoints >= 60,
-        isCompleted: behaviorPoints >= 60,
+        isUnlocked: behaviorPoints >= 100,
+        isCompleted: behaviorPoints >= 100,
         position: { x: 1050, y: 300 },
         icon: '⭐',
         rewards: ['Character Leader badge', 'Peer mentoring role', 'House leadership consideration']
@@ -191,10 +197,10 @@ export default function StudentSkillTree() {
         category: 'behavioral',
         level: 4,
         prerequisite: 'character-leader',
-        requiredPoints: 120,
+        requiredPoints: 200,
         currentPoints: behaviorPoints,
-        isUnlocked: behaviorPoints >= 120,
-        isCompleted: behaviorPoints >= 120,
+        isUnlocked: behaviorPoints >= 200,
+        isCompleted: behaviorPoints >= 200,
         position: { x: 1150, y: 200 },
         icon: '🌟',
         rewards: ['Exemplary MUSTANG title', 'School ambassador role', 'Special privileges']
@@ -208,10 +214,10 @@ export default function StudentSkillTree() {
         category: 'social',
         level: 2,
         prerequisite: 'foundation-student',
-        requiredPoints: 20,
-        currentPoints: Math.floor(totalPBISPoints / 2),
-        isUnlocked: totalPBISPoints >= 40,
-        isCompleted: totalPBISPoints >= 40,
+        requiredPoints: 75,
+        currentPoints: attendancePoints,
+        isUnlocked: attendancePoints >= 75,
+        isCompleted: attendancePoints >= 75,
         position: { x: 450, y: 350 },
         icon: '🤝',
         rewards: ['Team Player badge', 'Group project leader eligibility']
@@ -223,10 +229,10 @@ export default function StudentSkillTree() {
         category: 'social',
         level: 3,
         prerequisite: 'team-player',
-        requiredPoints: 50,
-        currentPoints: Math.floor(totalPBISPoints / 2),
-        isUnlocked: totalPBISPoints >= 100,
-        isCompleted: totalPBISPoints >= 100,
+        requiredPoints: 150,
+        currentPoints: attendancePoints,
+        isUnlocked: attendancePoints >= 150,
+        isCompleted: attendancePoints >= 150,
         position: { x: 350, y: 250 },
         icon: '🏆',
         rewards: ['House Champion title', 'House event planning role', 'Special house privileges']
@@ -240,10 +246,10 @@ export default function StudentSkillTree() {
         category: 'leadership',
         level: 2,
         prerequisite: 'foundation-student',
-        requiredPoints: 25,
+        requiredPoints: 100,
         currentPoints: Math.floor((academicPoints + behaviorPoints) / 2),
-        isUnlocked: (academicPoints + behaviorPoints) >= 50,
-        isCompleted: (academicPoints + behaviorPoints) >= 50,
+        isUnlocked: (academicPoints + behaviorPoints) >= 200,
+        isCompleted: (academicPoints + behaviorPoints) >= 200,
         position: { x: 750, y: 350 },
         icon: '🌱',
         rewards: ['Leadership development opportunities', 'Student council eligibility']
@@ -255,30 +261,30 @@ export default function StudentSkillTree() {
         category: 'leadership',
         level: 3,
         prerequisite: 'emerging-leader',
-        requiredPoints: 60,
+        requiredPoints: 200,
         currentPoints: Math.floor((academicPoints + behaviorPoints) / 2),
-        isUnlocked: (academicPoints + behaviorPoints) >= 120,
-        isCompleted: (academicPoints + behaviorPoints) >= 120,
+        isUnlocked: (academicPoints + behaviorPoints) >= 400,
+        isCompleted: (academicPoints + behaviorPoints) >= 400,
         position: { x: 850, y: 250 },
         icon: '🚀',
         rewards: ['Student Leader badge', 'Event organization opportunities', 'School improvement input']
       },
 
-      // Ultimate Goal (Top Center)
+      // Ultimate Goal (Top Center) - Requires 1000 total points to become BHSA Legend
       {
         id: 'bhsa-legend',
         title: 'BHSA Legend',
-        description: 'Achieve mastery across all areas and become a school legend',
+        description: 'Achieve legendary status with 1000+ total points across all areas',
         category: 'leadership',
         level: 5,
         prerequisite: 'academic-champion',
-        requiredPoints: 200,
-        currentPoints: academicPoints + behaviorPoints + (attendancePoints * 10),
-        isUnlocked: (academicPoints >= 100 && behaviorPoints >= 120 && attendancePoints >= 10),
-        isCompleted: (academicPoints >= 200 && behaviorPoints >= 200 && attendancePoints >= 20),
+        requiredPoints: 1000,
+        currentPoints: totalPoints,
+        isUnlocked: (academicPoints >= 200 && behaviorPoints >= 200 && attendancePoints >= 50 && totalPoints >= 800),
+        isCompleted: totalPoints >= 1000,
         position: { x: 600, y: 100 },
         icon: '👑',
-        rewards: ['BHSA Legend status', 'Permanent recognition', 'Mentorship of future students', 'Special graduation honors']
+        rewards: ['BHSA Legend status', 'Permanent recognition', 'Mentorship of future students', 'Special graduation honors', 'Hall of Fame induction']
       }
     ];
 

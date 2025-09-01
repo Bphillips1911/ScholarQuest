@@ -93,14 +93,16 @@ function PbisForm({ teacherName, teacherRole, subject }: PbisFormProps) {
       return response.json();
     },
     onSuccess: () => {
+      const pointValue = parseInt(points);
       toast({
-        title: "PBIS Award Added",
-        description: `Scholar has been recognized for demonstrating MUSTANG traits.`,
+        title: "PBIS Recognition Added",
+        description: `Scholar has been recognized with ${pointValue > 0 ? 'positive' : 'corrective'} points.`,
       });
       setSelectedScholar("");
-      setSelectedTrait("");
+      setSelectedCategory("");
+      setSelectedSubcategory("");
+      setCustomReason("");
       setPoints("1");
-      setReason("");
       queryClient.invalidateQueries({ queryKey: ["/api/pbis"] });
     },
     onError: () => {
@@ -124,47 +126,23 @@ function PbisForm({ teacherName, teacherRole, subject }: PbisFormProps) {
       return;
     }
 
-    if (useNewSystem) {
-      if (!selectedCategory || !selectedSubcategory) {
-        toast({
-          title: "Missing Information",
-          description: "Please select a recognition category and specific recognition.",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else {
-      if (!selectedTrait) {
-        toast({
-          title: "Missing Information",
-          description: "Please select a MUSTANG trait.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    const pointsToUse = useNewSystem ? parseInt(points) : parseInt(points);
-    if (!useNewSystem && (pointsToUse < 1 || pointsToUse > 10)) {
+    if (!selectedCategory || !selectedSubcategory) {
       toast({
-        title: "Invalid Points",
-        description: "Points must be between 1 and 10.",
+        title: "Missing Information",
+        description: "Please select a recognition category and specific recognition.",
         variant: "destructive",
       });
       return;
     }
 
-    const finalReason = useNewSystem ? 
-      (customReason.trim() ? customReason : selectedSubcategory) : 
-      (reason || undefined);
+    const pointsToUse = parseInt(points);
+    const finalReason = customReason.trim() ? customReason : selectedSubcategory;
 
     addPbisMutation.mutate({
       scholarId: selectedScholar,
       teacherName,
       teacherRole: teacherRole as "6th Grade" | "7th Grade" | "8th Grade" | "Unified Arts" | "Administration" | "Counselor",
-      mustangTrait: useNewSystem ? 
-        (selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)) as "Motivated" | "Understanding" | "Safe" | "Teamwork" | "Accountable" | "Noble" | "Growth" :
-        selectedTrait as "Motivated" | "Understanding" | "Safe" | "Teamwork" | "Accountable" | "Noble" | "Growth",
+      mustangTrait: (selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)) as "Motivated" | "Understanding" | "Safe" | "Teamwork" | "Accountable" | "Noble" | "Growth",
       points: pointsToUse,
       reason: finalReason,
     });
@@ -189,31 +167,13 @@ function PbisForm({ teacherName, teacherRole, subject }: PbisFormProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* System Toggle */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Recognition System</h3>
-              <p className="text-sm text-gray-600">
-                {useNewSystem ? 'Using comprehensive PBIS categories with specific point values' : 'Using traditional MUSTANG traits system'}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setUseNewSystem(!useNewSystem);
-                setSelectedCategory("");
-                setSelectedSubcategory("");
-                setSelectedTrait("");
-                setCustomReason("");
-                setPoints("1");
-              }}
-              className="flex items-center space-x-2"
-            >
-              {useNewSystem ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
-              <span>Switch to {useNewSystem ? 'Traditional' : 'New'} System</span>
-            </Button>
+        {/* PBIS Recognition System Header */}
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div>
+            <h3 className="font-medium text-blue-900 text-lg">PBIS Recognition System</h3>
+            <p className="text-sm text-blue-700">
+              Select recognition categories with specific point values for comprehensive behavior tracking
+            </p>
           </div>
         </div>
 
@@ -237,70 +197,18 @@ function PbisForm({ teacherName, teacherRole, subject }: PbisFormProps) {
               </Select>
             </div>
 
-            {/* New PBIS Category System or Traditional System */}
-            {useNewSystem ? (
-              <div className="col-span-full">
-                <PBISCategorySelector
-                  selectedCategory={selectedCategory}
-                  selectedSubcategory={selectedSubcategory}
-                  onCategorySelect={handleCategorySelect}
-                  onSubcategorySelect={handleSubcategorySelect}
-                  onReasonChange={setCustomReason}
-                  customReason={customReason}
-                />
-              </div>
-            ) : (
-              <>
-                <div>
-                  <Label htmlFor="trait-select" className="text-sm font-medium text-gray-700 mb-2">
-                    MUSTANG Trait
-                  </Label>
-              <Select value={selectedTrait} onValueChange={setSelectedTrait} data-testid="select-trait">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select trait..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {mustangTraits.map((trait) => (
-                    <SelectItem key={trait.value} value={trait.value} data-testid={`option-trait-${trait.value}`}>
-                      <div>
-                        <div className="font-medium">{trait.value}</div>
-                        <div className="text-xs text-gray-500">{trait.description}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-                </Select>
-              </div>
+            {/* PBIS Recognition System */}
+            <div className="col-span-full">
+              <PBISCategorySelector
+                selectedCategory={selectedCategory}
+                selectedSubcategory={selectedSubcategory}
+                onCategorySelect={handleCategorySelect}
+                onSubcategorySelect={handleSubcategorySelect}
+                onReasonChange={setCustomReason}
+                customReason={customReason}
+              />
+            </div>
 
-              <div>
-                <Label htmlFor="points-input" className="text-sm font-medium text-gray-700 mb-2">
-                  Points (1-10)
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="1"
-                  min="1"
-                  max="10"
-                  value={points}
-                  onChange={(e) => setPoints(e.target.value)}
-                  data-testid="input-points"
-                />
-              </div>
-
-              <div className="col-span-full">
-                <Label htmlFor="reason-input" className="text-sm font-medium text-gray-700 mb-2">
-                  Specific Example (Optional)
-                </Label>
-                <Input
-                  type="text"
-                  placeholder="e.g., Helped a classmate understand the assignment"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  data-testid="input-reason"
-                />
-              </div>
-              </>
-            )}
           </div>
 
           <Button

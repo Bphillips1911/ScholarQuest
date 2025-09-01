@@ -3991,8 +3991,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get reflections for parent
   app.get('/api/parent/reflections', authenticateParent, async (req, res) => {
     try {
-      const parentId = req.session.parentId;
+      // Enhanced parent portal uses JWT tokens, regular parent portal uses sessions
+      const parentId = req.session?.parentId || req.parent?.id;
       console.log('📧 PARENT REFLECTIONS: Fetching reflections for parent:', parentId);
+      console.log('📧 PARENT REFLECTIONS: Session parentId:', req.session?.parentId);
+      console.log('📧 PARENT REFLECTIONS: JWT parent id:', req.parent?.id);
+      
+      if (!parentId) {
+        console.error('📧 PARENT REFLECTIONS: No parent ID found in session or JWT');
+        return res.status(401).json({ error: 'Parent ID not found' });
+      }
+      
       const reflections = await storage.getReflectionsForParent(parentId);
       console.log(`📧 PARENT REFLECTIONS: Found ${reflections.length} reflections for parent`);
       console.log('📧 PARENT REFLECTIONS: Reflection statuses:', reflections.map(r => ({ id: r.id, status: r.status, studentName: r.studentName })));

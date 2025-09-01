@@ -13,7 +13,7 @@ import { queryClient } from "@/lib/queryClient";
 import { 
   User, Star, TrendingUp, Calendar, LogOut, UserPlus, Award, 
   MessageCircle, Send, Phone, Bell, GraduationCap, Home,
-  CheckCircle, AlertCircle, Clock, Trophy
+  CheckCircle, AlertCircle, Clock, Trophy, FileText, Clock3
 } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import type { Scholar, PbisEntry, ParentTeacherMessage } from "@shared/schema";
@@ -248,6 +248,23 @@ export default function ParentPortalEnhanced() {
       return response.json();
     },
     enabled: showSendMessage,
+  });
+
+  // Fetch reflections for the parent
+  const { data: reflections = [], refetch: refetchReflections } = useQuery({
+    queryKey: ["/api/parent/reflections"],
+    queryFn: async () => {
+      console.log('🔍 PARENT PORTAL: Fetching reflections...');
+      const response = await fetch("/api/parent/reflections", {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch reflections");
+      const data = await response.json();
+      console.log('🔍 PARENT PORTAL: Received reflections:', data);
+      return data;
+    },
+    enabled: !!parentData,
+    refetchInterval: 30000, // Auto-refresh every 30 seconds to check for new approved reflections
   });
 
   // Add scholar by credentials mutation
@@ -514,10 +531,11 @@ export default function ParentPortalEnhanced() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="my-scholars">My Scholars</TabsTrigger>
             <TabsTrigger value="progress">Progress & Achievements</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
+            <TabsTrigger value="reflections">Reflections</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
 
@@ -879,6 +897,101 @@ export default function ParentPortalEnhanced() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Reflections Tab */}
+          <TabsContent value="reflections" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Behavioral Reflections</h2>
+              <Badge variant="secondary" className="text-sm">
+                Auto-refreshes every 30 seconds
+              </Badge>
+            </div>
+            
+            {reflections.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No reflections assigned yet</h3>
+                  <p className="text-gray-600">
+                    When teachers assign behavioral reflections to your child, they will appear here.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {reflections.map((reflection: any) => (
+                  <Card key={reflection.id} className="border-l-4 border-l-blue-500">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            {reflection.status === 'assigned' && (
+                              <AlertCircle className="h-5 w-5 text-yellow-500" />
+                            )}
+                            {reflection.status === 'submitted' && (
+                              <Clock3 className="h-5 w-5 text-blue-500" />
+                            )}
+                            {reflection.status === 'approved' && (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            )}
+                            <span className="font-medium">{reflection.studentName}</span>
+                          </div>
+                          <Badge variant={
+                            reflection.status === 'assigned' ? 'destructive' :
+                            reflection.status === 'submitted' ? 'secondary' :
+                            reflection.status === 'approved' ? 'default' : 'outline'
+                          }>
+                            {reflection.status === 'assigned' ? 'Needs Response' :
+                             reflection.status === 'submitted' ? 'Under Review' :
+                             reflection.status === 'approved' ? 'Completed' : reflection.status}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(reflection.assignedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Assignment:</h4>
+                          <p className="text-gray-700 bg-gray-50 p-3 rounded-md italic">
+                            "{reflection.prompt}"
+                          </p>
+                        </div>
+                        
+                        {reflection.response && (
+                          <div>
+                            <h4 className="font-medium text-gray-900 mb-2">Student Response:</h4>
+                            <p className="text-gray-700 bg-blue-50 p-3 rounded-md">
+                              {reflection.response}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {reflection.teacherFeedback && (
+                          <div>
+                            <h4 className="font-medium text-gray-900 mb-2">Teacher Feedback:</h4>
+                            <p className="text-gray-700 bg-green-50 p-3 rounded-md">
+                              {reflection.teacherFeedback}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {reflection.dueDate && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Clock className="h-4 w-4" />
+                            Due: {new Date(reflection.dueDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
         </Tabs>
       </div>
 

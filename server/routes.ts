@@ -3905,7 +3905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid status required (approved/rejected)" });
       }
 
-      await storage.reviewReflection(reflectionId, status, session.teacherId, feedback);
+      await storage.reviewReflection(reflectionId, status, req.teacher.id, feedback);
       res.json({ message: `Reflection ${status} successfully` });
     } catch (error) {
       console.error("Review reflection error:", error);

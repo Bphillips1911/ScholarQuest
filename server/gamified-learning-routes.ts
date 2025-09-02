@@ -116,8 +116,8 @@ export async function getTodaysChallenges(req: Request, res: Response) {
     const { studentId, grade } = req.params;
     const today = getCurrentDateString();
 
-    // Get today's challenges for the grade level
-    const todaysChals = await db
+    // Get challenges for the grade level (using all available challenges if none for today)
+    let todaysChals = await db
       .select()
       .from(dailyChallenges)
       .where(
@@ -127,6 +127,20 @@ export async function getTodaysChallenges(req: Request, res: Response) {
           eq(dailyChallenges.isActive, true)
         )
       );
+
+    // If no challenges for today, get a selection of all active challenges for the grade
+    if (todaysChals.length === 0) {
+      todaysChals = await db
+        .select()
+        .from(dailyChallenges)
+        .where(
+          and(
+            eq(dailyChallenges.gradeLevel, parseInt(grade)),
+            eq(dailyChallenges.isActive, true)
+          )
+        )
+        .limit(6); // Get a variety of challenges
+    }
 
     // Check which challenges the student has completed
     const completedChallenges = await db

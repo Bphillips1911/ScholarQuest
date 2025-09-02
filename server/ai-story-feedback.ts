@@ -53,7 +53,7 @@ Provide feedback in this exact JSON format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4", // using GPT-4 as the stable model for educational feedback
+      model: "gpt-4o", // using GPT-4o as the stable model for educational feedback
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -107,7 +107,7 @@ Provide feedback in this exact JSON format:
 export async function generateQuickFeedback(content: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {
           role: "system", 

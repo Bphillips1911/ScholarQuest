@@ -30,11 +30,11 @@ export default function AdvancedUIShowcase() {
 
   // Sample data
   const sampleHouses = [
-    { id: 'franklin', name: 'Franklin', color: '#3b82f6', points: 2150, rank: 1, totalScholars: 45 },
+    { id: 'franklin', name: 'Johnson', color: '#3b82f6', points: 2150, rank: 1, totalScholars: 45 },
     { id: 'tesla', name: 'Tesla', color: '#8b5cf6', points: 1980, rank: 2, totalScholars: 42 },
-    { id: 'curie', name: 'Curie', color: '#ef4444', points: 1820, rank: 3, totalScholars: 38 },
-    { id: 'nobel', name: 'Nobel', color: '#10b981', points: 1650, rank: 4, totalScholars: 40 },
-    { id: 'lovelace', name: 'Lovelace', color: '#f59e0b', points: 1420, rank: 5, totalScholars: 35 }
+    { id: 'curie', name: 'Drew', color: '#ef4444', points: 1820, rank: 3, totalScholars: 38 },
+    { id: 'nobel', name: 'Marshall', color: '#10b981', points: 1650, rank: 4, totalScholars: 40 },
+    { id: 'lovelace', name: 'West', color: '#f59e0b', points: 1420, rank: 5, totalScholars: 35 }
   ];
 
   const sampleAchievements = [
@@ -280,9 +280,9 @@ export default function AdvancedUIShowcase() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => showEmojiNotification('house', 'franklin', 'Franklin pride!')}
+                          onClick={() => showEmojiNotification('house', 'johnson', 'Johnson pride!')}
                         >
-                          🔬 House
+                          🚀 House
                         </Button>
                       </div>
                     </div>

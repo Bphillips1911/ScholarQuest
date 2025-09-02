@@ -220,11 +220,11 @@ export function EnhancedHouseCard({ house, onClick, className }: EnhancedHouseCa
   };
 
   const houseEmojis = {
-    franklin: '🔬',
+    franklin: '🚀',
     tesla: '⚡',
     curie: '🧪', 
-    nobel: '🎯',
-    lovelace: '💻'
+    nobel: '⚖️',
+    lovelace: '🧭'
   };
 
   const emoji = houseEmojis[house.name.toLowerCase() as keyof typeof houseEmojis] || '🏠';

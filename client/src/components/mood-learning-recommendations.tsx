@@ -119,13 +119,14 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
     if (currentMood?.mood && ['bored', 'tired', 'frustrated'].includes(currentMood.mood)) {
       const fetchActivities = async () => {
         try {
-          const response = await fetch(`/api/mood-activities?mood=${currentMood.mood}&energyLevel=${currentMood.energyLevel}&maxDuration=15`);
+          const response = await fetch(`/api/mood-activities?mood=${currentMood.mood}&energyLevel=${currentMood.energyLevel}&maxDuration=30`);
           if (response.ok) {
             const activities = await response.json();
             setMoodBasedActivities(activities);
             if (activities.length > 0) {
               setSelectedActivity(activities[0]); // Auto-select first activity
               showEmojiNotification('mood', 'activity_suggested', 'Found helpful activities for you!');
+              announce(`I found ${activities.length} activities that might help with your ${currentMood.mood} mood.`);
             }
           }
         } catch (error) {
@@ -134,7 +135,7 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
       };
       fetchActivities();
     }
-  }, [currentMood?.mood, currentMood?.energyLevel]);
+  }, [currentMood?.mood, currentMood?.energyLevel, showEmojiNotification, announce]);
 
   // Mood check-in mutation
   const moodCheckinMutation = useMutation({

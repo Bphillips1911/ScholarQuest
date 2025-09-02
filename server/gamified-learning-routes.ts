@@ -139,7 +139,7 @@ export async function getTodaysChallenges(req: Request, res: Response) {
             eq(dailyChallenges.isActive, true)
           )
         )
-        .limit(6); // Get a variety of challenges
+        .limit(10); // Get a variety of challenges across all subjects
     }
 
     // Check which challenges the student has completed

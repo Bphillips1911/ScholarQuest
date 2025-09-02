@@ -807,10 +807,10 @@ export default function Admin() {
               const totalPoints = house.academicPoints + house.attendancePoints + house.behaviorPoints;
               const houseColorClass = {
                 franklin: "bg-house-franklin",
-                courie: "bg-house-courie", 
-                west: "bg-house-west",
-                blackwell: "bg-house-blackwell",
-                berruguete: "bg-house-berruguete",
+                tesla: "bg-house-tesla",
+                curie: "bg-house-curie", 
+                nobel: "bg-house-nobel",
+                lovelace: "bg-house-lovelace",
               }[house.id] || "bg-house-franklin";
 
               return (

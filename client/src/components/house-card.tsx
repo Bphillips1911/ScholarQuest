@@ -13,27 +13,27 @@ export default function HouseCard({ house }: HouseCardProps) {
   
   const houseColorClass = {
     franklin: "house-franklin",
-    courie: "house-courie", 
-    west: "house-west",
-    blackwell: "house-blackwell",
-    berruguete: "house-berruguete",
+    tesla: "house-tesla", 
+    curie: "house-curie",
+    nobel: "house-nobel",
+    lovelace: "house-lovelace",
   }[house.id] || "house-franklin";
 
   const houseBgClass = {
     franklin: "bg-house-franklin",
-    courie: "bg-house-courie", 
-    west: "bg-house-west",
-    blackwell: "bg-house-blackwell",
-    berruguete: "bg-house-berruguete",
+    tesla: "bg-house-tesla", 
+    curie: "bg-house-curie",
+    nobel: "bg-house-nobel",
+    lovelace: "bg-house-lovelace",
   }[house.id] || "bg-house-franklin";
 
   const houseBgLightClass = {
-    franklin: "bg-red-50 border-red-200",
-    courie: "bg-purple-50 border-purple-200", 
-    west: "bg-emerald-50 border-emerald-200",
-    blackwell: "bg-gray-50 border-gray-200",
-    berruguete: "bg-orange-50 border-orange-200",
-  }[house.id] || "bg-red-50 border-red-200";
+    franklin: "bg-blue-50 border-blue-200",
+    tesla: "bg-purple-50 border-purple-200", 
+    curie: "bg-red-50 border-red-200",
+    nobel: "bg-green-50 border-green-200",
+    lovelace: "bg-orange-50 border-orange-200",
+  }[house.id] || "bg-blue-50 border-blue-200";
 
   const houseGradientClass = {
     franklin: "from-house-franklin to-red-700",

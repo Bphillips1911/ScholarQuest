@@ -51,10 +51,10 @@ export default function HouseDetail() {
 
   const houseGradientClass = {
     franklin: "from-house-franklin to-red-700",
-    courie: "from-house-courie to-purple-700", 
-    west: "from-house-west to-emerald-700",
-    blackwell: "from-house-blackwell to-gray-800",
-    berruguete: "from-house-berruguete to-orange-700",
+    tesla: "from-house-tesla to-purple-700", 
+    curie: "from-house-curie to-red-700",
+    nobel: "from-house-nobel to-emerald-700",
+    lovelace: "from-house-lovelace to-orange-700",
   }[house.id] || "from-house-franklin to-red-700";
 
   const houseColorClass = {

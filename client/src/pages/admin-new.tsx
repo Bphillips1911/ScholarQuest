@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye } from "lucide-react";
+import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -454,8 +455,12 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 gap-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+            <TabsList className="grid w-full grid-cols-6 gap-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
               <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>
+                <Eye className="h-4 w-4 mr-1" />
+                Teacher Viewer
+              </TabsTrigger>
               <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Students</TabsTrigger>
               <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Houses</TabsTrigger>
               <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Badges</TabsTrigger>
@@ -510,6 +515,10 @@ export default function AdminNew() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="teacher-viewer" className="space-y-6">
+              <AdminTeacherViewer />
             </TabsContent>
 
             <TabsContent value="students" className="space-y-6">

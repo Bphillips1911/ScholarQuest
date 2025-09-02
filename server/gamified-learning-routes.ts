@@ -403,15 +403,18 @@ export async function getMoodBasedActivities(req: Request, res: Response) {
     
     console.log('Total activities available:', moodBasedActivities.length);
     
-    // Filter activities based on mood and energy level
+    // Filter activities based on mood and energy level (more flexible matching)
     const filteredActivities = moodBasedActivities.filter(activity => {
       const moodMatch = activity.moodMatch.includes(mood as string);
-      const energyMatch = !energyLevel || activity.energyLevel === energyLevel;
+      // More flexible energy matching - allow any energy level if not specified
+      const energyMatch = !energyLevel || activity.energyLevel === energyLevel || 
+                         (energyLevel === 'high' && activity.energyLevel === 'medium') ||
+                         (energyLevel === 'medium' && (activity.energyLevel === 'low' || activity.energyLevel === 'high'));
       const durationMatch = !maxDuration || activity.duration <= parseInt(maxDuration as string);
       
       console.log(`Activity ${activity.title}: mood=${moodMatch}, energy=${energyMatch}, duration=${durationMatch}`);
       
-      return moodMatch && energyMatch && durationMatch;
+      return moodMatch && (energyMatch || !energyLevel) && durationMatch;
     });
     
     console.log('Filtered activities count:', filteredActivities.length);

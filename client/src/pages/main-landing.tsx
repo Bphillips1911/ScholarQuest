@@ -18,7 +18,7 @@ interface House {
 const houses: House[] = [
   {
     id: "franklin",
-    name: "House of Franklin",
+    name: "House of Johnson",
     color: "#1e40af",
     icon: "🔬",
     motto: "Innovation Through Discovery",
@@ -34,7 +34,7 @@ const houses: House[] = [
   },
   {
     id: "curie",
-    name: "House of Curie", 
+    name: "House of Drew", 
     color: "#dc2626",
     icon: "🧪",
     motto: "Pioneering Progress",
@@ -42,7 +42,7 @@ const houses: House[] = [
   },
   {
     id: "nobel",
-    name: "House of Nobel",
+    name: "House of Marshall",
     color: "#059669", 
     icon: "🎯",
     motto: "Excellence in Achievement",
@@ -50,7 +50,7 @@ const houses: House[] = [
   },
   {
     id: "lovelace",
-    name: "House of Lovelace",
+    name: "House of West",
     color: "#ea580c",
     icon: "💻", 
     motto: "Coding the Future",

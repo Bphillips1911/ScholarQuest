@@ -96,6 +96,18 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## House Renaming to Honor Diverse STEAM Pioneers (September 2025)
+- **Completed comprehensive house name migration** from legacy names to honor diverse STEAM pioneers:
+  - **House of Curie → House of Drew** (Dr. Charles Drew - Chemistry, Medicine, Discovery)
+  - **House of Nobel → House of Marshall** (Thurgood Marshall - Leadership, Honor, Achievement) 
+  - **House of Lovelace → House of West** (Dr. Gladys West - Technology, Programming, Logic)
+  - **House of Franklin → House of Johnson** (Dr. Katherine Johnson "Hidden Figures" - Science, Technology, Research)
+  - **House of Tesla** remains unchanged (Nikola Tesla - Engineering, Energy, Innovation)
+- **Updated all system components**: Database schema, main landing page, student dashboard, house history storyboards, pledge page, and all authentication portals
+- **Enhanced house history storytelling** with detailed biographical information for each pioneer including achievements, quotes, and modern connections to student learning
+- **Maintained all original icons and descriptors** while updating names and stories throughout the application
+- **Database migration completed** with all scholars successfully maintaining their house assignments under new names
+
 ## Comprehensive Reflection Rejection System Complete (September 2025)
 - **Implemented comprehensive reflection rejection workflow** with 7 predefined rejection reasons plus custom input option
 - **Enhanced teacher review interface** with two-step rejection process (select reason → confirm rejection) for better decision making

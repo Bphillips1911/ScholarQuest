@@ -114,6 +114,28 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
     enabled: !!studentId && !!currentMood,
   });
 
+  // Fetch mood-based activities when user feels bored, tired, or frustrated
+  useEffect(() => {
+    if (currentMood?.mood && ['bored', 'tired', 'frustrated'].includes(currentMood.mood)) {
+      const fetchActivities = async () => {
+        try {
+          const response = await fetch(`/api/mood-activities?mood=${currentMood.mood}&energyLevel=${currentMood.energyLevel}&maxDuration=15`);
+          if (response.ok) {
+            const activities = await response.json();
+            setMoodBasedActivities(activities);
+            if (activities.length > 0) {
+              setSelectedActivity(activities[0]); // Auto-select first activity
+              showEmojiNotification('mood', 'activity_suggested', 'Found helpful activities for you!');
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch mood activities:', error);
+        }
+      };
+      fetchActivities();
+    }
+  }, [currentMood?.mood, currentMood?.energyLevel]);
+
   // Mood check-in mutation
   const moodCheckinMutation = useMutation({
     mutationFn: async (checkin: MoodCheckin) => 

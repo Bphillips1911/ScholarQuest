@@ -325,6 +325,198 @@ export async function seedGamifiedLearning() {
         timeEstimate: 3,
         isActive: true
       },
+      
+      // Science Challenges
+      {
+        id: 'c3',
+        date: new Date(),
+        subject: 'science',
+        gradeLevel: 6,
+        title: 'Energy Sources Explorer',
+        description: 'Learn about renewable and non-renewable energy sources',
+        challengeType: 'question',
+        content: {
+          question: 'Which of these is a renewable energy source?',
+          options: ['Coal', 'Solar', 'Natural Gas', 'Oil'],
+          correctAnswer: 'Solar',
+          tips: ['Renewable means it can be naturally replenished', 'Think about sources that won\'t run out']
+        },
+        difficulty: 'easy',
+        points: 8,
+        timeEstimate: 4,
+        isActive: true
+      },
+      {
+        id: 'c4',
+        date: new Date(),
+        subject: 'science',
+        gradeLevel: 7,
+        title: 'Climate Change Challenge',
+        description: 'Explore the science behind our changing climate',
+        challengeType: 'reflection',
+        content: {
+          prompt: 'Explain how greenhouse gases affect Earth\'s temperature and name two ways you can help reduce them.',
+          instructions: 'Write at least 4 sentences with specific examples.',
+          tips: ['Think about the greenhouse effect', 'Consider daily actions like transportation and energy use']
+        },
+        difficulty: 'medium',
+        points: 12,
+        timeEstimate: 8,
+        isActive: true
+      },
+
+      // Social Studies (History & Geography) Challenges
+      {
+        id: 'c5',
+        date: new Date(),
+        subject: 'history',
+        gradeLevel: 6,
+        title: 'Ancient Egypt Discovery',
+        description: 'Explore the fascinating world of ancient Egyptian civilization',
+        challengeType: 'question',
+        content: {
+          question: 'What was the primary purpose of Egyptian pyramids?',
+          options: ['Storage for grain', 'Tombs for pharaohs', 'Temples for worship', 'Military fortresses'],
+          correctAnswer: 'Tombs for pharaohs',
+          tips: ['Think about Egyptian beliefs about the afterlife', 'Consider what archaeologists have found inside']
+        },
+        difficulty: 'medium',
+        points: 10,
+        timeEstimate: 5,
+        isActive: true
+      },
+      {
+        id: 'c6',
+        date: new Date(),
+        subject: 'history',
+        gradeLevel: 7,
+        title: 'Geography Champion',
+        description: 'Test your knowledge of world geography and continents',
+        challengeType: 'question',
+        content: {
+          question: 'Which continent has the most countries?',
+          options: ['Asia', 'Africa', 'Europe', 'South America'],
+          correctAnswer: 'Africa',
+          tips: ['Africa has 54 recognized countries', 'Think about continental size and political divisions']
+        },
+        difficulty: 'medium',
+        points: 10,
+        timeEstimate: 4,
+        isActive: true
+      },
+
+      // English Language Arts Challenges
+      {
+        id: 'c7',
+        date: new Date(),
+        subject: 'english',
+        gradeLevel: 6,
+        title: 'Poetry Power',
+        description: 'Explore the beauty of poetry and literary devices',
+        challengeType: 'creative',
+        content: {
+          prompt: 'Write a short poem (4 lines) about your favorite season. Use at least one metaphor or simile.',
+          instructions: 'Remember: A metaphor compares without using "like" or "as", while a simile uses these words.',
+          tips: ['Think about colors, sounds, and feelings of your season', 'Example: "Winter is a white blanket" (metaphor)']
+        },
+        difficulty: 'medium',
+        points: 15,
+        timeEstimate: 10,
+        isActive: true
+      },
+      {
+        id: 'c8',
+        date: new Date(),
+        subject: 'english',
+        gradeLevel: 7,
+        title: 'Creative Writing Adventure',
+        description: 'Create an engaging story opening that hooks readers',
+        challengeType: 'creative',
+        content: {
+          prompt: 'Write the opening paragraph of a story that begins: "The door that had been locked for 100 years was finally opening..."',
+          instructions: 'Write 3-5 sentences that would make readers want to continue reading.',
+          tips: ['Use descriptive words', 'Create mystery or suspense', 'Think about the five senses']
+        },
+        difficulty: 'hard',
+        points: 20,
+        timeEstimate: 12,
+        isActive: true
+      },
+
+      // SEL (Social Emotional Learning) Challenges
+      {
+        id: 'c9',
+        date: new Date(),
+        subject: 'mixed',
+        gradeLevel: 6,
+        title: 'Empathy Builder',
+        description: 'Practice understanding others\' perspectives and feelings',
+        challengeType: 'reflection',
+        content: {
+          prompt: 'Think of a time when someone seemed upset or angry. How might you show empathy and help them feel better?',
+          instructions: 'Write about specific actions you could take and words you could say.',
+          tips: ['Consider listening without judgment', 'Think about asking how they feel', 'Sometimes just being present helps']
+        },
+        difficulty: 'easy',
+        points: 10,
+        timeEstimate: 8,
+        isActive: true
+      },
+      {
+        id: 'c10',
+        date: new Date(),
+        subject: 'mixed',
+        gradeLevel: 7,
+        title: 'Conflict Resolution Skills',
+        description: 'Learn peaceful ways to solve disagreements and build relationships',
+        challengeType: 'question',
+        content: {
+          question: 'What\'s the BEST first step when you disagree with a friend?',
+          options: ['Tell them they\'re wrong', 'Listen to understand their point of view', 'Walk away and ignore them', 'Get other friends to take your side'],
+          correctAnswer: 'Listen to understand their point of view',
+          tips: ['Good communication starts with listening', 'Understanding doesn\'t mean agreeing']
+        },
+        difficulty: 'medium',
+        points: 12,
+        timeEstimate: 6,
+        isActive: true
+      }
+        subject: 'mixed',
+        gradeLevel: 6,
+        title: 'Empathy Builder',
+        description: 'Practice understanding others\' perspectives and feelings',
+        challengeType: 'reflection',
+        content: {
+          prompt: 'Think of a time when someone seemed upset or angry. How might you show empathy and help them feel better?',
+          instructions: 'Write about specific actions you could take and words you could say.',
+          tips: ['Consider listening without judgment', 'Think about asking how they feel', 'Sometimes just being present helps']
+        },
+        difficulty: 'easy',
+        points: 10,
+        timeEstimate: 8,
+        isActive: true
+      },
+      {
+        id: 'c10',
+        date: new Date(),
+        subject: 'mixed',
+        gradeLevel: 7,
+        title: 'Conflict Resolution Skills',
+        description: 'Learn peaceful ways to solve disagreements and build relationships',
+        challengeType: 'question',
+        content: {
+          question: 'What\'s the BEST first step when you disagree with a friend?',
+          options: ['Tell them they\'re wrong', 'Listen to understand their point of view', 'Walk away and ignore them', 'Get other friends to take your side'],
+          correctAnswer: 'Listen to understand their point of view',
+          tips: ['Good communication starts with listening', 'Understanding doesn\'t mean agreeing']
+        },
+        difficulty: 'medium',
+        points: 12,
+        timeEstimate: 6,
+        isActive: true
+      }
+        isActive: true
+      },
       {
         id: 'c3',
         date: new Date(),

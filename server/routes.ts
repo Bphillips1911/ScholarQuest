@@ -4700,24 +4700,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { title, content, prompt, gradeLevel, studentId } = req.body;
       
-      if (!title || !content) {
-        return res.status(400).json({ error: 'Title and content are required' });
+      if (!title || !content || !studentId) {
+        return res.status(400).json({ error: 'Title, content, and student ID are required' });
+      }
+
+      // Get student name for display
+      const { db } = await import("./db");
+      const { scholars, storySubmissions } = await import("../shared/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      const [student] = await db.select().from(scholars).where(eq(scholars.id, studentId));
+      if (!student) {
+        return res.status(404).json({ error: 'Student not found' });
       }
 
       // Import AI feedback service
       const { generateStoryFeedback } = await import('./ai-story-feedback');
       
       // Generate AI feedback
-      const feedback = await generateStoryFeedback(title, content, prompt, gradeLevel || 7);
+      const feedback = await generateStoryFeedback(title, content, prompt, gradeLevel || student.grade);
       
-      // Store submission for teacher review (optional)
-      // This could be expanded to save to database for teacher dashboard
+      // Save submission to database for teacher review
+      const [submission] = await db.insert(storySubmissions).values({
+        studentId,
+        studentName: student.name,
+        title,
+        content,
+        prompt: prompt || '',
+        gradeLevel: gradeLevel || student.grade,
+        wordCount: content.split(' ').filter(word => word.length > 0).length,
+        aiFeedback: feedback,
+      }).returning();
       
       res.json({
+        submissionId: submission.id,
         feedback,
-        submittedAt: new Date().toISOString(),
+        submittedAt: submission.submittedAt,
         studentId,
-        wordCount: content.split(' ').length
+        wordCount: submission.wordCount
       });
       
     } catch (error) {
@@ -4726,6 +4746,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: 'Failed to generate feedback',
         message: 'Please try again later or contact your teacher for help.'
       });
+    }
+  });
+
+  // Teacher Story Review Routes
+  app.get('/api/teacher/story-submissions', authenticateTeacher, async (req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { storySubmissions } = await import("../shared/schema");
+      const { desc } = await import("drizzle-orm");
+      
+      const submissions = await db
+        .select()
+        .from(storySubmissions)
+        .orderBy(desc(storySubmissions.submittedAt))
+        .limit(50); // Limit to recent submissions
+      
+      res.json(submissions);
+    } catch (error) {
+      console.error('Error fetching story submissions:', error);
+      res.status(500).json({ error: 'Failed to fetch submissions' });
+    }
+  });
+
+  app.put('/api/teacher/story-submissions/:id/review', authenticateTeacher, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { teacherNotes } = req.body;
+      const teacherId = req.user?.id;
+      
+      const { db } = await import("./db");
+      const { storySubmissions } = await import("../shared/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      const [updated] = await db
+        .update(storySubmissions)
+        .set({
+          teacherReviewed: true,
+          teacherNotes: teacherNotes || '',
+          reviewedBy: teacherId,
+          reviewedAt: new Date(),
+        })
+        .where(eq(storySubmissions.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error reviewing story submission:', error);
+      res.status(500).json({ error: 'Failed to review submission' });
     }
   });
 

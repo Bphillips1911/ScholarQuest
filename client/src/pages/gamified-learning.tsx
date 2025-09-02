@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { StickerCollector } from '@/components/sticker-collector';
 import { MoodLearningRecommendations } from '@/components/mood-learning-recommendations';
 import { DailyLearningChallenges } from '@/components/daily-learning-challenges';
+import { StoryFeedbackModal } from '@/components/story-feedback-modal';
 import { useAdvancedUI } from '@/components/ui/advanced-ui-system';
 
 interface StudentData {
@@ -23,6 +24,7 @@ export default function GamifiedLearning() {
   const [activeTab, setActiveTab] = useState('stickers');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [showStoryModal, setShowStoryModal] = useState(false);
 
   useEffect(() => {
     if (!isStudentAuthenticated()) {
@@ -77,6 +79,16 @@ export default function GamifiedLearning() {
             <p className="text-gray-600 text-lg">
               Level up your learning with interactive challenges, personalized activities, and collectible rewards!
             </p>
+            
+            <div className="flex justify-center mt-4">
+              <Button
+                onClick={() => setShowStoryModal(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                data-testid="open-story-feedback"
+              >
+                📝 Get AI Writing Feedback
+              </Button>
+            </div>
             
             {/* Welcome Message with User Info */}
             <motion.div 
@@ -302,6 +314,16 @@ export default function GamifiedLearning() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Story Feedback Modal */}
+      {showStoryModal && studentData && (
+        <StoryFeedbackModal
+          isOpen={showStoryModal}
+          onClose={() => setShowStoryModal(false)}
+          studentId={studentData.id}
+          studentName={studentData.name}
+        />
+      )}
     </div>
   );
 }

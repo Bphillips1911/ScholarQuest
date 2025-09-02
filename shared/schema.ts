@@ -292,6 +292,24 @@ export const adminSessions = pgTable("admin_sessions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Story submissions table for teacher review of AI feedback
+export const storySubmissions = pgTable("story_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => scholars.id),
+  studentName: text("student_name").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  prompt: text("prompt"),
+  gradeLevel: integer("grade_level").notNull(),
+  wordCount: integer("word_count").notNull(),
+  aiFeedback: jsonb("ai_feedback").notNull(), // Store the AI feedback response
+  teacherReviewed: boolean("teacher_reviewed").notNull().default(false),
+  teacherNotes: text("teacher_notes"),
+  reviewedBy: varchar("reviewed_by").references(() => teacherAuth.id),
+  reviewedAt: timestamp("reviewed_at"),
+  submittedAt: timestamp("submitted_at").defaultNow(),
+});
+
 export const insertHouseSchema = createInsertSchema(houses).omit({
   academicPoints: true,
   attendancePoints: true,
@@ -377,6 +395,7 @@ export type StudentSession = typeof studentSessions.$inferSelect;
 export type PasswordResetRequest = typeof passwordResetRequests.$inferSelect;
 export type Administrator = typeof administrators.$inferSelect;
 export type AdminSession = typeof adminSessions.$inferSelect;
+export type StorySubmission = typeof storySubmissions.$inferSelect;
 
 export type InsertHouse = typeof houses.$inferInsert;
 export type InsertScholar = typeof scholars.$inferInsert;
@@ -391,6 +410,7 @@ export type InsertStudentSession = typeof studentSessions.$inferInsert;
 export type InsertPasswordResetRequest = typeof passwordResetRequests.$inferInsert;
 export type InsertAdministrator = typeof administrators.$inferInsert;
 export type InsertAdminSession = typeof adminSessions.$inferInsert;
+export type InsertStorySubmission = typeof storySubmissions.$inferInsert;
 
 export const insertPbisPhotoSchema = createInsertSchema(pbisPhotos).omit({
   id: true,

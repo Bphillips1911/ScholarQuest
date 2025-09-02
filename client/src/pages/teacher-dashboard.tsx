@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { TeacherReflectionModal } from "@/components/TeacherReflectionModal";
 import { PBISCategorySelector } from "@/components/PBISCategorySelector";
+import { TeacherStoryReview } from "@/components/teacher-story-review";
 
 interface Teacher {
   id: string;
@@ -1037,7 +1038,7 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+          <TabsList className="grid w-full grid-cols-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
             <TabsTrigger value="dashboard" style={{color: themeStyles.textPrimary}}>Dashboard</TabsTrigger>
             <TabsTrigger value="scholars" style={{color: themeStyles.textPrimary}}>Scholars</TabsTrigger>
             <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary}}>
@@ -1047,6 +1048,10 @@ export default function TeacherDashboard() {
                   {reflections.filter((r: Reflection) => r.status === 'submitted').length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary}}>
+              <FileText className="h-4 w-4 mr-1" />
+              Story Review
             </TabsTrigger>
             <TabsTrigger value="upload" style={{color: themeStyles.textPrimary}}>Upload Photos</TabsTrigger>
             <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
@@ -1281,6 +1286,10 @@ export default function TeacherDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="story-review" className="space-y-6">
+            <TeacherStoryReview />
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-6">

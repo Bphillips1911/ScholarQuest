@@ -9,9 +9,13 @@ import {
   moodRecommendations,
   studentMoodCheckins,
   studentStreaks,
-  scholars
+  scholars,
+  storySubmissions
 } from "@shared/schema";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
+import OpenAI from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Helper function to get current date string
 const getCurrentDateString = () => new Date().toISOString().split('T')[0];
@@ -435,6 +439,143 @@ export async function completeActivity(req: Request, res: Response) {
   } catch (error) {
     console.error('Error completing activity:', error);
     res.status(500).json({ error: 'Failed to complete activity' });
+  }
+}
+
+// STORY FEEDBACK ROUTES
+
+export async function submitStoryForFeedback(req: Request, res: Response) {
+  try {
+    const { studentId, title, content, prompt, gradeLevel } = req.body;
+
+    if (!studentId || !title || !content) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Generate AI feedback using OpenAI GPT-5
+    const feedbackPrompt = `You are an experienced middle school teacher reviewing a student's creative writing. Please provide detailed, encouraging feedback on this story.
+
+Title: ${title}
+${prompt ? `Writing Prompt: ${prompt}` : ''}
+Grade Level: ${gradeLevel}
+
+Story:
+${content}
+
+Please analyze this story and provide feedback in the following JSON format:
+{
+  "strengths": ["List 3-4 specific strengths"],
+  "improvementAreas": ["List 2-3 areas for improvement"],
+  "specificSuggestions": ["List 3-4 actionable suggestions"],
+  "encouragement": "Write an encouraging, personalized message",
+  "nextSteps": ["List 3 specific next steps for improvement"],
+  "overallScore": "Score from 1-100",
+  "wordAnalysis": {
+    "vocabulary": "assessment of word choice",
+    "sentence_structure": "assessment of sentence variety and structure", 
+    "creativity": "assessment of creative elements"
+  }
+}
+
+Make sure feedback is appropriate for grade ${gradeLevel}, encouraging but honest, and provides specific examples from their writing.`;
+
+    const aiResponse = await openai.chat.completions.create({
+      model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      messages: [
+        {
+          role: "system", 
+          content: "You are a supportive middle school teacher providing writing feedback. Always be encouraging while providing constructive suggestions for improvement."
+        },
+        {
+          role: "user",
+          content: feedbackPrompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 1500
+    });
+
+    const feedbackData = JSON.parse(aiResponse.choices[0].message.content || '{}');
+    
+    // Store submission in database
+    const submission = await db
+      .insert(storySubmissions)
+      .values({
+        studentId,
+        title,
+        content,
+        prompt: prompt || '',
+        gradeLevel: gradeLevel || 7,
+        wordCount: content.trim().split(' ').length,
+        aiFeedback: feedbackData,
+        submittedAt: new Date()
+      })
+      .returning();
+
+    res.json({
+      submissionId: submission[0].id,
+      feedback: feedbackData
+    });
+
+  } catch (error) {
+    console.error('Error generating story feedback:', error);
+    res.status(500).json({ error: 'Failed to generate feedback' });
+  }
+}
+
+export async function getTeacherStorySubmissions(req: Request, res: Response) {
+  try {
+    const submissions = await db
+      .select({
+        id: storySubmissions.id,
+        studentId: storySubmissions.studentId,
+        studentName: scholars.name,
+        title: storySubmissions.title,
+        content: storySubmissions.content,
+        prompt: storySubmissions.prompt,
+        gradeLevel: storySubmissions.gradeLevel,
+        wordCount: storySubmissions.wordCount,
+        aiFeedback: storySubmissions.aiFeedback,
+        teacherReviewed: storySubmissions.teacherReviewed,
+        teacherNotes: storySubmissions.teacherNotes,
+        reviewedBy: storySubmissions.reviewedBy,
+        reviewedAt: storySubmissions.reviewedAt,
+        submittedAt: storySubmissions.submittedAt
+      })
+      .from(storySubmissions)
+      .leftJoin(scholars, eq(storySubmissions.studentId, scholars.id))
+      .orderBy(desc(storySubmissions.submittedAt));
+
+    res.json(submissions);
+  } catch (error) {
+    console.error('Error fetching story submissions:', error);
+    res.status(500).json({ error: 'Failed to fetch submissions' });
+  }
+}
+
+export async function reviewStorySubmission(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { teacherNotes } = req.body;
+
+    // TODO: Get teacher ID from auth session
+    const teacherId = "teacher-auth-id"; // Replace with actual auth
+
+    await db
+      .update(storySubmissions)
+      .set({
+        teacherReviewed: true,
+        teacherNotes,
+        reviewedBy: teacherId,
+        reviewedAt: new Date()
+      })
+      .where(eq(storySubmissions.id, id));
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reviewing story submission:', error);
+    res.status(500).json({ error: 'Failed to review submission' });
   }
 }
 

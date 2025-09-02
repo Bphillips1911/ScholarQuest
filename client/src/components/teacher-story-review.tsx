@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiRequest } from '@/lib/queryClient';
-import { FileText, Eye, MessageSquare, CheckCircle, Clock, Star, User, Calendar, WordCount } from 'lucide-react';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { FileText, User, Calendar, MessageCircle, Check, Eye, BookOpen } from "lucide-react";
+import { format } from "date-fns";
 
 interface StorySubmission {
   id: string;
@@ -18,344 +16,302 @@ interface StorySubmission {
   prompt: string;
   gradeLevel: number;
   wordCount: number;
-  aiFeedback: {
-    strengths: string[];
-    improvementAreas: string[];
-    specificSuggestions: string[];
-    encouragement: string;
-    nextSteps: string[];
-    overallScore: number;
-    wordAnalysis: {
-      vocabulary: string;
-      sentence_structure: string;
-      creativity: string;
-    };
-  };
+  aiFeedback: any;
   teacherReviewed: boolean;
-  teacherNotes?: string;
-  reviewedBy?: string;
-  reviewedAt?: string;
+  teacherNotes: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
   submittedAt: string;
 }
 
-interface TeacherStoryReviewProps {
-  className?: string;
-}
-
-export function TeacherStoryReview({ className }: TeacherStoryReviewProps) {
-  const queryClient = useQueryClient();
+export function TeacherStoryReview() {
   const [selectedSubmission, setSelectedSubmission] = useState<StorySubmission | null>(null);
-  const [teacherNotes, setTeacherNotes] = useState('');
-  const [activeTab, setActiveTab] = useState('unreviewed');
+  const [teacherNotes, setTeacherNotes] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch story submissions
   const { data: submissions = [], isLoading } = useQuery({
-    queryKey: ['/api/teacher/story-submissions'],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    queryKey: ["/api/teacher/story-submissions"],
+    queryFn: async () => {
+      const token = localStorage.getItem("teacherToken");
+      const response = await fetch("/api/teacher/story-submissions", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      if (!response.ok) throw new Error("Failed to fetch submissions");
+      return response.json();
+    }
   });
 
   // Review submission mutation
   const reviewMutation = useMutation({
-    mutationFn: async ({ id, teacherNotes }: { id: string; teacherNotes: string }) =>
-      apiRequest('PUT', `/api/teacher/story-submissions/${id}/review`, { teacherNotes }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/teacher/story-submissions'] });
-      setSelectedSubmission(null);
-      setTeacherNotes('');
+    mutationFn: async (data: { id: string; teacherNotes: string }) => {
+      const token = localStorage.getItem("teacherToken");
+      const response = await fetch(`/api/teacher/story-submissions/${data.id}/review`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ teacherNotes: data.teacherNotes })
+      });
+      if (!response.ok) throw new Error("Failed to review submission");
+      return response.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/story-submissions"] });
+      setSelectedSubmission(null);
+      setTeacherNotes("");
+      toast({
+        title: "Review submitted",
+        description: "Your review has been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Review failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
-  const handleReview = (submission: StorySubmission) => {
-    setSelectedSubmission(submission);
-    setTeacherNotes(submission.teacherNotes || '');
-  };
-
-  const handleSubmitReview = () => {
+  const handleReview = () => {
     if (!selectedSubmission) return;
     reviewMutation.mutate({
       id: selectedSubmission.id,
-      teacherNotes,
+      teacherNotes
     });
   };
-
-  const unreviewed = submissions.filter((s: StorySubmission) => !s.teacherReviewed);
-  const reviewed = submissions.filter((s: StorySubmission) => s.teacherReviewed);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const SubmissionCard = ({ submission }: { submission: StorySubmission }) => (
-    <Card className="mb-4 hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-800">{submission.title}</h3>
-              <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                <div className="flex items-center space-x-1">
-                  <User className="w-3 h-3" />
-                  <span>{submission.studentName}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Calendar className="w-3 h-3" />
-                  <span>{formatDate(submission.submittedAt)}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <WordCount className="w-3 h-3" />
-                  <span>{submission.wordCount} words</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge className="bg-blue-100 text-blue-800">
-              AI Score: {submission.aiFeedback.overallScore}/100
-            </Badge>
-            {submission.teacherReviewed ? (
-              <Badge className="bg-green-100 text-green-800">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Reviewed
-              </Badge>
-            ) : (
-              <Badge variant="secondary">
-                <Clock className="w-3 h-3 mr-1" />
-                Pending
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {submission.prompt && (
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-700"><strong>Prompt:</strong> {submission.prompt}</p>
-            </div>
-          )}
-          <p className="text-gray-700 line-clamp-3">{submission.content}</p>
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              onClick={() => handleReview(submission)}
-              data-testid={`review-submission-${submission.id}`}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {submission.teacherReviewed ? 'View Review' : 'Review & Comment'}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            AI Story Feedback Review
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading submissions...</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className={className}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Story Submissions</h2>
-            <p className="text-gray-600">Review AI feedback and add your teacher insights</p>
-          </div>
-          <div className="flex space-x-4 text-sm">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{unreviewed.length}</div>
-              <div className="text-gray-600">Pending</div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Student Story Submissions with AI Feedback
+            <Badge variant="secondary">{submissions.length} submissions</Badge>
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            Review student stories and the AI-generated feedback. Students see this as "teacher feedback" to maintain the educational experience.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {submissions.length === 0 ? (
+            <div className="text-center py-8">
+              <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No submissions yet</h3>
+              <p className="text-gray-600">
+                Students haven't submitted any stories for AI feedback yet.
+              </p>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{reviewed.length}</div>
-              <div className="text-gray-600">Reviewed</div>
+          ) : (
+            <div className="space-y-4">
+              {submissions.map((submission: StorySubmission) => (
+                <Card key={submission.id} className="border-l-4 border-l-blue-500">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{submission.title}</CardTitle>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <span className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            {submission.studentName}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {format(new Date(submission.submittedAt), 'MMM dd, yyyy')}
+                          </span>
+                          <Badge variant="outline">
+                            Grade {submission.gradeLevel}
+                          </Badge>
+                          <Badge variant="outline">
+                            {submission.wordCount} words
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {submission.teacherReviewed ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800">
+                            <Check className="h-3 w-3 mr-1" />
+                            Reviewed
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            Pending Review
+                          </Badge>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedSubmission(submission);
+                            setTeacherNotes(submission.teacherNotes || "");
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Review
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {submission.prompt && (
+                      <div className="mb-3 p-3 bg-gray-50 rounded-md">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Writing Prompt:</p>
+                        <p className="text-sm text-gray-600">{submission.prompt}</p>
+                      </div>
+                    )}
+                    <div className="text-sm text-gray-600 line-clamp-3">
+                      {submission.content.substring(0, 200)}...
+                    </div>
+                    {submission.aiFeedback && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                        <p className="text-sm font-medium text-blue-700 mb-1">AI Feedback Summary:</p>
+                        <p className="text-sm text-blue-600">
+                          Score: {submission.aiFeedback.overallScore}/100 | 
+                          {submission.aiFeedback.strengths?.length || 0} strengths identified | 
+                          {submission.aiFeedback.improvementAreas?.length || 0} improvement areas
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="unreviewed" className="flex items-center space-x-2">
-              <Clock className="w-4 h-4" />
-              <span>Pending Review ({unreviewed.length})</span>
-            </TabsTrigger>
-            <TabsTrigger value="reviewed" className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4" />
-              <span>Reviewed ({reviewed.length})</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="unreviewed" className="mt-6">
-            {unreviewed.length === 0 ? (
-              <Card className="text-center p-8">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">All Caught Up!</h3>
-                <p className="text-gray-600">No pending story submissions to review.</p>
-              </Card>
-            ) : (
-              <div>
-                {unreviewed.map((submission: StorySubmission) => (
-                  <SubmissionCard key={submission.id} submission={submission} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="reviewed" className="mt-6">
-            {reviewed.length === 0 ? (
-              <Card className="text-center p-8">
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">No Reviews Yet</h3>
-                <p className="text-gray-600">Reviewed submissions will appear here.</p>
-              </Card>
-            ) : (
-              <div>
-                {reviewed.map((submission: StorySubmission) => (
-                  <SubmissionCard key={submission.id} submission={submission} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Review Modal */}
-      <AnimatePresence>
-        {selectedSubmission && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedSubmission(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800">{selectedSubmission.title}</h3>
-                  <p className="text-gray-600">by {selectedSubmission.studentName}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedSubmission(null)}
-                >
-                  ×
-                </Button>
+      {selectedSubmission && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Reviewing: {selectedSubmission.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Student Story */}
+            <div>
+              <h4 className="font-medium mb-2">Student Story</h4>
+              <div className="max-h-64 overflow-y-auto p-4 bg-gray-50 rounded-md border">
+                <p className="whitespace-pre-wrap">{selectedSubmission.content}</p>
               </div>
+            </div>
 
-              <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-6 space-y-6">
-                {/* Story Content */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">Student's Story</h4>
-                  {selectedSubmission.prompt && (
-                    <div className="p-3 bg-blue-50 rounded-lg mb-3">
-                      <p className="text-sm text-blue-800"><strong>Writing Prompt:</strong> {selectedSubmission.prompt}</p>
-                    </div>
-                  )}
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-gray-800 whitespace-pre-wrap">{selectedSubmission.content}</p>
+            {/* AI Feedback */}
+            {selectedSubmission.aiFeedback && (
+              <div>
+                <h4 className="font-medium mb-2">AI-Generated Feedback (shown to student as "teacher feedback")</h4>
+                <div className="p-4 bg-blue-50 rounded-md border space-y-3">
+                  <div>
+                    <p className="font-medium text-blue-900">Overall Score: {selectedSubmission.aiFeedback.overallScore}/100</p>
                   </div>
-                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                    <span>{selectedSubmission.wordCount} words</span>
-                    <span>Grade {selectedSubmission.gradeLevel}</span>
-                    <span>Submitted {formatDate(selectedSubmission.submittedAt)}</span>
-                  </div>
-                </div>
-
-                {/* AI Feedback */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">AI Feedback Summary</h4>
-                  <div className="grid gap-4">
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <h5 className="font-medium text-green-800 mb-2">Strengths</h5>
-                      <ul className="space-y-1">
-                        {selectedSubmission.aiFeedback.strengths.map((strength, index) => (
-                          <li key={index} className="text-green-700 text-sm flex items-start space-x-2">
-                            <span className="text-green-600 mt-1">•</span>
-                            <span>{strength}</span>
-                          </li>
+                  
+                  {selectedSubmission.aiFeedback.strengths && (
+                    <div>
+                      <p className="font-medium text-green-700 mb-1">Strengths:</p>
+                      <ul className="list-disc list-inside text-sm text-green-600 space-y-1">
+                        {selectedSubmission.aiFeedback.strengths.map((strength: string, idx: number) => (
+                          <li key={idx}>{strength}</li>
                         ))}
                       </ul>
                     </div>
-                    <div className="p-4 bg-orange-50 rounded-lg">
-                      <h5 className="font-medium text-orange-800 mb-2">Areas for Improvement</h5>
-                      <ul className="space-y-1">
-                        {selectedSubmission.aiFeedback.improvementAreas.map((area, index) => (
-                          <li key={index} className="text-orange-700 text-sm flex items-start space-x-2">
-                            <span className="text-orange-600 mt-1">•</span>
-                            <span>{area}</span>
-                          </li>
+                  )}
+
+                  {selectedSubmission.aiFeedback.improvementAreas && (
+                    <div>
+                      <p className="font-medium text-orange-700 mb-1">Areas for Improvement:</p>
+                      <ul className="list-disc list-inside text-sm text-orange-600 space-y-1">
+                        {selectedSubmission.aiFeedback.improvementAreas.map((area: string, idx: number) => (
+                          <li key={idx}>{area}</li>
                         ))}
                       </ul>
                     </div>
-                  </div>
-                </div>
+                  )}
 
-                {/* Teacher Notes */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">Your Teacher Notes</h4>
-                  <Textarea
-                    value={teacherNotes}
-                    onChange={(e) => setTeacherNotes(e.target.value)}
-                    placeholder="Add your personal feedback and observations..."
-                    className="min-h-[100px]"
-                    data-testid="teacher-notes-input"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Share your personal insights, encouragement, or additional suggestions for the student.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 p-6 border-t bg-gray-50">
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedSubmission(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSubmitReview}
-                  disabled={reviewMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
-                  data-testid="submit-teacher-review"
-                >
-                  {reviewMutation.isPending ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Saving...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <MessageSquare className="w-4 h-4" />
-                      <span>{selectedSubmission.teacherReviewed ? 'Update Review' : 'Submit Review'}</span>
+                  {selectedSubmission.aiFeedback.specificSuggestions && (
+                    <div>
+                      <p className="font-medium text-blue-700 mb-1">Specific Suggestions:</p>
+                      <ul className="list-disc list-inside text-sm text-blue-600 space-y-1">
+                        {selectedSubmission.aiFeedback.specificSuggestions.map((suggestion: string, idx: number) => (
+                          <li key={idx}>{suggestion}</li>
+                        ))}
+                      </ul>
                     </div>
                   )}
-                </Button>
+
+                  {selectedSubmission.aiFeedback.encouragement && (
+                    <div className="p-3 bg-green-100 rounded-md">
+                      <p className="font-medium text-green-800 mb-1">Encouragement:</p>
+                      <p className="text-sm text-green-700">{selectedSubmission.aiFeedback.encouragement}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            )}
+
+            {/* Teacher Notes */}
+            <div>
+              <label htmlFor="teacher-notes" className="block font-medium mb-2">
+                Your Review Notes (internal, not shown to students)
+              </label>
+              <textarea
+                id="teacher-notes"
+                value={teacherNotes}
+                onChange={(e) => setTeacherNotes(e.target.value)}
+                placeholder="Add your thoughts about the AI feedback quality, any concerns, or additional notes..."
+                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleReview}
+                disabled={reviewMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {reviewMutation.isPending ? "Submitting..." : "Submit Review"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedSubmission(null);
+                  setTeacherNotes("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

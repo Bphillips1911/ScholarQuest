@@ -4742,12 +4742,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error('Error generating story feedback:', error);
-      res.status(500).json({ 
-        error: 'Failed to generate feedback',
-        message: 'Please try again later or contact your teacher for help.'
-      });
+      res.status(500).json({ error: 'Failed to generate story feedback' });
     }
   });
+
+  // Teacher Story Review Routes
+  app.get('/api/teacher/story-submissions', authenticateTeacher, async (req, res) => {
+    try {
+      const { db } = await import('./db');
+      const { storySubmissions, scholars } = await import('../shared/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      
+      const submissions = await db
+        .select({
+          id: storySubmissions.id,
+          studentId: storySubmissions.studentId,
+          studentName: scholars.name,
+          title: storySubmissions.title,
+          content: storySubmissions.content,
+          prompt: storySubmissions.prompt,
+          gradeLevel: storySubmissions.gradeLevel,
+          wordCount: storySubmissions.wordCount,
+          aiFeedback: storySubmissions.aiFeedback,
+          teacherReviewed: storySubmissions.teacherReviewed,
+          teacherNotes: storySubmissions.teacherNotes,
+          reviewedBy: storySubmissions.reviewedBy,
+          reviewedAt: storySubmissions.reviewedAt,
+          submittedAt: storySubmissions.submittedAt
+        })
+        .from(storySubmissions)
+        .leftJoin(scholars, eq(storySubmissions.studentId, scholars.id))
+        .orderBy(desc(storySubmissions.submittedAt));
+
+      res.json(submissions);
+    } catch (error) {
+      console.error('Error fetching story submissions:', error);
+      res.status(500).json({ error: 'Failed to fetch submissions' });
+    }
+  });
+
+  app.put('/api/teacher/story-submissions/:id/review', authenticateTeacher, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { teacherNotes } = req.body;
+      const teacherId = (req as any).teacher.id;
+      
+      const { db } = await import('./db');
+      const { storySubmissions } = await import('../shared/schema');
+      const { eq } = await import('drizzle-orm');
+
+      await db
+        .update(storySubmissions)
+        .set({
+          teacherReviewed: true,
+          teacherNotes,
+          reviewedBy: teacherId,
+          reviewedAt: new Date()
+        })
+        .where(eq(storySubmissions.id, id));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error reviewing story submission:', error);
+      res.status(500).json({ error: 'Failed to review submission' });
+    }
+  });
+
+  // End of story feedback routes
 
   // Teacher Story Review Routes
   app.get('/api/teacher/story-submissions', authenticateTeacher, async (req, res) => {

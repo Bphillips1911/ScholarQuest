@@ -480,7 +480,10 @@ export async function seedGamifiedLearning() {
         points: 12,
         timeEstimate: 6,
         isActive: true
-      }
+      },
+      {
+        id: 'c9',
+        date: new Date(),
         subject: 'mixed',
         gradeLevel: 6,
         title: 'Empathy Builder',
@@ -513,8 +516,6 @@ export async function seedGamifiedLearning() {
         difficulty: 'medium',
         points: 12,
         timeEstimate: 6,
-        isActive: true
-      }
         isActive: true
       },
       {

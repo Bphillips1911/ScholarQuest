@@ -25,11 +25,11 @@ export default function NavigationHeader() {
   }, [location]);
 
   const houses = [
-    { id: "franklin", name: "House of Franklin", icon: "🔬", path: "/houses/franklin" },
-    { id: "tesla", name: "House of Tesla", icon: "⚡", path: "/houses/tesla" },
-    { id: "curie", name: "House of Curie", icon: "🧪", path: "/houses/curie" },
-    { id: "nobel", name: "House of Nobel", icon: "🎯", path: "/houses/nobel" },
-    { id: "lovelace", name: "House of Lovelace", icon: "💻", path: "/houses/lovelace" }
+    { id: "franklin", name: "Johnson", icon: "🚀", path: "/houses/franklin" },
+    { id: "tesla", name: "Tesla", icon: "⚡", path: "/houses/tesla" },
+    { id: "curie", name: "Drew", icon: "🧪", path: "/houses/curie" },
+    { id: "nobel", name: "Marshall", icon: "⚖️", path: "/houses/nobel" },
+    { id: "lovelace", name: "West", icon: "🧭", path: "/houses/lovelace" }
   ];
 
   const navItems = [

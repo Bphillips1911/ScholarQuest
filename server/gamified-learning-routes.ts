@@ -389,6 +389,27 @@ export async function getMoodRecommendations(req: Request, res: Response) {
   }
 }
 
+export async function getMoodBasedActivities(req: Request, res: Response) {
+  try {
+    const { mood, energyLevel, maxDuration } = req.query;
+    
+    // Import the mood activities module
+    const moodActivities = await import('./mood-activities');
+    
+    const activities = moodActivities.getActivitiesForMood(
+      mood as string,
+      energyLevel as string,
+      undefined, // no subject filter
+      maxDuration ? parseInt(maxDuration as string) : undefined
+    );
+
+    res.json(activities);
+  } catch (error) {
+    console.error('Error fetching mood-based activities:', error);
+    res.status(500).json({ error: 'Failed to fetch activities' });
+  }
+}
+
 export async function completeActivity(req: Request, res: Response) {
   try {
     const { studentId, recommendationId } = req.body;

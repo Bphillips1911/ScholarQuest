@@ -4672,6 +4672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     getTodaysMoodCheckin,
     createMoodCheckin,
     getMoodRecommendations,
+    getMoodBasedActivities,
     completeActivity
   } = await import('./gamified-learning-routes');
 
@@ -4691,7 +4692,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/student/mood/today/:studentId', getTodaysMoodCheckin);
   app.post('/api/student/mood/checkin', createMoodCheckin);
   app.get('/api/student/mood/recommendations/:studentId/:mood/:energyLevel', getMoodRecommendations);
+  app.get('/api/mood-activities', getMoodBasedActivities);
   app.post('/api/student/mood/complete-activity', completeActivity);
+
+  // AI Story Feedback Route
+  app.post('/api/student/story-feedback', async (req, res) => {
+    try {
+      const { title, content, prompt, gradeLevel, studentId } = req.body;
+      
+      if (!title || !content) {
+        return res.status(400).json({ error: 'Title and content are required' });
+      }
+
+      // Import AI feedback service
+      const { generateStoryFeedback } = await import('./ai-story-feedback');
+      
+      // Generate AI feedback
+      const feedback = await generateStoryFeedback(title, content, prompt, gradeLevel || 7);
+      
+      // Store submission for teacher review (optional)
+      // This could be expanded to save to database for teacher dashboard
+      
+      res.json({
+        feedback,
+        submittedAt: new Date().toISOString(),
+        studentId,
+        wordCount: content.split(' ').length
+      });
+      
+    } catch (error) {
+      console.error('Error generating story feedback:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate feedback',
+        message: 'Please try again later or contact your teacher for help.'
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

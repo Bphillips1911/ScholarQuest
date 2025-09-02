@@ -15,6 +15,21 @@ interface MoodCheckin {
   context?: string;
 }
 
+interface LearningActivity {
+  id: string;
+  title: string;
+  description: string;
+  subject: string;
+  activityType: 'interactive' | 'video' | 'game' | 'reflection' | 'reading' | 'creative';
+  duration: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  moodMatch: string[];
+  energyLevel: 'low' | 'medium' | 'high';
+  instructions: string;
+  content?: any;
+  points: number;
+}
+
 interface LearningRecommendation {
   id: string;
   title: string;
@@ -84,6 +99,8 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
   const [showMoodSelector, setShowMoodSelector] = useState(false);
   const [selectedRecommendation, setSelectedRecommendation] = useState<LearningRecommendation | null>(null);
   const [completedActivities, setCompletedActivities] = useState<string[]>([]);
+  const [moodBasedActivities, setMoodBasedActivities] = useState<LearningActivity[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<LearningActivity | null>(null);
 
   // Get today's mood check-in
   const { data: todayMoodCheckin } = useQuery({
@@ -204,9 +221,99 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
       timeOfDay,
     } as MoodCheckin;
     
+    // Load mood-based activities for special moods (bored, tired, frustrated)
+    if (['bored', 'tired', 'frustrated'].includes(finalCheckin.mood)) {
+      loadMoodBasedActivities(finalCheckin.mood, finalCheckin.energyLevel);
+    }
+    
     moodCheckinMutation.mutate(finalCheckin);
     setMoodStep('mood');
     setTempCheckin({});
+  };
+
+  const loadMoodBasedActivities = async (mood: string, energyLevel: string) => {
+    try {
+      const response = await fetch(`/api/mood-activities?mood=${mood}&energyLevel=${energyLevel}&maxDuration=30`);
+      if (response.ok) {
+        const activities = await response.json();
+        setMoodBasedActivities(activities);
+      }
+    } catch (error) {
+      console.error('Error loading mood-based activities:', error);
+    }
+  };
+
+  const MoodActivityCard = ({ activity }: { activity: LearningActivity }) => {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200 p-6 transition-all duration-300 hover:border-purple-300"
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="text-3xl">
+              {activity.activityType === 'interactive' ? '🎮' : 
+               activity.activityType === 'video' ? '📺' :
+               activity.activityType === 'game' ? '🎯' :
+               activity.activityType === 'reflection' ? '🤔' :
+               activity.activityType === 'reading' ? '📖' :
+               activity.activityType === 'creative' ? '🎨' : '📝'}
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">
+                {activity.title}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {activity.description}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <Badge className="bg-purple-500 text-white">
+              +{activity.points} pts
+            </Badge>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Badge 
+            style={{ 
+              backgroundColor: subjectColors[activity.subject as keyof typeof subjectColors] || subjectColors.mixed,
+              color: 'white'
+            }}
+          >
+            {activity.subject}
+          </Badge>
+          <Badge variant="outline">
+            {activity.duration} min
+          </Badge>
+          <Badge variant="outline" className={
+            activity.difficulty === 'easy' ? 'text-green-600' :
+            activity.difficulty === 'medium' ? 'text-yellow-600' : 'text-red-600'
+          }>
+            {activity.difficulty}
+          </Badge>
+          <Badge variant="outline">
+            {activity.energyLevel} energy
+          </Badge>
+        </div>
+
+        <div className="bg-white rounded-lg p-3 mb-4">
+          <p className="text-sm text-gray-700 font-medium">Instructions:</p>
+          <p className="text-sm text-gray-600 mt-1">{activity.instructions}</p>
+        </div>
+
+        <Button
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+          onClick={() => setSelectedActivity(activity)}
+          data-testid={`start-mood-activity-${activity.id}`}
+        >
+          Start Activity
+        </Button>
+      </motion.div>
+    );
   };
 
   const RecommendationCard = ({ recommendation }: { recommendation: LearningRecommendation }) => {
@@ -510,8 +617,35 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
         </Card>
       )}
 
-      {/* Recommendations */}
-      {currentMood && recommendations.length > 0 && (
+      {/* Mood-Based Activity Redirection */}
+      {currentMood && ['bored', 'tired', 'frustrated'].includes(currentMood.mood) && moodBasedActivities.length > 0 && (
+        <div className="space-y-6">
+          <div className="text-center bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl p-6">
+            <h3 className="text-xl font-bold mb-2">
+              🎯 Let's Turn This Around!
+            </h3>
+            <p className="mb-4">
+              {currentMood.mood === 'bored' && "We found some exciting activities to spark your interest!"}
+              {currentMood.mood === 'tired' && "Here are some gentle activities to help you recharge while learning!"}
+              {currentMood.mood === 'frustrated' && "Let's try some calming activities that will help you feel better and learn!"}
+            </p>
+            <Badge className="bg-white text-purple-600 font-semibold">
+              Personalized for your {currentMood.mood} mood
+            </Badge>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <AnimatePresence>
+              {moodBasedActivities.map((activity) => (
+                <MoodActivityCard key={activity.id} activity={activity} />
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
+
+      {/* Regular Recommendations */}
+      {currentMood && !['bored', 'tired', 'frustrated'].includes(currentMood.mood) && recommendations.length > 0 && (
         <div className="space-y-6">
           <div className="text-center">
             <h3 className="text-lg font-semibold">
@@ -553,6 +687,135 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
           </CardContent>
         </Card>
       )}
+
+      {/* Mood-Based Activity Modal */}
+      <AnimatePresence>
+        {selectedActivity && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedActivity(null);
+              }
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                      {selectedActivity.title}
+                    </h2>
+                    <p className="text-gray-600">{selectedActivity.description}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedActivity(null)}
+                    data-testid="close-mood-activity-modal"
+                  >
+                    ✕
+                  </Button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Activity Details */}
+                  <div className="flex flex-wrap gap-3">
+                    <Badge className="bg-blue-500 text-white">
+                      {selectedActivity.subject}
+                    </Badge>
+                    <Badge variant="outline">
+                      {selectedActivity.duration} minutes
+                    </Badge>
+                    <Badge variant="outline">
+                      {selectedActivity.difficulty}
+                    </Badge>
+                    <Badge className="bg-purple-500 text-white">
+                      +{selectedActivity.points} points
+                    </Badge>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-blue-800 mb-2">📋 Instructions</h3>
+                    <p className="text-blue-700">{selectedActivity.instructions}</p>
+                  </div>
+
+                  {/* Activity Content */}
+                  {selectedActivity.content && (
+                    <div className="space-y-4">
+                      {selectedActivity.content.puzzle && (
+                        <div className="bg-yellow-50 rounded-lg p-4">
+                          <h4 className="font-semibold text-yellow-800 mb-2">🧩 Puzzle</h4>
+                          <p className="text-yellow-700 mb-3">{selectedActivity.content.puzzle}</p>
+                          {selectedActivity.content.hint && (
+                            <div className="bg-yellow-100 rounded p-2">
+                              <p className="text-sm text-yellow-600">
+                                <strong>Hint:</strong> {selectedActivity.content.hint}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedActivity.content.steps && (
+                        <div className="bg-green-50 rounded-lg p-4">
+                          <h4 className="font-semibold text-green-800 mb-2">📝 Steps</h4>
+                          <ol className="list-decimal list-inside space-y-2">
+                            {selectedActivity.content.steps.map((step: string, index: number) => (
+                              <li key={index} className="text-green-700">{step}</li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+
+                      {selectedActivity.content.reflection && (
+                        <div className="bg-purple-50 rounded-lg p-4">
+                          <h4 className="font-semibold text-purple-800 mb-2">🤔 Reflection</h4>
+                          <p className="text-purple-700 mb-3">{selectedActivity.content.reflection}</p>
+                          <textarea 
+                            className="w-full p-3 border border-purple-200 rounded-lg text-sm" 
+                            rows={4}
+                            placeholder="Write your reflection here..."
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end space-x-3 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedActivity(null)}
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                      onClick={() => {
+                        // Award points and close modal
+                        showEmojiNotification('achievement', 'activity_completed', `Great job! +${selectedActivity.points} points`);
+                        announce(`Activity completed! You earned ${selectedActivity.points} points.`);
+                        setSelectedActivity(null);
+                      }}
+                      data-testid="complete-mood-activity-from-modal"
+                    >
+                      Complete Activity (+{selectedActivity.points} pts)
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Activity Modal */}
       <AnimatePresence>

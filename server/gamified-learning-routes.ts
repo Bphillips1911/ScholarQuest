@@ -116,31 +116,16 @@ export async function getTodaysChallenges(req: Request, res: Response) {
     const { studentId, grade } = req.params;
     const today = getCurrentDateString();
 
-    // Get challenges for the grade level (using all available challenges if none for today)
-    let todaysChals = await db
+    // Get all active challenges for the grade level (no date filtering)
+    const todaysChals = await db
       .select()
       .from(dailyChallenges)
       .where(
         and(
           eq(dailyChallenges.gradeLevel, parseInt(grade)),
-          eq(sql`DATE(${dailyChallenges.date})`, today),
           eq(dailyChallenges.isActive, true)
         )
       );
-
-    // If no challenges for today, get a selection of all active challenges for the grade
-    if (todaysChals.length === 0) {
-      todaysChals = await db
-        .select()
-        .from(dailyChallenges)
-        .where(
-          and(
-            eq(dailyChallenges.gradeLevel, parseInt(grade)),
-            eq(dailyChallenges.isActive, true)
-          )
-        )
-        .limit(10); // Get a variety of challenges across all subjects
-    }
 
     // Check which challenges the student has completed
     const completedChallenges = await db
@@ -411,17 +396,27 @@ export async function getMoodBasedActivities(req: Request, res: Response) {
   try {
     const { mood, energyLevel, maxDuration } = req.query;
     
-    // Import the mood activities module
-    const moodActivities = await import('./mood-activities');
+    console.log('Mood activities request:', { mood, energyLevel, maxDuration });
     
-    const activities = moodActivities.getActivitiesForMood(
-      mood as string,
-      energyLevel as string,
-      undefined, // no subject filter
-      maxDuration ? parseInt(maxDuration as string) : undefined
-    );
-
-    res.json(activities);
+    // Import the mood activities module
+    const { moodBasedActivities } = await import('./mood-activities');
+    
+    console.log('Total activities available:', moodBasedActivities.length);
+    
+    // Filter activities based on mood and energy level
+    const filteredActivities = moodBasedActivities.filter(activity => {
+      const moodMatch = activity.moodMatch.includes(mood as string);
+      const energyMatch = !energyLevel || activity.energyLevel === energyLevel;
+      const durationMatch = !maxDuration || activity.duration <= parseInt(maxDuration as string);
+      
+      console.log(`Activity ${activity.title}: mood=${moodMatch}, energy=${energyMatch}, duration=${durationMatch}`);
+      
+      return moodMatch && energyMatch && durationMatch;
+    });
+    
+    console.log('Filtered activities count:', filteredActivities.length);
+    
+    res.json(filteredActivities);
   } catch (error) {
     console.error('Error fetching mood-based activities:', error);
     res.status(500).json({ error: 'Failed to fetch activities' });

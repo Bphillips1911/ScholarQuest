@@ -264,6 +264,17 @@ export default function StudentHouseHistory() {
     }
   };
 
+  const getHouseName = (house: string) => {
+    switch (house) {
+      case 'franklin': return 'Johnson';
+      case 'tesla': return 'Tesla';
+      case 'curie': return 'Drew';
+      case 'nobel': return 'Marshall';
+      case 'lovelace': return 'West';
+      default: return house;
+    }
+  };
+
   const currentStories = houseHistories[selectedHouse as keyof HouseHistoryData] || [];
   const currentStory = currentStories[currentChapter];
 
@@ -396,7 +407,7 @@ export default function StudentHouseHistory() {
             >
               <div className="flex flex-col items-center text-white text-center">
                 {getHouseIcon(house)}
-                <span className="mt-2 font-semibold capitalize">{house}</span>
+                <span className="mt-2 font-semibold">{getHouseName(house)}</span>
               </div>
             </motion.div>
           ))}

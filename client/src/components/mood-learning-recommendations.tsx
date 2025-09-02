@@ -101,6 +101,7 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
   const [completedActivities, setCompletedActivities] = useState<string[]>([]);
   const [moodBasedActivities, setMoodBasedActivities] = useState<LearningActivity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<LearningActivity | null>(null);
+  const [showMoodBasedActivities, setShowMoodBasedActivities] = useState(true);
 
   // Get today's mood check-in
   const { data: todayMoodCheckin } = useQuery({
@@ -117,6 +118,7 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
   // Fetch mood-based activities when user feels bored, tired, or frustrated
   useEffect(() => {
     if (currentMood?.mood && ['bored', 'tired', 'frustrated'].includes(currentMood.mood)) {
+      setShowMoodBasedActivities(true); // Reset visibility when mood changes
       const fetchActivities = async () => {
         try {
           const response = await fetch(`/api/mood-activities?mood=${currentMood.mood}&energyLevel=${currentMood.energyLevel}&maxDuration=30`);
@@ -134,8 +136,12 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
         }
       };
       fetchActivities();
+    } else {
+      // Clear activities and hide modal for other moods
+      setMoodBasedActivities([]);
+      setShowMoodBasedActivities(false);
     }
-  }, [currentMood?.mood, currentMood?.energyLevel, showEmojiNotification, announce]);
+  }, [currentMood?.mood, currentMood?.energyLevel]);
 
   // Mood check-in mutation
   const moodCheckinMutation = useMutation({
@@ -641,9 +647,18 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
       )}
 
       {/* Mood-Based Activity Redirection */}
-      {currentMood && ['bored', 'tired', 'frustrated'].includes(currentMood.mood) && moodBasedActivities.length > 0 && (
+      {currentMood && ['bored', 'tired', 'frustrated'].includes(currentMood.mood) && moodBasedActivities.length > 0 && showMoodBasedActivities && (
         <div className="space-y-6">
-          <div className="text-center bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl p-6">
+          <div className="text-center bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl p-6 relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-2 right-2 text-white hover:bg-white/20"
+              onClick={() => setShowMoodBasedActivities(false)}
+              data-testid="close-mood-activities"
+            >
+              ✕
+            </Button>
             <h3 className="text-xl font-bold mb-2">
               🎯 Let's Turn This Around!
             </h3>
@@ -663,6 +678,16 @@ export function MoodLearningRecommendations({ studentId, grade, className }: Moo
                 <MoodActivityCard key={activity.id} activity={activity} />
               ))}
             </AnimatePresence>
+          </div>
+          
+          <div className="text-center">
+            <Button
+              variant="outline"
+              onClick={() => setShowMoodBasedActivities(false)}
+              data-testid="dismiss-mood-activities"
+            >
+              I'll continue with my original plan
+            </Button>
           </div>
         </div>
       )}

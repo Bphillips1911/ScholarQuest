@@ -19,7 +19,10 @@ import {
   VolumeX,
   Users,
   Award,
-  User
+  User,
+  Rocket,
+  Scale,
+  Navigation
 } from "lucide-react";
 import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession } from "@/lib/studentAuth";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
@@ -244,11 +247,11 @@ export default function StudentHouseHistory() {
 
   const getHouseIcon = (house: string) => {
     switch (house) {
-      case 'franklin': return <FlaskConical className="h-8 w-8" />;
+      case 'franklin': return <Rocket className="h-8 w-8" />;
       case 'tesla': return <Zap className="h-8 w-8" />;
       case 'curie': return <FlaskConical className="h-8 w-8" />;
-      case 'nobel': return <Target className="h-8 w-8" />;
-      case 'lovelace': return <Computer className="h-8 w-8" />;
+      case 'nobel': return <Scale className="h-8 w-8" />;
+      case 'lovelace': return <Navigation className="h-8 w-8" />;
       default: return <Star className="h-8 w-8" />;
     }
   };

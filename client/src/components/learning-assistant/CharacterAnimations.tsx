@@ -226,11 +226,11 @@ export function CharacterAnimations({ character, isActive, message, onInteractio
 export const houseCharacters: Character[] = [
   {
     id: 'franklin-bot',
-    name: 'Frank',
-    house: 'Franklin',
-    personality: 'Curious and innovative',
+    name: 'Katherine',
+    house: 'Johnson',
+    personality: 'Precise and mathematical',
     color: 'blue',
-    avatar: '🔬'
+    avatar: '🚀'
   },
   {
     id: 'tesla-bot',
@@ -242,26 +242,26 @@ export const houseCharacters: Character[] = [
   },
   {
     id: 'curie-bot',
-    name: 'Marie',
-    house: 'Curie',
-    personality: 'Determined and brilliant',
+    name: 'Charles',
+    house: 'Drew',
+    personality: 'Caring and innovative',
     color: 'red',
     avatar: '🧪'
   },
   {
     id: 'nobel-bot',
-    name: 'Al',
-    house: 'Nobel',
-    personality: 'Wise and accomplished',
+    name: 'Thurgood',
+    house: 'Marshall',
+    personality: 'Just and accomplished',
     color: 'green',
-    avatar: '🎯'
+    avatar: '⚖️'
   },
   {
     id: 'lovelace-bot',
-    name: 'Ada',
-    house: 'Lovelace',
-    personality: 'Logical and creative',
+    name: 'Gladys',
+    house: 'West',
+    personality: 'Logical and precise',
     color: 'orange',
-    avatar: '💻'
+    avatar: '🧭'
   }
 ];

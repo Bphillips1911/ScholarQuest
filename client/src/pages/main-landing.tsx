@@ -20,7 +20,7 @@ const houses: House[] = [
     id: "franklin",
     name: "House of Johnson",
     color: "#1e40af",
-    icon: "🔬",
+    icon: "🚀",
     motto: "Innovation Through Discovery",
     description: "Science • Technology • Research"
   },
@@ -44,7 +44,7 @@ const houses: House[] = [
     id: "nobel",
     name: "House of Marshall",
     color: "#059669", 
-    icon: "🎯",
+    icon: "⚖️",
     motto: "Excellence in Achievement",
     description: "Leadership • Achievement • Honor"
   },
@@ -52,7 +52,7 @@ const houses: House[] = [
     id: "lovelace",
     name: "House of West",
     color: "#ea580c",
-    icon: "💻", 
+    icon: "🧭", 
     motto: "Coding the Future",
     description: "Technology • Programming • Logic"
   }

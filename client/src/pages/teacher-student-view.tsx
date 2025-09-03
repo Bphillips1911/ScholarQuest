@@ -451,67 +451,82 @@ export default function TeacherStudentView() {
           </motion.div>
         </div>
 
-        {/* Behavioral Reflections Card - Always Show if Student Has Data */}
-        {reflections && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-6"
-          >
-            <Card className="bg-white rounded-2xl shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-gray-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Behavioral Reflections</h3>
-                  </div>
-                  <Badge 
-                    variant="secondary" 
-                    className={`${
-                      reflections.filter((r: any) => r.status === 'submitted').length > 0 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {reflections.filter((r: any) => r.status === 'submitted').length} Pending
-                  </Badge>
+        {/* Behavioral Reflections Card - Show Real Data */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-6"
+        >
+          <Card className="bg-white rounded-2xl shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Behavioral Reflections</h3>
                 </div>
-                
-                <div className="space-y-3">
-                  {reflections.slice(0, 6).map((reflection: any, index: number) => (
+                <Badge 
+                  variant="secondary" 
+                  className={`${
+                    reflections && reflections.filter((r: any) => r.status === 'pending' || r.status === 'submitted').length > 0 
+                      ? 'bg-red-100 text-red-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {reflections ? reflections.filter((r: any) => r.status === 'pending' || r.status === 'submitted').length : 0} Pending
+                </Badge>
+              </div>
+              
+              <div className="space-y-3">
+                {reflections && reflections.length > 0 ? (
+                  reflections.slice(0, 6).map((reflection: any, index: number) => (
                     <div key={reflection.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className={`w-3 h-3 rounded-full ${
-                          reflection.status === 'completed' ? 'bg-green-500' : 
-                          reflection.status === 'submitted' ? 'bg-red-500' : 
+                          reflection.status === 'approved' || reflection.status === 'completed' ? 'bg-green-500' : 
+                          reflection.status === 'pending' || reflection.status === 'submitted' ? 'bg-red-500' : 
                           'bg-gray-400'
                         }`}></div>
                         <div>
                           <span className={`font-medium text-sm ${
-                            reflection.status === 'completed' ? 'text-green-800' : 
-                            reflection.status === 'submitted' ? 'text-red-800' : 
+                            reflection.status === 'approved' || reflection.status === 'completed' ? 'text-green-800' : 
+                            reflection.status === 'pending' || reflection.status === 'submitted' ? 'text-red-800' : 
                             'text-gray-700'
                           }`}>
-                            {reflection.status === 'completed' ? 'Completed' : 
-                             reflection.status === 'submitted' ? 'Response Required' : 
+                            {reflection.status === 'approved' || reflection.status === 'completed' ? 'Completed' : 
+                             reflection.status === 'pending' || reflection.status === 'submitted' ? 'Response Required' : 
                              'Completed'}
                           </span>
                           <p className="text-xs text-gray-600">
-                            Assigned {new Date(reflection.assignedAt).toLocaleDateString()} • Due {new Date(reflection.dueDate || reflection.assignedAt).toLocaleDateString()}
+                            Assigned {new Date(reflection.assignedAt || reflection.createdAt).toLocaleDateString()} • Due {new Date(reflection.dueDate || reflection.assignedAt || reflection.createdAt).toLocaleDateString()}
                           </p>
+                          {reflection.reason && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {reflection.reason}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
                         <span className="text-sm">✏️</span>
                       </Button>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FileText className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 font-medium mb-2">No behavioral reflections assigned</p>
+                    <p className="text-sm text-gray-500">
+                      Reflection assignments will appear here when created by teachers.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
       

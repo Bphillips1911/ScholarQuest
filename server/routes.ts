@@ -1672,6 +1672,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Add scholar request:", scholarData);
       console.log("Teacher grade role:", teacher.gradeRole);
       
+      // Block Unified Arts teachers from adding new scholars
+      if (teacher.gradeRole === 'Unified Arts') {
+        console.log("UNIFIED ARTS RESTRICTION: Unified Arts teachers cannot add new scholars");
+        return res.status(403).json({ message: "Unified Arts teachers are not authorized to add new students to the system" });
+      }
+      
       // Derive grade permissions from teacher's gradeRole
       const getTeacherGrades = (gradeRole: string): number[] => {
         switch (gradeRole) {
@@ -2347,6 +2353,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const teacher = teachers.find(t => t.id === session.teacherId);
       if (!teacher || !teacher.isApproved) {
         return res.status(401).json({ message: "Teacher not approved" });
+      }
+
+      // Block Unified Arts teachers from deactivating students
+      if (teacher.gradeRole === 'Unified Arts') {
+        console.log("UNIFIED ARTS RESTRICTION: Unified Arts teachers cannot deactivate students");
+        return res.status(403).json({ message: "Unified Arts teachers are not authorized to deactivate student accounts" });
       }
 
       const { studentId, reason } = req.body;

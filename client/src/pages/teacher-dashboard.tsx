@@ -1174,15 +1174,18 @@ export default function TeacherDashboard() {
             )}
 
             {/* Action Buttons for Scholars Tab */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Button
-                onClick={() => setShowAddScholar(true)}
-                className="flex items-center gap-2"
-                data-testid="button-add-scholar"
-              >
-                <Plus className="h-4 w-4" />
-                Add Scholar
-              </Button>
+            <div className={`grid grid-cols-1 ${teacher?.gradeRole === 'Unified Arts' ? 'md:grid-cols-1' : 'md:grid-cols-3'} gap-4 mb-6`}>
+              {/* Hide Add Scholar button for Unified Arts teachers */}
+              {teacher?.gradeRole !== 'Unified Arts' && (
+                <Button
+                  onClick={() => setShowAddScholar(true)}
+                  className="flex items-center gap-2"
+                  data-testid="button-add-scholar"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Scholar
+                </Button>
+              )}
               <Button
                 onClick={() => setShowAwardPoints(true)}
                 disabled={!selectedScholar}
@@ -1192,16 +1195,19 @@ export default function TeacherDashboard() {
                 <Award className="h-4 w-4" />
                 Award MUSTANG Points
               </Button>
-              <Button
-                onClick={() => setShowDeactivateStudent(true)}
-                disabled={!selectedScholar}
-                variant="destructive"
-                className="flex items-center gap-2"
-                data-testid="button-deactivate-student"
-              >
-                <UserX className="h-4 w-4" />
-                Deactivate Student
-              </Button>
+              {/* Hide Deactivate Student button for Unified Arts teachers */}
+              {teacher?.gradeRole !== 'Unified Arts' && (
+                <Button
+                  onClick={() => setShowDeactivateStudent(true)}
+                  disabled={!selectedScholar}
+                  variant="destructive"
+                  className="flex items-center gap-2"
+                  data-testid="button-deactivate-student"
+                >
+                  <UserX className="h-4 w-4" />
+                  Deactivate Student
+                </Button>
+              )}
             </div>
 
             {/* Scholars Content */}

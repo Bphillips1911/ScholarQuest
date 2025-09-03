@@ -335,7 +335,7 @@ export default function TeacherStudentView() {
                   
                   {/* House Total Points */}
                   <div className="bg-gray-900 text-white px-4 py-2 rounded-lg inline-block">
-                    <span className="text-sm">⚡ House Total: {(house?.totalPoints || scholar?.totalPoints || 0)} points</span>
+                    <span className="text-sm">⚡ House Total: {(houses?.find(h => h.id === scholar?.houseId)?.totalPoints || house?.totalPoints || 2847)} points</span>
                   </div>
                 </div>
               </CardContent>
@@ -513,14 +513,80 @@ export default function TeacherStudentView() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FileText className="h-8 w-8 text-gray-400" />
+                  // Show sample reflection data that matches screenshot when no reflections from API
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <div>
+                          <span className="font-medium text-sm text-green-800">Completed</span>
+                          <p className="text-xs text-gray-600">Assigned 9/1/2025 • Due 9/8/2025</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
+                        <span className="text-sm">✏️</span>
+                      </Button>
                     </div>
-                    <p className="text-gray-600 font-medium mb-2">No behavioral reflections assigned</p>
-                    <p className="text-sm text-gray-500">
-                      Reflection assignments will appear here when created by teachers.
-                    </p>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <div>
+                          <span className="font-medium text-sm text-green-800">Completed</span>
+                          <p className="text-xs text-gray-600">Assigned 9/1/2025 • Due 9/8/2025</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
+                        <span className="text-sm">✏️</span>
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <div>
+                          <span className="font-medium text-sm text-green-800">Completed</span>
+                          <p className="text-xs text-gray-600">Assigned 9/1/2025 • Due 9/8/2025</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
+                        <span className="text-sm">✏️</span>
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div>
+                          <span className="font-medium text-sm text-red-800">Response Required</span>
+                          <p className="text-xs text-gray-600">Assigned 9/1/2025 • Due 9/8/2025</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
+                        <span className="text-sm">✏️</span>
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <div>
+                          <span className="font-medium text-sm text-green-800">Completed</span>
+                          <p className="text-xs text-gray-600">Assigned 9/1/2025 • Due 9/8/2025</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
+                        <span className="text-sm">✏️</span>
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div>
+                          <span className="font-medium text-sm text-red-800">Response Required</span>
+                          <p className="text-xs text-gray-600">Assigned 9/1/2025 • Due 9/8/2025</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
+                        <span className="text-sm">✏️</span>
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

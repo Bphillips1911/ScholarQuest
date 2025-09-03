@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Search, Star, Send, CheckCircle, Eye } from 'lucide-react';
+import { PBISCategorySelector } from '@/components/PBISCategorySelector';
 
 interface Student {
   id: string;
@@ -35,13 +36,12 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Form states
-  const [pointsForm, setPointsForm] = useState({
+  // PBIS Form states (matching teacher dashboard structure)
+  const [pbisForm, setPbisForm] = useState({
     category: '',
     subcategory: '',
-    mustangTrait: '',
-    points: 1,
-    reason: ''
+    points: 0,
+    customReason: ''
   });
 
   const [messageForm, setMessageForm] = useState({
@@ -56,13 +56,13 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
   });
 
   // Filter students based on search query
-  const filteredStudents = students.filter((student: Student) =>
+  const filteredStudents = (students as Student[]).filter((student: Student) =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Award points mutation
+  // Award points mutation (using PBIS system)
   const awardPointsMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async () => {
       const response = await fetch('/api/pbis-entries', {
         method: 'POST',
         headers: {
@@ -72,12 +72,12 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
         body: JSON.stringify({
           scholarId: selectedStudent?.id,
           teacherName: teacher.name,
+          teacherId: teacher.id,
           teacherRole: teacher.gradeRole,
-          category: data.category,
-          subcategory: data.subcategory,
-          mustangTrait: data.mustangTrait,
-          points: data.points,
-          reason: data.reason,
+          category: pbisForm.category,
+          subcategory: pbisForm.subcategory,
+          points: pbisForm.points,
+          customReason: pbisForm.customReason,
           entryType: 'positive'
         })
       });
@@ -91,11 +91,11 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: `Awarded ${pointsForm.points} points to ${selectedStudent?.name}`,
+        description: `Awarded ${pbisForm.points} points to ${selectedStudent?.name}`,
         variant: "default"
       });
       setAwardPointsDialog(false);
-      setPointsForm({ category: '', subcategory: '', mustangTrait: '', points: 1, reason: '' });
+      setPbisForm({ category: '', subcategory: '', points: 0, customReason: '' });
       queryClient.invalidateQueries({ queryKey: [`/api/teacher/scholars/grade/${teacher.canSeeGrades[0]}`] });
     },
     onError: () => {
@@ -148,17 +148,7 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
     }
   });
 
-  const handleAwardPoints = () => {
-    if (!pointsForm.category || !pointsForm.mustangTrait) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-    awardPointsMutation.mutate(pointsForm);
-  };
+
 
   const handleSendMessage = () => {
     if (!messageForm.subject || !messageForm.message) {
@@ -172,8 +162,79 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
     sendMessageMutation.mutate(messageForm);
   };
 
+  const handleAwardPoints = () => {
+    if (!pbisForm.category || !pbisForm.subcategory) {
+      toast({
+        title: "Error", 
+        description: "Please select both category and recognition",
+        variant: "destructive"
+      });
+      return;
+    }
+    awardPointsMutation.mutate();
+  };
+
   const openStudentDashboard = (student: Student) => {
-    window.open(`/student-portal?student=${student.id}`, '_blank');
+    // Use the teacher's student dashboard viewer route
+    fetch(`/api/teacher/student-dashboard/${student.id}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('teacherToken')}`
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data) {
+        // Open in a new tab with the student dashboard data
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(`
+            <html>
+              <head>
+                <title>${student.name} - Student Dashboard</title>
+                <style>
+                  body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+                  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+                  .stat-card { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }
+                  .points { font-size: 1.5em; font-weight: bold; color: #495057; }
+                </style>
+              </head>
+              <body>
+                <div class="header">
+                  <h1>${student.name} - Student Dashboard</h1>
+                  <p>Grade ${student.grade} • House: ${student.houseId}</p>
+                </div>
+                <div class="stats">
+                  <div class="stat-card">
+                    <h3>Academic Points</h3>
+                    <div class="points">${student.academicPoints}</div>
+                  </div>
+                  <div class="stat-card">
+                    <h3>Attendance Points</h3>
+                    <div class="points">${student.attendancePoints}</div>
+                  </div>
+                  <div class="stat-card">
+                    <h3>Behavior Points</h3>
+                    <div class="points">${student.behaviorPoints}</div>
+                  </div>
+                  <div class="stat-card">
+                    <h3>Total Points</h3>
+                    <div class="points">${student.totalPoints || (student.academicPoints + student.attendancePoints + student.behaviorPoints)}</div>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `);
+        }
+      }
+    })
+    .catch(error => {
+      toast({
+        title: "Error",
+        description: "Failed to load student dashboard",
+        variant: "destructive"
+      });
+    });
   };
 
   return (
@@ -280,61 +341,23 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <Label>Category *</Label>
-              <Select onValueChange={(value) => setPointsForm(prev => ({ ...prev, category: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="academic">Academic</SelectItem>
-                  <SelectItem value="attendance">Attendance</SelectItem>
-                  <SelectItem value="behavior">Behavior</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* PBIS Recognition Categories */}
+            <PBISCategorySelector
+              selectedCategory={pbisForm.category}
+              selectedSubcategory={pbisForm.subcategory}
+              onCategorySelect={(categoryId) => setPbisForm({...pbisForm, category: categoryId, subcategory: ""})}
+              onSubcategorySelect={(subcategoryId, points) => setPbisForm({...pbisForm, subcategory: subcategoryId, points: points})}
+              onReasonChange={(reason) => setPbisForm({...pbisForm, customReason: reason})}
+              customReason={pbisForm.customReason}
+            />
 
-            <div>
-              <Label>MUSTANG Trait *</Label>
-              <Select onValueChange={(value) => setPointsForm(prev => ({ ...prev, mustangTrait: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select trait" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="M">M - Motivated</SelectItem>
-                  <SelectItem value="U">U - Understanding</SelectItem>
-                  <SelectItem value="S">S - Safe</SelectItem>
-                  <SelectItem value="T">T - Teamwork</SelectItem>
-                  <SelectItem value="A">A - Accountable</SelectItem>
-                  <SelectItem value="N">N - Noble</SelectItem>
-                  <SelectItem value="G">G - Growth</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Points</Label>
-              <Select onValueChange={(value) => setPointsForm(prev => ({ ...prev, points: parseInt(value) }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="1" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 Point</SelectItem>
-                  <SelectItem value="2">2 Points</SelectItem>
-                  <SelectItem value="3">3 Points</SelectItem>
-                  <SelectItem value="5">5 Points</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Reason</Label>
-              <Textarea
-                placeholder="Why are you awarding these points?"
-                value={pointsForm.reason}
-                onChange={(e) => setPointsForm(prev => ({ ...prev, reason: e.target.value }))}
-              />
-            </div>
+            {pbisForm.points > 0 && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-sm font-medium text-green-800">
+                  Points to Award: <span className="text-lg font-bold">{pbisForm.points}</span>
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>

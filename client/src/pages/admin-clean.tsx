@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LogOut, User, Shield, Users, GraduationCap, Award, UserPlus, Eye, Download, QrCode, Settings, FileText, Calendar, Key, Clock, CheckCircle, AlertTriangle, MessageSquare, Send } from "lucide-react";
-import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import type { House, Scholar, InsertScholar, TeacherAuth } from "@shared/schema";
@@ -334,13 +333,9 @@ export default function AdminClean() {
       {/* Main Content with Tabs */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="students">Student Information</TabsTrigger>
-            <TabsTrigger value="teacher-viewer">
-              <Eye className="h-4 w-4 mr-2" />
-              Teacher Viewer
-            </TabsTrigger>
             <TabsTrigger value="messaging">Admin Messaging</TabsTrigger>
             <TabsTrigger value="exports">Data Export</TabsTrigger>
             <TabsTrigger value="quick-actions">Quick Actions</TabsTrigger>
@@ -525,11 +520,6 @@ export default function AdminClean() {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-
-          {/* Teacher Viewer Tab */}
-          <TabsContent value="teacher-viewer" className="mt-6">
-            <AdminTeacherViewer />
           </TabsContent>
 
           <TabsContent value="students" className="mt-6">

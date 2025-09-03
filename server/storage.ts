@@ -167,7 +167,6 @@ export interface IStorage {
   authenticateTeacher(email: string, password: string): Promise<TeacherAuth | null>;
   getTeacherAuthByEmail(email: string): Promise<TeacherAuth | null>;
   getTeacherAuthById(id: string): Promise<TeacherAuth | null>;
-  getTeacherById(id: string): Promise<TeacherAuth | null>;
   createTeacherAuth(teacher: InsertTeacherAuth): Promise<TeacherAuth>;
   createTeacherSession(session: InsertTeacherSession): Promise<TeacherSession>;
   getTeacherSession(token: string): Promise<TeacherSession | undefined>;
@@ -177,10 +176,6 @@ export interface IStorage {
   approveTeacher(teacherId: string): Promise<boolean>;
   requestTeacherPasswordReset(email: string): Promise<boolean>;
   resetTeacherPassword(teacherId: string, newPassword: string): Promise<boolean>;
-  getScholarsByGrade(gradeRole: string): Promise<Scholar[]>;
-  getReflectionsByTeacher(teacherId: string): Promise<any[]>;
-  getMessagesByTeacher(teacherId: string): Promise<any[]>;
-  getPhotosByTeacher(teacherId: string): Promise<any[]>;
 
   // Student Authentication  
   createStudentCredentials(scholarId: string, teacherId: string): Promise<{ username: string; password: string }>;
@@ -1122,31 +1117,6 @@ export class MemStorage implements IStorage {
     teacher.updatedAt = new Date();
     this.teacherAuth.set(teacherId, teacher);
     return true;
-  }
-
-  async getTeacherById(id: string): Promise<TeacherAuth | null> {
-    return this.teacherAuth.get(id) || null;
-  }
-
-  async getScholarsByGrade(gradeRole: string): Promise<Scholar[]> {
-    // Extract just the grade number from gradeRole (e.g., "6th Grade" -> "6")
-    const grade = parseInt(gradeRole.replace(/\D/g, ''));
-    return Array.from(this.scholars.values()).filter(s => s.grade === grade);
-  }
-
-  async getReflectionsByTeacher(teacherId: string): Promise<any[]> {
-    // Filter reflections by teacher (would need proper teacher-reflection relationship)
-    return [];
-  }
-
-  async getMessagesByTeacher(teacherId: string): Promise<any[]> {
-    // Filter messages by teacher (would need proper teacher-message relationship) 
-    return [];
-  }
-
-  async getPhotosByTeacher(teacherId: string): Promise<any[]> {
-    // Filter photos by teacher
-    return Array.from(this.pbisPhotos.values()).filter(p => p.teacherId === teacherId);
   }
 
   // Student Authentication methods
@@ -2113,34 +2083,6 @@ export class PersistentDatabaseStorage implements IStorage {
   async deleteTeacherSession(token: string): Promise<boolean> {
     const result = await db.delete(teacherSessions).where(eq(teacherSessions.token, token));
     return result.rowCount > 0;
-  }
-
-  async getTeacherById(id: string): Promise<TeacherAuth | null> {
-    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.id, id));
-    return teacher || null;
-  }
-
-  async getScholarsByGrade(gradeRole: string): Promise<Scholar[]> {
-    // Extract just the grade number from gradeRole (e.g., "6th Grade" -> "6")
-    const grade = parseInt(gradeRole.replace(/\D/g, ''));
-    const scholars = await db.select().from(scholars).where(eq(scholars.grade, grade));
-    return scholars;
-  }
-
-  async getReflectionsByTeacher(teacherId: string): Promise<any[]> {
-    // This would need a proper reflections table, for now return empty array
-    return [];
-  }
-
-  async getMessagesByTeacher(teacherId: string): Promise<any[]> {
-    // This would need proper parent-teacher messages table, for now return empty array  
-    return [];
-  }
-
-  async getPhotosByTeacher(teacherId: string): Promise<any[]> {
-    // This would get teacher photos from pbisPhotos table
-    const photos = await db.select().from(pbisPhotos).where(eq(pbisPhotos.teacherId, teacherId));
-    return photos;
   }
 }
 

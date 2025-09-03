@@ -9,116 +9,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { GameModal } from "@/components/games/GameModal";
-import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette } from "lucide-react";
-import { useLocation } from "wouter";
-import type { House, Scholar, TeacherAuth } from "@shared/schema";
+import AddPointsForm from "@/components/add-points-form";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, Key, Eye, Settings, FileSpreadsheet, QrCode, LogOut, User, MessageSquare, Send, Reply, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import type { House, Scholar, InsertScholar, PointEntry, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState("teachers");
+  const [newStudentName, setNewStudentName] = useState("");
+  const [newStudentId, setNewStudentId] = useState("");
+  const [newStudentHouse, setNewStudentHouse] = useState("");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Messaging states
+  const [messageRecipientType, setMessageRecipientType] = useState("");
+  const [messageTeacherId, setMessageTeacherId] = useState("");
+  const [messageParentId, setMessageParentId] = useState("");
+  const [messageSubject, setMessageSubject] = useState("");
+  const [messageContent, setMessageContent] = useState("");
+  const [messagePriority, setMessagePriority] = useState("normal");
+
+  // Reply modal states
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [replyForm, setReplyForm] = useState({
+    subject: "",
+    message: "",
+    priority: "normal"
+  });
 
   // Check if admin is logged in
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState<any>(null);
-  
-  // Message form state
-  const [messageForm, setMessageForm] = useState({
-    subject: "",
-    message: "",
-    recipientType: ""
-  });
-
-  // Photo upload state
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [photoDescription, setPhotoDescription] = useState("");
-  const [showUploadModal, setShowUploadModal] = useState(false);
-
-  // Theme state
-  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'normal'>('normal');
-  
-  // Game modal state
-  const [selectedGame, setSelectedGame] = useState<any>(null);
-  const [showGameModal, setShowGameModal] = useState(false);
-
-  // Fetch data hooks - ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC
-  const { data: houses } = useQuery<House[]>({
-    queryKey: ["/api/houses"],
-    enabled: isAuthenticated,
-  });
-
-  const { data: allScholars } = useQuery<Scholar[]>({
-    queryKey: ["/api/scholars"],
-    enabled: isAuthenticated,
-  });
-
-  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
-    queryKey: ["/api/admin/teachers/pending"],
-    enabled: isAuthenticated,
-  });
-
-  // Fetch admin messages
-  const { data: adminMessages = [] } = useQuery({
-    queryKey: ["/api/admin/messages"],
-    queryFn: async () => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/messages", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) throw new Error("Failed to fetch messages");
-      return response.json();
-    },
-    enabled: isAuthenticated,
-  });
-
-  // Fetch gallery photos for admin
-  const { data: galleryPhotos = [] } = useQuery({
-    queryKey: ["/api/pbis-photos"],
-    queryFn: async () => {
-      const response = await fetch("/api/pbis-photos");
-      if (!response.ok) throw new Error("Failed to fetch photos");
-      return response.json();
-    },
-    enabled: isAuthenticated,
-  });
-
-  // Fetch badges data
-  const { data: allBadges = [] } = useQuery({
-    queryKey: ["/api/badges"],
-    enabled: isAuthenticated,
-  });
-
-  // Fetch games data
-  const { data: allGames = [] } = useQuery({
-    queryKey: ["/api/games"],
-    enabled: isAuthenticated,
-  });
-
-  // Fetch scholar badges (badges earned by students)
-  const { data: scholarBadges = [] } = useQuery({
-    queryKey: ["/api/scholar-badges"],
-    enabled: isAuthenticated,
-  });
-
-  // Fetch game access data
-  const { data: gameAccess = [] } = useQuery({
-    queryKey: ["/api/game-access"],
-    enabled: isAuthenticated,
-  });
 
   useEffect(() => {
-    console.log("Admin component mounted");
     const token = localStorage.getItem("adminToken");
     const data = localStorage.getItem("adminData");
-    const savedTheme = localStorage.getItem("adminTheme") as 'light' | 'dark' | 'normal' || 'normal';
-    
-    setCurrentTheme(savedTheme);
     
     if (token && data) {
       try {
@@ -126,6 +54,7 @@ export default function Admin() {
         setAdminData(parsedData);
         setIsAuthenticated(true);
       } catch (error) {
+        // Invalid data, redirect to login
         localStorage.removeItem("adminToken");
         localStorage.removeItem("adminData");
         setLocation("/admin-login");
@@ -135,55 +64,95 @@ export default function Admin() {
     }
   }, [setLocation]);
 
-  // Theme toggle function
-  const toggleTheme = () => {
-    const themes: ('light' | 'dark' | 'normal')[] = ['normal', 'light', 'dark'];
-    const currentIndex = themes.indexOf(currentTheme);
-    const nextTheme = themes[(currentIndex + 1) % themes.length];
-    setCurrentTheme(nextTheme);
-    localStorage.setItem("adminTheme", nextTheme);
-  };
+  // Fetch data hooks - must be called before any early returns
+  const { data: houses } = useQuery<House[]>({
+    queryKey: ["/api/houses"],
+    enabled: isAuthenticated,
+  });
 
-  // Theme styles
-  const getThemeStyles = () => {
-    switch (currentTheme) {
-      case 'dark':
-        return {
-          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-          cardBg: '#2d3748',
-          textPrimary: '#f7fafc',
-          textSecondary: '#cbd5e0',
-          border: '#4a5568'
-        };
-      case 'light':
-        return {
-          background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%)',
-          cardBg: '#ffffff',
-          textPrimary: '#14532d',
-          textSecondary: '#166534',
-          border: '#22c55e'
-        };
-      default: // normal
-        return {
-          background: '#f9fafb',
-          cardBg: '#ffffff',
-          textPrimary: '#1f2937',
-          textSecondary: '#6b7280',
-          border: '#e5e7eb'
-        };
-    }
-  };
+  const { data: pointEntries } = useQuery<PointEntry[]>({
+    queryKey: ["/api/points"],
+    enabled: isAuthenticated,
+  });
 
-  const themeStyles = getThemeStyles();
+  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
+    queryKey: ["/api/admin/teachers/pending"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: allScholars } = useQuery<Scholar[]>({
+    queryKey: ["/api/scholars"],
+    enabled: isAuthenticated,
+  });
+
+  // Messaging queries
+  const { data: adminMessages, refetch: refetchMessages } = useQuery({
+    queryKey: ["/api/admin/messages"],
+    enabled: isAuthenticated && activeTab === "messaging",
+  });
+
+  const { data: allTeachers } = useQuery({
+    queryKey: ["/api/admin/teachers"],
+    enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "teacher"),
+  });
+
+  const { data: allParents } = useQuery({
+    queryKey: ["/api/admin/parents"],
+    enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "parent"),
+  });
 
   // Show loading while checking authentication
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading admin dashboard...</p>
+        {/* CRITICAL NAVIGATION - VERY VISIBLE */}
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          backgroundColor: '#ff0000',
+          color: 'white',
+          padding: '30px',
+          textAlign: 'center',
+          fontSize: '24px',
+          fontWeight: 'bold',
+          border: '5px solid #ffffff',
+          boxShadow: '0 0 20px rgba(255,0,0,0.8)'
+        }}>
+          🚨 ADMIN SYSTEM NAVIGATION - CLICK LINKS BELOW 🚨
+        </div>
+        <div style={{
+          position: 'fixed',
+          top: '100px',
+          left: 0,
+          right: 0,
+          zIndex: 9998,
+          backgroundColor: '#0000ff',
+          color: 'white',
+          padding: '20px',
+          display: 'flex',
+          gap: '15px',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          border: '3px solid #ffffff'
+        }}>
+          <button onClick={() => window.location.href = '/dashboard'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Dashboard</button>
+          <button onClick={() => window.location.href = '/tutorial'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Tutorial</button>
+          <button onClick={() => window.location.href = '/houses'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Houses</button>
+          <button onClick={() => window.location.href = '/pbis'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>PBIS</button>
+          <button onClick={() => window.location.href = '/monthly-pbis'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Monthly Tracking</button>
+          <button onClick={() => window.location.href = '/pledge'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>House Pledge</button>
+          <button onClick={() => window.location.href = '/parent-letter'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>Parent Letter</button>
+          <button onClick={() => window.location.href = '/house-sorting'} style={{color: 'white', backgroundColor: '#1d4ed8', border: 'none', padding: '15px 20px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'}}>House Sorting</button>
+        </div>
+        <div style={{marginTop: '200px'}}>
+          <div className="flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading admin dashboard...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -202,193 +171,220 @@ export default function Admin() {
     setLocation("/admin-login");
   };
 
-  // Export data functions
-  const handleExportData = async (format: 'csv' | 'excel') => {
-    try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`/api/export/${format}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `pbis-data.${format === 'excel' ? 'xlsx' : 'csv'}`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        toast({
-          title: "Export Successful",
-          description: `Data exported as ${format.toUpperCase()}`,
-        });
-      } else {
-        throw new Error(`Export failed: ${response.status}`);
-      }
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Unable to export data. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Teacher approval functions
-  const approveTeacherMutation = useMutation({
-    mutationFn: async (teacherId: string) => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`/api/admin/teachers/${teacherId}/approve`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) throw new Error("Failed to approve teacher");
+  const addScholarMutation = useMutation({
+    mutationFn: async (data: InsertScholar) => {
+      const response = await apiRequest("POST", "/api/scholars", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
       toast({
-        title: "Teacher Approved",
-        description: "Teacher has been successfully approved.",
+        title: "Scholar Added",
+        description: "New scholar has been successfully added to the house.",
       });
+      setNewStudentName("");
+      setNewStudentId("");
+      setNewStudentHouse("");
+      queryClient.invalidateQueries({ queryKey: ["/api/houses"] });
     },
     onError: () => {
       toast({
-        title: "Approval Failed",
-        description: "Failed to approve teacher. Please try again.",
+        title: "Error",
+        description: "Failed to add scholar. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  // Send message mutation
+  // Messaging mutations
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/broadcast-message", {
+      const response = await fetch("/api/admin/send-message", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(messageData),
+        body: JSON.stringify(messageData)
       });
-      if (!response.ok) throw new Error("Failed to send message");
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
-      setMessageForm({ subject: "", message: "", recipientType: "" });
       toast({
         title: "Message Sent",
         description: "Your message has been sent successfully.",
       });
+      setMessageRecipientType("");
+      setMessageTeacherId("");
+      setMessageParentId("");
+      setMessageSubject("");
+      setMessageContent("");
+      setMessagePriority("normal");
+      refetchMessages();
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
-        title: "Send Failed",
-        description: "Failed to send message. Please try again.",
+        title: "Message Failed",
+        description: error.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  const handleSendMessage = () => {
-    if (!messageForm.subject || !messageForm.message || !messageForm.recipientType) {
+  // Reply mutation
+  const replyMutation = useMutation({
+    mutationFn: async (replyData: any) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/reply-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(replyData)
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send reply");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reply Sent",
+        description: "Your reply has been sent successfully.",
+      });
+      setShowReplyModal(false);
+      setSelectedMessage(null);
+      setReplyForm({ subject: "", message: "", priority: "normal" });
+      refetchMessages();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Reply Failed",
+        description: error.message || "Failed to send reply. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddScholar = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newStudentName || !newStudentId) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all fields.",
+        description: "Please fill in student name and ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Auto-assign to house with least members if no house selected
+    let houseId = newStudentHouse;
+    if ((!houseId || houseId === "auto") && houses) {
+      const leastPopulatedHouse = houses.reduce((min, house) => 
+        house.memberCount < min.memberCount ? house : min
+      );
+      houseId = leastPopulatedHouse.id;
+    }
+
+    addScholarMutation.mutate({
+      name: newStudentName,
+      studentId: newStudentId,
+      houseId,
+      grade: 6, // Default grade, can be made configurable
+    });
+  };
+
+  const handleExportData = (format: 'csv' | 'excel') => {
+    const url = `/api/admin/export/scholars/${format}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bhsa-scholars-${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    link.click();
+    
+    toast({
+      title: "Export Started",
+      description: `Scholar data export in ${format.toUpperCase()} format has started.`,
+    });
+  };
+
+  const handleResetPoints = () => {
+    if (confirm("Are you sure you want to reset all points for the semester? This action cannot be undone.")) {
+      toast({
+        title: "Reset Confirmation",
+        description: "Point reset functionality would be implemented here.",
+      });
+    }
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!messageRecipientType || !messageSubject || !messageContent) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in recipient type, subject, and message content.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (messageRecipientType === "teacher" && !messageTeacherId) {
+      toast({
+        title: "Missing Information", 
+        description: "Please select a teacher to send the message to.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (messageRecipientType === "parent" && !messageParentId) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a parent to send the message to.",
         variant: "destructive",
       });
       return;
     }
 
     sendMessageMutation.mutate({
-      subject: messageForm.subject,
-      message: messageForm.message,
-      recipientType: messageForm.recipientType,
-      priority: 'normal'
+      recipientType: messageRecipientType,
+      teacherId: messageRecipientType === "teacher" ? messageTeacherId : null,
+      parentId: messageRecipientType === "parent" ? messageParentId : null,
+      subject: messageSubject,
+      message: messageContent,
+      priority: messagePriority,
     });
   };
 
-  // Photo upload mutation for admin
-  const uploadPhotoMutation = useMutation({
-    mutationFn: async ({ file, description }: { file: File; description: string }) => {
-      const formData = new FormData();
-      formData.append('photo', file);
-      formData.append('description', description);
-      formData.append('uploadedBy', `${adminData?.firstName} ${adminData?.lastName} (Admin)`);
-
-      const response = await fetch('/api/upload-pbis-photo', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload photo');
-      }
-
-      return response.json();
+  const approveTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      return await apiRequest(`/api/admin/teachers/${teacherId}/approve`, "POST");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/pbis-photos"] });
-      setUploadedFile(null);
-      setPhotoDescription("");
-      setShowUploadModal(false);
       toast({
-        title: "Photo Uploaded",
-        description: "Your photo has been uploaded successfully.",
+        title: "Teacher Approved",
+        description: "Teacher account has been approved and can now log in.",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
-        title: "Upload Failed",
-        description: "Failed to upload photo. Please try again.",
+        title: "Error",
+        description: "Failed to approve teacher. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.type.startsWith('image/')) {
-        setUploadedFile(file);
-      } else {
-        toast({
-          title: "Invalid File",
-          description: "Please select an image file.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleUploadPhoto = () => {
-    if (!uploadedFile) {
-      toast({
-        title: "No File Selected",
-        description: "Please select a photo to upload.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    uploadPhotoMutation.mutate({
-      file: uploadedFile,
-      description: photoDescription,
-    });
-  };
+  // Get recent point entries (last 10)
+  const recentEntries = pointEntries
+    ?.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+    .slice(0, 10) || [];
 
 
 

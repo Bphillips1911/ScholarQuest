@@ -335,7 +335,7 @@ export default function TeacherStudentView() {
                   
                   {/* House Total Points */}
                   <div className="bg-gray-900 text-white px-4 py-2 rounded-lg inline-block">
-                    <span className="text-sm">⚡ House Total: {(houses?.find((h: any) => h.id === scholar?.houseId)?.totalPoints || house?.totalPoints || 2847)} points</span>
+                    <span className="text-sm">⚡ House Total: {(house?.totalPoints || 2847)} points</span>
                   </div>
                 </div>
               </CardContent>

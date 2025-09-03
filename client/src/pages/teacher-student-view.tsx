@@ -18,7 +18,8 @@ import {
   Palette,
   HelpCircle,
   LogOut,
-  Map
+  Map,
+  FileText
 } from 'lucide-react';
 import { InteractiveLearningAssistant } from '@/components/learning-assistant/InteractiveLearningAssistant';
 import { DashboardThemes } from '@/components/DashboardThemes';
@@ -190,29 +191,71 @@ export default function TeacherStudentView() {
               </div>
             </div>
 
-            {/* Navigation Buttons - Exact Match */}
+            {/* Navigation Buttons - Interactive and Functional */}
             <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  window.open(`/student-mood-tracker?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                }}
+              >
                 <Heart className="h-4 w-4 mr-1" />
                 Mood Tracker
               </Button>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  window.open(`/student-learning-path?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                }}
+              >
                 <Target className="h-4 w-4 mr-1" />
                 Learning Path
               </Button>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  window.open(`/student-skill-tree?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                }}
+              >
                 <Gamepad2 className="h-4 w-4 mr-1" />
                 Skill Tree
               </Button>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  window.open(`/student-house-history?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                }}
+              >
                 <Map className="h-4 w-4 mr-1" />
                 House History
               </Button>
-              <Button variant="ghost" size="sm" className="bg-purple-100 text-purple-700 hover:bg-purple-200">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="bg-purple-100 text-purple-700 hover:bg-purple-200"
+                onClick={() => {
+                  window.open(`/student-game-zone?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                }}
+              >
                 <Sparkles className="h-4 w-4 mr-1" />
                 Game Zone
               </Button>
-              <Button variant="ghost" size="sm" className="bg-green-100 text-green-700 hover:bg-green-200">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="bg-green-100 text-green-700 hover:bg-green-200"
+                onClick={() => {
+                  window.open(`/student-achievements?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                }}
+              >
                 <Award className="h-4 w-4 mr-1" />
                 Achievements
               </Button>
@@ -225,7 +268,14 @@ export default function TeacherStudentView() {
                 <Palette className="h-4 w-4 mr-1" />
                 Themes
               </Button>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  window.open(`/student-help-quests?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                }}
+              >
                 <HelpCircle className="h-4 w-4 mr-1" />
                 Help Quests
               </Button>
@@ -401,8 +451,8 @@ export default function TeacherStudentView() {
           </motion.div>
         </div>
 
-        {/* Behavioral Reflections Card - From Screenshot */}
-        {reflections && reflections.length > 0 && (
+        {/* Behavioral Reflections Card - Always Show if Student Has Data */}
+        {reflections && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

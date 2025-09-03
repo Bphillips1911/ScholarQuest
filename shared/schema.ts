@@ -270,6 +270,24 @@ export const passwordResetRequests = pgTable("password_reset_requests", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Teacher Class Periods for Unified Arts Teachers
+export const teacherClassPeriods = pgTable("teacher_class_periods", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Class Period Student Enrollments
+export const classPeriodEnrollments = pgTable("class_period_enrollments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  classPeriodId: varchar("class_period_id").notNull().references(() => teacherClassPeriods.id),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const administrators = pgTable("administrators", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").notNull().unique(),
@@ -308,6 +326,100 @@ export const storySubmissions = pgTable("story_submissions", {
   reviewedBy: varchar("reviewed_by").references(() => teacherAuth.id),
   reviewedAt: timestamp("reviewed_at"),
   submittedAt: timestamp("submitted_at").defaultNow(),
+});
+
+// Progress Reports table for one-click report generation
+export const progressReports = pgTable("progress_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => scholars.id),
+  reportType: varchar("report_type").notNull(), // 'weekly', 'monthly', 'semester', 'custom'
+  generatedBy: varchar("generated_by").notNull().references(() => teacherAuth.id),
+  reportData: jsonb("report_data").notNull(), // Complete report data with charts and analytics
+  dateRange: jsonb("date_range").notNull(), // {start: date, end: date}
+  totalPBISPoints: integer("total_pbis_points").notNull().default(0),
+  academicGrade: varchar("academic_grade"),
+  behaviorGrade: varchar("behavior_grade"),
+  attendanceRate: integer("attendance_rate").default(100),
+  recommendedActions: text("recommended_actions").array().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Teacher Performance Analytics for administrator heatmap
+export const teacherPerformanceMetrics = pgTable("teacher_performance_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
+  metricDate: timestamp("metric_date").notNull(),
+  totalStudentsManaged: integer("total_students_managed").notNull().default(0),
+  pbisPointsAwarded: integer("pbis_points_awarded").notNull().default(0),
+  positiveInteractions: integer("positive_interactions").notNull().default(0),
+  negativeInteractions: integer("negative_interactions").notNull().default(0),
+  parentCommunications: integer("parent_communications").notNull().default(0),
+  reflectionsAssigned: integer("reflections_assigned").notNull().default(0),
+  reflectionsCompleted: integer("reflections_completed").notNull().default(0),
+  avgResponseTime: integer("avg_response_time").default(0), // in hours
+  studentEngagementScore: integer("student_engagement_score").default(0), // 0-100
+  effectivenessRating: integer("effectiveness_rating").default(0), // 0-100
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// AI Recommendations for adaptive learning engine
+export const aiRecommendations = pgTable("ai_recommendations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => scholars.id),
+  recommendationType: varchar("recommendation_type").notNull(), // 'learning_activity', 'intervention', 'enrichment', 'behavioral_support'
+  priority: varchar("priority").notNull(), // 'low', 'medium', 'high', 'urgent'
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  actionItems: text("action_items").array().default([]),
+  targetSkills: text("target_skills").array().default([]),
+  estimatedDuration: integer("estimated_duration"), // in minutes
+  confidence: integer("confidence").default(0), // AI confidence 0-100
+  aiReasoning: text("ai_reasoning"), // Why AI made this recommendation
+  implementedBy: varchar("implemented_by").references(() => teacherAuth.id),
+  implementedAt: timestamp("implemented_at"),
+  effectivenessRating: integer("effectiveness_rating"), // Teacher feedback 1-5
+  status: varchar("status").default("pending"), // 'pending', 'in_progress', 'completed', 'dismissed'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Achievement Playground unlockables and progress
+export const achievementPlayground = pgTable("achievement_playground", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => scholars.id),
+  achievementType: varchar("achievement_type").notNull(), // 'milestone', 'badge', 'trophy', 'special_unlock'
+  achievementId: varchar("achievement_id").notNull(), // Reference to specific achievement
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  iconType: varchar("icon_type").notNull(), // 'star', 'trophy', 'medal', 'crown', 'lightning'
+  iconColor: varchar("icon_color").notNull(),
+  points: integer("points").notNull().default(0),
+  level: integer("level").notNull().default(1),
+  rarity: varchar("rarity").notNull(), // 'common', 'rare', 'epic', 'legendary'
+  isUnlocked: boolean("is_unlocked").notNull().default(false),
+  unlockedAt: timestamp("unlocked_at"),
+  progress: integer("progress").default(0), // 0-100
+  requirements: jsonb("requirements"), // What's needed to unlock
+  celebrationShown: boolean("celebration_shown").default(false),
+  shareCount: integer("share_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Gamified Progress Tracking
+export const gamifiedProgress = pgTable("gamified_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => scholars.id),
+  skillCategory: varchar("skill_category").notNull(), // 'academic', 'behavior', 'leadership', 'creativity'
+  skillName: varchar("skill_name").notNull(),
+  currentLevel: integer("current_level").notNull().default(1),
+  currentXP: integer("current_xp").notNull().default(0),
+  totalXP: integer("total_xp").notNull().default(0),
+  nextLevelXP: integer("next_level_xp").notNull().default(100),
+  streakDays: integer("streak_days").default(0),
+  bestStreak: integer("best_streak").default(0),
+  masteryLevel: varchar("mastery_level").default("novice"), // 'novice', 'apprentice', 'expert', 'master'
+  lastActivityAt: timestamp("last_activity_at"),
+  milestones: jsonb("milestones").default('[]'), // Array of achieved milestones
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertHouseSchema = createInsertSchema(houses).omit({
@@ -384,7 +496,15 @@ export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
 // Type exports
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;
-export type Teacher = typeof teachers.$inferSelect;
+// Teacher type is based on TeacherAuth with additional computed fields
+export interface Teacher {
+  id: string;
+  name: string;
+  email: string;
+  grade: number;
+  subject: string;
+  canSeeGrades: number[];
+}
 export type PointEntry = typeof pointEntries.$inferSelect;
 export type PbisEntry = typeof pbisEntries.$inferSelect;
 export type PbisPhoto = typeof pbisPhotos.$inferSelect;
@@ -396,6 +516,37 @@ export type PasswordResetRequest = typeof passwordResetRequests.$inferSelect;
 export type Administrator = typeof administrators.$inferSelect;
 export type AdminSession = typeof adminSessions.$inferSelect;
 export type StorySubmission = typeof storySubmissions.$inferSelect;
+export type ProgressReport = typeof progressReports.$inferSelect;
+export type TeacherPerformanceMetrics = typeof teacherPerformanceMetrics.$inferSelect;
+export type AIRecommendation = typeof aiRecommendations.$inferSelect;
+export type AchievementPlayground = typeof achievementPlayground.$inferSelect;
+export type GamifiedProgress = typeof gamifiedProgress.$inferSelect;
+
+// Insert schemas for new tables
+export const insertProgressReportSchema = createInsertSchema(progressReports).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTeacherPerformanceMetricsSchema = createInsertSchema(teacherPerformanceMetrics).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAIRecommendationSchema = createInsertSchema(aiRecommendations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAchievementPlaygroundSchema = createInsertSchema(achievementPlayground).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGamifiedProgressSchema = createInsertSchema(gamifiedProgress).omit({
+  id: true,
+  updatedAt: true,
+});
 
 export type InsertHouse = typeof houses.$inferInsert;
 export type InsertScholar = typeof scholars.$inferInsert;
@@ -568,3 +719,5 @@ export type DailyReflection = typeof dailyReflections.$inferSelect;
 export type InsertMoodEntry = typeof moodEntries.$inferInsert;
 export type InsertProgressGoal = typeof progressGoals.$inferInsert;
 export type InsertDailyReflection = typeof dailyReflections.$inferInsert;
+
+

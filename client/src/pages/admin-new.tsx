@@ -11,7 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy } from "lucide-react";
+import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
+import { ProgressReportGenerator } from "@/components/ProgressReportGenerator";
+import { AchievementPlayground } from "@/components/AchievementPlayground";
+import { TeacherPerformanceHeatmap } from "@/components/TeacherPerformanceHeatmap";
+import { AIRecommendationEngine } from "@/components/AIRecommendationEngine";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -273,17 +278,67 @@ export default function AdminNew() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
-      setMessageForm({ subject: "", message: "", recipientType: "" });
       toast({
         title: "Message Sent",
-        description: "Your message has been sent successfully.",
+        description: "Broadcast message sent successfully.",
+      });
+    },
+  });
+
+  // Send teacher notifications mutation
+  const sendTeacherNotificationsMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/send-teacher-notifications", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error("Failed to send teacher notifications");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Teacher Notifications Sent",
+        description: `Email notifications sent to ${data.details.success} teachers successfully.`,
       });
     },
     onError: () => {
       toast({
-        title: "Send Failed",
-        description: "Failed to send message. Please try again.",
+        title: "Notification Failed",
+        description: "Failed to send teacher notifications. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Send test email mutation
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async (emailData: { email: string; name?: string }) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/send-test-email", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailData),
+      });
+      if (!response.ok) throw new Error("Failed to send test email");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Test Email Sent",
+        description: `Test email sent successfully to ${data.message.split(' ').pop()}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Test Email Failed",
+        description: "Failed to send test email. Please try again.",
         variant: "destructive",
       });
     },
@@ -454,19 +509,42 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 gap-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
-              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Teachers</TabsTrigger>
-              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Students</TabsTrigger>
-              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Houses</TabsTrigger>
-              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Badges</TabsTrigger>
-              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Games</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6 gap-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <Eye className="h-3 w-3 mr-1" />
+                Viewer
+              </TabsTrigger>
+              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Students</TabsTrigger>
+              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Houses</TabsTrigger>
+              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Badges</TabsTrigger>
+              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Games</TabsTrigger>
             </TabsList>
             
-            <TabsList className="grid w-full grid-cols-4 gap-2 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
-              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Messages</TabsTrigger>
-              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Gallery</TabsTrigger>
-              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Reflections</TabsTrigger>
-              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Data Export</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Messages</TabsTrigger>
+              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Reflections</TabsTrigger>
+              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Data Export</TabsTrigger>
+            </TabsList>
+
+            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <FileText className="h-3 w-3 mr-1" />
+                Progress Reports
+              </TabsTrigger>
+              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <Trophy className="h-3 w-3 mr-1" />
+                Achievement Hub
+              </TabsTrigger>
+              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <BarChart3 className="h-3 w-3 mr-1" />
+                Performance
+              </TabsTrigger>
+              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <Brain className="h-3 w-3 mr-1" />
+                AI Engine
+              </TabsTrigger>
             </TabsList>
 
 
@@ -478,6 +556,31 @@ export default function AdminNew() {
                 </CardHeader>
                 <CardContent>
                   <p style={{color: themeStyles.textSecondary}} className="mb-4">Manage teacher approvals and access</p>
+                  
+                  {/* Email Notification Controls */}
+                  <div className="flex flex-wrap gap-3 mb-6 p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                    <Button
+                      onClick={() => sendTeacherNotificationsMutation.mutate()}
+                      disabled={sendTeacherNotificationsMutation.isPending}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                      data-testid="button-send-teacher-notifications"
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      {sendTeacherNotificationsMutation.isPending ? "Sending..." : "Send Welcome Emails to New Teachers"}
+                    </Button>
+                    
+                    <Button
+                      onClick={() => sendTestEmailMutation.mutate({ email: "bphillips@bhm.k12.al.us", name: "Administrator" })}
+                      disabled={sendTestEmailMutation.isPending}
+                      variant="outline"
+                      className="border-green-600 text-green-600 hover:bg-green-50"
+                      data-testid="button-send-test-email"
+                    >
+                      <TestTube className="mr-2 h-4 w-4" />
+                      {sendTestEmailMutation.isPending ? "Sending..." : "Send Test Email"}
+                    </Button>
+                  </div>
+                  
                   {pendingTeachers && pendingTeachers.length > 0 ? (
                     <div className="space-y-4">
                       {pendingTeachers.map((teacher) => (
@@ -510,6 +613,10 @@ export default function AdminNew() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="teacher-viewer" className="space-y-6">
+              <AdminTeacherViewer />
             </TabsContent>
 
             <TabsContent value="students" className="space-y-6">
@@ -1210,6 +1317,47 @@ export default function AdminNew() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Advanced Features */}
+            <TabsContent value="progress-reports" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>One-Click Student Progress Report Generator</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-4">
+                    Generate comprehensive progress reports for any student with one click. Advanced AI-powered analytics and insights included.
+                  </p>
+                  <div className="space-y-4">
+                    <ProgressReportGenerator isAdminView={true} />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="achievement-playground" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Achievement Playground Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-4">
+                    Manage student achievement playgrounds and monitor gamified progress across all students
+                  </p>
+                  <div className="space-y-4">
+                    <AchievementPlayground studentId="" className="border-0" />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="performance-heatmap" className="space-y-6">
+              <TeacherPerformanceHeatmap />
+            </TabsContent>
+
+            <TabsContent value="ai-recommendations" className="space-y-6">
+              <AIRecommendationEngine />
             </TabsContent>
           </Tabs>
 

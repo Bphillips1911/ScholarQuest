@@ -54,7 +54,9 @@ import {
   reflections,
   moodEntries,
   progressGoals,
-  dailyReflections
+  dailyReflections,
+  teacherClassPeriods,
+  classPeriodEnrollments
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -693,11 +695,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getScholarsByGrade(grade: number): Promise<Scholar[]> {
+  async getScholarsByGrade(gradeInput: string | number): Promise<Scholar[]> {
     try {
+      // Handle both string (e.g., "7th Grade") and number (e.g., 7) inputs
+      const grade = typeof gradeInput === 'string' 
+        ? parseInt(gradeInput.replace(/\D/g, '')) 
+        : gradeInput;
+      
+      console.log(`DATABASE: Getting scholars for grade ${grade}`);
       const scholars = await db.select()
         .from(schema.scholars)
         .where(eq(schema.scholars.grade, grade));
+      
+      console.log(`DATABASE: Found ${scholars.length} scholars for grade ${grade}`);
       return scholars;
     } catch (error) {
       console.error('Error getting scholars by grade:', error);
@@ -890,8 +900,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeacher(id: string): Promise<Teacher | undefined> {
-    const [teacher] = await db.select().from(schema.teachers).where(eq(schema.teachers.id, id));
-    return teacher || undefined;
+    // Use teacherAuth table since teachers table doesn't exist
+    const [teacher] = await db.select().from(schema.teacherAuth).where(eq(schema.teacherAuth.id, id));
+    if (!teacher) {
+      console.log(`DATABASE: Teacher not found with ID: ${id}`);
+      return undefined;
+    }
+    
+    // Convert teacherAuth to Teacher format with canSeeGrades
+    let canSeeGrades: number[] = [];
+    let gradeNumber = 0;
+    
+    if (teacher.gradeRole === 'Unified Arts') {
+      // Unified Arts teachers can see grades 6-8
+      canSeeGrades = [6, 7, 8];
+      gradeNumber = 0; // Special marker for Unified Arts
+    } else {
+      // Regular grade teachers
+      gradeNumber = parseInt(teacher.gradeRole.replace(/\D/g, '')) || 0;
+      canSeeGrades = [gradeNumber];
+    }
+    
+    console.log(`DATABASE: Found teacher ${teacher.name} for grade ${gradeNumber}, role: ${teacher.gradeRole}`);
+    return {
+      id: teacher.id,
+      name: teacher.name,
+      email: teacher.email,
+      role: teacher.gradeRole,
+      gradeRole: teacher.gradeRole,
+      grade: gradeNumber,
+      subject: teacher.subject || '',
+      canSeeGrades: canSeeGrades
+    };
   }
 
   async getTeacherByEmail(email: string): Promise<Teacher | undefined> {
@@ -1589,6 +1629,57 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(houses).orderBy(sql`academic_points + attendance_points + behavior_points DESC`);
   }
 
+  // Student Dashboard Methods
+  async getPBISEntriesForScholar(scholarId: string): Promise<any[]> {
+    try {
+      const entries = await db.select()
+        .from(schema.pbisEntries)
+        .where(eq(schema.pbisEntries.scholarId, scholarId))
+        .orderBy(sql`${schema.pbisEntries.createdAt} DESC`);
+      return entries;
+    } catch (error) {
+      console.error('Error getting PBIS entries for scholar:', error);
+      return [];
+    }
+  }
+
+  async getScholarBadges(scholarId: string): Promise<any[]> {
+    try {
+      const badges = await db.select({
+        id: schema.scholarBadges.id,
+        badgeId: schema.scholarBadges.badgeId,
+        earnedAt: schema.scholarBadges.earnedAt,
+        isActive: schema.scholarBadges.isActive,
+        badgeName: schema.badges.name,
+        badgeDescription: schema.badges.description,
+        badgeCategory: schema.badges.category,
+        badgeLevel: schema.badges.level,
+        badgeIconPath: schema.badges.iconPath
+      })
+      .from(schema.scholarBadges)
+      .innerJoin(schema.badges, eq(schema.scholarBadges.badgeId, schema.badges.id))
+      .where(eq(schema.scholarBadges.scholarId, scholarId))
+      .orderBy(sql`${schema.scholarBadges.earnedAt} DESC`);
+      return badges;
+    } catch (error) {
+      console.error('Error getting scholar badges:', error);
+      return [];
+    }
+  }
+
+  async getReflectionsForScholar(scholarId: string): Promise<any[]> {
+    try {
+      const reflections = await db.select()
+        .from(schema.reflections)
+        .where(eq(schema.reflections.scholarId, scholarId))
+        .orderBy(sql`${schema.reflections.assignedAt} DESC`);
+      return reflections;
+    } catch (error) {
+      console.error('Error getting reflections for scholar:', error);
+      return [];
+    }
+  }
+
   // Mood and Progress Tracking Implementation
   async createMoodEntry(moodEntry: InsertMoodEntry): Promise<MoodEntry> {
     const [entry] = await db.insert(moodEntries)
@@ -1808,6 +1899,133 @@ export class DatabaseStorage implements IStorage {
       houseAverageFocus: analytics.reduce((sum, a) => sum + a.averageFocus, 0) / Math.max(analytics.length, 1),
       studentsWithEntries: analytics.filter(a => a.totalEntries > 0).length
     };
+  }
+
+  // Class Period Management for Unified Arts Teachers
+  async getTeacherClassPeriods(teacherId: string): Promise<any[]> {
+    try {
+      console.log(`STORAGE: Fetching class periods for teacher ${teacherId}`);
+      
+      // First get the class periods for this teacher
+      const classPeriods = await db
+        .select()
+        .from(teacherClassPeriods)
+        .where(eq(teacherClassPeriods.teacherId, teacherId))
+        .orderBy(teacherClassPeriods.createdAt);
+      
+      // For each class period, get the enrolled students
+      const classPeriodsWithStudents = await Promise.all(
+        classPeriods.map(async (classPeriod) => {
+          const enrollments = await db
+            .select()
+            .from(classPeriodEnrollments)
+            .innerJoin(scholars, eq(classPeriodEnrollments.scholarId, scholars.id))
+            .where(eq(classPeriodEnrollments.classPeriodId, classPeriod.id));
+          
+          const students = enrollments.map(enrollment => enrollment.scholars);
+          
+          return {
+            ...classPeriod,
+            students,
+            studentCount: students.length
+          };
+        })
+      );
+      
+      console.log(`STORAGE: Found ${classPeriodsWithStudents.length} class periods`);
+      return classPeriodsWithStudents;
+    } catch (error) {
+      console.error('Error fetching class periods:', error);
+      throw error;
+    }
+  }
+
+  async createClassPeriod(classPeriod: { name: string; description: string; teacherId: string }): Promise<any> {
+    try {
+      console.log(`STORAGE: Creating class period ${classPeriod.name} for teacher ${classPeriod.teacherId}`);
+      
+      const [newClassPeriod] = await db
+        .insert(teacherClassPeriods)
+        .values({
+          id: crypto.randomUUID(),
+          name: classPeriod.name,
+          description: classPeriod.description,
+          teacherId: classPeriod.teacherId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      console.log(`STORAGE: Created class period ${newClassPeriod.id}`);
+      return newClassPeriod;
+    } catch (error) {
+      console.error('Error creating class period:', error);
+      throw error;
+    }
+  }
+
+  async getClassPeriod(classId: string): Promise<any | undefined> {
+    try {
+      const [classPeriod] = await db
+        .select()
+        .from(teacherClassPeriods)
+        .where(eq(teacherClassPeriods.id, classId));
+      
+      return classPeriod;
+    } catch (error) {
+      console.error('Error fetching class period:', error);
+      throw error;
+    }
+  }
+
+  async addStudentsToClass(classId: string, studentIds: string[]): Promise<any> {
+    try {
+      console.log(`STORAGE: Adding ${studentIds.length} students to class ${classId}`);
+      
+      // Remove existing enrollments for this class to avoid duplicates
+      await db
+        .delete(classPeriodEnrollments)
+        .where(eq(classPeriodEnrollments.classPeriodId, classId));
+      
+      // Add new enrollments
+      const enrollments = studentIds.map(studentId => ({
+        id: crypto.randomUUID(),
+        classPeriodId: classId,
+        scholarId: studentId,
+        createdAt: new Date()
+      }));
+      
+      if (enrollments.length > 0) {
+        await db.insert(classPeriodEnrollments).values(enrollments);
+      }
+      
+      console.log(`STORAGE: Added ${enrollments.length} student enrollments`);
+      return { success: true, enrolled: enrollments.length };
+    } catch (error) {
+      console.error('Error adding students to class:', error);
+      throw error;
+    }
+  }
+
+  async deleteClassPeriod(classId: string): Promise<void> {
+    try {
+      console.log(`STORAGE: Deleting class period ${classId}`);
+      
+      // First delete all enrollments
+      await db
+        .delete(classPeriodEnrollments)
+        .where(eq(classPeriodEnrollments.classPeriodId, classId));
+      
+      // Then delete the class period
+      await db
+        .delete(teacherClassPeriods)
+        .where(eq(teacherClassPeriods.id, classId));
+      
+      console.log(`STORAGE: Deleted class period ${classId}`);
+    } catch (error) {
+      console.error('Error deleting class period:', error);
+      throw error;
+    }
   }
 }
 

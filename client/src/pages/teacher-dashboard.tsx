@@ -9,13 +9,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3 } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { TeacherReflectionModal } from "@/components/TeacherReflectionModal";
 import { PBISCategorySelector } from "@/components/PBISCategorySelector";
 import { TeacherStoryReview } from "@/components/teacher-story-review";
+import { TeacherStudentDashboardViewer } from "@/components/TeacherStudentDashboardViewer";
+import { StudentSearchTab } from "@/components/StudentSearchTab";
+import { UnifiedArtsClassManager } from "@/components/UnifiedArtsClassManager";
 
 interface Teacher {
   id: string;
@@ -1038,23 +1041,61 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-            <TabsTrigger value="dashboard" style={{color: themeStyles.textPrimary}}>Dashboard</TabsTrigger>
-            <TabsTrigger value="scholars" style={{color: themeStyles.textPrimary}}>Scholars</TabsTrigger>
-            <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary}}>
-              Reflections
-              {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
-                <span className="ml-1 px-1 bg-red-500 text-white text-xs rounded-full">
-                  {reflections.filter((r: Reflection) => r.status === 'submitted').length}
-                </span>
+          <TabsList className="w-full p-4 h-auto" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+            {/* First Row - Main Tabs */}
+            <div className="flex flex-wrap justify-center gap-4 mb-4">
+              <TabsTrigger value="dashboard" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <Home className="h-4 w-4" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="scholars" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <Users className="h-4 w-4" />
+                Scholars
+              </TabsTrigger>
+              <TabsTrigger value="student-search" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <Search className="h-4 w-4" />
+                Student Search
+              </TabsTrigger>
+              {teacher?.gradeRole === 'Unified Arts' && (
+                <TabsTrigger value="class-periods" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                  <Calendar className="h-4 w-4" />
+                  Class Periods
+                </TabsTrigger>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary}}>
-              <FileText className="h-4 w-4 mr-1" />
-              Story Review
-            </TabsTrigger>
-            <TabsTrigger value="upload" style={{color: themeStyles.textPrimary}}>Upload Photos</TabsTrigger>
-            <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
+              <TabsTrigger value="student-dashboards" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <Trophy className="h-4 w-4" />
+                Student Views
+              </TabsTrigger>
+            </div>
+            
+            {/* Second Row - Secondary Tabs */}
+            <div className="flex flex-wrap justify-center gap-4">
+              <TabsTrigger value="reflections" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <BookOpen className="h-4 w-4" />
+                Reflections
+                {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
+                  <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                    {reflections.filter((r: Reflection) => r.status === 'submitted').length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="story-review" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <FileText className="h-4 w-4" />
+                Story Review
+              </TabsTrigger>
+              <TabsTrigger value="messaging" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <MessageSquare className="h-4 w-4" />
+                Messaging
+              </TabsTrigger>
+              <TabsTrigger value="upload" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <Camera className="h-4 w-4" />
+                Upload Photos
+              </TabsTrigger>
+              <TabsTrigger value="gallery" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <Image className="h-4 w-4" />
+                Gallery
+              </TabsTrigger>
+            </div>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -1133,15 +1174,18 @@ export default function TeacherDashboard() {
             )}
 
             {/* Action Buttons for Scholars Tab */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Button
-                onClick={() => setShowAddScholar(true)}
-                className="flex items-center gap-2"
-                data-testid="button-add-scholar"
-              >
-                <Plus className="h-4 w-4" />
-                Add Scholar
-              </Button>
+            <div className={`grid grid-cols-1 ${teacher?.gradeRole === 'Unified Arts' ? 'md:grid-cols-1' : 'md:grid-cols-3'} gap-4 mb-6`}>
+              {/* Hide Add Scholar button for Unified Arts teachers */}
+              {teacher?.gradeRole !== 'Unified Arts' && (
+                <Button
+                  onClick={() => setShowAddScholar(true)}
+                  className="flex items-center gap-2"
+                  data-testid="button-add-scholar"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Scholar
+                </Button>
+              )}
               <Button
                 onClick={() => setShowAwardPoints(true)}
                 disabled={!selectedScholar}
@@ -1151,16 +1195,19 @@ export default function TeacherDashboard() {
                 <Award className="h-4 w-4" />
                 Award MUSTANG Points
               </Button>
-              <Button
-                onClick={() => setShowDeactivateStudent(true)}
-                disabled={!selectedScholar}
-                variant="destructive"
-                className="flex items-center gap-2"
-                data-testid="button-deactivate-student"
-              >
-                <UserX className="h-4 w-4" />
-                Deactivate Student
-              </Button>
+              {/* Hide Deactivate Student button for Unified Arts teachers */}
+              {teacher?.gradeRole !== 'Unified Arts' && (
+                <Button
+                  onClick={() => setShowDeactivateStudent(true)}
+                  disabled={!selectedScholar}
+                  variant="destructive"
+                  className="flex items-center gap-2"
+                  data-testid="button-deactivate-student"
+                >
+                  <UserX className="h-4 w-4" />
+                  Deactivate Student
+                </Button>
+              )}
             </div>
 
             {/* Scholars Content */}
@@ -1196,6 +1243,13 @@ export default function TeacherDashboard() {
             </div>
 
             {/* Scholars and Messages Content would go here - keeping existing content */}
+          </TabsContent>
+
+          <TabsContent value="student-dashboards" className="space-y-6">
+            <TeacherStudentDashboardViewer 
+              teacherGrades={teacher?.canSeeGrades || []}
+              themeStyles={themeStyles}
+            />
           </TabsContent>
 
           <TabsContent value="reflections" className="space-y-6">
@@ -1450,6 +1504,44 @@ export default function TeacherDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Student Search Tab */}
+          <TabsContent value="student-search" className="space-y-6">
+            <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+              <CardHeader>
+                <CardTitle style={{color: themeStyles.textPrimary}}>Student Search & Management</CardTitle>
+                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                  Search and manage students in your grade level
+                </p>
+              </CardHeader>
+              <CardContent>
+                <StudentSearchTab teacher={teacher} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Messaging Tab */}
+          <TabsContent value="messaging" className="space-y-6">
+            <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+              <CardHeader>
+                <CardTitle style={{color: themeStyles.textPrimary}}>Teacher Messaging Center</CardTitle>
+                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                  Send messages to parents and administrators
+                </p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-500">Messaging functionality will be implemented here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Unified Arts Class Periods Tab */}
+          {teacher?.gradeRole === 'Unified Arts' && (
+            <TabsContent value="class-periods" className="space-y-6">
+              <UnifiedArtsClassManager teacher={teacher} />
+            </TabsContent>
+          )}
+
         </Tabs>
 
         {/* Content for existing sections would continue here */}
@@ -2393,6 +2485,7 @@ export default function TeacherDashboard() {
             studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
           />
         )}
+
         </div>
       </section>
     </div>

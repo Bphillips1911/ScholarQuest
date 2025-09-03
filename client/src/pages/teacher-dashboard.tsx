@@ -1002,18 +1002,6 @@ export default function TeacherDashboard() {
             </div>
             
             <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-              {/* Theme Toggle Button */}
-              <Button
-                onClick={toggleTheme}
-                variant="ghost"
-                className="text-white hover:text-blue-200 hover:bg-blue-700 text-sm px-2"
-                data-testid="button-theme-toggle"
-              >
-                <Palette className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">{currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : 'Normal'}</span>
-                <span className="sm:hidden">{currentTheme === 'dark' ? 'D' : currentTheme === 'light' ? 'L' : 'N'}</span>
-              </Button>
-              
               <Button 
                 variant="ghost" 
                 className="text-white hover:text-red-200 hover:bg-red-600 text-sm"
@@ -1106,6 +1094,23 @@ export default function TeacherDashboard() {
                 <span className="hidden lg:inline">Student Views</span>
                 <span className="lg:hidden">Views</span>
               </TabsTrigger>
+              
+              {/* Theme Toggle Button */}
+              <Button
+                onClick={toggleTheme}
+                variant="outline"
+                className="flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium"
+                style={{
+                  backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#22c55e' : themeStyles.cardBg,
+                  color: currentTheme === 'dark' ? '#f7fafc' : currentTheme === 'light' ? '#ffffff' : themeStyles.textPrimary,
+                  borderColor: themeStyles.border
+                }}
+                data-testid="button-theme-toggle"
+              >
+                <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden lg:inline">{currentTheme === 'dark' ? 'Dark Theme' : currentTheme === 'light' ? 'Light Theme' : 'Normal Theme'}</span>
+                <span className="lg:hidden">{currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : 'Normal'}</span>
+              </Button>
             </div>
             
             {/* Secondary Row - Collapsed Secondary Tabs */}

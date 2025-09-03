@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3 } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
@@ -17,6 +17,8 @@ import { TeacherReflectionModal } from "@/components/TeacherReflectionModal";
 import { PBISCategorySelector } from "@/components/PBISCategorySelector";
 import { TeacherStoryReview } from "@/components/teacher-story-review";
 import { TeacherStudentDashboardViewer } from "@/components/TeacherStudentDashboardViewer";
+import { StudentSearchTab } from "@/components/StudentSearchTab";
+import { UnifiedArtsClassManager } from "@/components/UnifiedArtsClassManager";
 
 interface Teacher {
   id: string;
@@ -1039,9 +1041,19 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+          <TabsList className={`grid w-full ${teacher?.gradeRole === 'Unified Arts' ? 'grid-cols-9' : 'grid-cols-8'}`} style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
             <TabsTrigger value="dashboard" style={{color: themeStyles.textPrimary}}>Dashboard</TabsTrigger>
             <TabsTrigger value="scholars" style={{color: themeStyles.textPrimary}}>Scholars</TabsTrigger>
+            <TabsTrigger value="student-search" style={{color: themeStyles.textPrimary}}>
+              <Search className="h-4 w-4 mr-1" />
+              Student Search
+            </TabsTrigger>
+            {teacher?.gradeRole === 'Unified Arts' && (
+              <TabsTrigger value="class-periods" style={{color: themeStyles.textPrimary}}>
+                <Calendar className="h-4 w-4 mr-1" />
+                Class Periods
+              </TabsTrigger>
+            )}
             <TabsTrigger value="student-dashboards" style={{color: themeStyles.textPrimary}}>
               <Users className="h-4 w-4 mr-1" />
               Student Views
@@ -1462,6 +1474,29 @@ export default function TeacherDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Student Search Tab */}
+          <TabsContent value="student-search" className="space-y-6">
+            <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+              <CardHeader>
+                <CardTitle style={{color: themeStyles.textPrimary}}>Student Search & Management</CardTitle>
+                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                  Search and manage students in your grade level
+                </p>
+              </CardHeader>
+              <CardContent>
+                <StudentSearchTab teacher={teacher} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Unified Arts Class Periods Tab */}
+          {teacher?.gradeRole === 'Unified Arts' && (
+            <TabsContent value="class-periods" className="space-y-6">
+              <UnifiedArtsClassManager teacher={teacher} />
+            </TabsContent>
+          )}
+
         </Tabs>
 
         {/* Content for existing sections would continue here */}
@@ -2405,6 +2440,7 @@ export default function TeacherDashboard() {
             studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
           />
         )}
+
         </div>
       </section>
     </div>

@@ -5043,6 +5043,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Unified Arts Teacher Endpoints
+  // Get all students from grades 6-8 for Unified Arts teachers
+  app.get('/api/students/grades/6-8', authenticateTeacher, async (req, res) => {
+    try {
+      const teacherId = req.teacher?.id;
+      console.log(`API: All students request - Teacher ID: ${teacherId}`);
+      
+      if (!teacherId) {
+        return res.status(401).json({ error: 'Teacher ID missing from request' });
+      }
+      
+      // Get the teacher data to verify they are Unified Arts
+      const teacher = await storage.getTeacher(teacherId);
+      if (!teacher || teacher.gradeRole !== 'Unified Arts') {
+        return res.status(403).json({ error: 'Access restricted to Unified Arts teachers' });
+      }
+      
+      // Get scholars for grades 6, 7, and 8
+      const allStudents = [];
+      for (const grade of [6, 7, 8]) {
+        const gradeStudents = await storage.getScholarsByGrade(grade);
+        allStudents.push(...gradeStudents);
+      }
+      
+      res.json(allStudents);
+    } catch (error) {
+      console.error('Error fetching all students:', error);
+      res.status(500).json({ error: 'Failed to fetch students' });
+    }
+  });
+
+  // Get teacher's class periods
+  app.get('/api/teacher/class-periods', authenticateTeacher, async (req, res) => {
+    try {
+      const teacherId = req.teacher?.id;
+      console.log(`API: Class periods request - Teacher ID: ${teacherId}`);
+      
+      if (!teacherId) {
+        return res.status(401).json({ error: 'Teacher ID missing from request' });
+      }
+      
+      const classPeriods = await storage.getTeacherClassPeriods(teacherId);
+      res.json(classPeriods);
+    } catch (error) {
+      console.error('Error fetching class periods:', error);
+      res.status(500).json({ error: 'Failed to fetch class periods' });
+    }
+  });
+
+  // Create new class period
+  app.post('/api/teacher/class-periods', authenticateTeacher, async (req, res) => {
+    try {
+      const teacherId = req.teacher?.id;
+      const { name, description } = req.body;
+      
+      console.log(`API: Create class period - Teacher ID: ${teacherId}, Name: ${name}`);
+      
+      if (!teacherId) {
+        return res.status(401).json({ error: 'Teacher ID missing from request' });
+      }
+      
+      if (!name) {
+        return res.status(400).json({ error: 'Class name is required' });
+      }
+      
+      const classPeriod = await storage.createClassPeriod({
+        name,
+        description: description || '',
+        teacherId
+      });
+      
+      res.json(classPeriod);
+    } catch (error) {
+      console.error('Error creating class period:', error);
+      res.status(500).json({ error: 'Failed to create class period' });
+    }
+  });
+
+  // Add students to class period
+  app.post('/api/teacher/class-periods/:classId/students', authenticateTeacher, async (req, res) => {
+    try {
+      const teacherId = req.teacher?.id;
+      const { classId } = req.params;
+      const { studentIds } = req.body;
+      
+      console.log(`API: Add students to class - Teacher ID: ${teacherId}, Class ID: ${classId}, Students: ${studentIds.length}`);
+      
+      if (!teacherId) {
+        return res.status(401).json({ error: 'Teacher ID missing from request' });
+      }
+      
+      if (!studentIds || !Array.isArray(studentIds)) {
+        return res.status(400).json({ error: 'Student IDs array is required' });
+      }
+      
+      // Verify the class belongs to this teacher
+      const classPeriod = await storage.getClassPeriod(classId);
+      if (!classPeriod || classPeriod.teacherId !== teacherId) {
+        return res.status(403).json({ error: 'Class not found or access denied' });
+      }
+      
+      const result = await storage.addStudentsToClass(classId, studentIds);
+      res.json(result);
+    } catch (error) {
+      console.error('Error adding students to class:', error);
+      res.status(500).json({ error: 'Failed to add students to class' });
+    }
+  });
+
+  // Delete class period
+  app.delete('/api/teacher/class-periods/:classId', authenticateTeacher, async (req, res) => {
+    try {
+      const teacherId = req.teacher?.id;
+      const { classId } = req.params;
+      
+      console.log(`API: Delete class period - Teacher ID: ${teacherId}, Class ID: ${classId}`);
+      
+      if (!teacherId) {
+        return res.status(401).json({ error: 'Teacher ID missing from request' });
+      }
+      
+      // Verify the class belongs to this teacher
+      const classPeriod = await storage.getClassPeriod(classId);
+      if (!classPeriod || classPeriod.teacherId !== teacherId) {
+        return res.status(403).json({ error: 'Class not found or access denied' });
+      }
+      
+      await storage.deleteClassPeriod(classId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting class period:', error);
+      res.status(500).json({ error: 'Failed to delete class period' });
+    }
+  });
+
   // Teacher Email Notification Routes
   app.post('/api/admin/send-teacher-notifications', authenticateAdmin, async (req, res) => {
     try {

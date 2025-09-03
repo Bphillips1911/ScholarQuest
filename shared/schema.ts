@@ -270,6 +270,24 @@ export const passwordResetRequests = pgTable("password_reset_requests", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Teacher Class Periods for Unified Arts Teachers
+export const teacherClassPeriods = pgTable("teacher_class_periods", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Class Period Student Enrollments
+export const classPeriodEnrollments = pgTable("class_period_enrollments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  classPeriodId: varchar("class_period_id").notNull().references(() => teacherClassPeriods.id),
+  scholarId: varchar("scholar_id").notNull().references(() => scholars.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const administrators = pgTable("administrators", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").notNull().unique(),

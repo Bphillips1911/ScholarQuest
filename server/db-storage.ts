@@ -54,7 +54,9 @@ import {
   reflections,
   moodEntries,
   progressGoals,
-  dailyReflections
+  dailyReflections,
+  teacherClassPeriods,
+  classPeriodEnrollments
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -1883,6 +1885,133 @@ export class DatabaseStorage implements IStorage {
       houseAverageFocus: analytics.reduce((sum, a) => sum + a.averageFocus, 0) / Math.max(analytics.length, 1),
       studentsWithEntries: analytics.filter(a => a.totalEntries > 0).length
     };
+  }
+
+  // Class Period Management for Unified Arts Teachers
+  async getTeacherClassPeriods(teacherId: string): Promise<any[]> {
+    try {
+      console.log(`STORAGE: Fetching class periods for teacher ${teacherId}`);
+      
+      // First get the class periods for this teacher
+      const classPeriods = await db
+        .select()
+        .from(teacherClassPeriods)
+        .where(eq(teacherClassPeriods.teacherId, teacherId))
+        .orderBy(teacherClassPeriods.createdAt);
+      
+      // For each class period, get the enrolled students
+      const classPeriodsWithStudents = await Promise.all(
+        classPeriods.map(async (classPeriod) => {
+          const enrollments = await db
+            .select()
+            .from(classPeriodEnrollments)
+            .innerJoin(scholars, eq(classPeriodEnrollments.scholarId, scholars.id))
+            .where(eq(classPeriodEnrollments.classPeriodId, classPeriod.id));
+          
+          const students = enrollments.map(enrollment => enrollment.scholars);
+          
+          return {
+            ...classPeriod,
+            students,
+            studentCount: students.length
+          };
+        })
+      );
+      
+      console.log(`STORAGE: Found ${classPeriodsWithStudents.length} class periods`);
+      return classPeriodsWithStudents;
+    } catch (error) {
+      console.error('Error fetching class periods:', error);
+      throw error;
+    }
+  }
+
+  async createClassPeriod(classPeriod: { name: string; description: string; teacherId: string }): Promise<any> {
+    try {
+      console.log(`STORAGE: Creating class period ${classPeriod.name} for teacher ${classPeriod.teacherId}`);
+      
+      const [newClassPeriod] = await db
+        .insert(teacherClassPeriods)
+        .values({
+          id: crypto.randomUUID(),
+          name: classPeriod.name,
+          description: classPeriod.description,
+          teacherId: classPeriod.teacherId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      console.log(`STORAGE: Created class period ${newClassPeriod.id}`);
+      return newClassPeriod;
+    } catch (error) {
+      console.error('Error creating class period:', error);
+      throw error;
+    }
+  }
+
+  async getClassPeriod(classId: string): Promise<any | undefined> {
+    try {
+      const [classPeriod] = await db
+        .select()
+        .from(teacherClassPeriods)
+        .where(eq(teacherClassPeriods.id, classId));
+      
+      return classPeriod;
+    } catch (error) {
+      console.error('Error fetching class period:', error);
+      throw error;
+    }
+  }
+
+  async addStudentsToClass(classId: string, studentIds: string[]): Promise<any> {
+    try {
+      console.log(`STORAGE: Adding ${studentIds.length} students to class ${classId}`);
+      
+      // Remove existing enrollments for this class to avoid duplicates
+      await db
+        .delete(classPeriodEnrollments)
+        .where(eq(classPeriodEnrollments.classPeriodId, classId));
+      
+      // Add new enrollments
+      const enrollments = studentIds.map(studentId => ({
+        id: crypto.randomUUID(),
+        classPeriodId: classId,
+        scholarId: studentId,
+        createdAt: new Date()
+      }));
+      
+      if (enrollments.length > 0) {
+        await db.insert(classPeriodEnrollments).values(enrollments);
+      }
+      
+      console.log(`STORAGE: Added ${enrollments.length} student enrollments`);
+      return { success: true, enrolled: enrollments.length };
+    } catch (error) {
+      console.error('Error adding students to class:', error);
+      throw error;
+    }
+  }
+
+  async deleteClassPeriod(classId: string): Promise<void> {
+    try {
+      console.log(`STORAGE: Deleting class period ${classId}`);
+      
+      // First delete all enrollments
+      await db
+        .delete(classPeriodEnrollments)
+        .where(eq(classPeriodEnrollments.classPeriodId, classId));
+      
+      // Then delete the class period
+      await db
+        .delete(teacherClassPeriods)
+        .where(eq(teacherClassPeriods.id, classId));
+      
+      console.log(`STORAGE: Deleted class period ${classId}`);
+    } catch (error) {
+      console.error('Error deleting class period:', error);
+      throw error;
+    }
   }
 }
 

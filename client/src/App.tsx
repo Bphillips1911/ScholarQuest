@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
+import { realTimeSync } from "@/lib/realTimeSync";
 import NavigationHeader from "@/components/navigation-header";
 import { AdvancedUIProvider } from "@/components/ui/advanced-ui-system";
 import { SkipLink } from "@/components/ui/accessibility-focused";
@@ -126,6 +127,9 @@ function App() {
     import("@/utils/tokenUtils").then(({ initTokenMonitoring }) => {
       initTokenMonitoring();
     });
+    
+    // Initialize real-time synchronization system
+    realTimeSync.init();
   }, []);
 
   return (

@@ -174,7 +174,7 @@ export default function TeacherStudentView() {
   }
 
   const themeStyles = getThemeStyles(selectedTheme);
-  const { scholar, house, pbisEntries: studentPbisEntries = [] } = studentData;
+  const { scholar, house, pbisEntries: studentPbisEntries = [] } = studentData as any;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-gray-900">
@@ -335,7 +335,7 @@ export default function TeacherStudentView() {
                   
                   {/* House Total Points */}
                   <div className="bg-gray-900 text-white px-4 py-2 rounded-lg inline-block">
-                    <span className="text-sm">⚡ House Total: {(houses?.find(h => h.id === scholar?.houseId)?.totalPoints || house?.totalPoints || 2847)} points</span>
+                    <span className="text-sm">⚡ House Total: {(houses?.find((h: any) => h.id === scholar?.houseId)?.totalPoints || house?.totalPoints || 2847)} points</span>
                   </div>
                 </div>
               </CardContent>
@@ -418,11 +418,11 @@ export default function TeacherStudentView() {
                     <h3 className="text-lg font-semibold text-gray-900">MUSTANG Traits Recognition</h3>
                   </div>
                   <Badge variant="secondary" className="bg-gray-900 text-white">
-                    {pbisEntries.length} PBIS Points
+                    {Array.isArray(pbisEntries) ? pbisEntries.length : 0} PBIS Points
                   </Badge>
                 </div>
                 
-                {pbisEntries.length > 0 ? (
+                {Array.isArray(pbisEntries) && pbisEntries.length > 0 ? (
                   <div className="space-y-3">
                     {pbisEntries.slice(0, 3).map((entry: any, index: number) => (
                       <div key={entry.id || index} className="p-3 bg-gray-50 rounded-lg">
@@ -468,17 +468,17 @@ export default function TeacherStudentView() {
                 <Badge 
                   variant="secondary" 
                   className={`${
-                    reflections && reflections.filter((r: any) => r.status === 'pending' || r.status === 'submitted').length > 0 
+                    Array.isArray(reflections) && reflections.filter((r: any) => r.status === 'pending' || r.status === 'submitted').length > 0 
                       ? 'bg-red-100 text-red-800' 
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  {reflections ? reflections.filter((r: any) => r.status === 'pending' || r.status === 'submitted').length : 0} Pending
+                  {Array.isArray(reflections) ? reflections.filter((r: any) => r.status === 'pending' || r.status === 'submitted').length : 0} Pending
                 </Badge>
               </div>
               
               <div className="space-y-3">
-                {reflections && reflections.length > 0 ? (
+                {Array.isArray(reflections) && reflections.length > 0 ? (
                   reflections.slice(0, 6).map((reflection: any, index: number) => (
                     <div key={reflection.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">

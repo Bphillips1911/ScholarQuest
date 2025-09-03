@@ -82,11 +82,19 @@ export function ProgressReportGenerator({ studentId, studentName, onReportGenera
     },
     onSuccess: (report) => {
       const targetStudentName = selectedStudent?.name || studentName || 'Selected Student';
+      
       toast({
         title: "Report Generated Successfully",
-        description: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report created for ${targetStudentName}`,
+        description: `Progress report for ${targetStudentName} has been generated. Click "Download PDF" to save it.`,
       });
+      
+      // Automatically download the generated report
+      downloadReportAsPDF(report);
+      
+      // Refetch existing reports
       refetchReports();
+      
+      // Call callback if provided
       onReportGenerated?.();
     },
     onError: (error) => {

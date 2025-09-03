@@ -908,15 +908,29 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Convert teacherAuth to Teacher format with canSeeGrades
-    const gradeNumber = parseInt(teacher.gradeRole.replace(/\D/g, '')) || 0;
-    console.log(`DATABASE: Found teacher ${teacher.name} for grade ${gradeNumber}`);
+    let canSeeGrades: number[] = [];
+    let gradeNumber = 0;
+    
+    if (teacher.gradeRole === 'Unified Arts') {
+      // Unified Arts teachers can see grades 6-8
+      canSeeGrades = [6, 7, 8];
+      gradeNumber = 0; // Special marker for Unified Arts
+    } else {
+      // Regular grade teachers
+      gradeNumber = parseInt(teacher.gradeRole.replace(/\D/g, '')) || 0;
+      canSeeGrades = [gradeNumber];
+    }
+    
+    console.log(`DATABASE: Found teacher ${teacher.name} for grade ${gradeNumber}, role: ${teacher.gradeRole}`);
     return {
       id: teacher.id,
       name: teacher.name,
       email: teacher.email,
+      role: teacher.gradeRole,
+      gradeRole: teacher.gradeRole,
       grade: gradeNumber,
       subject: teacher.subject || '',
-      canSeeGrades: [gradeNumber]
+      canSeeGrades: canSeeGrades
     };
   }
 

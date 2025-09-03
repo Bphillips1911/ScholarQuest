@@ -80,10 +80,12 @@ function Router() {
         <Route path="/student-house-history" component={StudentHouseHistory} />
         <Route path="/student-achievements" component={StudentAchievements} />
         <Route path="/gamified-learning" component={GamifiedLearning} />
-        <Route path="/teacher-dashboard" component={TeacherDashboard} />
+        <Route path="/teacher-dashboard" component={ModernTeacherDashboard} />
+        <Route path="/teacher-dashboard-legacy" component={TeacherDashboard} />
         <Route path="/modern-teacher-dashboard" component={ModernTeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
-        <Route path="/admin" component={AdminNew} />
+        <Route path="/admin" component={ModernAdminDashboard} />
+        <Route path="/admin-legacy" component={AdminNew} />
         <Route path="/modern-admin" component={ModernAdminDashboard} />
         <Route path="/admin-full" component={Admin} />
         <Route path="/admin-test" component={AdminNew} />

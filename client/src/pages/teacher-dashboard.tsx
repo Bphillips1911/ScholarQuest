@@ -1041,38 +1041,58 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="flex w-full justify-center gap-2 p-2 h-auto" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-            <TabsTrigger value="dashboard" className="px-4 py-2 text-sm font-medium" style={{color: themeStyles.textPrimary}}>Dashboard</TabsTrigger>
-            <TabsTrigger value="scholars" className="px-4 py-2 text-sm font-medium" style={{color: themeStyles.textPrimary}}>Scholars</TabsTrigger>
-            <TabsTrigger value="student-search" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
-              <Search className="h-4 w-4" />
-              Student Search
-            </TabsTrigger>
-            {teacher?.gradeRole === 'Unified Arts' && (
-              <TabsTrigger value="class-periods" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
-                <Calendar className="h-4 w-4" />
-                Class Periods
+          <div className="w-full p-4 rounded-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, border: '1px solid'}}>
+            {/* First Row - Main Tabs */}
+            <div className="flex flex-wrap justify-center gap-3 mb-3">
+              <TabsTrigger value="dashboard" className="px-6 py-3 text-sm font-medium rounded-md border" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <Home className="h-4 w-4 mr-2" />
+                Dashboard
               </TabsTrigger>
-            )}
-            <TabsTrigger value="student-dashboards" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
-              <Users className="h-4 w-4" />
-              Student Views
-            </TabsTrigger>
-            <TabsTrigger value="reflections" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
-              Reflections
-              {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
-                <span className="ml-1 px-1 bg-red-500 text-white text-xs rounded-full">
-                  {reflections.filter((r: Reflection) => r.status === 'submitted').length}
-                </span>
+              <TabsTrigger value="scholars" className="px-6 py-3 text-sm font-medium rounded-md border" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <Users className="h-4 w-4 mr-2" />
+                Scholars
+              </TabsTrigger>
+              <TabsTrigger value="student-search" className="px-6 py-3 text-sm font-medium rounded-md border flex items-center" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <Search className="h-4 w-4 mr-2" />
+                Student Search
+              </TabsTrigger>
+              {teacher?.gradeRole === 'Unified Arts' && (
+                <TabsTrigger value="class-periods" className="px-6 py-3 text-sm font-medium rounded-md border flex items-center" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Class Periods
+                </TabsTrigger>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="story-review" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
-              <FileText className="h-4 w-4" />
-              Story Review
-            </TabsTrigger>
-            <TabsTrigger value="upload" className="px-4 py-2 text-sm font-medium" style={{color: themeStyles.textPrimary}}>Upload Photos</TabsTrigger>
-            <TabsTrigger value="gallery" className="px-4 py-2 text-sm font-medium" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
-          </TabsList>
+              <TabsTrigger value="student-dashboards" className="px-6 py-3 text-sm font-medium rounded-md border flex items-center" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <Trophy className="h-4 w-4 mr-2" />
+                Student Views
+              </TabsTrigger>
+            </div>
+            
+            {/* Second Row - Secondary Tabs */}
+            <div className="flex flex-wrap justify-center gap-3">
+              <TabsTrigger value="reflections" className="px-6 py-3 text-sm font-medium rounded-md border flex items-center" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Reflections
+                {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
+                  <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                    {reflections.filter((r: Reflection) => r.status === 'submitted').length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="story-review" className="px-6 py-3 text-sm font-medium rounded-md border flex items-center" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <FileText className="h-4 w-4 mr-2" />
+                Story Review
+              </TabsTrigger>
+              <TabsTrigger value="upload" className="px-6 py-3 text-sm font-medium rounded-md border flex items-center" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <Camera className="h-4 w-4 mr-2" />
+                Upload Photos
+              </TabsTrigger>
+              <TabsTrigger value="gallery" className="px-6 py-3 text-sm font-medium rounded-md border flex items-center" style={{color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <Image className="h-4 w-4 mr-2" />
+                Gallery
+              </TabsTrigger>
+            </div>
+          </div>
 
           <TabsContent value="dashboard" className="space-y-6">
             {/* Grade Selection */}

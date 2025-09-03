@@ -4930,6 +4930,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add missing teachers on startup
+  try {
+    const { addMissingTeachers } = await import('./missing-teachers-fix');
+    await addMissingTeachers();
+  } catch (error) {
+    console.error("Failed to add missing teachers:", error);
+  }
+
   const httpServer = createServer(app);
   return httpServer;
 }

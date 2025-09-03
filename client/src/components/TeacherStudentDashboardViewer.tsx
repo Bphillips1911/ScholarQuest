@@ -50,9 +50,9 @@ export function TeacherStudentDashboardViewer({ teacherGrades, themeStyles }: Te
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const { toast } = useToast();
 
-  // Fetch students for selected grade
+  // Fetch students for selected grade - using teacher endpoint that includes auth
   const { data: students = [] } = useQuery({
-    queryKey: [`/api/scholars/grade/${selectedGrade}`],
+    queryKey: [`/api/teacher/scholars/grade/${selectedGrade}`],
     enabled: !!selectedGrade,
   });
 
@@ -85,11 +85,11 @@ export function TeacherStudentDashboardViewer({ teacherGrades, themeStyles }: Te
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white" 
                  style={{backgroundColor: house?.color || '#059669'}}>
-              {scholar.firstName[0]}{scholar.lastName[0]}
+              {scholar.name.split(' ')[0]?.[0] || 'S'}{scholar.name.split(' ')[1]?.[0] || ''}
             </div>
             <div>
               <h2 className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
-                {scholar.firstName} {scholar.lastName}
+                {scholar.name}
               </h2>
               <p style={{color: themeStyles.textSecondary}}>
                 Grade {scholar.grade} • {house?.name} House • Username: {scholar.username}
@@ -274,7 +274,7 @@ export function TeacherStudentDashboardViewer({ teacherGrades, themeStyles }: Te
                 <SelectContent>
                   {students.map((student: Scholar) => (
                     <SelectItem key={student.id} value={student.id}>
-                      {student.firstName} {student.lastName} ({student.username})
+                      {student.name} ({student.username})
                     </SelectItem>
                   ))}
                 </SelectContent>

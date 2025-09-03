@@ -4938,6 +4938,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Failed to add missing teachers:", error);
   }
 
+  // Teacher endpoint to get scholars by grade with authentication
+  app.get('/api/teacher/scholars/grade/:grade', authenticateTeacher, async (req, res) => {
+    try {
+      const grade = parseInt(req.params.grade);
+      const teacherId = req.user?.id;
+      
+      // Get the teacher data to verify they can see this grade
+      const teacher = await storage.getTeacher(teacherId);
+      if (!teacher) {
+        return res.status(401).json({ error: 'Teacher not found' });
+      }
+      
+      // Verify teacher can see this grade
+      if (!teacher.canSeeGrades.includes(grade)) {
+        return res.status(403).json({ error: 'Not authorized to view this grade' });
+      }
+      
+      // Get scholars for the grade
+      const scholars = await storage.getScholarsByGrade(grade);
+      
+      res.json(scholars);
+    } catch (error) {
+      console.error('Error fetching scholars for grade:', error);
+      res.status(500).json({ error: 'Failed to fetch scholars' });
+    }
+  });
+
   // Teacher Student Dashboard Viewer Routes
   app.get('/api/teacher/student-dashboard/:studentId', authenticateTeacher, async (req, res) => {
     try {

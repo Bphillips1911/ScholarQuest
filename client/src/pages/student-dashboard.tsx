@@ -47,6 +47,7 @@ import {
   Bounce
 } from "@/components/MicroAnimations";
 import { motion } from "framer-motion";
+import { NotificationHeader } from "@/components/NotificationHeader";
 
 interface StudentData {
   id: string;
@@ -403,17 +404,20 @@ function StudentDashboardContent() {
                   <span>Help Quests</span>
                 </Button>
               </InteractiveScale>
-              <InteractiveScale>
-                <Button 
-                  variant="outline" 
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2"
-                  data-testid="button-logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Sign Out</span>
-                </Button>
-              </InteractiveScale>
+              <div className="flex items-center space-x-2">
+                <NotificationHeader />
+                <InteractiveScale>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2"
+                    data-testid="button-logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </Button>
+                </InteractiveScale>
+              </div>
             </div>
           </div>
         </div>

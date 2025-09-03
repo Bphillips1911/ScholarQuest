@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
 import { realTimeSync } from "@/lib/realTimeSync";
+import { NotificationProvider } from "@/components/NotificationSystem";
+import { notificationService } from "@/services/notificationService";
 import NavigationHeader from "@/components/navigation-header";
 import { AdvancedUIProvider } from "@/components/ui/advanced-ui-system";
 import { SkipLink } from "@/components/ui/accessibility-focused";
@@ -130,17 +132,22 @@ function App() {
     
     // Initialize real-time synchronization system
     realTimeSync.init();
+    
+    // Initialize notification service
+    notificationService.initializeRealTimeListeners();
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AdvancedUIProvider>
-          <div className="min-h-screen bg-slate-50">
-            <SkipLink href="#main-content">Skip to main content</SkipLink>
-            <Toaster />
-            <Router />
-          </div>
+          <NotificationProvider>
+            <div className="min-h-screen bg-slate-50">
+              <SkipLink href="#main-content">Skip to main content</SkipLink>
+              <Toaster />
+              <Router />
+            </div>
+          </NotificationProvider>
         </AdvancedUIProvider>
       </TooltipProvider>
     </QueryClientProvider>

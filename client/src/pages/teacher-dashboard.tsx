@@ -20,6 +20,8 @@ import { TeacherStoryReview } from "@/components/teacher-story-review";
 import { TeacherStudentDashboardViewer } from "@/components/TeacherStudentDashboardViewer";
 import { StudentSearchTab } from "@/components/StudentSearchTab";
 import { UnifiedArtsClassManager } from "@/components/UnifiedArtsClassManager";
+import { NotificationHeader } from "@/components/NotificationHeader";
+import { notificationService } from "@/services/notificationService";
 
 interface Teacher {
   id: string;
@@ -601,8 +603,19 @@ export default function TeacherDashboard() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
+      
+      // Trigger real-time notification for new student
+      const houseQuery = queryClient.getQueryData(['houses']) as any[];
+      const selectedHouse = houseQuery?.find(h => h.id === variables.houseId);
+      
+      notificationService.notifyNewStudent({
+        studentName: variables.name,
+        houseName: selectedHouse?.name || 'House',
+        grade: variables.grade,
+      });
+      
       setShowAddScholar(false);
       setNewScholar({ name: "", studentId: "", houseId: "", grade: 6, username: "", password: "" });
       toast({
@@ -638,10 +651,23 @@ export default function TeacherDashboard() {
       if (!response.ok) throw new Error("Failed to award PBIS points");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
       queryClient.invalidateQueries({ queryKey: ["houses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/pbis"] });
+      
+      // Trigger real-time notification
+      const houseQuery = queryClient.getQueryData(['houses']) as any[];
+      const selectedHouse = houseQuery?.find(h => h.id === selectedScholar?.houseId);
+      
+      notificationService.notifyPBISPointsAdded({
+        studentName: selectedScholar?.name || 'Student',
+        teacherName: teacher?.name || 'Teacher',
+        points: variables.points,
+        houseName: selectedHouse?.name || 'House',
+        behavior: variables.mustangTrait,
+      });
+      
       setShowAwardPoints(false);
       setSelectedScholar(null);
       const pointValue = pbisForm.points;
@@ -901,6 +927,9 @@ export default function TeacherDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center space-x-4">
+              
+              {/* Notification Bell */}
+              <NotificationHeader className="text-white" />
               
               {/* Main Pages Dropdown */}
               <DropdownMenu>

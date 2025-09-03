@@ -96,7 +96,11 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
       });
       setAwardPointsDialog(false);
       setPbisForm({ category: '', subcategory: '', points: 0, customReason: '' });
+      // Invalidate multiple queries for real-time updates
       queryClient.invalidateQueries({ queryKey: [`/api/teacher/scholars/grade/${teacher.canSeeGrades[0]}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scholars'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/houses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pbis-entries'] });
     },
     onError: () => {
       toast({
@@ -110,6 +114,10 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
   // Send message to parent mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!selectedStudent?.id) {
+        throw new Error('No student selected for messaging');
+      }
+
       const response = await fetch('/api/teacher/messages', {
         method: 'POST',
         headers: {
@@ -117,32 +125,39 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
           'Authorization': `Bearer ${localStorage.getItem('teacherToken')}`
         },
         body: JSON.stringify({
-          scholarId: selectedStudent?.id,
+          scholarId: selectedStudent.id,
           subject: data.subject,
           message: data.message,
-          recipientType: 'parent'
+          recipientType: 'parent',
+          studentName: selectedStudent.name // Add student name for better parent lookup
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorData = await response.json().catch(() => ({ error: 'Network error occurred' }));
+        throw new Error(errorData.error || `Failed to send message to ${selectedStudent.name}'s parent`);
       }
 
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: `Message sent to ${selectedStudent?.name}'s parent`,
+        title: "Message Sent",
+        description: `Message successfully sent to ${selectedStudent?.name}'s parent`,
         variant: "default"
       });
       setMessageParentDialog(false);
       setMessageForm({ subject: '', message: '' });
+      // Refresh messages to show the sent message
+      queryClient.invalidateQueries({ queryKey: ['/api/teacher/messages'] });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Parent message error:', error);
       toast({
-        title: "Error",
-        description: "Failed to send message",
+        title: "Message Failed",
+        description: error.message.includes('parent') ? 
+          `Unable to locate parent contact for ${selectedStudent?.name}. Please contact administration.` : 
+          "Failed to send message. Please try again.",
         variant: "destructive"
       });
     }
@@ -330,46 +345,79 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
         </div>
       )}
 
-      {/* Award Points Dialog */}
-      <Dialog open={awardPointsDialog} onOpenChange={setAwardPointsDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Award Mustang Points</DialogTitle>
-            <DialogDescription>
-              Award points to {selectedStudent?.name}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* PBIS Recognition Categories */}
-            <PBISCategorySelector
-              selectedCategory={pbisForm.category}
-              selectedSubcategory={pbisForm.subcategory}
-              onCategorySelect={(categoryId) => setPbisForm({...pbisForm, category: categoryId, subcategory: ""})}
-              onSubcategorySelect={(subcategoryId, points) => setPbisForm({...pbisForm, subcategory: subcategoryId, points: points})}
-              onReasonChange={(reason) => setPbisForm({...pbisForm, customReason: reason})}
-              customReason={pbisForm.customReason}
-            />
-
-            {pbisForm.points > 0 && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-sm font-medium text-green-800">
-                  Points to Award: <span className="text-lg font-bold">{pbisForm.points}</span>
-                </p>
+      {/* Award Points Dialog - Enhanced with Scrollable Design */}
+      {awardPointsDialog && selectedStudent && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setAwardPointsDialog(false);
+              setPbisForm({ category: '', subcategory: '', points: 0, customReason: '' });
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-hidden shadow-xl">
+            {/* Header with X Button */}
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Award MUSTANG Points</h2>
+                <p className="text-sm text-gray-600 font-medium">Scholar: {selectedStudent.name}</p>
               </div>
-            )}
-          </div>
+              <button
+                onClick={() => {
+                  setAwardPointsDialog(false);
+                  setPbisForm({ category: '', subcategory: '', points: 0, customReason: '' });
+                }}
+                className="h-8 w-8 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors duration-200"
+                data-testid="button-close-points-modal"
+              >
+                <span className="text-red-600 font-bold text-lg">×</span>
+              </button>
+            </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAwardPointsDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAwardPoints} disabled={awardPointsMutation.isPending}>
-              {awardPointsMutation.isPending ? 'Awarding...' : 'Award Points'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-4 space-y-4">
+              {/* PBIS Recognition Categories */}
+              <PBISCategorySelector
+                selectedCategory={pbisForm.category}
+                selectedSubcategory={pbisForm.subcategory}
+                onCategorySelect={(categoryId) => setPbisForm({...pbisForm, category: categoryId, subcategory: ""})}
+                onSubcategorySelect={(subcategoryId, points) => setPbisForm({...pbisForm, subcategory: subcategoryId, points: points})}
+                onReasonChange={(reason) => setPbisForm({...pbisForm, customReason: reason})}
+                customReason={pbisForm.customReason}
+              />
+
+              {pbisForm.points > 0 && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm font-medium text-green-800">
+                    Points to Award: <span className="text-xl font-bold">{pbisForm.points}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with Action Buttons */}
+            <div className="flex justify-end gap-3 p-4 border-t bg-gray-50">
+              <button
+                onClick={() => {
+                  setAwardPointsDialog(false);
+                  setPbisForm({ category: '', subcategory: '', points: 0, customReason: '' });
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAwardPoints}
+                disabled={!pbisForm.category || !pbisForm.subcategory || awardPointsMutation.isPending}
+                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                {awardPointsMutation.isPending ? "Awarding..." : "Award MUSTANG Points"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Message Parent Dialog */}
       <Dialog open={messageParentDialog} onOpenChange={setMessageParentDialog}>

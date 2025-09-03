@@ -1443,6 +1443,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send message to parent via student lookup (POST /api/teacher/messages)
+  app.post("/api/teacher/messages", authenticateTeacher, async (req: any, res) => {
+    try {
+      const { scholarId, subject, message, recipientType, studentName } = req.body;
+      
+      console.log("TEACHER MESSAGE VIA STUDENT: Request body:", { scholarId, subject, message, recipientType, studentName });
+      
+      if (!subject || !message || !recipientType) {
+        return res.status(400).json({ error: "Subject, message, and recipient type required" });
+      }
+
+      if (recipientType === "parent" && !scholarId) {
+        return res.status(400).json({ error: "Student ID required for parent messages" });
+      }
+
+      // Find parent for this student
+      let parentId = null;
+      if (recipientType === "parent") {
+        const parents = await storage.getAllParents();
+        const parent = parents.find(p => {
+          const scholarIds = Array.isArray(p.scholarIds) ? p.scholarIds : 
+                           Array.isArray(p.scholar_ids) ? p.scholar_ids : 
+                           p.scholarIds || p.scholar_ids || [];
+          return scholarIds.includes(scholarId);
+        });
+
+        if (!parent) {
+          console.log("TEACHER MESSAGE: No parent found for student:", scholarId, studentName);
+          return res.status(404).json({ error: `No parent contact found for student ${studentName || 'Unknown'}. Please contact administration to update parent information.` });
+        }
+
+        parentId = parent.id;
+        console.log("TEACHER MESSAGE: Found parent", parent.firstName, parent.lastName, "for student", studentName);
+      }
+
+      const messageData = {
+        teacherId: req.teacher.id,
+        parentId: parentId,
+        adminId: null,
+        scholarId: scholarId,
+        senderType: "teacher",
+        recipientType,
+        subject,
+        message,
+        priority: "normal",
+      };
+
+      console.log("TEACHER MESSAGE: Creating message with data:", messageData);
+      const createdMessage = await storage.createMessage(messageData);
+      console.log("TEACHER MESSAGE: Message sent successfully to parent:", createdMessage.id);
+      
+      res.json({
+        success: true,
+        message: "Message sent successfully to parent",
+        messageId: createdMessage.id,
+      });
+    } catch (error) {
+      console.error("TEACHER MESSAGE ERROR:", error);
+      res.status(500).json({ error: "Failed to send message to parent" });
+    }
+  });
+
   // Send message from teacher
   app.post("/api/teacher/send-message", authenticateTeacher, async (req: any, res) => {
     try {

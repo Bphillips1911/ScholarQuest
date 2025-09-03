@@ -63,7 +63,7 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
   // Award points mutation (using PBIS system)
   const awardPointsMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/pbis-entries', {
+      const response = await fetch('/api/pbis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
           subcategory: pbisForm.subcategory,
           points: pbisForm.points,
           customReason: pbisForm.customReason,
-          entryType: 'positive'
+          entryType: pbisForm.points < 0 ? 'negative' : 'positive'
         })
       });
 
@@ -89,10 +89,13 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
       return response.json();
     },
     onSuccess: () => {
+      const isNegative = pbisForm.points < 0;
       toast({
         title: "Success",
-        description: `Awarded ${pbisForm.points} points to ${selectedStudent?.name}`,
-        variant: "default"
+        description: isNegative 
+          ? `Deducted ${Math.abs(pbisForm.points)} points from ${selectedStudent?.name}` 
+          : `Awarded ${pbisForm.points} points to ${selectedStudent?.name}`,
+        variant: isNegative ? "destructive" : "default"
       });
       setAwardPointsDialog(false);
       setPbisForm({ category: '', subcategory: '', points: 0, customReason: '' });
@@ -100,7 +103,7 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
       queryClient.invalidateQueries({ queryKey: [`/api/teacher/scholars/grade/${teacher.canSeeGrades[0]}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/scholars'] });
       queryClient.invalidateQueries({ queryKey: ['/api/houses'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/pbis-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pbis'] });
     },
     onError: () => {
       toast({
@@ -410,9 +413,16 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
               <button
                 onClick={handleAwardPoints}
                 disabled={!pbisForm.category || !pbisForm.subcategory || awardPointsMutation.isPending}
-                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+                className={`px-6 py-2 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 ${
+                  pbisForm.points < 0 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
               >
-                {awardPointsMutation.isPending ? "Awarding..." : "Award MUSTANG Points"}
+                {awardPointsMutation.isPending 
+                  ? (pbisForm.points < 0 ? "Deducting..." : "Awarding...") 
+                  : (pbisForm.points < 0 ? "Deduct Points" : "Award MUSTANG Points")
+                }
               </button>
             </div>
           </div>

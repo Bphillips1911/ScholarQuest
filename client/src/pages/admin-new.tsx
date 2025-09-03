@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Settings, Star, Heart, Target, Zap, UserMinus } from "lucide-react";
 import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
 import { ProgressReportGenerator } from "@/components/ProgressReportGenerator";
 import { AchievementPlayground } from "@/components/AchievementPlayground";
@@ -510,22 +510,45 @@ export default function AdminNew() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-6 gap-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Teachers</TabsTrigger>
-              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+              <TabsTrigger value="scholars-dashboard" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
+                <Users className="h-3 w-3 mr-1" />
+                Scholars
+              </TabsTrigger>
+              <TabsTrigger value="award-points" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
+                <Award className="h-3 w-3 mr-1" />
+                Award Points
+              </TabsTrigger>
+              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <Eye className="h-3 w-3 mr-1" />
                 Viewer
               </TabsTrigger>
-              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Students</TabsTrigger>
-              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Houses</TabsTrigger>
-              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Badges</TabsTrigger>
-              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Games</TabsTrigger>
+              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Student Mgmt</TabsTrigger>
+              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Houses</TabsTrigger>
+            </TabsList>
+            
+            <TabsList className="grid w-full grid-cols-5 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Badges</TabsTrigger>
+              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Games</TabsTrigger>
+              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Messages</TabsTrigger>
+              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Gallery</TabsTrigger>
+              <TabsTrigger value="settings" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
+                <Settings className="h-3 w-3 mr-1" />
+                Settings
+              </TabsTrigger>
             </TabsList>
             
             <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Messages</TabsTrigger>
-              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Gallery</TabsTrigger>
-              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Reflections</TabsTrigger>
-              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Data Export</TabsTrigger>
+              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Reflections</TabsTrigger>
+              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Data Export</TabsTrigger>
+              <TabsTrigger value="student-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
+                <User className="h-3 w-3 mr-1" />
+                Student View
+              </TabsTrigger>
+              <TabsTrigger value="deactivate" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
+                <Users className="h-3 w-3 mr-1" />
+                Deactivate
+              </TabsTrigger>
             </TabsList>
 
             <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
@@ -1315,6 +1338,318 @@ export default function AdminNew() {
                         <div className="text-sm opacity-75">Download reflection logs</div>
                       </div>
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="scholars-dashboard" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Scholar Dashboard Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allScholars && allScholars.length > 0 ? (
+                      allScholars.map((scholar: any) => (
+                        <div key={scholar.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                             style={{backgroundColor: currentTheme === 'dark' ? '#374151' : '#ffffff', borderColor: themeStyles.border}}
+                             onClick={() => {
+                               setActiveTab("student-viewer");
+                               localStorage.setItem("selectedScholarId", scholar.id);
+                             }}>
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold`} 
+                                 style={{backgroundColor: houses?.find(h => h.id === scholar.houseId)?.color || '#6b7280'}}>
+                              {scholar.firstName?.charAt(0) || 'S'}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium" style={{color: themeStyles.textPrimary}}>
+                                {scholar.firstName} {scholar.lastName}
+                              </h3>
+                              <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                                {houses?.find(h => h.id === scholar.houseId)?.name || 'No House'}
+                              </p>
+                            </div>
+                            <Badge variant="outline" style={{borderColor: houses?.find(h => h.id === scholar.houseId)?.color}}>
+                              {(scholar.academicPoints || 0) + (scholar.attendancePoints || 0) + (scholar.behaviorPoints || 0)} pts
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div className="text-center p-1 rounded" style={{backgroundColor: currentTheme === 'dark' ? '#4a5568' : '#f3f4f6'}}>
+                              <div style={{color: themeStyles.textSecondary}}>Academic</div>
+                              <div className="font-bold" style={{color: themeStyles.textPrimary}}>{scholar.academicPoints || 0}</div>
+                            </div>
+                            <div className="text-center p-1 rounded" style={{backgroundColor: currentTheme === 'dark' ? '#4a5568' : '#f3f4f6'}}>
+                              <div style={{color: themeStyles.textSecondary}}>Attendance</div>
+                              <div className="font-bold" style={{color: themeStyles.textPrimary}}>{scholar.attendancePoints || 0}</div>
+                            </div>
+                            <div className="text-center p-1 rounded" style={{backgroundColor: currentTheme === 'dark' ? '#4a5568' : '#f3f4f6'}}>
+                              <div style={{color: themeStyles.textSecondary}}>Behavior</div>
+                              <div className="font-bold" style={{color: themeStyles.textPrimary}}>{scholar.behaviorPoints || 0}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-8">
+                        <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <p style={{color: themeStyles.textSecondary}}>No scholars found</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="award-points" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Award MUSTANG Points</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="award-scholar">Select Scholar</Label>
+                        <Select>
+                          <SelectTrigger id="award-scholar" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                            <SelectValue placeholder="Choose a scholar to award points" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allScholars?.map((scholar: any) => (
+                              <SelectItem key={scholar.id} value={scholar.id}>
+                                {scholar.firstName} {scholar.lastName} - {houses?.find(h => h.id === scholar.houseId)?.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="award-category">MUSTANG Category</Label>
+                        <Select>
+                          <SelectTrigger id="award-category" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                            <SelectValue placeholder="Select MUSTANG trait" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="academic">🎯 Academic Excellence</SelectItem>
+                            <SelectItem value="attendance">📅 Perfect Attendance</SelectItem>
+                            <SelectItem value="behavior">⭐ Positive Behavior</SelectItem>
+                            <SelectItem value="leadership">👑 Leadership</SelectItem>
+                            <SelectItem value="creativity">🎨 Creativity</SelectItem>
+                            <SelectItem value="teamwork">🤝 Teamwork</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="award-points">Points to Award</Label>
+                        <Select>
+                          <SelectTrigger id="award-points" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                            <SelectValue placeholder="Select point value" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">1 Point - Good effort</SelectItem>
+                            <SelectItem value="2">2 Points - Great work</SelectItem>
+                            <SelectItem value="3">3 Points - Excellent achievement</SelectItem>
+                            <SelectItem value="5">5 Points - Outstanding performance</SelectItem>
+                            <SelectItem value="10">10 Points - Exceptional excellence</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="award-reason">Reason for Award</Label>
+                        <Input 
+                          id="award-reason"
+                          placeholder="Brief description of achievement"
+                          style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button className="bg-green-600 hover:bg-green-700 text-white">
+                        <Award className="mr-2 h-4 w-4" />
+                        Award Points
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="student-viewer" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Individual Student Dashboard Viewer</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Select>
+                      <SelectTrigger style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                        <SelectValue placeholder="Select a student to view their dashboard" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allScholars?.map((scholar: any) => (
+                          <SelectItem key={scholar.id} value={scholar.id}>
+                            {scholar.firstName} {scholar.lastName} - {houses?.find(h => h.id === scholar.houseId)?.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="border rounded-lg p-6" style={{borderColor: themeStyles.border, backgroundColor: currentTheme === 'dark' ? '#374151' : '#f9fafb'}}>
+                      <div className="text-center">
+                        <Eye className="mx-auto h-12 w-12 mb-4" style={{color: themeStyles.textSecondary}} />
+                        <p style={{color: themeStyles.textSecondary}}>Select a student above to view their personalized dashboard</p>
+                        <p className="text-sm mt-2" style={{color: themeStyles.textSecondary}}>
+                          This will show their points, achievements, house standing, and progress
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="deactivate" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Student Account Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-center">
+                        <UserMinus className="h-5 w-5 text-yellow-600 mr-2" />
+                        <p className="text-yellow-800 font-medium">Deactivate Student Accounts</p>
+                      </div>
+                      <p className="text-yellow-700 text-sm mt-1">
+                        Use this feature to temporarily deactivate student accounts when they transfer or are no longer enrolled.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <Label>Select Students to Deactivate</Label>
+                      <div className="max-h-96 overflow-y-auto border rounded-lg" style={{borderColor: themeStyles.border}}>
+                        {allScholars && allScholars.length > 0 ? (
+                          allScholars.map((scholar: any) => (
+                            <div key={scholar.id} className="flex items-center justify-between p-3 border-b last:border-b-0" style={{borderColor: themeStyles.border}}>
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold`} 
+                                     style={{backgroundColor: houses?.find(h => h.id === scholar.houseId)?.color || '#6b7280'}}>
+                                  {scholar.firstName?.charAt(0) || 'S'}
+                                </div>
+                                <div>
+                                  <p className="font-medium" style={{color: themeStyles.textPrimary}}>
+                                    {scholar.firstName} {scholar.lastName}
+                                  </p>
+                                  <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                                    {houses?.find(h => h.id === scholar.houseId)?.name} • {((scholar.academicPoints || 0) + (scholar.attendancePoints || 0) + (scholar.behaviorPoints || 0))} points
+                                  </p>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                onClick={() => {
+                                  toast({
+                                    title: "Account Deactivated",
+                                    description: `${scholar.firstName} ${scholar.lastName}'s account has been deactivated.`,
+                                  });
+                                }}
+                              >
+                                <UserMinus className="h-4 w-4 mr-1" />
+                                Deactivate
+                              </Button>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                            <p style={{color: themeStyles.textSecondary}}>No students found</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="settings" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>System Settings & Configuration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h3 className="font-medium" style={{color: themeStyles.textPrimary}}>House Settings</h3>
+                        <div className="space-y-2">
+                          <Button variant="outline" className="w-full justify-start">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Configure House Points
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            <Trophy className="h-4 w-4 mr-2" />
+                            Manage House Competition
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h3 className="font-medium" style={{color: themeStyles.textPrimary}}>System Configuration</h3>
+                        <div className="space-y-2">
+                          <Button variant="outline" className="w-full justify-start">
+                            <Mail className="h-4 w-4 mr-2" />
+                            Email Settings
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            <Users className="h-4 w-4 mr-2" />
+                            User Management
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-6" style={{borderColor: themeStyles.border}}>
+                      <h3 className="font-medium mb-4" style={{color: themeStyles.textPrimary}}>Advanced Features</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <Button 
+                          variant="outline" 
+                          className="flex-col h-auto p-4"
+                          onClick={() => setActiveTab("progress-reports")}
+                        >
+                          <FileText className="h-6 w-6 mb-2" />
+                          <span>Progress Reports</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex-col h-auto p-4"
+                          onClick={() => setActiveTab("achievement-playground")}
+                        >
+                          <Trophy className="h-6 w-6 mb-2" />
+                          <span>Achievement Hub</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex-col h-auto p-4"
+                          onClick={() => setActiveTab("performance-heatmap")}
+                        >
+                          <BarChart3 className="h-6 w-6 mb-2" />
+                          <span>Performance Analytics</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex-col h-auto p-4"
+                          onClick={() => setActiveTab("ai-recommendations")}
+                        >
+                          <Brain className="h-6 w-6 mb-2" />
+                          <span>AI Engine</span>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

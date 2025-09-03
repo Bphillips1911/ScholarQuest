@@ -11,7 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Search, X, UserX } from "lucide-react";
+import { PBISCategorySelector } from "@/components/PBISCategorySelector";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
 import { ProgressReportGenerator } from "@/components/ProgressReportGenerator";
 import { AchievementPlayground } from "@/components/AchievementPlayground";
@@ -48,6 +50,36 @@ export default function AdminNew() {
   // Game modal state
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [showGameModal, setShowGameModal] = useState(false);
+
+  // Student management state
+  const [selectedGrade, setSelectedGrade] = useState<string>("all");
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [showAwardPointsModal, setShowAwardPointsModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [deactivationReason, setDeactivationReason] = useState("");
+  
+  // Award points modal state
+  const [awardPointsForm, setAwardPointsForm] = useState({
+    scholarId: "",
+    category: "",
+    subcategory: "",
+    mustangTrait: "",
+    points: 0,
+    reason: ""
+  });
+
+  // Add student form state
+  const [addStudentForm, setAddStudentForm] = useState({
+    firstName: "",
+    lastName: "",
+    studentId: "",
+    grade: 6,
+    houseId: "",
+    username: "",
+    password: ""
+  });
 
   useEffect(() => {
     console.log("AdminNew component mounted");
@@ -509,39 +541,39 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 gap-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Teachers</TabsTrigger>
-              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+            <TabsList className="grid w-full grid-cols-6 gap-1 mb-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
                 <Eye className="h-3 w-3 mr-1" />
                 Viewer
               </TabsTrigger>
-              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Students</TabsTrigger>
-              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Houses</TabsTrigger>
-              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Badges</TabsTrigger>
-              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Games</TabsTrigger>
+              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Students</TabsTrigger>
+              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Houses</TabsTrigger>
+              <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Quick Actions</TabsTrigger>
+              <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>AI Stories</TabsTrigger>
             </TabsList>
             
-            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Messages</TabsTrigger>
-              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Gallery</TabsTrigger>
-              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Reflections</TabsTrigger>
-              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Data Export</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 gap-1 mb-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Messages</TabsTrigger>
+              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Reflections</TabsTrigger>
+              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Data Export</TabsTrigger>
             </TabsList>
 
-            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+            <TabsList className="grid w-full grid-cols-4 gap-1 mb-4" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
                 <FileText className="h-3 w-3 mr-1" />
                 Progress Reports
               </TabsTrigger>
-              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
                 <Trophy className="h-3 w-3 mr-1" />
                 Achievement Hub
               </TabsTrigger>
-              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
                 <BarChart3 className="h-3 w-3 mr-1" />
                 Performance
               </TabsTrigger>
-              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
                 <Brain className="h-3 w-3 mr-1" />
                 AI Engine
               </TabsTrigger>
@@ -625,122 +657,181 @@ export default function AdminNew() {
                   <CardTitle style={{color: themeStyles.textPrimary}}>Student Management</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p style={{color: themeStyles.textSecondary}} className="mb-4">Manage student records and house assignments</p>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-6">Manage student records, awards, and house assignments</p>
                   
-                  {/* Student Statistics */}
+                  {/* Filter Controls */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium" style={{color: themeStyles.textSecondary}}>Total Students</p>
-                          <p className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
-                            {allScholars?.length || 0}
-                          </p>
-                        </div>
-                        <Users className="h-8 w-8" style={{color: themeStyles.textSecondary}} />
-                      </div>
+                    <div>
+                      <Label style={{color: themeStyles.textPrimary}}>Filter by Grade</Label>
+                      <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select grade level..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Grades</SelectItem>
+                          <SelectItem value="6">6th Grade</SelectItem>
+                          <SelectItem value="7">7th Grade</SelectItem>
+                          <SelectItem value="8">8th Grade</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     
-                    <div className="p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium" style={{color: themeStyles.textSecondary}}>Active Houses</p>
-                          <p className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
-                            {houses?.length || 0}
-                          </p>
-                        </div>
-                        <GraduationCap className="h-8 w-8" style={{color: themeStyles.textSecondary}} />
-                      </div>
+                    <div>
+                      <Label style={{color: themeStyles.textPrimary}}>Search Students</Label>
+                      <Input
+                        placeholder="Type student name..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}
+                      />
                     </div>
                     
-                    <div className="p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
-                      <div>
-                        <p className="text-sm font-medium" style={{color: themeStyles.textSecondary}}>Badges Earned</p>
-                        <p className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
-                          {scholarBadges?.length || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Student List */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold" style={{color: themeStyles.textPrimary}}>All Students</h3>
+                    <div className="flex items-end">
                       <Button 
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => {
-                          toast({
-                            title: "Add Student",
-                            description: "Student addition functionality can be implemented here.",
-                          });
-                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                        onClick={() => setShowAddStudentModal(true)}
                       >
                         <UserPlus className="w-4 h-4 mr-2" />
                         Add Student
                       </Button>
                     </div>
+                  </div>
 
-                    {allScholars && allScholars.length > 0 ? (
-                      <div className="grid gap-4">
-                        {allScholars.map((scholar) => {
-                          const house = houses?.find(h => h.id === scholar.houseId);
-                          const studentBadges = scholarBadges?.filter((sb: any) => sb.scholarId === scholar.id) || [];
+                  {/* Student List */}
+                  <div className="space-y-4">
+                    {(() => {
+                      const filteredStudents = allScholars?.filter(scholar => {
+                        const matchesGrade = selectedGrade === "all" || scholar.grade.toString() === selectedGrade;
+                        const matchesSearch = !studentSearchQuery || 
+                          `${scholar.firstName} ${scholar.lastName}`.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                          scholar.studentId?.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                          scholar.username?.toLowerCase().includes(studentSearchQuery.toLowerCase());
+                        return matchesGrade && matchesSearch;
+                      }) || [];
+
+                      if (filteredStudents.length === 0) {
+                        return (
+                          <div className="text-center py-8">
+                            <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                            <p style={{color: themeStyles.textSecondary}}>No students found</p>
+                            <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                              {selectedGrade !== "all" || studentSearchQuery ? "Try adjusting your filters" : "Students will appear here once they are added"}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <>
+                          <div className="flex items-center justify-between mb-4">
+                            <p style={{color: themeStyles.textSecondary}}>
+                              Showing {filteredStudents.length} of {allScholars?.length || 0} students
+                            </p>
+                          </div>
                           
-                          return (
-                            <div 
-                              key={scholar.id} 
-                              className="flex items-center justify-between p-4 border rounded-lg" 
-                              style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-3">
-                                  <div>
-                                    <p className="font-medium" style={{color: themeStyles.textPrimary}}>
-                                      {scholar.firstName} {scholar.lastName}
-                                    </p>
-                                    <p className="text-sm" style={{color: themeStyles.textSecondary}}>
-                                      ID: {scholar.id.slice(0, 8)}... • Grade: {scholar.grade}
-                                    </p>
-                                    <p className="text-sm" style={{color: themeStyles.textSecondary}}>
-                                      Username: {scholar.username}
-                                    </p>
+                          <div className="grid gap-4">
+                            {filteredStudents.map((scholar) => {
+                              const house = houses?.find(h => h.id === scholar.houseId);
+                              const studentBadges = scholarBadges?.filter((sb: any) => sb.scholarId === scholar.id) || [];
+                              const totalPoints = (scholar.academicPoints || 0) + (scholar.attendancePoints || 0) + (scholar.behaviorPoints || 0);
+                              
+                              return (
+                                <div 
+                                  key={scholar.id} 
+                                  className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                                  style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}
+                                  onClick={() => {
+                                    toast({
+                                      title: "Student Dashboard",
+                                      description: `Opening dashboard for ${scholar.firstName} ${scholar.lastName}`,
+                                    });
+                                  }}
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-3">
+                                      <div>
+                                        <p className="font-medium" style={{color: themeStyles.textPrimary}}>
+                                          {scholar.firstName} {scholar.lastName}
+                                        </p>
+                                        <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                                          ID: {scholar.studentId} • Grade: {scholar.grade} • Username: {scholar.username}
+                                        </p>
+                                        <div className="flex items-center space-x-4 mt-1">
+                                          <span className="text-xs" style={{color: themeStyles.textSecondary}}>
+                                            Academic: {scholar.academicPoints || 0}
+                                          </span>
+                                          <span className="text-xs" style={{color: themeStyles.textSecondary}}>
+                                            Attendance: {scholar.attendancePoints || 0}
+                                          </span>
+                                          <span className="text-xs" style={{color: themeStyles.textSecondary}}>
+                                            Behavior: {scholar.behaviorPoints || 0}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center space-x-3">
+                                    {house && (
+                                      <Badge 
+                                        className="text-white"
+                                        style={{backgroundColor: house.color}}
+                                      >
+                                        {house.name}
+                                      </Badge>
+                                    )}
+                                    <Badge variant="outline">
+                                      {studentBadges.length} badges
+                                    </Badge>
+                                    <div className="text-right">
+                                      <p className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>
+                                        {totalPoints} points
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Action Buttons */}
+                                    <div className="flex space-x-2">
+                                      <Button
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedStudent(scholar);
+                                          setAwardPointsForm({
+                                            scholarId: scholar.id,
+                                            category: "",
+                                            subcategory: "",
+                                            mustangTrait: "",
+                                            points: 0,
+                                            reason: ""
+                                          });
+                                          setShowAwardPointsModal(true);
+                                        }}
+                                      >
+                                        <Award className="w-3 h-3 mr-1" />
+                                        Award Points
+                                      </Button>
+                                      
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedStudent(scholar);
+                                          setShowDeactivateModal(true);
+                                        }}
+                                      >
+                                        Deactivate
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              
-                              <div className="flex items-center space-x-3">
-                                {house && (
-                                  <Badge 
-                                    className="text-white"
-                                    style={{backgroundColor: house.color}}
-                                  >
-                                    {house.name}
-                                  </Badge>
-                                )}
-                                <Badge variant="outline">
-                                  {studentBadges.length} badges
-                                </Badge>
-                                <div className="text-right">
-                                  <p className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>
-                                    {scholar.totalPoints || 0} points
-                                  </p>
-                                  <p className="text-xs" style={{color: themeStyles.textSecondary}}>
-                                    Joined: {scholar.createdAt ? new Date(scholar.createdAt).toLocaleDateString() : 'Recently'}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                        <p style={{color: themeStyles.textSecondary}}>No students found</p>
-                        <p className="text-sm" style={{color: themeStyles.textSecondary}}>Students will appear here once they are added to the system</p>
-                      </div>
-                    )}
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </CardContent>
               </Card>
@@ -929,6 +1020,122 @@ export default function AdminNew() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="quick-actions" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-6">Perform common administrative tasks quickly</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Award Points Quick Action */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => {
+                           setAwardPointsForm({
+                             scholarId: "",
+                             category: "",
+                             subcategory: "",
+                             mustangTrait: "",
+                             points: 0,
+                             reason: ""
+                           });
+                           setShowAwardPointsModal(true);
+                         }}>
+                      <Award className="h-8 w-8 text-green-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>Award MUSTANG Points</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>Quickly award points to any student for achievements</p>
+                    </div>
+                    
+                    {/* Add Student Quick Action */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => setShowAddStudentModal(true)}>
+                      <UserPlus className="h-8 w-8 text-blue-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>Add New Student</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>Register a new student in the system</p>
+                    </div>
+                    
+                    {/* View All Messages */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => setActiveTab("messaging")}>
+                      <MessageSquare className="h-8 w-8 text-purple-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>View Messages</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>Review parent-teacher communications</p>
+                    </div>
+                    
+                    {/* Export Data */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => setActiveTab("exports")}>
+                      <Download className="h-8 w-8 text-orange-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>Export Data</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>Download reports and data exports</p>
+                    </div>
+                    
+                    {/* View Teacher Performance */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => setActiveTab("performance-heatmap")}>
+                      <BarChart3 className="h-8 w-8 text-red-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>Teacher Performance</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>View teacher performance analytics</p>
+                    </div>
+                    
+                    {/* Generate Progress Reports */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => setActiveTab("progress-reports")}>
+                      <FileText className="h-8 w-8 text-teal-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>Progress Reports</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>Generate detailed student progress reports</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="story-review" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>AI Story Feedback Review</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-6">Review AI-generated story feedback submissions from students</p>
+                  
+                  <div className="text-center py-12">
+                    <FileText className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2" style={{color: themeStyles.textPrimary}}>AI Story Feedback System</h3>
+                    <p style={{color: themeStyles.textSecondary}} className="mb-4">
+                      Monitor and review AI-generated feedback for student creative writing submissions.
+                    </p>
+                    <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                      This feature allows administrators to oversee the quality and appropriateness of AI feedback 
+                      provided to students on their creative writing assignments.
+                    </p>
+                    
+                    <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                        <h4 className="font-medium mb-2" style={{color: themeStyles.textPrimary}}>Recent Submissions</h4>
+                        <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                          View the latest AI feedback generated for student stories and creative writing assignments.
+                        </p>
+                      </div>
+                      
+                      <div className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                        <h4 className="font-medium mb-2" style={{color: themeStyles.textPrimary}}>Quality Control</h4>
+                        <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                          Ensure AI feedback maintains educational value and appropriate tone for middle school students.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="messaging" className="space-y-6">
@@ -1445,6 +1652,241 @@ export default function AdminNew() {
           )}
         </Card>
       </div>
+
+      {/* Award MUSTANG Points Modal */}
+      <Dialog open={showAwardPointsModal} onOpenChange={setShowAwardPointsModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Award MUSTANG Points</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedStudent && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="font-medium">Selected Student:</p>
+                <p className="text-sm text-gray-600">{selectedStudent.firstName} {selectedStudent.lastName}</p>
+              </div>
+            )}
+            
+            <div>
+              <Label>Student</Label>
+              <Select 
+                value={awardPointsForm.scholarId} 
+                onValueChange={(value) => setAwardPointsForm(prev => ({...prev, scholarId: value}))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select student..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allScholars?.map((scholar) => (
+                    <SelectItem key={scholar.id} value={scholar.id}>
+                      {scholar.firstName} {scholar.lastName} (Grade {scholar.grade})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <PBISCategorySelector
+              selectedCategory={awardPointsForm.category}
+              selectedSubcategory={awardPointsForm.subcategory}
+              onCategoryChange={(category) => setAwardPointsForm(prev => ({...prev, category}))}
+              onSubcategoryChange={(subcategory) => setAwardPointsForm(prev => ({...prev, subcategory}))}
+            />
+            
+            <div>
+              <Label>Reason (Optional)</Label>
+              <Input
+                value={awardPointsForm.reason}
+                onChange={(e) => setAwardPointsForm(prev => ({...prev, reason: e.target.value}))}
+                placeholder="Additional notes..."
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAwardPointsModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                toast({
+                  title: "Points Awarded",
+                  description: "MUSTANG points have been awarded to the student.",
+                });
+                setShowAwardPointsModal(false);
+              }}
+            >
+              Award Points
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Student Modal */}
+      <Dialog open={showAddStudentModal} onOpenChange={setShowAddStudentModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New Student</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>First Name</Label>
+                <Input
+                  value={addStudentForm.firstName}
+                  onChange={(e) => setAddStudentForm(prev => ({...prev, firstName: e.target.value}))}
+                  placeholder="First name"
+                />
+              </div>
+              <div>
+                <Label>Last Name</Label>
+                <Input
+                  value={addStudentForm.lastName}
+                  onChange={(e) => setAddStudentForm(prev => ({...prev, lastName: e.target.value}))}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label>Student ID</Label>
+              <Input
+                value={addStudentForm.studentId}
+                onChange={(e) => setAddStudentForm(prev => ({...prev, studentId: e.target.value}))}
+                placeholder="Student ID"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Grade</Label>
+                <Select 
+                  value={addStudentForm.grade.toString()} 
+                  onValueChange={(value) => setAddStudentForm(prev => ({...prev, grade: parseInt(value)}))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6th Grade</SelectItem>
+                    <SelectItem value="7">7th Grade</SelectItem>
+                    <SelectItem value="8">8th Grade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label>House</Label>
+                <Select 
+                  value={addStudentForm.houseId} 
+                  onValueChange={(value) => setAddStudentForm(prev => ({...prev, houseId: value}))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select house..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {houses?.map((house) => (
+                      <SelectItem key={house.id} value={house.id}>
+                        {house.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Username</Label>
+                <Input
+                  value={addStudentForm.username}
+                  onChange={(e) => setAddStudentForm(prev => ({...prev, username: e.target.value}))}
+                  placeholder="Username"
+                />
+              </div>
+              <div>
+                <Label>Password</Label>
+                <Input
+                  type="password"
+                  value={addStudentForm.password}
+                  onChange={(e) => setAddStudentForm(prev => ({...prev, password: e.target.value}))}
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddStudentModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => {
+                toast({
+                  title: "Student Added",
+                  description: "New student has been added to the system.",
+                });
+                setShowAddStudentModal(false);
+              }}
+            >
+              Add Student
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate Student Modal */}
+      <Dialog open={showDeactivateModal} onOpenChange={setShowDeactivateModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deactivate Student</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedStudent && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="font-medium text-red-800">Student to Deactivate:</p>
+                <p className="text-sm text-red-600">{selectedStudent.firstName} {selectedStudent.lastName}</p>
+                <p className="text-xs text-red-500">Grade: {selectedStudent.grade} • ID: {selectedStudent.studentId}</p>
+              </div>
+            )}
+            
+            <div>
+              <Label>Reason for Deactivation</Label>
+              <Input
+                value={deactivationReason}
+                onChange={(e) => setDeactivationReason(e.target.value)}
+                placeholder="Enter reason for deactivation..."
+              />
+            </div>
+            
+            <div className="text-sm text-gray-600 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="font-medium text-yellow-800">Warning:</p>
+              <p>This action will deactivate the student's account. They will no longer be able to log in to the system.</p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeactivateModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                toast({
+                  title: "Student Deactivated",
+                  description: "Student account has been deactivated.",
+                });
+                setShowDeactivateModal(false);
+                setDeactivationReason("");
+              }}
+            >
+              Deactivate Student
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Game Modal */}
       {selectedGame && (

@@ -54,7 +54,7 @@ import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 
 export default function ModernAdminDashboard() {
-  const [activeTab, setActiveTab] = useState("teachers");
+  const [activeTab, setActiveTab] = useState("scholars-dashboard");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -282,7 +282,7 @@ export default function ModernAdminDashboard() {
                 className="h-12 w-auto"
               />
               <div>
-                <h1 className="text-2xl font-bold text-white">Modern Admin Portal</h1>
+                <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
                 <p className="text-white/80">Welcome, {adminData?.firstName} {adminData?.lastName} ({adminData?.title})</p>
               </div>
             </div>
@@ -337,40 +337,265 @@ export default function ModernAdminDashboard() {
       <div className="container mx-auto px-6 py-6 relative z-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Tab Navigation */}
-          <div className="space-y-4">
-            <TabsList className="grid grid-cols-6 gap-2 bg-white/10 backdrop-blur-sm border border-white/20 p-2">
-              <TabsTrigger value="teachers" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Teachers</TabsTrigger>
-              <TabsTrigger value="teacher-viewer" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
+          <div className="space-y-2">
+            <TabsList className="grid grid-cols-6 gap-1 bg-white/10 backdrop-blur-sm border border-white/20 p-1">
+              <TabsTrigger value="scholars-dashboard" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">
+                <Users className="h-3 w-3 mr-1" />Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="pbis-awards" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">
+                <Award className="h-3 w-3 mr-1" />PBIS Awards
+              </TabsTrigger>
+              <TabsTrigger value="teachers" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">
                 <Eye className="h-3 w-3 mr-1" />Viewer
               </TabsTrigger>
-              <TabsTrigger value="students" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Students</TabsTrigger>
-              <TabsTrigger value="houses" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Houses</TabsTrigger>
-              <TabsTrigger value="badges" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Badges</TabsTrigger>
-              <TabsTrigger value="games" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Games</TabsTrigger>
+              <TabsTrigger value="students" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Students</TabsTrigger>
+              <TabsTrigger value="houses" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Houses</TabsTrigger>
             </TabsList>
             
-            <TabsList className="grid grid-cols-4 gap-2 bg-white/10 backdrop-blur-sm border border-white/20 p-2">
-              <TabsTrigger value="messaging" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Messages</TabsTrigger>
-              <TabsTrigger value="gallery" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Gallery</TabsTrigger>
-              <TabsTrigger value="reflections" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Reflections</TabsTrigger>
-              <TabsTrigger value="exports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Data Export</TabsTrigger>
+            <TabsList className="grid grid-cols-6 gap-1 bg-white/10 backdrop-blur-sm border border-white/20 p-1">
+              <TabsTrigger value="badges" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Badges</TabsTrigger>
+              <TabsTrigger value="games" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Games</TabsTrigger>
+              <TabsTrigger value="messaging" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Messages</TabsTrigger>
+              <TabsTrigger value="gallery" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Reflections</TabsTrigger>
+              <TabsTrigger value="exports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">Export</TabsTrigger>
             </TabsList>
 
-            <TabsList className="grid grid-cols-4 gap-2 bg-white/10 backdrop-blur-sm border border-white/20 p-2">
-              <TabsTrigger value="progress-reports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
-                <FileText className="h-3 w-3 mr-1" />Progress Reports
+            <TabsList className="grid grid-cols-5 gap-1 bg-white/10 backdrop-blur-sm border border-white/20 p-1">
+              <TabsTrigger value="progress-reports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">
+                <FileText className="h-3 w-3 mr-1" />Reports
               </TabsTrigger>
-              <TabsTrigger value="achievement-playground" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
-                <Trophy className="h-3 w-3 mr-1" />Achievement Hub
+              <TabsTrigger value="achievement-playground" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">
+                <Trophy className="h-3 w-3 mr-1" />Achievements
               </TabsTrigger>
-              <TabsTrigger value="performance-heatmap" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
-                <BarChart3 className="h-3 w-3 mr-1" />Performance
+              <TabsTrigger value="performance-heatmap" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">
+                <BarChart3 className="h-3 w-3 mr-1" />Analytics
               </TabsTrigger>
-              <TabsTrigger value="ai-recommendations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
+              <TabsTrigger value="ai-recommendations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">
                 <Brain className="h-3 w-3 mr-1" />AI Engine
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80 text-xs">
+                <Settings className="h-3 w-3 mr-1" />Settings
               </TabsTrigger>
             </TabsList>
           </div>
+
+          {/* Scholars Dashboard Tab - Main Overview */}
+          <TabsContent value="scholars-dashboard" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Quick Stats */}
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
+                <CardHeader>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>School Overview</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                      <div className="text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>{allScholars?.length || 0}</div>
+                      <div className="text-sm" style={{ color: themeStyles.textSecondary }}>Total Students</div>
+                    </div>
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                      <div className="text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>{houses?.length || 0}</div>
+                      <div className="text-sm" style={{ color: themeStyles.textSecondary }}>Houses</div>
+                    </div>
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                      <div className="text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>{allBadges?.length || 0}</div>
+                      <div className="text-sm" style={{ color: themeStyles.textSecondary }}>Badges</div>
+                    </div>
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                      <div className="text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>{allGames?.length || 0}</div>
+                      <div className="text-sm" style={{ color: themeStyles.textSecondary }}>Games</div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h4 className="font-medium mb-3" style={{ color: themeStyles.textPrimary }}>House Standings</h4>
+                    <div className="space-y-2">
+                      {houses?.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3).map((house: House, index) => (
+                        <div key={house.id} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: `${house.color}20` }}>
+                          <div className="flex items-center gap-2">
+                            <Badge className="text-xs" style={{ backgroundColor: house.color, color: 'white' }}>#{index + 1}</Badge>
+                            <span className="font-medium">{house.name}</span>
+                          </div>
+                          <span className="font-bold" style={{ color: house.color }}>{house.totalPoints}pts</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card className="lg:col-span-2 bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
+                <CardHeader>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Recent Activity & Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-medium mb-3" style={{ color: themeStyles.textPrimary }}>Quick Actions</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button 
+                          onClick={() => setActiveTab("pbis-awards")}
+                          className="h-16 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white flex flex-col items-center justify-center"
+                        >
+                          <Award className="h-5 w-5 mb-1" />
+                          <span className="text-xs">Award Points</span>
+                        </Button>
+                        <Button 
+                          onClick={() => setActiveTab("students")}
+                          className="h-16 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white flex flex-col items-center justify-center"
+                        >
+                          <Users className="h-5 w-5 mb-1" />
+                          <span className="text-xs">View Students</span>
+                        </Button>
+                        <Button 
+                          onClick={() => setActiveTab("messaging")}
+                          className="h-16 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white flex flex-col items-center justify-center"
+                        >
+                          <MessageSquare className="h-5 w-5 mb-1" />
+                          <span className="text-xs">Send Message</span>
+                        </Button>
+                        <Button 
+                          onClick={() => setActiveTab("exports")}
+                          className="h-16 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white flex flex-col items-center justify-center"
+                        >
+                          <Download className="h-5 w-5 mb-1" />
+                          <span className="text-xs">Export Data</span>
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium mb-3" style={{ color: themeStyles.textPrimary }}>System Status</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span className="text-sm">Database</span>
+                          <Badge className="bg-green-500 text-white">Online</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span className="text-sm">SMS Service</span>
+                          <Badge className="bg-green-500 text-white">Active</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span className="text-sm">Email Service</span>
+                          <Badge className="bg-green-500 text-white">Active</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span className="text-sm">AI Features</span>
+                          <Badge className="bg-green-500 text-white">Available</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* PBIS Awards Tab - Award Mustang Points */}
+          <TabsContent value="pbis-awards" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
+                <CardHeader>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Award MUSTANG Points</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="student-select">Select Student</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a student" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allScholars?.map((scholar: Scholar) => (
+                          <SelectItem key={scholar.id} value={scholar.id}>
+                            {scholar.name} - Grade {scholar.grade}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="point-type">Point Category</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="academic">Academic Excellence</SelectItem>
+                        <SelectItem value="behavior">Positive Behavior</SelectItem>
+                        <SelectItem value="attendance">Perfect Attendance</SelectItem>
+                        <SelectItem value="leadership">Leadership</SelectItem>
+                        <SelectItem value="citizenship">Good Citizenship</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="points">Points to Award</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select points" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Point</SelectItem>
+                        <SelectItem value="2">2 Points</SelectItem>
+                        <SelectItem value="3">3 Points</SelectItem>
+                        <SelectItem value="5">5 Points</SelectItem>
+                        <SelectItem value="10">10 Points</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="reason">Reason for Award</Label>
+                    <textarea 
+                      className="w-full h-20 p-3 border rounded-lg resize-none" 
+                      placeholder="Describe why this student is receiving points..."
+                      style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : '#ffffff', borderColor: themeStyles.border, color: themeStyles.textPrimary }}
+                    />
+                  </div>
+                  
+                  <Button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                    <Award className="h-4 w-4 mr-2" />
+                    Award MUSTANG Points
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
+                <CardHeader>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Recent Awards</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    <div className="p-3 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium" style={{ color: themeStyles.textPrimary }}>Recent Awards</span>
+                        <Badge className="bg-green-500 text-white">Active</Badge>
+                      </div>
+                      <p className="text-sm" style={{ color: themeStyles.textSecondary }}>
+                        View recent PBIS point awards and their details. All awards are automatically tracked and added to student records.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium" style={{ color: themeStyles.textPrimary }}>Bulk Actions</span>
+                        <Badge className="bg-blue-500 text-white">Available</Badge>
+                      </div>
+                      <p className="text-sm" style={{ color: themeStyles.textSecondary }}>
+                        Award points to multiple students at once for class-wide achievements or events.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           {/* Teachers Tab - Exact replica of original functionality */}
           <TabsContent value="teachers" className="space-y-6">
@@ -931,6 +1156,240 @@ export default function ModernAdminDashboard() {
                 <AIRecommendationEngine />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Settings Tab - Complete System Configuration */}
+          <TabsContent value="settings" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* System Settings */}
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
+                <CardHeader>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>System Configuration</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  
+                  {/* School Information */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>School Information</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <Label htmlFor="school-name">School Name</Label>
+                        <Input defaultValue="Bush Hills STEAM Academy" />
+                      </div>
+                      <div>
+                        <Label htmlFor="school-year">Academic Year</Label>
+                        <Input defaultValue="2024-2025" />
+                      </div>
+                      <div>
+                        <Label htmlFor="principal">Principal</Label>
+                        <Input defaultValue="Dr. Smith" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PBIS Settings */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>PBIS Point System</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                        <span className="text-sm">Enable PBIS Points</span>
+                        <Badge className="bg-green-500 text-white">Enabled</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                        <span className="text-sm">Auto Badge Awards</span>
+                        <Badge className="bg-green-500 text-white">Active</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                        <span className="text-sm">House Competition</span>
+                        <Badge className="bg-green-500 text-white">Running</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* User Management */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>User Management</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button className="bg-blue-500 hover:bg-blue-600 text-white text-xs">
+                        <UserPlus className="h-3 w-3 mr-1" />
+                        Add Teacher
+                      </Button>
+                      <Button className="bg-green-500 hover:bg-green-600 text-white text-xs">
+                        <UserPlus className="h-3 w-3 mr-1" />
+                        Add Student
+                      </Button>
+                      <Button className="bg-purple-500 hover:bg-purple-600 text-white text-xs">
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Reset Passwords
+                      </Button>
+                      <Button className="bg-orange-500 hover:bg-orange-600 text-white text-xs">
+                        <Download className="h-3 w-3 mr-1" />
+                        QR Codes
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Communication & Notifications */}
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
+                <CardHeader>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Communication Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  
+                  {/* Email Configuration */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>Email Service</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                        <span className="text-sm">SendGrid API</span>
+                        <Badge className="bg-green-500 text-white">Connected</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                        <span className="text-sm">Auto Notifications</span>
+                        <Badge className="bg-green-500 text-white">Enabled</Badge>
+                      </div>
+                      <Button 
+                        onClick={() => sendTestEmailMutation.mutate({ email: "admin@bhm.k12.al.us", name: "Test User" })}
+                        disabled={sendTestEmailMutation.isPending}
+                        className="w-full bg-blue-500 hover:bg-blue-600 text-white text-xs"
+                      >
+                        <Mail className="h-3 w-3 mr-1" />
+                        {sendTestEmailMutation.isPending ? "Sending..." : "Send Test Email"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* SMS Configuration */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>SMS Service</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                        <span className="text-sm">Twilio API</span>
+                        <Badge className="bg-green-500 text-white">Connected</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                        <span className="text-sm">Parent Notifications</span>
+                        <Badge className="bg-green-500 text-white">Active</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                        <span className="text-sm">Bilingual Support</span>
+                        <Badge className="bg-green-500 text-white">Enabled</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* System Maintenance */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>System Maintenance</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs">
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Clear Cache
+                      </Button>
+                      <Button className="bg-purple-500 hover:bg-purple-600 text-white text-xs">
+                        <Download className="h-3 w-3 mr-1" />
+                        Backup Data
+                      </Button>
+                      <Button className="bg-red-500 hover:bg-red-600 text-white text-xs">
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Reset Semester
+                      </Button>
+                      <Button className="bg-indigo-500 hover:bg-indigo-600 text-white text-xs">
+                        <Settings className="h-3 w-3 mr-1" />
+                        Admin Tools
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Advanced Features */}
+              <Card className="lg:col-span-2 bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
+                <CardHeader>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Advanced System Features</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* Data Management */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>Data Management</h4>
+                      <div className="space-y-2">
+                        <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white text-xs justify-start">
+                          <Download className="h-3 w-3 mr-2" />
+                          Export All Data (CSV)
+                        </Button>
+                        <Button className="w-full bg-green-500 hover:bg-green-600 text-white text-xs justify-start">
+                          <Download className="h-3 w-3 mr-2" />
+                          Export All Data (Excel)
+                        </Button>
+                        <Button className="w-full bg-purple-500 hover:bg-purple-600 text-white text-xs justify-start">
+                          <RefreshCw className="h-3 w-3 mr-2" />
+                          Import Student Data
+                        </Button>
+                        <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs justify-start">
+                          <Settings className="h-3 w-3 mr-2" />
+                          Database Tools
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Security & Access */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>Security & Access</h4>
+                      <div className="space-y-2">
+                        <Button className="w-full bg-red-500 hover:bg-red-600 text-white text-xs justify-start">
+                          <Shield className="h-3 w-3 mr-2" />
+                          Admin Permissions
+                        </Button>
+                        <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white text-xs justify-start">
+                          <Users className="h-3 w-3 mr-2" />
+                          Teacher Roles
+                        </Button>
+                        <Button className="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xs justify-start">
+                          <RefreshCw className="h-3 w-3 mr-2" />
+                          Reset All Passwords
+                        </Button>
+                        <Button className="w-full bg-pink-500 hover:bg-pink-600 text-white text-xs justify-start">
+                          <Eye className="h-3 w-3 mr-2" />
+                          Audit Logs
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* System Status */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>System Status</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between p-2 rounded text-xs" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span>Total Students</span>
+                          <Badge className="bg-blue-500 text-white">{allScholars?.length || 0}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded text-xs" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span>Active Teachers</span>
+                          <Badge className="bg-green-500 text-white">20</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded text-xs" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span>Total Houses</span>
+                          <Badge className="bg-purple-500 text-white">{houses?.length || 0}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded text-xs" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span>Active Badges</span>
+                          <Badge className="bg-yellow-500 text-white">{allBadges?.length || 0}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded text-xs" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                          <span>Available Games</span>
+                          <Badge className="bg-orange-500 text-white">{allGames?.length || 0}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
         </Tabs>

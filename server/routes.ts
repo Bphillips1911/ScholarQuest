@@ -198,14 +198,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const jwtSecret = "bhsa-admin-secret-2025-stable";
         const decoded: any = jwt.verify(token, jwtSecret);
-        const session = await storage.getAdminSession(token);
+        const admin = await storage.getAdministratorByEmail(decoded.email);
         
-        if (session) {
-          const admin = await storage.getAdministratorByEmail(decoded.email);
-          if (admin) {
-            req.admin = admin;
-            return next();
-          }
+        if (admin && (admin.isApproved || admin.title === "Principal")) {
+          req.admin = admin;
+          return next();
         }
       } catch (adminError) {
         // Admin auth failed

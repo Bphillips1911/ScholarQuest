@@ -78,7 +78,10 @@ export function StudentSearchTab({ teacher }: TeacherStudentSearchProps) {
           subcategory: pbisForm.subcategory,
           points: pbisForm.points,
           customReason: pbisForm.customReason,
-          entryType: pbisForm.points < 0 ? 'negative' : 'positive'
+          entryType: pbisForm.points < 0 ? 'negative' : 'positive',
+          mustangTrait: pbisForm.points < 0 ? 'Need to be responsible' : 'Give 100% everyday',
+          month: new Date().getMonth() + 1,
+          year: new Date().getFullYear()
         })
       });
 

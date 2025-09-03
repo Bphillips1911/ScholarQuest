@@ -1443,6 +1443,7 @@ export default function AdminNew() {
                     </CardContent>
                   </Card>
                 </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="games" className="space-y-6">

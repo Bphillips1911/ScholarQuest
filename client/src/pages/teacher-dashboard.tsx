@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
@@ -1083,6 +1083,10 @@ export default function TeacherDashboard() {
                 <FileText className="h-4 w-4" />
                 Story Review
               </TabsTrigger>
+              <TabsTrigger value="messaging" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
+                <MessageSquare className="h-4 w-4" />
+                Messaging
+              </TabsTrigger>
               <TabsTrigger value="upload" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
                 <Camera className="h-4 w-4" />
                 Upload Photos
@@ -1506,6 +1510,21 @@ export default function TeacherDashboard() {
               </CardHeader>
               <CardContent>
                 <StudentSearchTab teacher={teacher} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Messaging Tab */}
+          <TabsContent value="messaging" className="space-y-6">
+            <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+              <CardHeader>
+                <CardTitle style={{color: themeStyles.textPrimary}}>Teacher Messaging Center</CardTitle>
+                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                  Send messages to parents and administrators
+                </p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-500">Messaging functionality will be implemented here.</p>
               </CardContent>
             </Card>
           </TabsContent>

@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Users, Star, Send, Eye, Trash2, Edit } from 'lucide-react';
+import { Plus, Users, Star, Send, Eye, Trash2, Edit, Search } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -45,6 +45,7 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
   const { toast } = useToast();
 
   // Form states
+  const [studentSearch, setStudentSearch] = useState('');
   const [classForm, setClassForm] = useState({
     name: '',
     description: ''
@@ -53,13 +54,35 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
   // Get teacher's class periods
   const { data: classPeriods = [], isLoading: classesLoading } = useQuery({
     queryKey: ['/api/teacher/class-periods'],
-    enabled: !!teacher
+    enabled: !!teacher,
+    queryFn: async () => {
+      const response = await fetch('/api/teacher/class-periods', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('teacherToken')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch class periods');
+      }
+      return response.json();
+    }
   });
 
   // Get all students from grades 6-8 for unified arts teachers
   const { data: allStudents = [], isLoading: studentsLoading } = useQuery({
     queryKey: ['/api/students/grades/6-8'],
-    enabled: !!teacher
+    enabled: !!teacher,
+    queryFn: async () => {
+      const response = await fetch('/api/students/grades/6-8', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('teacherToken')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch students');
+      }
+      return response.json();
+    }
   });
 
   // Create class period mutation
@@ -217,7 +240,17 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
   const getAvailableStudents = () => {
     if (!selectedClass) return allStudents;
     const classStudentIds = selectedClass.students.map(s => s.id);
-    return allStudents.filter((student: Student) => !classStudentIds.includes(student.id));
+    let availableStudents = allStudents.filter((student: Student) => !classStudentIds.includes(student.id));
+    
+    // Filter by search term
+    if (studentSearch.trim()) {
+      availableStudents = availableStudents.filter((student: Student) =>
+        student.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
+        student.grade.toString().includes(studentSearch)
+      );
+    }
+    
+    return availableStudents;
   };
 
   return (
@@ -402,6 +435,17 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
                   <Badge variant="outline">
                     {selectedStudents.length} selected
                   </Badge>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search by name or grade..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
 
                 {studentsLoading ? (

@@ -5019,8 +5019,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Teacher not found' });
       }
       
+      // Calculate canSeeGrades based on gradeRole
+      const canSeeGrades = (() => {
+        switch (teacher.gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      })();
+      
+      console.log(`DATABASE: Found teacher ${teacher.name} for grade ${teacher.gradeRole}`);
+      
       // Verify teacher can see this grade
-      if (!teacher.canSeeGrades.includes(grade)) {
+      if (!canSeeGrades.includes(grade)) {
         return res.status(403).json({ error: 'Not authorized to view this grade' });
       }
       
@@ -5054,8 +5069,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Student not found' });
       }
       
+      // Calculate canSeeGrades based on gradeRole
+      const canSeeGrades = (() => {
+        switch (teacher.gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      })();
+      
       // Verify teacher can see this student's grade
-      if (!teacher.canSeeGrades.includes(scholar.grade)) {
+      if (!canSeeGrades.includes(scholar.grade)) {
         return res.status(403).json({ error: 'Not authorized to view this student' });
       }
       

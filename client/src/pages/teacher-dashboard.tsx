@@ -313,7 +313,7 @@ export default function TeacherDashboard() {
     
     // DEPLOYMENT FIX: Add deployment-specific headers for cache-busting
     const isDeployment = window.location.hostname.includes('replit.app');
-    const headers = {
+    const headers: Record<string, string> = {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
       "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -587,7 +587,7 @@ export default function TeacherDashboard() {
       } catch (error) {
         console.error("ADD SCHOLAR: Mutation error:", error);
         // DEPLOYMENT FIX: Special handling for deployment auth errors
-        if (error.message.includes("token") || error.message.includes("401")) {
+        if ((error as Error).message?.includes("token") || (error as Error).message?.includes("401")) {
           toast({
             variant: "destructive",
             title: "Authentication Error",
@@ -794,11 +794,8 @@ export default function TeacherDashboard() {
       teacherName: teacher?.name || "Unknown Teacher",
       teacherRole: teacher?.gradeRole as "6th Grade" | "7th Grade" | "8th Grade" | "Unified Arts" | "Administration" | "Counselor",
       mustangTrait: "Make good choices",
-      category: pbisForm.category,
-      subcategory: pbisForm.subcategory,
       points: pbisForm.points,
       reason: finalReason,
-      entryType: pbisForm.points > 0 ? "positive" : "negative",
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),
     });
@@ -1100,14 +1097,14 @@ export default function TeacherDashboard() {
 
           <TabsContent value="dashboard" className="space-y-6">
             {/* Grade Selection */}
-            {teacher.canSeeGrades?.length > 1 && (
+            {teacher.canSeeGrades && teacher.canSeeGrades.length > 1 && (
               <Card className="mb-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
                   <CardTitle style={{color: themeStyles.textPrimary}}>Select Grade Level</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    {teacher.canSeeGrades.map((grade) => (
+                    {teacher.canSeeGrades.map((grade: number) => (
                       <Button
                         key={grade}
                         variant={selectedGrade === grade ? "default" : "outline"}
@@ -1125,7 +1122,7 @@ export default function TeacherDashboard() {
             {/* House Statistics Dashboard */}
             {houses && houses.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                {houses.map((house) => (
+                {houses.map((house: any) => (
                   <Card key={house.id} className="text-center" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg" style={{ color: house.color }}>
@@ -1151,14 +1148,14 @@ export default function TeacherDashboard() {
 
           <TabsContent value="scholars" className="space-y-6">
             {/* Grade Selection for Scholars Tab */}
-            {teacher.canSeeGrades?.length > 1 && (
+            {teacher.canSeeGrades && teacher.canSeeGrades.length > 1 && (
               <Card className="mb-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
                   <CardTitle style={{color: themeStyles.textPrimary}}>Select Grade Level</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    {teacher.canSeeGrades.map((grade) => (
+                    {teacher.canSeeGrades.map((grade: number) => (
                       <Button
                         key={grade}
                         variant={selectedGrade === grade ? "default" : "outline"}
@@ -1425,8 +1422,8 @@ export default function TeacherDashboard() {
                             alt={photo.description || 'Activity photo'}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling!.style.display = 'flex';
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                              ((e.currentTarget as HTMLElement).nextElementSibling as HTMLElement)!.style.display = 'flex';
                             }}
                           />
                           <div className="hidden w-full h-full items-center justify-center text-gray-400">
@@ -2219,12 +2216,8 @@ export default function TeacherDashboard() {
                           subject: replyForm.subject,
                           message: replyForm.message,
                           priority: replyForm.priority,
+                          ...(scholarId && { scholarId: scholarId })
                         };
-                        
-                        // Only add scholarId if it's not null
-                        if (scholarId) {
-                          replyData.scholarId = scholarId;
-                        }
                       }
                       
                       console.log("🔥 TEACHER DASHBOARD SEND: Final replyData:", JSON.stringify(replyData, null, 2));

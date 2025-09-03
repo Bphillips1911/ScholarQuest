@@ -1613,6 +1613,57 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(houses).orderBy(sql`academic_points + attendance_points + behavior_points DESC`);
   }
 
+  // Student Dashboard Methods
+  async getPBISEntriesForScholar(scholarId: string): Promise<any[]> {
+    try {
+      const entries = await db.select()
+        .from(schema.pbisEntries)
+        .where(eq(schema.pbisEntries.scholarId, scholarId))
+        .orderBy(sql`${schema.pbisEntries.createdAt} DESC`);
+      return entries;
+    } catch (error) {
+      console.error('Error getting PBIS entries for scholar:', error);
+      return [];
+    }
+  }
+
+  async getScholarBadges(scholarId: string): Promise<any[]> {
+    try {
+      const badges = await db.select({
+        id: schema.scholarBadges.id,
+        badgeId: schema.scholarBadges.badgeId,
+        earnedAt: schema.scholarBadges.earnedAt,
+        isActive: schema.scholarBadges.isActive,
+        badgeName: schema.badges.name,
+        badgeDescription: schema.badges.description,
+        badgeCategory: schema.badges.category,
+        badgeLevel: schema.badges.level,
+        badgeIconPath: schema.badges.iconPath
+      })
+      .from(schema.scholarBadges)
+      .innerJoin(schema.badges, eq(schema.scholarBadges.badgeId, schema.badges.id))
+      .where(eq(schema.scholarBadges.scholarId, scholarId))
+      .orderBy(sql`${schema.scholarBadges.earnedAt} DESC`);
+      return badges;
+    } catch (error) {
+      console.error('Error getting scholar badges:', error);
+      return [];
+    }
+  }
+
+  async getReflectionsForScholar(scholarId: string): Promise<any[]> {
+    try {
+      const reflections = await db.select()
+        .from(schema.reflections)
+        .where(eq(schema.reflections.scholarId, scholarId))
+        .orderBy(sql`${schema.reflections.assignedAt} DESC`);
+      return reflections;
+    } catch (error) {
+      console.error('Error getting reflections for scholar:', error);
+      return [];
+    }
+  }
+
   // Mood and Progress Tracking Implementation
   async createMoodEntry(moodEntry: InsertMoodEntry): Promise<MoodEntry> {
     const [entry] = await db.insert(moodEntries)

@@ -2027,9 +2027,10 @@ export default function AdminNew() {
               <AIRecommendationEngine />
             </TabsContent>
           </Tabs>
+        </Card>
+        </div>
 
           {/* Modals Section */}
-          <div>
           {/* Admin Photo Upload Modal */}
           {showUploadModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2876,8 +2877,6 @@ export default function AdminNew() {
           }}
         />
       )}
-          </div>
-        </div>
       </div>
     </div>
   );

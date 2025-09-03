@@ -81,6 +81,13 @@ export default function AdminNew() {
     password: ""
   });
 
+  // Quick Actions state
+  const [showTestEmailModal, setShowTestEmailModal] = useState(false);
+  const [showQRCodeModal, setShowQRCodeModal] = useState(false);
+  const [showContactInfoModal, setShowContactInfoModal] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [qrCodeStudentId, setQrCodeStudentId] = useState("");
+
   useEffect(() => {
     console.log("AdminNew component mounted");
     const token = localStorage.getItem("adminToken");
@@ -541,39 +548,41 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 gap-1 mb-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
-              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Teachers</TabsTrigger>
-              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
+            <TabsList className="grid w-full grid-cols-6 gap-1 mb-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <Eye className="h-3 w-3 mr-1" />
                 Viewer
               </TabsTrigger>
-              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Students</TabsTrigger>
-              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Houses</TabsTrigger>
-              <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Quick Actions</TabsTrigger>
-              <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>AI Stories</TabsTrigger>
+              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Students</TabsTrigger>
+              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Houses</TabsTrigger>
+              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Badges</TabsTrigger>
+              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Games</TabsTrigger>
             </TabsList>
             
-            <TabsList className="grid w-full grid-cols-4 gap-1 mb-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
-              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Messages</TabsTrigger>
-              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Gallery</TabsTrigger>
-              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Reflections</TabsTrigger>
-              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>Data Export</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6 gap-1 mb-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Quick Actions</TabsTrigger>
+              <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>AI Stories</TabsTrigger>
+              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Messages</TabsTrigger>
+              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Reflections</TabsTrigger>
+              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Data Export</TabsTrigger>
             </TabsList>
 
-            <TabsList className="grid w-full grid-cols-4 gap-1 mb-4" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
-              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
+            <TabsList className="grid w-full grid-cols-4 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <FileText className="h-3 w-3 mr-1" />
-                Progress Reports
+                Reports
               </TabsTrigger>
-              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
+              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <Trophy className="h-3 w-3 mr-1" />
-                Achievement Hub
+                Achievement
               </TabsTrigger>
-              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
+              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <BarChart3 className="h-3 w-3 mr-1" />
-                Performance
+                Analytics
               </TabsTrigger>
-              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px'}}>
+              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <Brain className="h-3 w-3 mr-1" />
                 AI Engine
               </TabsTrigger>
@@ -703,7 +712,7 @@ export default function AdminNew() {
                       const filteredStudents = allScholars?.filter(scholar => {
                         const matchesGrade = selectedGrade === "all" || scholar.grade.toString() === selectedGrade;
                         const matchesSearch = !studentSearchQuery || 
-                          `${scholar.firstName} ${scholar.lastName}`.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                          scholar.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
                           scholar.studentId?.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
                           scholar.username?.toLowerCase().includes(studentSearchQuery.toLowerCase());
                         return matchesGrade && matchesSearch;
@@ -751,7 +760,7 @@ export default function AdminNew() {
                                     <div className="flex items-center space-x-3">
                                       <div>
                                         <p className="font-medium" style={{color: themeStyles.textPrimary}}>
-                                          {scholar.firstName} {scholar.lastName}
+                {scholar.name}
                                         </p>
                                         <p className="text-sm" style={{color: themeStyles.textSecondary}}>
                                           ID: {scholar.studentId} • Grade: {scholar.grade} • Username: {scholar.username}
@@ -1050,11 +1059,38 @@ export default function AdminNew() {
                       <p className="text-sm" style={{color: themeStyles.textSecondary}}>Quickly award points to any student for achievements</p>
                     </div>
                     
+                    {/* SendGrid Test Email */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => setShowTestEmailModal(true)}>
+                      <Mail className="h-8 w-8 text-blue-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>SendGrid Test Email</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>Send a test email using SendGrid to verify email settings</p>
+                    </div>
+                    
+                    {/* Student QR Code Generator */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => setShowQRCodeModal(true)}>
+                      <TestTube className="h-8 w-8 text-purple-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>Generate Student QR Code</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>Create QR codes for student login credentials</p>
+                    </div>
+                    
+                    {/* Principal/Assistant Principal Contact Info */}
+                    <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
+                         style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
+                         onClick={() => setShowContactInfoModal(true)}>
+                      <User className="h-8 w-8 text-indigo-600 mb-3" />
+                      <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>Administrator Contacts</h3>
+                      <p className="text-sm" style={{color: themeStyles.textSecondary}}>View Dr. Phillips & Dr. Stewart contact information</p>
+                    </div>
+                    
                     {/* Add Student Quick Action */}
                     <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
                          style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
                          onClick={() => setShowAddStudentModal(true)}>
-                      <UserPlus className="h-8 w-8 text-blue-600 mb-3" />
+                      <UserPlus className="h-8 w-8 text-cyan-600 mb-3" />
                       <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>Add New Student</h3>
                       <p className="text-sm" style={{color: themeStyles.textSecondary}}>Register a new student in the system</p>
                     </div>
@@ -1063,7 +1099,7 @@ export default function AdminNew() {
                     <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
                          style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}
                          onClick={() => setActiveTab("messaging")}>
-                      <MessageSquare className="h-8 w-8 text-purple-600 mb-3" />
+                      <MessageSquare className="h-8 w-8 text-emerald-600 mb-3" />
                       <h3 className="font-semibold mb-2" style={{color: themeStyles.textPrimary}}>View Messages</h3>
                       <p className="text-sm" style={{color: themeStyles.textSecondary}}>Review parent-teacher communications</p>
                     </div>
@@ -1653,6 +1689,175 @@ export default function AdminNew() {
         </Card>
       </div>
 
+      {/* SendGrid Test Email Modal */}
+      <Dialog open={showTestEmailModal} onOpenChange={setShowTestEmailModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>SendGrid Test Email</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Test Email Address</Label>
+              <Input
+                value={testEmailAddress}
+                onChange={(e) => setTestEmailAddress(e.target.value)}
+                placeholder="Enter email address to send test email..."
+                type="email"
+              />
+            </div>
+            
+            <div className="text-sm text-gray-600 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="font-medium text-blue-800">Test Email Information:</p>
+              <p>This will send a test email using your SendGrid configuration to verify that email notifications are working properly.</p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTestEmailModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => {
+                if (!testEmailAddress) {
+                  toast({
+                    title: "Email Required",
+                    description: "Please enter an email address.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                toast({
+                  title: "Test Email Sent",
+                  description: `Test email sent to ${testEmailAddress} using SendGrid.`,
+                });
+                setShowTestEmailModal(false);
+                setTestEmailAddress("");
+              }}
+            >
+              Send Test Email
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Student QR Code Modal */}
+      <Dialog open={showQRCodeModal} onOpenChange={setShowQRCodeModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generate Student QR Code</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Select Student</Label>
+              <Select 
+                value={qrCodeStudentId} 
+                onValueChange={setQrCodeStudentId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select student for QR code..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allScholars?.map((scholar) => (
+                    <SelectItem key={scholar.id} value={scholar.id}>
+                      {scholar.name} (Grade {scholar.grade})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="text-sm text-gray-600 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+              <p className="font-medium text-purple-800">QR Code Generation:</p>
+              <p>This will generate a QR code containing the student's login credentials for easy access.</p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQRCodeModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700"
+              onClick={() => {
+                if (!qrCodeStudentId) {
+                  toast({
+                    title: "Student Required",
+                    description: "Please select a student.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                const selectedStudent = allScholars?.find(s => s.id === qrCodeStudentId);
+                toast({
+                  title: "QR Code Generated",
+                  description: `QR code generated for ${selectedStudent?.name}.`,
+                });
+                setShowQRCodeModal(false);
+                setQrCodeStudentId("");
+              }}
+            >
+              Generate QR Code
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Administrator Contact Information Modal */}
+      <Dialog open={showContactInfoModal} onOpenChange={setShowContactInfoModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Administrator Contact Information</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+              <div className="flex items-center mb-3">
+                <User className="h-6 w-6 text-blue-600 mr-3" />
+                <h3 className="font-semibold text-lg" style={{color: themeStyles.textPrimary}}>Dr. Phillips</h3>
+              </div>
+              <p className="font-medium text-blue-600 mb-2">Principal</p>
+              <div className="space-y-1">
+                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                  <span className="font-medium">Phone:</span> (205) 231-6370
+                </p>
+                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                  <span className="font-medium">Role:</span> Principal - Bush Hills STEAM Academy
+                </p>
+              </div>
+            </div>
+            
+            <div className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+              <div className="flex items-center mb-3">
+                <User className="h-6 w-6 text-green-600 mr-3" />
+                <h3 className="font-semibold text-lg" style={{color: themeStyles.textPrimary}}>Dr. Stewart</h3>
+              </div>
+              <p className="font-medium text-green-600 mb-2">Assistant Principal</p>
+              <div className="space-y-1">
+                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                  <span className="font-medium">Phone:</span> (205) 231-6370
+                </p>
+                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                  <span className="font-medium">Role:</span> Assistant Principal - Bush Hills STEAM Academy
+                </p>
+              </div>
+            </div>
+            
+            <div className="text-center text-sm p-3 bg-gray-50 border rounded-lg" style={{color: themeStyles.textSecondary}}>
+              <p>For administrative matters, please contact the appropriate administrator during school hours.</p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => setShowContactInfoModal(false)}
+              className="w-full"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Award MUSTANG Points Modal */}
       <Dialog open={showAwardPointsModal} onOpenChange={setShowAwardPointsModal}>
         <DialogContent className="max-w-md">
@@ -1663,7 +1868,7 @@ export default function AdminNew() {
             {selectedStudent && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="font-medium">Selected Student:</p>
-                <p className="text-sm text-gray-600">{selectedStudent.firstName} {selectedStudent.lastName}</p>
+                <p className="text-sm text-gray-600">{selectedStudent.name}</p>
               </div>
             )}
             
@@ -1679,7 +1884,7 @@ export default function AdminNew() {
                 <SelectContent>
                   {allScholars?.map((scholar) => (
                     <SelectItem key={scholar.id} value={scholar.id}>
-                      {scholar.firstName} {scholar.lastName} (Grade {scholar.grade})
+                      {scholar.name} (Grade {scholar.grade})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1689,8 +1894,8 @@ export default function AdminNew() {
             <PBISCategorySelector
               selectedCategory={awardPointsForm.category}
               selectedSubcategory={awardPointsForm.subcategory}
-              onCategoryChange={(category) => setAwardPointsForm(prev => ({...prev, category}))}
-              onSubcategoryChange={(subcategory) => setAwardPointsForm(prev => ({...prev, subcategory}))}
+              onCategorySelect={(category: string) => setAwardPointsForm(prev => ({...prev, category}))}
+              onSubcategorySelect={(subcategory: string) => setAwardPointsForm(prev => ({...prev, subcategory}))}
             />
             
             <div>

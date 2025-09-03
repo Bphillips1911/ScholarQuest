@@ -84,10 +84,10 @@ function Router() {
         <Route path="/teacher-dashboard-modern" component={ModernTeacherDashboard} />
         <Route path="/modern-teacher-dashboard" component={ModernTeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
-        <Route path="/admin" component={AdminNew} />
-        <Route path="/admin-modern" component={ModernAdminDashboard} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/admin-modern" component={AdminNew} />
         <Route path="/modern-admin" component={ModernAdminDashboard} />
-        <Route path="/admin-full" component={Admin} />
+        <Route path="/admin-new" component={AdminNew} />
         <Route path="/admin-test" component={AdminNew} />
         <Route path="/admin-settings" component={AdminSettings} />
         <Route path="/admin-pbis" component={PBIS} />

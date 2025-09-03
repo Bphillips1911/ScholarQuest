@@ -66,41 +66,41 @@ export default function Admin() {
     }
   }, [setLocation]);
 
-  // Fetch data hooks - must be called before any early returns
+  // Fetch data hooks - always call to prevent hooks order issues
   const { data: houses } = useQuery<House[]>({
     queryKey: ["/api/houses"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isLoading,
   });
 
   const { data: pointEntries } = useQuery<PointEntry[]>({
     queryKey: ["/api/points"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isLoading,
   });
 
   const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
     queryKey: ["/api/admin/teachers/pending"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isLoading,
   });
 
   const { data: allScholars } = useQuery<Scholar[]>({
     queryKey: ["/api/scholars"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isLoading,
   });
 
-  // Messaging queries
+  // Messaging queries - always call to prevent hooks order issues
   const { data: adminMessages, refetch: refetchMessages } = useQuery({
     queryKey: ["/api/admin/messages"],
-    enabled: isAuthenticated && activeTab === "messaging",
+    enabled: isAuthenticated && !isLoading,
   });
 
   const { data: allTeachers } = useQuery({
     queryKey: ["/api/admin/teachers"],
-    enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "teacher"),
+    enabled: isAuthenticated && !isLoading,
   });
 
   const { data: allParents } = useQuery({
     queryKey: ["/api/admin/parents"],
-    enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "parent"),
+    enabled: isAuthenticated && !isLoading,
   });
 
   // Show loading while checking authentication

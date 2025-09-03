@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
@@ -1041,58 +1042,70 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full p-4 h-auto" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-            {/* First Row - Main Tabs */}
-            <div className="flex flex-wrap justify-center gap-4 mb-4">
-              <TabsTrigger value="dashboard" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <Home className="h-4 w-4" />
-                Dashboard
+          <TabsList className="w-full p-2 h-auto border rounded-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+            {/* Single Row - All Tabs with Better Spacing */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 w-full">
+              <TabsTrigger value="dashboard" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <Home className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Dashboard</span>
+                <span className="sm:hidden">Home</span>
               </TabsTrigger>
-              <TabsTrigger value="scholars" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <Users className="h-4 w-4" />
+              <TabsTrigger value="scholars" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                 Scholars
               </TabsTrigger>
-              <TabsTrigger value="student-search" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <Search className="h-4 w-4" />
-                Student Search
+              <TabsTrigger value="messaging" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                Messages
+                {messages.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                    {messages.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="student-search" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <Search className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden lg:inline">Student Search</span>
+                <span className="lg:hidden">Search</span>
               </TabsTrigger>
               {teacher?.gradeRole === 'Unified Arts' && (
-                <TabsTrigger value="class-periods" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                  <Calendar className="h-4 w-4" />
-                  Class Periods
+                <TabsTrigger value="class-periods" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden lg:inline">Class Periods</span>
+                  <span className="lg:hidden">Classes</span>
                 </TabsTrigger>
               )}
-              <TabsTrigger value="student-dashboards" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <Trophy className="h-4 w-4" />
-                Student Views
+              <TabsTrigger value="student-dashboards" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <Trophy className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden lg:inline">Student Views</span>
+                <span className="lg:hidden">Views</span>
               </TabsTrigger>
             </div>
             
-            {/* Second Row - Secondary Tabs */}
-            <div className="flex flex-wrap justify-center gap-4">
-              <TabsTrigger value="reflections" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <BookOpen className="h-4 w-4" />
-                Reflections
+            {/* Secondary Row - Collapsed Secondary Tabs */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 w-full mt-2 pt-2 border-t" style={{borderColor: themeStyles.border}}>
+              <TabsTrigger value="reflections" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Reflections</span>
+                <span className="sm:hidden">Reflect</span>
                 {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
-                  <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                  <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
                     {reflections.filter((r: Reflection) => r.status === 'submitted').length}
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="story-review" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <FileText className="h-4 w-4" />
-                Story Review
+              <TabsTrigger value="story-review" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden lg:inline">Story Review</span>
+                <span className="lg:hidden">Stories</span>
               </TabsTrigger>
-              <TabsTrigger value="messaging" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <MessageSquare className="h-4 w-4" />
-                Messaging
+              <TabsTrigger value="upload" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden lg:inline">Upload Photos</span>
+                <span className="lg:hidden">Upload</span>
               </TabsTrigger>
-              <TabsTrigger value="upload" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <Camera className="h-4 w-4" />
-                Upload Photos
-              </TabsTrigger>
-              <TabsTrigger value="gallery" className="px-6 py-3 text-sm font-medium flex items-center gap-2 min-w-fit" style={{color: themeStyles.textPrimary}}>
-                <Image className="h-4 w-4" />
+              <TabsTrigger value="gallery" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <Image className="h-3 w-3 sm:h-4 sm:w-4" />
                 Gallery
               </TabsTrigger>
             </div>
@@ -1522,17 +1535,176 @@ export default function TeacherDashboard() {
 
           {/* Messaging Tab */}
           <TabsContent value="messaging" className="space-y-6">
-            <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-              <CardHeader>
-                <CardTitle style={{color: themeStyles.textPrimary}}>Teacher Messaging Center</CardTitle>
-                <p className="text-sm" style={{color: themeStyles.textSecondary}}>
-                  Send messages to parents and administrators
-                </p>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">Messaging functionality will be implemented here.</p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Message History */}
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Your Messages ({messages.length})</CardTitle>
+                  <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                    View your message history with parents and administrators
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {messages && messages.length > 0 ? (
+                      messages.slice(0, 10).map((message: any) => (
+                        <div key={message.id} className="p-4 border rounded-lg bg-gray-50">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-medium text-gray-900">{message.subject}</h4>
+                            <span className="text-xs text-gray-500">
+                              {message.created_at ? new Date(message.created_at).toLocaleDateString() : 'Recently'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">{message.message}</p>
+                          <div className="flex justify-between items-center text-xs text-gray-500">
+                            <span>
+                              {message.sender_type === 'teacher' ? 'To: ' : 'From: '}
+                              {message.sender_name || message.recipient_name || 'Unknown'}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              message.sender_type === 'teacher' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                            }`}>
+                              {message.sender_type === 'teacher' ? 'Sent' : 'Received'}
+                            </span>
+                          </div>
+                          {message.priority === 'urgent' && (
+                            <div className="mt-2 inline-block px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+                              Urgent
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <MessageCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <p className="text-gray-500">No messages yet</p>
+                        <p className="text-sm text-gray-400">Your conversations with parents and administrators will appear here</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Compose Message */}
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Send New Message</CardTitle>
+                  <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                    Compose a message to parents or administrators
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="recipient-type">Send To</Label>
+                      <Select 
+                        value={composeForm.recipientType} 
+                        onValueChange={(value) => setComposeForm(prev => ({...prev, recipientType: value, parentId: "", adminId: ""}))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select recipient type..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="parent">Parent</SelectItem>
+                          <SelectItem value="admin">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {composeForm.recipientType === 'parent' && (
+                      <div>
+                        <Label htmlFor="parent-select">Select Parent</Label>
+                        <Select 
+                          value={composeForm.parentId} 
+                          onValueChange={(value) => setComposeForm(prev => ({...prev, parentId: value}))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose parent..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-48 overflow-y-auto">
+                            {parents?.map((parent: any) => (
+                              <SelectItem key={parent.id} value={parent.id}>
+                                {parent.name} ({parent.email})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {composeForm.recipientType === 'admin' && (
+                      <div>
+                        <Label htmlFor="admin-select">Select Administrator</Label>
+                        <Select 
+                          value={composeForm.adminId} 
+                          onValueChange={(value) => setComposeForm(prev => ({...prev, adminId: value}))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose administrator..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-48 overflow-y-auto">
+                            {administrators?.map((admin: any) => (
+                              <SelectItem key={admin.id} value={admin.id}>
+                                {admin.name} - {admin.role}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div>
+                      <Label htmlFor="subject">Subject</Label>
+                      <Input
+                        id="subject"
+                        value={composeForm.subject}
+                        onChange={(e) => setComposeForm(prev => ({...prev, subject: e.target.value}))}
+                        placeholder="Enter message subject..."
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="message">Message</Label>
+                      <Textarea
+                        id="message"
+                        value={composeForm.message}
+                        onChange={(e) => setComposeForm(prev => ({...prev, message: e.target.value}))}
+                        placeholder="Type your message here..."
+                        rows={4}
+                      />
+                    </div>
+
+                    <Button 
+                      onClick={() => composeMutation.mutate({
+                        recipientType: composeForm.recipientType,
+                        parentId: composeForm.recipientType === 'parent' ? composeForm.parentId : null,
+                        adminId: composeForm.recipientType === 'admin' ? composeForm.adminId : null,
+                        scholarId: composeForm.scholarId || null,
+                        subject: composeForm.subject,
+                        message: composeForm.message,
+                        priority: composeForm.priority || "normal"
+                      })}
+                      disabled={composeMutation.isPending || !composeForm.subject || !composeForm.message || !composeForm.recipientType || 
+                               (composeForm.recipientType === 'parent' && !composeForm.parentId) ||
+                               (composeForm.recipientType === 'admin' && !composeForm.adminId)}
+                      className="w-full"
+                    >
+                      {composeMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Send Message
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Unified Arts Class Periods Tab */}

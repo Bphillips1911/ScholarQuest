@@ -59,8 +59,8 @@ export function ProgressReportGenerator({ studentId, studentName, onReportGenera
 
   // Get existing reports for selected student
   const { data: existingReports, refetch: refetchReports } = useQuery({
-    queryKey: ['/api/teacher/progress-reports', selectedStudentId],
-    enabled: !!selectedStudentId
+    queryKey: ['/api/teacher/progress-reports', selectedStudentId || studentId],
+    enabled: !!(selectedStudentId || studentId)
   });
 
   // Get teacher information for the selected student
@@ -76,7 +76,22 @@ export function ProgressReportGenerator({ studentId, studentName, onReportGenera
       if (!targetStudentId) {
         throw new Error('No student selected');
       }
-      return await apiRequest(`/api/teacher/progress-report/${targetStudentId}`, 'POST', data);
+      
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('teacherToken');
+      const response = await fetch(`/api/teacher/progress-report/${targetStudentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: (report) => {
       const targetStudentName = selectedStudent?.name || studentName || 'Selected Student';

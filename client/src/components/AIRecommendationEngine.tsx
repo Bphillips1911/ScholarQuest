@@ -38,6 +38,12 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Get all students for dropdown selection
+  const { data: studentsData } = useQuery({
+    queryKey: ['/api/scholars'],
+    enabled: !studentId, // Only fetch if not pre-selected
+  });
+
   // Get student recommendations
   const { data: recommendations, isLoading, refetch } = useQuery({
     queryKey: ['/api/teacher/recommendations', selectedStudent],
@@ -52,10 +58,21 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
 
   // Generate new recommendations mutation
   const generateRecommendationsMutation = useMutation({
-    mutationFn: async (studentId: string) => {
-      return await apiRequest(`/api/teacher/recommendations/generate/${studentId}`, {
-        method: 'POST'
+    mutationFn: async (targetStudentId: string) => {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('teacherToken');
+      const response = await fetch(`/api/teacher/recommendations/generate/${targetStudentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       refetch();
@@ -76,10 +93,21 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
   // Update recommendation status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, feedback }: { id: string; status: string; feedback?: string }) => {
-      return await apiRequest(`/api/teacher/recommendations/${id}/status`, {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('teacherToken');
+      const response = await fetch(`/api/teacher/recommendations/${id}/status`, {
         method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ status, implementationFeedback: feedback })
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: (_, variables) => {
       refetch();
@@ -378,12 +406,15 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
                     <SelectValue placeholder="Select student for personalized recommendations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Students (Class View)</SelectItem>
-                    {/* This would be populated with actual students from the API */}
+                    {Array.isArray(studentsData) && studentsData.map((student: any) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name} - Grade {student.grade} ({student.username})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              {selectedStudent && (
+              {selectedStudent && selectedStudent !== 'all' && (
                 <Button
                   onClick={() => generateRecommendationsMutation.mutate(selectedStudent)}
                   disabled={generateRecommendationsMutation.isPending}

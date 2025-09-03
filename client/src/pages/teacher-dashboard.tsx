@@ -1099,41 +1099,64 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full p-2 h-auto border rounded-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-            {/* Single Row - All Tabs with Better Spacing */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 w-full">
-              <TabsTrigger value="dashboard" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <Home className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-                <span className="sm:hidden">Home</span>
+          <TabsList className="w-full p-4 h-auto border rounded-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+            {/* Primary Row - Main Navigation Tabs with Better Spacing */}
+            <div className="flex flex-wrap items-center justify-start gap-3 w-full mb-4">
+              <TabsTrigger 
+                value="dashboard" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <Home className="h-4 w-4" />
+                <span>Dashboard</span>
               </TabsTrigger>
-              <TabsTrigger value="scholars" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                Scholars
+              <TabsTrigger 
+                value="scholars" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <Users className="h-4 w-4" />
+                <span>Scholars</span>
               </TabsTrigger>
-              <TabsTrigger value="messaging" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                Messages
+              <TabsTrigger 
+                value="messaging" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all relative" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>Messages</span>
                 {messages.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                  <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
                     {messages.length}
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="student-search" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <Search className="h-3 w-3 sm:h-4 sm:w-4" />
+              <TabsTrigger 
+                value="student-search" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <Search className="h-4 w-4" />
                 <span className="hidden lg:inline">Student Search</span>
                 <span className="lg:hidden">Search</span>
               </TabsTrigger>
               {teacher?.gradeRole === 'Unified Arts' && (
-                <TabsTrigger value="class-periods" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                <TabsTrigger 
+                  value="class-periods" 
+                  className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                  style={{color: themeStyles.textPrimary}}
+                >
+                  <Calendar className="h-4 w-4" />
                   <span className="hidden lg:inline">Class Periods</span>
                   <span className="lg:hidden">Classes</span>
                 </TabsTrigger>
               )}
-              <TabsTrigger value="student-dashboards" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <Trophy className="h-3 w-3 sm:h-4 sm:w-4" />
+              <TabsTrigger 
+                value="student-dashboards" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <Trophy className="h-4 w-4" />
                 <span className="hidden lg:inline">Student Views</span>
                 <span className="lg:hidden">Views</span>
               </TabsTrigger>
@@ -1142,7 +1165,7 @@ export default function TeacherDashboard() {
               <Button
                 onClick={toggleTheme}
                 variant="outline"
-                className="flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-3 text-sm font-medium ml-auto rounded-lg"
                 style={{
                   backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#22c55e' : themeStyles.cardBg,
                   color: currentTheme === 'dark' ? '#f7fafc' : currentTheme === 'light' ? '#ffffff' : themeStyles.textPrimary,
@@ -1150,42 +1173,60 @@ export default function TeacherDashboard() {
                 }}
                 data-testid="button-theme-toggle"
               >
-                <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Palette className="h-4 w-4" />
                 <span className="hidden lg:inline">{currentTheme === 'dark' ? 'Dark Theme' : currentTheme === 'light' ? 'Light Theme' : 'Normal Theme'}</span>
                 <span className="lg:hidden">{currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : 'Normal'}</span>
               </Button>
             </div>
             
-            {/* Secondary Row - Collapsed Secondary Tabs */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 w-full mt-2 pt-2 border-t" style={{borderColor: themeStyles.border}}>
-              <TabsTrigger value="reflections" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Reflections</span>
-                <span className="sm:hidden">Reflect</span>
+            {/* Secondary Row - Additional Features with Balanced Layout */}
+            <div className="flex flex-wrap items-center justify-start gap-3 w-full pt-4 border-t" style={{borderColor: themeStyles.border}}>
+              <TabsTrigger 
+                value="reflections" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all relative" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>Reflections</span>
                 {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
                     {reflections.filter((r: Reflection) => r.status === 'submitted').length}
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="story-review" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <TabsTrigger 
+                value="story-review" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <FileText className="h-4 w-4" />
                 <span className="hidden lg:inline">Story Review</span>
                 <span className="lg:hidden">Stories</span>
               </TabsTrigger>
-              <TabsTrigger value="upload" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
+              <TabsTrigger 
+                value="upload" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <Camera className="h-4 w-4" />
                 <span className="hidden lg:inline">Upload Photos</span>
                 <span className="lg:hidden">Upload</span>
               </TabsTrigger>
-              <TabsTrigger value="gallery" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <Image className="h-3 w-3 sm:h-4 sm:w-4" />
-                Gallery
+              <TabsTrigger 
+                value="gallery" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <Image className="h-4 w-4" />
+                <span>Gallery</span>
               </TabsTrigger>
-              <TabsTrigger value="sel" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
-                <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">SEL</span>
-                <span className="sm:hidden">SEL</span>
+              <TabsTrigger 
+                value="sel" 
+                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
+                style={{color: themeStyles.textPrimary}}
+              >
+                <Brain className="h-4 w-4" />
+                <span>SEL</span>
               </TabsTrigger>
             </div>
           </TabsList>

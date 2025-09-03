@@ -40,166 +40,10 @@ export default function Admin() {
     priority: "normal"
   });
 
-  // Authentication state - DO NOT change initial values to maintain hook order
+  // Check if admin is logged in
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Always call ALL hooks before ANY conditional logic or early returns
-  // This ensures hooks are called in the same order every render
-  const { data: houses } = useQuery<House[]>({
-    queryKey: ["/api/houses"],
-    enabled: false, // Will be enabled after auth check
-  });
-
-  const { data: pointEntries } = useQuery<PointEntry[]>({
-    queryKey: ["/api/points"],
-    enabled: false, // Will be enabled after auth check
-  });
-
-  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
-    queryKey: ["/api/admin/teachers/pending"],
-    enabled: false, // Will be enabled after auth check
-  });
-
-  const { data: allScholars } = useQuery<Scholar[]>({
-    queryKey: ["/api/scholars"],
-    enabled: false, // Will be enabled after auth check
-  });
-
-  const { data: adminMessages, refetch: refetchMessages } = useQuery({
-    queryKey: ["/api/admin/messages"],
-    enabled: false, // Will be enabled after auth check
-  });
-
-  const { data: allTeachers } = useQuery({
-    queryKey: ["/api/admin/teachers"],
-    enabled: false, // Will be enabled after auth check
-  });
-
-  const { data: allParents } = useQuery({
-    queryKey: ["/api/admin/parents"],
-    enabled: false, // Will be enabled after auth check
-  });
-
-  const addScholarMutation = useMutation({
-    mutationFn: async (data: InsertScholar) => {
-      const response = await apiRequest("POST", "/api/scholars", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Scholar Added",
-        description: "New scholar has been successfully added to the house.",
-      });
-      setNewStudentName("");
-      setNewStudentId("");
-      setNewStudentHouse("");
-      queryClient.invalidateQueries({ queryKey: ["/api/houses"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to add scholar. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const sendMessageMutation = useMutation({
-    mutationFn: async (messageData: any) => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/send-message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(messageData)
-      });
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Message Sent",
-        description: "Your message has been sent successfully.",
-      });
-      setMessageRecipientType("");
-      setMessageTeacherId("");
-      setMessageParentId("");
-      setMessageSubject("");
-      setMessageContent("");
-      setMessagePriority("normal");
-      refetchMessages();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Message Failed",
-        description: error.message || "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const replyMutation = useMutation({
-    mutationFn: async (replyData: any) => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/reply-message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(replyData)
-      });
-      if (!response.ok) {
-        throw new Error("Failed to send reply");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Reply Sent",
-        description: "Your reply has been sent successfully.",
-      });
-      setShowReplyModal(false);
-      setSelectedMessage(null);
-      setReplyForm({ subject: "", message: "", priority: "normal" });
-      refetchMessages();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Reply Failed",
-        description: error.message || "Failed to send reply. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const approveTeacherMutation = useMutation({
-    mutationFn: async (teacherId: string) => {
-      return await apiRequest(`/api/admin/teachers/${teacherId}/approve`, "POST");
-    },
-    onSuccess: () => {
-      toast({
-        title: "Teacher Approved",
-        description: "Teacher account has been approved and can now log in.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to approve teacher. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Authentication check effect - AFTER all hooks are declared
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     const data = localStorage.getItem("adminData");
@@ -209,17 +53,8 @@ export default function Admin() {
         const parsedData = JSON.parse(data);
         setAdminData(parsedData);
         setIsAuthenticated(true);
-        setIsLoading(false);
-        
-        // Now enable queries
-        queryClient.invalidateQueries({ queryKey: ["/api/houses"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/points"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/scholars"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/parents"] });
       } catch (error) {
+        // Invalid data, redirect to login
         localStorage.removeItem("adminToken");
         localStorage.removeItem("adminData");
         setLocation("/admin-login");
@@ -229,17 +64,45 @@ export default function Admin() {
     }
   }, [setLocation]);
 
-  // Check for early return to prevent hooks order issues
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  // Fetch data hooks - must be called before any early returns
+  const { data: houses } = useQuery<House[]>({
+    queryKey: ["/api/houses"],
+    enabled: isAuthenticated,
+  });
 
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
-  }
+  const { data: pointEntries } = useQuery<PointEntry[]>({
+    queryKey: ["/api/points"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
+    queryKey: ["/api/admin/teachers/pending"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: allScholars } = useQuery<Scholar[]>({
+    queryKey: ["/api/scholars"],
+    enabled: isAuthenticated,
+  });
+
+  // Messaging queries
+  const { data: adminMessages, refetch: refetchMessages } = useQuery({
+    queryKey: ["/api/admin/messages"],
+    enabled: isAuthenticated && activeTab === "messaging",
+  });
+
+  const { data: allTeachers } = useQuery({
+    queryKey: ["/api/admin/teachers"],
+    enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "teacher"),
+  });
+
+  const { data: allParents } = useQuery({
+    queryKey: ["/api/admin/parents"],
+    enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "parent"),
+  });
 
   // Show loading while checking authentication
-  if (isLoading || !isAuthenticated) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* CRITICAL NAVIGATION - VERY VISIBLE */}
@@ -307,6 +170,105 @@ export default function Admin() {
     });
     setLocation("/admin-login");
   };
+
+  const addScholarMutation = useMutation({
+    mutationFn: async (data: InsertScholar) => {
+      const response = await apiRequest("POST", "/api/scholars", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Scholar Added",
+        description: "New scholar has been successfully added to the house.",
+      });
+      setNewStudentName("");
+      setNewStudentId("");
+      setNewStudentHouse("");
+      queryClient.invalidateQueries({ queryKey: ["/api/houses"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add scholar. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Messaging mutations
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: any) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/send-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(messageData)
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent successfully.",
+      });
+      setMessageRecipientType("");
+      setMessageTeacherId("");
+      setMessageParentId("");
+      setMessageSubject("");
+      setMessageContent("");
+      setMessagePriority("normal");
+      refetchMessages();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Message Failed",
+        description: error.message || "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reply mutation
+  const replyMutation = useMutation({
+    mutationFn: async (replyData: any) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/reply-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(replyData)
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send reply");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reply Sent",
+        description: "Your reply has been sent successfully.",
+      });
+      setShowReplyModal(false);
+      setSelectedMessage(null);
+      setReplyForm({ subject: "", message: "", priority: "normal" });
+      refetchMessages();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Reply Failed",
+        description: error.message || "Failed to send reply. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleAddScholar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,6 +360,26 @@ export default function Admin() {
       priority: messagePriority,
     });
   };
+
+  const approveTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      return await apiRequest(`/api/admin/teachers/${teacherId}/approve`, "POST");
+    },
+    onSuccess: () => {
+      toast({
+        title: "Teacher Approved",
+        description: "Teacher account has been approved and can now log in.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve teacher. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Get recent point entries (last 10)
   const recentEntries = pointEntries

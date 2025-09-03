@@ -1,8 +1,6 @@
 # Overview
 
-The "PBIS House of Champions" is a web application for Bush Hills STEAM Academy, designed to manage a house points system. It allows students to earn points for academic, attendance, and behavioral achievements within a comprehensive Positive Behavioral Interventions and Supports (PBIS) framework. Key features include individual teacher dashboards for recognizing "MUSTANG" traits, a house sorting generator, photo upload capabilities, and program information for parents. The application also incorporates the official BHSA Mustangs Crest logo, robust administrator authentication with role-based permissions, and a bi-directional parent-teacher messaging system. The project aims to foster positive behavior, academic achievement, and school pride.
-
-**Latest Update (September 2025):** Successfully restored original comprehensive admin and teacher dashboards based on user demand. Original admin.tsx (complete with ALL features) is now the default route at `/admin` with modern version moved to `/admin-modern`. Teacher-dashboard.tsx remains the original with modern version at `/teacher-dashboard-modern`. All original functionality, features, and capabilities have been completely preserved including bulk messaging (All Parents/Teachers/Broadcast), semester reset, QR generation, email settings, parent portal management, and comprehensive student management tools. The original admin portal includes five comprehensive tabs (House Management, Student Information, Admin Messaging, Data Export, Quick Actions) with complete feature parity to the user's original system.
+The "PBIS House of Champions" is a web application for Bush Hills STEAM Academy to manage a house points system. It enables students, assigned to one of five houses (Franklin, Tesla, Curie, Nobel, Lovelace), to earn points for academic, attendance, and behavioral achievements. The system provides a comprehensive Positive Behavioral Interventions and Supports (PBIS) framework, featuring individual teacher dashboards for recognizing "MUSTANG" traits, a house sorting generator, and photo upload capabilities. It also displays program information for parents, incorporates the official BHSA Mustangs Crest logo, and includes robust administrator authentication with role-based permissions. A fully operational bi-directional parent-teacher messaging system with database persistence and reply functionality is included. The project aims to foster positive behavior, academic achievement, and school pride within the student body.
 
 # User Preferences
 
@@ -10,52 +8,54 @@ Preferred communication style: Simple, everyday language.
 
 # System Architecture
 
-## Frontend
+## Frontend Architecture
 - **Framework**: React 18 with TypeScript (Vite).
-- **UI Library**: Shadcn/ui built on Radix UI.
-- **Styling**: Tailwind CSS with custom CSS and advanced animations.
+- **UI Library**: Shadcn/ui components built on Radix UI primitives.
+- **Styling**: Tailwind CSS with custom CSS variables, enhanced with advanced CSS animations (floating logos, rainbow text, glow pulses).
 - **Routing**: Wouter.
 - **State Management**: TanStack React Query for server state.
-- **Design**: Mobile-first, glassmorphism effects, consistent BHSA branding, animated login portals, and a three-theme system (Normal, Light, Dark) for dashboards.
-- **Animations**: Welcome animations, rotating house spotlights, glow pulses, sparkle effects, PBIS Champion flash effects, and celebratory animations.
-- **Audio**: Ultra-fast competitive music.
-- **Accessibility**: High contrast mode, font size controls, screen reader announcements, reduced motion support.
-- **Gamification**: Student token management, personalized learning path visualizer, and an interactive gamified skill tree with animated progression.
-- **Student Portal Enhancements**: Immersive house history storytelling mode with audio narration, personalized dashboard themes (6 options), and micro-animations library.
+- **Component Structure**: Page components, reusable UI components, and custom components for house cards and forms.
+- **Responsive Design**: Mobile-first approach with glassmorphism effects.
 
-## Backend
+## Backend Architecture
 - **Framework**: Express.js with TypeScript.
 - **API Design**: RESTful API for houses, scholars, and point entries.
-- **Build Process**: ESBuild for server, Vite for client.
+- **Build Process**: ESBuild for server bundling, Vite for client bundling.
 
 ## Data Storage
 - **Database**: PostgreSQL with Drizzle ORM, hosted on Neon Database.
 - **Schema**: Tables for houses, scholars, point entries, PBIS entries, PBIS photos, teachers, parents, parent-teacher messages, administrators, and admin sessions.
-- **Scholars Table**: Automatic system-generated usernames.
-- **File Storage**: Local file system for photo uploads (multer).
+- **Scholars Table**: Includes automatic system-generated usernames (first3+last3+IDdigits format).
+- **File Storage**: Local file system for photo uploads using multer.
 
 ## Authentication and Authorization
-- **Administrator**: Role-based permissions (Principal, Assistant Principal, Counselor, Database Manager) with approval system.
-- **Teacher**: Grade-level permissions with role-specific restrictions (Unified Arts teachers cannot add/deactivate students).
+- **Administrator Authentication**: Role-based permissions (Principal, Assistant Principal, Counselor, Database Manager), with an approval system for new administrators.
+- **Teacher Authentication**: Grade-level permissions.
 - **Session Management**: JWT-based sessions.
-- **Credential Generation**: Automatic username/password generation for new students.
+- **Credential Generation System**: Automatic username/password generation for new students.
+
+## Development Environment
+- **Hot Reload**: Vite dev server with Express middleware.
+- **TypeScript**: Strict configuration with path aliases.
+
+## UI/UX Decisions
+- **Branding**: Consistent use of BHSA Mustangs Crest logo and school branding.
+- **Modals**: Multiple exit methods (click outside, X button, Cancel button) and keyboard support (Escape key), with automatic form reset.
+- **Animations**: Animated main landing page with 4-second welcome animation (trophy, crown, star icons), rotating house spotlights, and advanced CSS animations.
+- **Login Portals**: Four distinct animated login cards (Student, Parent, Teacher, Administrator) with hover effects and account creation links.
+- **Visuals**: PBIS Champion flash effects, sparkle effects, pulsing hero section glow, and celebratory animations for house cards and school logo.
+- **Audio**: Ultra-fast competitive music (150ms interval, 880Hz-2349Hz, dynamic waveforms).
+- **Theming**: Three-theme system (Normal, Light, Dark) for administrator and teacher dashboards with persistent settings.
+- **Navigation**: Compact dropdown navigation system for administrators and teachers.
+- **PBIS System**: Enhanced award/deduct system with detailed criteria and smart reason selection (dropdowns + custom input).
+- **Photo Management**: Bi-directional photo upload and gallery functionality for teachers and administrators with professional interfaces.
 
 ## System Features
-- **SMS Notification System**: Twilio integration for automatic parent messaging (SMS and email).
-- **Comprehensive Authentication**: Robust teacher and parent login.
-- **Administrator Dashboard**: CSV/Excel export, QR generator, email settings, parent portal info, semester reset, teacher management, data export center.
-- **Comprehensive Mustang Points System**: Enhanced award/deduct system with detailed criteria.
-- **Behavioral Reflection System**: Teacher-to-parent workflow with assignment, student response, teacher approval, and parent notification. Includes a comprehensive reflection rejection system with predefined reasons.
-- **Photo Management**: Bi-directional photo upload and gallery for teachers and administrators.
-- **Advanced UI System**: Micro-interactions, contextual emoji feedback, gamified achievement system, enhanced mobile responsiveness, and interactive house cards/achievement badges.
-- **House System**: Renamed to honor diverse STEAM pioneers (Johnson, Marshall, West, Drew, Tesla) with updated icons and storytelling.
-- **Role-Based Permissions**: Unified Arts teachers have restricted permissions - cannot add new students or deactivate student accounts, maintaining focus on their instructional role while preserving access to points, messaging, and class management features.
-- **Four Advanced Features (2025)**: 
-  - One-Click Student Progress Report Generator: AI-powered comprehensive reporting with customizable date ranges and detailed analytics
-  - Interactive Achievement Playground: Gamified progress tracking with animated badges, unlockable achievements, and experience points (available in both student dashboard and admin monitoring)
-  - Interactive Teacher Performance Heatmap (Admin-Only): Advanced analytics dashboard with color-coded performance metrics, trend analysis, and CSV export
-  - AI-Powered Adaptive Recommendation Engine: Personalized learning insights with implementation tracking and success metrics
-- **Student Achievement System**: Full gamification with experience points, achievement levels, category filtering, progress visualization, and integration with student dashboard navigation.
+- **SMS Notification System**: Full Twilio SMS integration for automatic parent messaging, with smart dual-channel notifications (email and SMS).
+- **Comprehensive Authentication**: Robust and consistent teacher and parent login across all environments, with a focus on deployment stability.
+- **Administrator Dashboard**: Full functionality including CSV/Excel export, QR generator, email settings, parent portal info, semester reset, teacher management, and a dedicated data export center.
+- **Comprehensive Mustang Points System**: Enhanced award/deduct system with detailed academic, attendance, and behavior criteria.
+- **Behavioral Reflection System**: Complete teacher-to-parent reflection workflow with assignment, student response, teacher approval, and parent notification via email and parent portal display.
 
 # External Dependencies
 
@@ -68,7 +68,6 @@ Preferred communication style: Simple, everyday language.
 - **Tailwind CSS**: Utility-first CSS framework.
 - **Lucide React**: Icon library.
 - **Embla Carousel**: Carousel component.
-- **Shadcn/ui**: Component library.
 
 ## Development Tools
 - **Vite**: Build tool and development server.
@@ -79,18 +78,89 @@ Preferred communication style: Simple, everyday language.
 
 ## Communication Services
 - **Twilio**: SMS notification system.
-- **SendGrid API**: Email notification system.
+- **SendGrid API**: Email notification system for various events (registrations, password resets).
 
-## Data Export
-- **CSV and Excel (.xlsx)** export formats.
+## Data Export System
+- **Export Formats**: CSV and Excel (.xlsx) from admin portal.
 
 ## Form Validation
 - **Zod**: Schema validation.
-- **Drizzle-Zod**: Drizzle schema integration.
-- **Hookform Resolvers**: React Hook Form integration.
+- **Drizzle-Zod**: Integration with Drizzle schemas.
+- **Hookform Resolvers**: Integration with React Hook Form.
 
 ## Utility Libraries
 - **date-fns**: Date manipulation.
 - **clsx & tailwind-merge**: Conditional CSS class composition.
 - **class-variance-authority**: Type-safe component variant handling.
 - **nanoid**: URL-safe unique ID generation.
+
+# Recent Changes
+
+## House Renaming to Honor Diverse STEAM Pioneers (September 2025)
+- **Completed comprehensive house name migration** from legacy names to honor diverse STEAM pioneers:
+  - **House of Curie → House of Drew** (Dr. Charles Drew - Chemistry, Medicine, Discovery)
+  - **House of Nobel → House of Marshall** (Thurgood Marshall - Leadership, Honor, Achievement) 
+  - **House of Lovelace → House of West** (Dr. Gladys West - Technology, Programming, Logic)
+  - **House of Franklin → House of Johnson** (Dr. Katherine Johnson "Hidden Figures" - Science, Technology, Research)
+  - **House of Tesla** remains unchanged (Nikola Tesla - Engineering, Energy, Innovation)
+- **Updated all system components**: Database schema, main landing page, student dashboard, house history storyboards, pledge page, and all authentication portals
+- **Enhanced house history storytelling** with detailed biographical information for each pioneer including achievements, quotes, and modern connections to student learning
+- **Updated house icons** to better represent each pioneer: Johnson (🚀 NASA rocket), Marshall (⚖️ scales of justice), West (🧭 GPS/compass), Drew (🧪 chemistry), Tesla (⚡ electricity)
+- **Database migration completed** with all scholars successfully maintaining their house assignments under new names
+- **Learning assistant characters updated** with appropriate names and personalities reflecting the honored pioneers
+
+## Comprehensive Reflection Rejection System Complete (September 2025)
+- **Implemented comprehensive reflection rejection workflow** with 7 predefined rejection reasons plus custom input option
+- **Enhanced teacher review interface** with two-step rejection process (select reason → confirm rejection) for better decision making
+- **Added parent email notifications** for reflection rejections with detailed information including original prompt, student response, and teacher feedback
+- **Automatic status reset functionality** ensures rejected reflections return to "assigned" status requiring student resubmission
+- **Fixed critical teacher ID vs teacher name bug** that prevented reflections from appearing in teacher review lists
+- **Predefined rejection reasons**: "Insufficient detail", "Off-topic response", "Inappropriate language", "Does not show understanding", "Needs more reflection on impact", "Response too brief", "Missing personal accountability", plus custom reason option
+- **Complete workflow integration** across teacher dashboard, student portal, and parent portal with proper status synchronization
+
+## Student Portal Gamification System Complete (September 2025)
+- **Implemented comprehensive student token management** with permanent session persistence and automatic refresh mechanisms
+- **Created dedicated authentication utilities** (`client/src/lib/studentAuth.ts`) for robust token handling with expiration tracking
+- **Enhanced query client** to properly recognize all student-related endpoints (`/api/mood/`, `/api/progress/`, `/api/reflection/`) for authentication
+- **Fixed API request format** in mood tracker mutations from object notation to proper parameter order (method, url, data)
+- **Added session maintenance** with 5-minute interval checks and automatic token refresh extending 30-day expiration
+- **Improved error handling** with route-specific token clearing to prevent clearing valid tokens inappropriately
+- **All mood tracker functionality now fully operational**: mood logging, progress goal creation, and daily reflections working without authentication errors
+- **Built Personalized Learning Path Visualizer** with adaptive content based on student performance, goal tracking, and achievement display
+- **Created Interactive Gamified Skill Tree** with animated progression, unlock animations, floating particles, and comprehensive skill tracking across academic, behavioral, social, and leadership categories
+- **Implemented horizontal scrolling functionality** in skill tree with 1400px canvas width for complete node visibility and navigation
+- **Added seamless integration** between Learning Path Visualizer and Skill Tree with cross-navigation buttons
+- **Enhanced student dashboard** with quick access to both gamification features via dedicated buttons
+
+## Advanced Student Portal Enhancements (September 2025)
+- **Created Immersive House History Storytelling Mode** with interactive chapters for all five houses (Franklin, Tesla, Curie, Nobel, Lovelace)
+- **Added audio narration system** using Web Speech API for reading story content, historical facts, achievements, and quotes
+- **Integrated historical person images** and biographical information for each house founder
+- **Built Personalized Dashboard Theme System** with 6 color options: Traditional, Kelly Green, Gold, Orange, Midnight Scholar, Sunrise Energy, and MUSTANG Champion
+- **Implemented theme unlocking system** based on academic and behavior point achievements
+- **Added comprehensive micro-animations library** with interactive scaling, entrance effects, sparkle animations, and user feedback systems
+- **Enhanced student dashboard** with staggered animations, themed components, and improved user experience
+
+## House System Migration (September 2025)
+- **Completed house name migration** from legacy names (Courie, West, Blackwell, Berruguete) to modern STEAM-themed names:
+  - **Franklin** (🔬) - Innovation Through Discovery (Blue #1e40af)
+  - **Tesla** (⚡) - Electrifying Excellence (Purple #7c3aed)
+  - **Curie** (🧪) - Pioneering Progress (Red #dc2626)
+  - **Nobel** (🎯) - Excellence in Achievement (Green #059669)
+  - **Lovelace** (💻) - Coding the Future (Orange #ea580c)
+- **Updated all system components**: Database schema, navigation dropdowns, pledge page, tutorial content, badge definitions, and scholar assignments
+- **Badge system redesigned** with house-specific themes (Tesla Electrifier, Curie Scientist, Nobel Master, Lovelace Architect)
+- **Database migration completed** with all 23 scholars successfully reassigned to new house structure
+- **Parent portal and enhanced portal** verified working with new house names in all functionalities
+
+## Advanced UI System Implementation Complete (September 2025)
+- **Implemented comprehensive Advanced UI System** with 5 major feature modules providing next-generation user experience
+- **Created Advanced UI Provider** with context-based state management for micro-interactions, emoji feedback, achievements, accessibility, and mobile optimizations
+- **Built Micro-Interactions System** with animated buttons, inputs, and cards featuring hover effects, loading states, and contextual animations
+- **Developed Contextual Emoji Feedback System** with mood selectors, floating notifications, context-aware feedback, and emoji-based user interaction tracking
+- **Implemented Gamified Achievement System** with cinematic badge reveals, level-up celebrations, milestone animations, and comprehensive achievement tracking
+- **Enhanced Mobile Responsive Features** with pull-to-refresh functionality, touch-friendly card grids, mobile tab navigation, and gesture-based interactions
+- **Integrated Accessibility-Focused Design** with high contrast mode, font size controls, screen reader announcements, reduced motion support, and WCAG compliance
+- **Added Enhanced House Cards and Achievement Badges** with house-specific animations, real-time point tracking, rank displays, and interactive elements
+- **Created Advanced UI Showcase Page** demonstrating all features with live interactive demos and comprehensive feature exploration
+- **Applied modern app-like experience** with gaming platform engagement levels, consistent micro-interactions, and professional UI/UX standards

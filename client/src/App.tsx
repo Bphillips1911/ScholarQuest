@@ -32,15 +32,12 @@ import StudentMoodTracker from "@/pages/student-mood-tracker";
 import StudentLearningPath from "@/pages/student-learning-path";
 import StudentSkillTree from "@/pages/student-skill-tree";
 import StudentHouseHistory from "@/pages/student-house-history";
-import StudentAchievements from "@/pages/student-achievements";
 import GamifiedLearning from "@/pages/gamified-learning";
 import TeacherDashboard from "@/pages/teacher-dashboard";
 import TeacherMessages from "@/pages/teacher-messages";
 import HouseSorting from "@/pages/house-sorting";
 import Admin from "@/pages/admin";
 import AdminNew from "@/pages/admin-new";
-import ModernAdminDashboard from "@/pages/modern-admin-dashboard";
-import ModernTeacherDashboard from "@/pages/modern-teacher-dashboard";
 import AdminClean from "@/pages/admin-clean";
 import AdminSettings from "@/pages/admin-settings";
 import EmailTroubleshooting from "@/pages/email-troubleshooting";
@@ -78,16 +75,11 @@ function Router() {
         <Route path="/student-learning-path" component={StudentLearningPath} />
         <Route path="/student-skill-tree" component={StudentSkillTree} />
         <Route path="/student-house-history" component={StudentHouseHistory} />
-        <Route path="/student-achievements" component={StudentAchievements} />
         <Route path="/gamified-learning" component={GamifiedLearning} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
-        <Route path="/teacher-dashboard-modern" component={ModernTeacherDashboard} />
-        <Route path="/modern-teacher-dashboard" component={ModernTeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/admin-modern" component={AdminNew} />
-        <Route path="/modern-admin" component={ModernAdminDashboard} />
-        <Route path="/admin-new" component={AdminNew} />
+        <Route path="/admin" component={AdminNew} />
+        <Route path="/admin-full" component={Admin} />
         <Route path="/admin-test" component={AdminNew} />
         <Route path="/admin-settings" component={AdminSettings} />
         <Route path="/admin-pbis" component={PBIS} />

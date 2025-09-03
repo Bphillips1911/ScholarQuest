@@ -11,12 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Settings, Star, Heart, Target, Zap, UserMinus, QrCode, Calendar } from "lucide-react";
-import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
-import { ProgressReportGenerator } from "@/components/ProgressReportGenerator";
-import { AchievementPlayground } from "@/components/AchievementPlayground";
-import { TeacherPerformanceHeatmap } from "@/components/TeacherPerformanceHeatmap";
-import { AIRecommendationEngine } from "@/components/AIRecommendationEngine";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette } from "lucide-react";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -48,15 +43,6 @@ export default function AdminNew() {
   // Game modal state
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [showGameModal, setShowGameModal] = useState(false);
-  
-  // Messaging states
-  const [messageType, setMessageType] = useState("");
-  const [selectedGrade, setSelectedGrade] = useState("");
-  const [selectedHouse, setSelectedHouse] = useState("");
-  const [messageSubject, setMessageSubject] = useState("");
-  const [messageContent, setMessageContent] = useState("");
-  const [sendSMS, setSendSMS] = useState(false);
-  const [sendEmail, setSendEmail] = useState(false);
 
   useEffect(() => {
     console.log("AdminNew component mounted");
@@ -121,96 +107,6 @@ export default function AdminNew() {
   };
 
   const themeStyles = getThemeStyles();
-
-  // Mutation functions for bulk messaging
-  const sendBulkMessageMutation = useMutation({
-    mutationFn: async () => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/bulk-message", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messageType,
-          selectedGrade,
-          selectedHouse,
-          subject: messageSubject,
-          content: messageContent,
-          sendSMS,
-          sendEmail
-        }),
-      });
-      if (!response.ok) throw new Error("Failed to send bulk message");
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Message Sent",
-        description: "Bulk message has been sent successfully.",
-      });
-      setMessageSubject("");
-      setMessageContent("");
-      setMessageType("");
-      setSendSMS(false);
-      setSendEmail(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to send bulk message. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const sendTeacherNotificationsMutation = useMutation({
-    mutationFn: async () => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/notify-teachers", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) throw new Error("Failed to send teacher notifications");
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Notifications Sent",
-        description: "All teachers have been notified via email.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to send teacher notifications.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handler functions
-  const handleSendBulkMessage = () => {
-    sendBulkMessageMutation.mutate();
-  };
-
-  const handleExportData = (format: 'csv' | 'excel') => {
-    const url = `/api/admin/export/scholars/${format}`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `bhsa-scholars-${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'csv'}`;
-    link.click();
-    
-    toast({
-      title: "Export Started",
-      description: `Scholar data export in ${format.toUpperCase()} format has started.`,
-    });
-  };
 
   // Fetch data hooks
   const { data: houses } = useQuery<House[]>({
@@ -292,7 +188,44 @@ export default function AdminNew() {
     setLocation("/admin-login");
   };
 
+  // Export data functions
+  const handleExportData = async (format: 'csv' | 'excel') => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(`/api/export/${format}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `pbis-data.${format === 'excel' ? 'xlsx' : 'csv'}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Export Successful",
+          description: `Data exported as ${format.toUpperCase()}`,
+        });
+      } else {
+        throw new Error(`Export failed: ${response.status}`);
+      }
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Unable to export data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Teacher approval functions
   const approveTeacherMutation = useMutation({
@@ -340,40 +273,17 @@ export default function AdminNew() {
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
+      setMessageForm({ subject: "", message: "", recipientType: "" });
       toast({
         title: "Message Sent",
-        description: "Broadcast message sent successfully.",
-      });
-    },
-  });
-
-
-
-  // Send test email mutation
-  const sendTestEmailMutation = useMutation({
-    mutationFn: async (emailData: { email: string; name?: string }) => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/send-test-email", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(emailData),
-      });
-      if (!response.ok) throw new Error("Failed to send test email");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Test Email Sent",
-        description: `Test email sent successfully to ${data.message.split(' ').pop()}`,
+        description: "Your message has been sent successfully.",
       });
     },
     onError: () => {
       toast({
-        title: "Test Email Failed",
-        description: "Failed to send test email. Please try again.",
+        title: "Send Failed",
+        description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
     },
@@ -544,69 +454,19 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 gap-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="scholars-dashboard" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Users className="h-3 w-3 mr-1" />
-                Scholars
-              </TabsTrigger>
-              <TabsTrigger value="award-points" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Award className="h-3 w-3 mr-1" />
-                Award Points
-              </TabsTrigger>
-              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Teachers</TabsTrigger>
-              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Eye className="h-3 w-3 mr-1" />
-                Viewer
-              </TabsTrigger>
-              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Student Mgmt</TabsTrigger>
-              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Houses</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 gap-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Teachers</TabsTrigger>
+              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Students</TabsTrigger>
+              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Houses</TabsTrigger>
+              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Badges</TabsTrigger>
+              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Games</TabsTrigger>
             </TabsList>
             
-            <TabsList className="grid w-full grid-cols-5 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Badges</TabsTrigger>
-              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Games</TabsTrigger>
-              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Messages</TabsTrigger>
-              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Gallery</TabsTrigger>
-              <TabsTrigger value="settings" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Settings className="h-3 w-3 mr-1" />
-                Settings
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Reflections</TabsTrigger>
-              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Data Export</TabsTrigger>
-              <TabsTrigger value="student-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <User className="h-3 w-3 mr-1" />
-                Student View
-              </TabsTrigger>
-              <TabsTrigger value="deactivate" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Users className="h-3 w-3 mr-1" />
-                Deactivate
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsList className="grid w-full grid-cols-5 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Settings className="h-3 w-3 mr-1" />
-                Quick Actions
-              </TabsTrigger>
-              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <FileText className="h-3 w-3 mr-1" />
-                Progress Reports
-              </TabsTrigger>
-              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Trophy className="h-3 w-3 mr-1" />
-                Achievement Hub
-              </TabsTrigger>
-              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <BarChart3 className="h-3 w-3 mr-1" />
-                Performance
-              </TabsTrigger>
-              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Brain className="h-3 w-3 mr-1" />
-                AI Engine
-              </TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 gap-2 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Messages</TabsTrigger>
+              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Reflections</TabsTrigger>
+              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '8px 12px'}}>Data Export</TabsTrigger>
             </TabsList>
 
 
@@ -618,37 +478,12 @@ export default function AdminNew() {
                 </CardHeader>
                 <CardContent>
                   <p style={{color: themeStyles.textSecondary}} className="mb-4">Manage teacher approvals and access</p>
-                  
-                  {/* Email Notification Controls */}
-                  <div className="flex flex-wrap gap-3 mb-6 p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
-                    <Button
-                      onClick={() => sendTeacherNotificationsMutation.mutate()}
-                      disabled={sendTeacherNotificationsMutation.isPending}
-                      className="bg-blue-600 text-white hover:bg-blue-700"
-                      data-testid="button-send-teacher-notifications"
-                    >
-                      <Mail className="mr-2 h-4 w-4" />
-                      {sendTeacherNotificationsMutation.isPending ? "Sending..." : "Send Welcome Emails to New Teachers"}
-                    </Button>
-                    
-                    <Button
-                      onClick={() => sendTestEmailMutation.mutate({ email: "bphillips@bhm.k12.al.us", name: "Administrator" })}
-                      disabled={sendTestEmailMutation.isPending}
-                      variant="outline"
-                      className="border-green-600 text-green-600 hover:bg-green-50"
-                      data-testid="button-send-test-email"
-                    >
-                      <TestTube className="mr-2 h-4 w-4" />
-                      {sendTestEmailMutation.isPending ? "Sending..." : "Send Test Email"}
-                    </Button>
-                  </div>
-                  
                   {pendingTeachers && pendingTeachers.length > 0 ? (
                     <div className="space-y-4">
                       {pendingTeachers.map((teacher) => (
                         <div key={teacher.id} className="flex items-center justify-between p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
                           <div className="flex-1">
-                            <p className="font-medium" style={{color: themeStyles.textPrimary}}>{teacher.name}</p>
+                            <p className="font-medium" style={{color: themeStyles.textPrimary}}>{teacher.firstName} {teacher.lastName}</p>
                             <p className="text-sm" style={{color: themeStyles.textSecondary}}>{teacher.email}</p>
                             <p className="text-sm" style={{color: themeStyles.textSecondary}}>{teacher.gradeRole} • {teacher.subject}</p>
                             <p className="text-xs" style={{color: themeStyles.textSecondary}}>
@@ -675,10 +510,6 @@ export default function AdminNew() {
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="teacher-viewer" className="space-y-6">
-              <AdminTeacherViewer />
             </TabsContent>
 
             <TabsContent value="students" className="space-y-6">
@@ -719,7 +550,7 @@ export default function AdminNew() {
                       <div>
                         <p className="text-sm font-medium" style={{color: themeStyles.textSecondary}}>Badges Earned</p>
                         <p className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
-                          {(allBadges?.length || 0)}
+                          {scholarBadges?.length || 0}
                         </p>
                       </div>
                     </div>
@@ -747,7 +578,7 @@ export default function AdminNew() {
                       <div className="grid gap-4">
                         {allScholars.map((scholar) => {
                           const house = houses?.find(h => h.id === scholar.houseId);
-                          const studentBadges = [];
+                          const studentBadges = scholarBadges?.filter((sb: any) => sb.scholarId === scholar.id) || [];
                           
                           return (
                             <div 
@@ -759,7 +590,7 @@ export default function AdminNew() {
                                 <div className="flex items-center space-x-3">
                                   <div>
                                     <p className="font-medium" style={{color: themeStyles.textPrimary}}>
-                                      {scholar.name}
+                                      {scholar.firstName} {scholar.lastName}
                                     </p>
                                     <p className="text-sm" style={{color: themeStyles.textSecondary}}>
                                       ID: {scholar.id.slice(0, 8)}... • Grade: {scholar.grade}
@@ -785,7 +616,7 @@ export default function AdminNew() {
                                 </Badge>
                                 <div className="text-right">
                                   <p className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>
-                                    {(scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints) || 0} points
+                                    {scholar.totalPoints || 0} points
                                   </p>
                                   <p className="text-xs" style={{color: themeStyles.textSecondary}}>
                                     Joined: {scholar.createdAt ? new Date(scholar.createdAt).toLocaleDateString() : 'Recently'}
@@ -821,7 +652,7 @@ export default function AdminNew() {
                           <h3 className="font-bold" style={{color: house.color}}>
                             {house.name}
                           </h3>
-                          <p className="text-sm" style={{color: themeStyles.textSecondary}}>{house.motto}</p>
+                          <p className="text-sm" style={{color: themeStyles.textSecondary}}>{house.description}</p>
                           <div className="mt-2">
                             <Badge>
                               {allScholars?.filter(s => s.houseId === house.id).length || 0} students
@@ -994,182 +825,490 @@ export default function AdminNew() {
             </TabsContent>
 
             <TabsContent value="messaging" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>Admin Messaging Center</CardTitle>
-                  <p style={{color: themeStyles.textSecondary}}>Send messages to parents, teachers, or broadcast to all users</p>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    
-                    {/* Bulk Messaging */}
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold" style={{color: themeStyles.textPrimary}}>Send Bulk Messages</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <Label style={{color: themeStyles.textPrimary}}>Message Type</Label>
-                          <Select value={messageType} onValueChange={setMessageType}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select message type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all-parents">📧 All Parents</SelectItem>
-                              <SelectItem value="all-teachers">👩‍🏫 All Teachers</SelectItem>
-                              <SelectItem value="broadcast">📢 Broadcast (Everyone)</SelectItem>
-                              <SelectItem value="specific-grade">🎓 Specific Grade Level</SelectItem>
-                              <SelectItem value="house-specific">🏠 Specific House</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {messageType === 'specific-grade' && (
-                          <div>
-                            <Label style={{color: themeStyles.textPrimary}}>Grade Level</Label>
-                            <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select grade" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="6th">6th Grade</SelectItem>
-                                <SelectItem value="7th">7th Grade</SelectItem>
-                                <SelectItem value="8th">8th Grade</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-
-                        {messageType === 'house-specific' && (
-                          <div>
-                            <Label style={{color: themeStyles.textPrimary}}>House</Label>
-                            <Select value={selectedHouse} onValueChange={setSelectedHouse}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select house" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {houses?.map((house) => (
-                                  <SelectItem key={house.id} value={house.id}>
-                                    {house.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-
-                        <div>
-                          <Label style={{color: themeStyles.textPrimary}}>Subject</Label>
-                          <Input
-                            value={messageSubject}
-                            onChange={(e) => setMessageSubject(e.target.value)}
-                            placeholder="Enter message subject"
-                          />
-                        </div>
-
-                        <div>
-                          <Label style={{color: themeStyles.textPrimary}}>Message</Label>
-                          <textarea
-                            value={messageContent}
-                            onChange={(e) => setMessageContent(e.target.value)}
-                            placeholder="Enter your message..."
-                            className="w-full p-3 border rounded-md resize-none h-32"
-                            style={{
-                              backgroundColor: themeStyles.cardBg,
-                              borderColor: themeStyles.border,
-                              color: themeStyles.textPrimary
-                            }}
-                          />
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="sendSMS"
-                            checked={sendSMS}
-                            onChange={(e) => setSendSMS(e.target.checked)}
-                          />
-                          <Label htmlFor="sendSMS" style={{color: themeStyles.textPrimary}}>
-                            Send as SMS (in addition to system message)
-                          </Label>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="sendEmail"
-                            checked={sendEmail}
-                            onChange={(e) => setSendEmail(e.target.checked)}
-                          />
-                          <Label htmlFor="sendEmail" style={{color: themeStyles.textPrimary}}>
-                            Send as Email (in addition to system message)
-                          </Label>
-                        </div>
-
-                        <Button
-                          onClick={handleSendBulkMessage}
-                          disabled={!messageType || !messageSubject || !messageContent || sendBulkMessageMutation.isPending}
-                          className="w-full"
-                        >
-                          {sendBulkMessageMutation.isPending ? (
-                            <>
-                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="mr-2 h-4 w-4" />
-                              Send Message
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Recent Messages */}
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold" style={{color: themeStyles.textPrimary}}>Recent Admin Messages</h3>
-                      
-                      <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {adminMessages?.map((message) => (
-                          <Card key={message.id} className="p-4" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Messages ({adminMessages?.length || 0})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {adminMessages && adminMessages.length > 0 ? (
+                        adminMessages.slice(0, 10).map((message: any) => (
+                          <div key={message.id} className="p-4 border rounded-lg bg-gray-50">
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>
-                                {message.subject}
-                              </h4>
-                              <span className="text-sm" style={{color: themeStyles.textSecondary}}>
-                                {message.createdAt ? new Date(message.createdAt).toLocaleDateString() : ''}
+                              <h4 className="font-medium text-gray-900">{message.subject}</h4>
+                              <span className="text-xs text-gray-500">
+                                {message.created_at ? new Date(message.created_at).toLocaleDateString() : 'Recently'}
                               </span>
                             </div>
-                            <p className="text-sm mb-2" style={{color: themeStyles.textSecondary}}>
-                              To: {message.recipientType}
-                            </p>
-                            <p className="text-sm" style={{color: themeStyles.textPrimary}}>
-                              {message.content}
-                            </p>
-                            {message.deliveryStatus && (
-                              <div className="mt-2 text-xs" style={{color: themeStyles.textSecondary}}>
-                                Status: {message.deliveryStatus}
-                              </div>
+                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{message.message}</p>
+                            <div className="flex justify-between items-center text-xs text-gray-500">
+                              <span>From: {message.sender_name || 'Unknown'}</span>
+                              <span>To: {message.recipient_name || 'Unknown'}</span>
+                            </div>
+                            {message.priority === 'urgent' && (
+                              <Badge variant="destructive" className="mt-2">Urgent</Badge>
                             )}
-                          </Card>
-                        ))}
-                        
-                        {(!adminMessages || adminMessages.length === 0) && (
-                          <div className="text-center py-8">
-                            <MessageSquare className="mx-auto h-12 w-12 mb-4" style={{color: themeStyles.textSecondary}} />
-                            <p style={{color: themeStyles.textSecondary}}>No admin messages yet</p>
                           </div>
-                        )}
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                          <p className="text-gray-500">No messages found</p>
+                          <p className="text-sm text-gray-400">Messages between parents and teachers will appear here</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Send Message</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <Label htmlFor="message-subject">Subject</Label>
+                      <Input
+                        id="message-subject"
+                        placeholder="Message subject"
+                        value={messageForm.subject}
+                        onChange={(e) => setMessageForm(prev => ({ ...prev, subject: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="message-content">Message</Label>
+                      <textarea
+                        id="message-content"
+                        className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="Type your message here..."
+                        value={messageForm.message}
+                        onChange={(e) => setMessageForm(prev => ({ ...prev, message: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="message-type">Send To</Label>
+                      <Select onValueChange={(value) => setMessageForm(prev => ({ ...prev, recipientType: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select recipient type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all-parents">All Parents</SelectItem>
+                          <SelectItem value="all-teachers">All Teachers</SelectItem>
+                          <SelectItem value="broadcast">School-wide Announcement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      onClick={handleSendMessage}
+                      disabled={sendMessageMutation.isPending || !messageForm.subject || !messageForm.message || !messageForm.recipientType}
+                      className="w-full"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
+                    </Button>
+                    <div className="pt-4 border-t space-y-2">
+                      <Button onClick={() => window.location.href = '/parent-letter'} variant="outline" className="w-full justify-start">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Parent Portal Information
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
+                          toast({
+                            title: "Messages Refreshed",
+                            description: "Latest messages have been loaded.",
+                          });
+                        }}
+                        variant="outline" 
+                        className="w-full justify-start"
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Refresh Messages
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="exports" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Data Export & Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-6">Export system data in various formats for analysis and reporting</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Button 
+                      onClick={() => handleExportData('csv')}
+                      className="bg-green-600 text-white hover:bg-green-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <Download className="mr-2 h-4 w-4" />
+                          Export CSV
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">All data in spreadsheet format</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => handleExportData('excel')}
+                      className="bg-green-700 text-white hover:bg-green-800 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <Download className="mr-2 h-4 w-4" />
+                          Export Excel
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">Formatted Excel workbook</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.location.href = '/qr-generator'}
+                      className="bg-blue-600 text-white hover:bg-blue-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <Plus className="mr-2 h-4 w-4" />
+                          QR Generator
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">Generate student QR codes</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.location.href = '/admin-settings'}
+                      className="bg-gray-600 text-white hover:bg-gray-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <User className="mr-2 h-4 w-4" />
+                          Email Settings
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">Configure email notifications</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.open("/parent-letter", "_blank")}
+                      className="bg-blue-600 text-white hover:bg-blue-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Parent Portal Info
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">Parent setup instructions</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => {
+                        if (confirm("Are you sure you want to reset all semester points? This action cannot be undone.")) {
+                          toast({
+                            title: "Feature Coming Soon",
+                            description: "Semester reset functionality will be available soon.",
+                          });
+                        }
+                      }}
+                      variant="destructive"
+                      className="justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Reset Semester
+                        </div>
+                        <p className="text-sm text-red-300 mt-1">Clear all point data</p>
+                      </div>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="gallery" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Image className="h-5 w-5" />
+                      Activity Photo Gallery ({galleryPhotos?.length || 0} photos)
+                    </div>
+                    <Button
+                      onClick={() => setShowUploadModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      Upload Photo
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {galleryPhotos && galleryPhotos.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {galleryPhotos.map((photo: any) => (
+                        <div key={photo.id} className="border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+                          <div className="aspect-video bg-gray-100 flex items-center justify-center relative group">
+                            <img 
+                              src={`/uploads/${photo.filename}`}
+                              alt={photo.description || 'Activity photo'}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.style.display = 'flex';
+                              }}
+                            />
+                            <div className="hidden w-full h-full items-center justify-center text-gray-400">
+                              <Image className="h-12 w-12" />
+                            </div>
+                            {/* Admin Download Button */}
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `/uploads/${photo.filename}`;
+                                  link.download = photo.originalName || photo.filename;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  toast({
+                                    title: "Download Started",
+                                    description: `Downloading ${photo.originalName || 'photo'}`,
+                                  });
+                                }}
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Download
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                              {photo.description || 'No description provided'}
+                            </p>
+                            <div className="flex justify-between items-center text-xs text-gray-500">
+                              <span className="font-medium">By: {photo.uploadedBy}</span>
+                              <span>
+                                {photo.createdAt 
+                                  ? new Date(photo.createdAt).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })
+                                  : 'Recently'
+                                }
+                              </span>
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-gray-100">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `/uploads/${photo.filename}`;
+                                  link.download = photo.originalName || photo.filename;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  toast({
+                                    title: "Download Started",
+                                    description: `Downloading ${photo.originalName || 'photo'}`,
+                                  });
+                                }}
+                              >
+                                <Download className="h-3 w-3 mr-2" />
+                                Download Original
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Image className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Photos Yet</h3>
+                      <p className="text-gray-500 mb-4">
+                        Teachers haven't uploaded any activity photos yet. Photos uploaded by teachers will appear here.
+                      </p>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-sm text-blue-700">
+                          <strong>For Teachers:</strong> Use the "Upload Photos" tab in your teacher dashboard to add activity photos that will appear in this gallery.
+                        </p>
                       </div>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
+            <TabsContent value="reflections" className="space-y-6">
+              <ReflectionLogs />
+            </TabsContent>
+
+            <TabsContent value="exports" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Data Export Center</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      onClick={() => window.open('/api/admin/export/scholars', '_blank')}
+                      className="flex items-center gap-2 h-20"
+                      variant="outline"
+                    >
+                      <Download className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-semibold">Export Students</div>
+                        <div className="text-sm opacity-75">Download all student data</div>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.open('/api/admin/export/pbis', '_blank')}
+                      className="flex items-center gap-2 h-20"
+                      variant="outline"
+                    >
+                      <Download className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-semibold">Export PBIS Data</div>
+                        <div className="text-sm opacity-75">Download all PBIS entries</div>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.open('/api/admin/export/houses', '_blank')}
+                      className="flex items-center gap-2 h-20"
+                      variant="outline"
+                    >
+                      <Download className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-semibold">Export House Data</div>
+                        <div className="text-sm opacity-75">Download house standings</div>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.open('/api/admin/export/reflections', '_blank')}
+                      className="flex items-center gap-2 h-20"
+                      variant="outline"
+                    >
+                      <Download className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-semibold">Export Reflections</div>
+                        <div className="text-sm opacity-75">Download reflection logs</div>
+                      </div>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Admin Photo Upload Modal */}
+          {showUploadModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Upload Photo</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowUploadModal(false);
+                      setUploadedFile(null);
+                      setPhotoDescription("");
+                    }}
+                  >
+                    ×
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="photo-upload">Select Photo</Label>
+                    <Input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  {uploadedFile && (
+                    <div className="text-sm text-gray-600">
+                      Selected: {uploadedFile.name}
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label htmlFor="photo-description">Description</Label>
+                    <Input
+                      id="photo-description"
+                      value={photoDescription}
+                      onChange={(e) => setPhotoDescription(e.target.value)}
+                      placeholder="Enter photo description..."
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      onClick={() => {
+                        setShowUploadModal(false);
+                        setUploadedFile(null);
+                        setPhotoDescription("");
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUploadPhoto}
+                      disabled={!uploadedFile || uploadPhotoMutation.isPending}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    >
+                      {uploadPhotoMutation.isPending ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Uploading...
+                        </div>
+                      ) : (
+                        <>
+                          <Camera className="h-4 w-4 mr-2" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
+
+      {/* Game Modal */}
+      {selectedGame && (
+        <GameModal
+          game={selectedGame}
+          isOpen={showGameModal}
+          onClose={() => {
+            setShowGameModal(false);
+            setSelectedGame(null);
+          }}
+        />
+      )}
     </div>
   );
-};
+}

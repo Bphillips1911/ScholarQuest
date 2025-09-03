@@ -373,17 +373,6 @@ function StudentDashboardContent() {
               <InteractiveScale>
                 <Button 
                   variant="outline" 
-                  onClick={() => setLocation("/student-achievements")}
-                  className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-blue-500 text-white border-green-400 hover:from-green-600 hover:to-blue-600"
-                  data-testid="button-achievements"
-                >
-                  <Star className="h-4 w-4" />
-                  <span>Achievements</span>
-                </Button>
-              </InteractiveScale>
-              <InteractiveScale>
-                <Button 
-                  variant="outline" 
                   onClick={() => setThemesModalOpen(true)}
                   className="flex items-center space-x-2"
                   data-testid="button-themes"

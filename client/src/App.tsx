@@ -36,6 +36,7 @@ import StudentAchievements from "@/pages/student-achievements";
 import GamifiedLearning from "@/pages/gamified-learning";
 import TeacherDashboard from "@/pages/teacher-dashboard";
 import TeacherMessages from "@/pages/teacher-messages";
+import TeacherStudentView from "@/pages/teacher-student-view";
 import HouseSorting from "@/pages/house-sorting";
 import Admin from "@/pages/admin";
 import AdminNew from "@/pages/admin-new";
@@ -80,6 +81,7 @@ function Router() {
         <Route path="/gamified-learning" component={GamifiedLearning} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
+        <Route path="/teacher-student-view/:studentId" component={TeacherStudentView} />
         <Route path="/admin" component={AdminNew} />
         <Route path="/admin-full" component={AdminNew} />
         <Route path="/admin-test" component={AdminNew} />

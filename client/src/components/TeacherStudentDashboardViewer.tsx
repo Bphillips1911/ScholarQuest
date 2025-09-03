@@ -71,6 +71,21 @@ export function TeacherStudentDashboardViewer({ teacherGrades, themeStyles }: Te
       });
       return;
     }
+    
+    // Navigate to interactive student dashboard experience
+    const selectedStudentData = students.find((s: Scholar) => s.id === selectedStudent);
+    if (selectedStudentData) {
+      // Store temporary teacher viewing data
+      sessionStorage.setItem('teacherViewingStudent', JSON.stringify({
+        studentId: selectedStudent,
+        studentName: selectedStudentData.name,
+        teacherMode: true,
+        returnTo: '/teacher-dashboard'
+      }));
+      
+      // Navigate to the full student dashboard experience
+      window.open(`/teacher-student-view/${selectedStudent}`, '_blank');
+    }
   };
 
   const getDashboardOverview = (data: StudentDashboardData) => {

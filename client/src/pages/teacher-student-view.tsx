@@ -242,7 +242,7 @@ export default function TeacherStudentView() {
                 size="sm" 
                 className="bg-purple-100 text-purple-700 hover:bg-purple-200"
                 onClick={() => {
-                  window.open(`/student-game-zone?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                  window.open(`/gamified-learning?teacherView=true&studentId=${params?.studentId}`, '_blank')
                 }}
               >
                 <Sparkles className="h-4 w-4 mr-1" />
@@ -273,7 +273,7 @@ export default function TeacherStudentView() {
                 size="sm" 
                 className="text-gray-600 hover:text-gray-900"
                 onClick={() => {
-                  window.open(`/student-help-quests?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                  window.open(`/student-dashboard?teacherView=true&studentId=${params?.studentId}#help`, '_blank')
                 }}
               >
                 <HelpCircle className="h-4 w-4 mr-1" />
@@ -335,7 +335,7 @@ export default function TeacherStudentView() {
                   
                   {/* House Total Points */}
                   <div className="bg-gray-900 text-white px-4 py-2 rounded-lg inline-block">
-                    <span className="text-sm">⚡ House Total: {(scholar?.totalPoints || 0)} points</span>
+                    <span className="text-sm">⚡ House Total: {(house?.totalPoints || scholar?.totalPoints || 0)} points</span>
                   </div>
                 </div>
               </CardContent>

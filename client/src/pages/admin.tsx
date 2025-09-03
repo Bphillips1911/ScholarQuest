@@ -40,9 +40,10 @@ export default function Admin() {
     priority: "normal"
   });
 
-  // Check if admin is logged in
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Check if admin is logged in - initialize as true to prevent hooks order issues
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [adminData, setAdminData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
@@ -53,6 +54,7 @@ export default function Admin() {
         const parsedData = JSON.parse(data);
         setAdminData(parsedData);
         setIsAuthenticated(true);
+        setIsLoading(false);
       } catch (error) {
         // Invalid data, redirect to login
         localStorage.removeItem("adminToken");
@@ -102,7 +104,7 @@ export default function Admin() {
   });
 
   // Show loading while checking authentication
-  if (!isAuthenticated) {
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* CRITICAL NAVIGATION - VERY VISIBLE */}

@@ -108,6 +108,12 @@ export default function TeacherStudentView() {
     enabled: !!params?.studentId,
   });
 
+  // Fetch behavioral reflections for the student
+  const { data: reflections = [] } = useQuery({
+    queryKey: [`/api/student/reflections`, params?.studentId],
+    enabled: !!params?.studentId,
+  });
+
   const handleReturnToTeacher = () => {
     // Clear teacher viewing session
     sessionStorage.removeItem('teacherViewingStudent');
@@ -185,7 +191,7 @@ export default function TeacherStudentView() {
             </div>
 
             {/* Navigation Buttons - Exact Match */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
                 <Heart className="h-4 w-4 mr-1" />
                 Mood Tracker
@@ -223,16 +229,17 @@ export default function TeacherStudentView() {
                 <HelpCircle className="h-4 w-4 mr-1" />
                 Help Quests
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleReturnToTeacher}
-                className="text-red-600 hover:text-red-800 hover:bg-red-50"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Return
-              </Button>
             </div>
+            
+            {/* Return Button - Fixed Position */}
+            <Button 
+              onClick={handleReturnToTeacher}
+              className="bg-red-600 hover:bg-red-700 text-white ml-4 flex-shrink-0"
+              size="sm"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Return to Teacher
+            </Button>
           </div>
         </div>
       </div>
@@ -393,6 +400,68 @@ export default function TeacherStudentView() {
             </Card>
           </motion.div>
         </div>
+
+        {/* Behavioral Reflections Card - From Screenshot */}
+        {reflections && reflections.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mt-6"
+          >
+            <Card className="bg-white rounded-2xl shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-gray-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Behavioral Reflections</h3>
+                  </div>
+                  <Badge 
+                    variant="secondary" 
+                    className={`${
+                      reflections.filter((r: any) => r.status === 'submitted').length > 0 
+                        ? 'bg-red-100 text-red-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {reflections.filter((r: any) => r.status === 'submitted').length} Pending
+                  </Badge>
+                </div>
+                
+                <div className="space-y-3">
+                  {reflections.slice(0, 6).map((reflection: any, index: number) => (
+                    <div key={reflection.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${
+                          reflection.status === 'completed' ? 'bg-green-500' : 
+                          reflection.status === 'submitted' ? 'bg-red-500' : 
+                          'bg-gray-400'
+                        }`}></div>
+                        <div>
+                          <span className={`font-medium text-sm ${
+                            reflection.status === 'completed' ? 'text-green-800' : 
+                            reflection.status === 'submitted' ? 'text-red-800' : 
+                            'text-gray-700'
+                          }`}>
+                            {reflection.status === 'completed' ? 'Completed' : 
+                             reflection.status === 'submitted' ? 'Response Required' : 
+                             'Completed'}
+                          </span>
+                          <p className="text-xs text-gray-600">
+                            Assigned {new Date(reflection.assignedAt).toLocaleDateString()} • Due {new Date(reflection.dueDate || reflection.assignedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
+                        <span className="text-sm">✏️</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
 
       

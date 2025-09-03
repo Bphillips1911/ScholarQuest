@@ -2877,6 +2877,7 @@ export default function AdminNew() {
         />
       )}
           </div>
+        </Card>
         </div>
       </div>
     </div>

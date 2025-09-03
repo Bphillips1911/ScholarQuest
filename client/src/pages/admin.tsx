@@ -40,70 +40,48 @@ export default function Admin() {
     priority: "normal"
   });
 
-  // Check if admin is logged in - initialize as true to prevent hooks order issues
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  // Authentication state - DO NOT change initial values to maintain hook order
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    const data = localStorage.getItem("adminData");
-    
-    if (token && data) {
-      try {
-        const parsedData = JSON.parse(data);
-        setAdminData(parsedData);
-        setIsAuthenticated(true);
-        setIsLoading(false);
-      } catch (error) {
-        // Invalid data, redirect to login
-        localStorage.removeItem("adminToken");
-        localStorage.removeItem("adminData");
-        setLocation("/admin-login");
-      }
-    } else {
-      setLocation("/admin-login");
-    }
-  }, [setLocation]);
-
-  // Fetch data hooks - always call to prevent hooks order issues
+  // Always call ALL hooks before ANY conditional logic or early returns
+  // This ensures hooks are called in the same order every render
   const { data: houses } = useQuery<House[]>({
     queryKey: ["/api/houses"],
-    enabled: isAuthenticated && !isLoading,
+    enabled: false, // Will be enabled after auth check
   });
 
   const { data: pointEntries } = useQuery<PointEntry[]>({
     queryKey: ["/api/points"],
-    enabled: isAuthenticated && !isLoading,
+    enabled: false, // Will be enabled after auth check
   });
 
   const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
     queryKey: ["/api/admin/teachers/pending"],
-    enabled: isAuthenticated && !isLoading,
+    enabled: false, // Will be enabled after auth check
   });
 
   const { data: allScholars } = useQuery<Scholar[]>({
     queryKey: ["/api/scholars"],
-    enabled: isAuthenticated && !isLoading,
+    enabled: false, // Will be enabled after auth check
   });
 
-  // Messaging queries - always call to prevent hooks order issues
   const { data: adminMessages, refetch: refetchMessages } = useQuery({
     queryKey: ["/api/admin/messages"],
-    enabled: isAuthenticated && !isLoading,
+    enabled: false, // Will be enabled after auth check
   });
 
   const { data: allTeachers } = useQuery({
     queryKey: ["/api/admin/teachers"],
-    enabled: isAuthenticated && !isLoading,
+    enabled: false, // Will be enabled after auth check
   });
 
   const { data: allParents } = useQuery({
     queryKey: ["/api/admin/parents"],
-    enabled: isAuthenticated && !isLoading,
+    enabled: false, // Will be enabled after auth check
   });
 
-  // Always call all mutations before any early returns
   const addScholarMutation = useMutation({
     mutationFn: async (data: InsertScholar) => {
       const response = await apiRequest("POST", "/api/scholars", data);
@@ -128,7 +106,6 @@ export default function Admin() {
     },
   });
 
-  // Messaging mutations
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
       const token = localStorage.getItem("adminToken");
@@ -167,7 +144,6 @@ export default function Admin() {
     },
   });
 
-  // Reply mutation
   const replyMutation = useMutation({
     mutationFn: async (replyData: any) => {
       const token = localStorage.getItem("adminToken");
@@ -202,6 +178,65 @@ export default function Admin() {
       });
     },
   });
+
+  const approveTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      return await apiRequest(`/api/admin/teachers/${teacherId}/approve`, "POST");
+    },
+    onSuccess: () => {
+      toast({
+        title: "Teacher Approved",
+        description: "Teacher account has been approved and can now log in.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve teacher. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Authentication check effect - AFTER all hooks are declared
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    const data = localStorage.getItem("adminData");
+    
+    if (token && data) {
+      try {
+        const parsedData = JSON.parse(data);
+        setAdminData(parsedData);
+        setIsAuthenticated(true);
+        setIsLoading(false);
+        
+        // Now enable queries
+        queryClient.invalidateQueries({ queryKey: ["/api/houses"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/points"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/scholars"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/parents"] });
+      } catch (error) {
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminData");
+        setLocation("/admin-login");
+      }
+    } else {
+      setLocation("/admin-login");
+    }
+  }, [setLocation]);
+
+  // Check for early return to prevent hooks order issues
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
+  }
 
   // Show loading while checking authentication
   if (isLoading || !isAuthenticated) {
@@ -363,26 +398,6 @@ export default function Admin() {
       priority: messagePriority,
     });
   };
-
-  const approveTeacherMutation = useMutation({
-    mutationFn: async (teacherId: string) => {
-      return await apiRequest(`/api/admin/teachers/${teacherId}/approve`, "POST");
-    },
-    onSuccess: () => {
-      toast({
-        title: "Teacher Approved",
-        description: "Teacher account has been approved and can now log in.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to approve teacher. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
 
   // Get recent point entries (last 10)
   const recentEntries = pointEntries

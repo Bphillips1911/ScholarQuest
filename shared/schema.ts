@@ -384,7 +384,15 @@ export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
 // Type exports
 export type House = typeof houses.$inferSelect;
 export type Scholar = typeof scholars.$inferSelect;
-export type Teacher = typeof teachers.$inferSelect;
+// Teacher type is based on TeacherAuth with additional computed fields
+export interface Teacher {
+  id: string;
+  name: string;
+  email: string;
+  grade: number;
+  subject: string;
+  canSeeGrades: number[];
+}
 export type PointEntry = typeof pointEntries.$inferSelect;
 export type PbisEntry = typeof pbisEntries.$inferSelect;
 export type PbisPhoto = typeof pbisPhotos.$inferSelect;

@@ -899,14 +899,18 @@ export class DatabaseStorage implements IStorage {
 
   async getTeacher(id: string): Promise<Teacher | undefined> {
     // Use teacherAuth table since teachers table doesn't exist
-    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.id, id));
-    if (!teacher) return undefined;
+    const [teacher] = await db.select().from(schema.teacherAuth).where(eq(schema.teacherAuth.id, id));
+    if (!teacher) {
+      console.log(`DATABASE: Teacher not found with ID: ${id}`);
+      return undefined;
+    }
     
     // Convert teacherAuth to Teacher format with canSeeGrades
     const gradeNumber = parseInt(teacher.gradeRole.replace(/\D/g, '')) || 0;
+    console.log(`DATABASE: Found teacher ${teacher.name} for grade ${gradeNumber}`);
     return {
       id: teacher.id,
-      name: teacher.fullName,
+      name: teacher.name,
       email: teacher.email,
       grade: gradeNumber,
       subject: teacher.subject || '',

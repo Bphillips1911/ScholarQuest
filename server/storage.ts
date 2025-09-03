@@ -178,7 +178,7 @@ export interface IStorage {
   approveTeacher(teacherId: string): Promise<boolean>;
   requestTeacherPasswordReset(email: string): Promise<boolean>;
   resetTeacherPassword(teacherId: string, newPassword: string): Promise<boolean>;
-  getScholarsByGrade(gradeRole: string): Promise<Scholar[]>;
+  getScholarsByGrade(gradeRole: string | number): Promise<Scholar[]>;
   getReflectionsByTeacher(teacherId: string): Promise<any[]>;
   getMessagesByTeacher(teacherId: string): Promise<any[]>;
   getPhotosByTeacher(teacherId: string): Promise<any[]>;

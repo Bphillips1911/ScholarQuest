@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Settings, Star, Heart, Target, Zap, UserMinus } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Settings, Star, Heart, Target, Zap, UserMinus, QrCode, Calendar } from "lucide-react";
 import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
 import { ProgressReportGenerator } from "@/components/ProgressReportGenerator";
 import { AchievementPlayground } from "@/components/AchievementPlayground";
@@ -48,6 +48,15 @@ export default function AdminNew() {
   // Game modal state
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [showGameModal, setShowGameModal] = useState(false);
+  
+  // Messaging states
+  const [messageType, setMessageType] = useState("");
+  const [selectedGrade, setSelectedGrade] = useState("");
+  const [selectedHouse, setSelectedHouse] = useState("");
+  const [messageSubject, setMessageSubject] = useState("");
+  const [messageContent, setMessageContent] = useState("");
+  const [sendSMS, setSendSMS] = useState(false);
+  const [sendEmail, setSendEmail] = useState(false);
 
   useEffect(() => {
     console.log("AdminNew component mounted");
@@ -112,6 +121,96 @@ export default function AdminNew() {
   };
 
   const themeStyles = getThemeStyles();
+
+  // Mutation functions for bulk messaging
+  const sendBulkMessageMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/bulk-message", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messageType,
+          selectedGrade,
+          selectedHouse,
+          subject: messageSubject,
+          content: messageContent,
+          sendSMS,
+          sendEmail
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to send bulk message");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "Bulk message has been sent successfully.",
+      });
+      setMessageSubject("");
+      setMessageContent("");
+      setMessageType("");
+      setSendSMS(false);
+      setSendEmail(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send bulk message. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendTeacherNotificationsMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/notify-teachers", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error("Failed to send teacher notifications");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Notifications Sent",
+        description: "All teachers have been notified via email.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send teacher notifications.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler functions
+  const handleSendBulkMessage = () => {
+    sendBulkMessageMutation.mutate();
+  };
+
+  const handleExportData = (format: 'csv' | 'excel') => {
+    const url = `/api/admin/export/scholars/${format}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bhsa-scholars-${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    link.click();
+    
+    toast({
+      title: "Export Started",
+      description: `Scholar data export in ${format.toUpperCase()} format has started.`,
+    });
+  };
 
   // Fetch data hooks
   const { data: houses } = useQuery<House[]>({
@@ -193,44 +292,7 @@ export default function AdminNew() {
     setLocation("/admin-login");
   };
 
-  // Export data functions
-  const handleExportData = async (format: 'csv' | 'excel') => {
-    try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`/api/export/${format}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `pbis-data.${format === 'excel' ? 'xlsx' : 'csv'}`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        toast({
-          title: "Export Successful",
-          description: `Data exported as ${format.toUpperCase()}`,
-        });
-      } else {
-        throw new Error(`Export failed: ${response.status}`);
-      }
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Unable to export data. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Teacher approval functions
   const approveTeacherMutation = useMutation({
@@ -285,34 +347,7 @@ export default function AdminNew() {
     },
   });
 
-  // Send teacher notifications mutation
-  const sendTeacherNotificationsMutation = useMutation({
-    mutationFn: async () => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/send-teacher-notifications", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) throw new Error("Failed to send teacher notifications");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Teacher Notifications Sent",
-        description: `Email notifications sent to ${data.details.success} teachers successfully.`,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Notification Failed",
-        description: "Failed to send teacher notifications. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Send test email mutation
   const sendTestEmailMutation = useMutation({
@@ -551,20 +586,24 @@ export default function AdminNew() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+            <TabsList className="grid w-full grid-cols-5 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
+                <Settings className="h-3 w-3 mr-1" />
+                Quick Actions
+              </TabsTrigger>
+              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <FileText className="h-3 w-3 mr-1" />
                 Progress Reports
               </TabsTrigger>
-              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <Trophy className="h-3 w-3 mr-1" />
                 Achievement Hub
               </TabsTrigger>
-              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <BarChart3 className="h-3 w-3 mr-1" />
                 Performance
               </TabsTrigger>
-              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
                 <Brain className="h-3 w-3 mr-1" />
                 AI Engine
               </TabsTrigger>
@@ -955,844 +994,182 @@ export default function AdminNew() {
             </TabsContent>
 
             <TabsContent value="messaging" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Messages ({adminMessages?.length || 0})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {adminMessages && adminMessages.length > 0 ? (
-                        adminMessages.slice(0, 10).map((message: any) => (
-                          <div key={message.id} className="p-4 border rounded-lg bg-gray-50">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Admin Messaging Center</CardTitle>
+                  <p style={{color: themeStyles.textSecondary}}>Send messages to parents, teachers, or broadcast to all users</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    {/* Bulk Messaging */}
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-semibold" style={{color: themeStyles.textPrimary}}>Send Bulk Messages</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <Label style={{color: themeStyles.textPrimary}}>Message Type</Label>
+                          <Select value={messageType} onValueChange={setMessageType}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select message type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all-parents">📧 All Parents</SelectItem>
+                              <SelectItem value="all-teachers">👩‍🏫 All Teachers</SelectItem>
+                              <SelectItem value="broadcast">📢 Broadcast (Everyone)</SelectItem>
+                              <SelectItem value="specific-grade">🎓 Specific Grade Level</SelectItem>
+                              <SelectItem value="house-specific">🏠 Specific House</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {messageType === 'specific-grade' && (
+                          <div>
+                            <Label style={{color: themeStyles.textPrimary}}>Grade Level</Label>
+                            <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select grade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="6th">6th Grade</SelectItem>
+                                <SelectItem value="7th">7th Grade</SelectItem>
+                                <SelectItem value="8th">8th Grade</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {messageType === 'house-specific' && (
+                          <div>
+                            <Label style={{color: themeStyles.textPrimary}}>House</Label>
+                            <Select value={selectedHouse} onValueChange={setSelectedHouse}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select house" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {houses?.map((house) => (
+                                  <SelectItem key={house.id} value={house.id}>
+                                    {house.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        <div>
+                          <Label style={{color: themeStyles.textPrimary}}>Subject</Label>
+                          <Input
+                            value={messageSubject}
+                            onChange={(e) => setMessageSubject(e.target.value)}
+                            placeholder="Enter message subject"
+                          />
+                        </div>
+
+                        <div>
+                          <Label style={{color: themeStyles.textPrimary}}>Message</Label>
+                          <textarea
+                            value={messageContent}
+                            onChange={(e) => setMessageContent(e.target.value)}
+                            placeholder="Enter your message..."
+                            className="w-full p-3 border rounded-md resize-none h-32"
+                            style={{
+                              backgroundColor: themeStyles.cardBg,
+                              borderColor: themeStyles.border,
+                              color: themeStyles.textPrimary
+                            }}
+                          />
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="sendSMS"
+                            checked={sendSMS}
+                            onChange={(e) => setSendSMS(e.target.checked)}
+                          />
+                          <Label htmlFor="sendSMS" style={{color: themeStyles.textPrimary}}>
+                            Send as SMS (in addition to system message)
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="sendEmail"
+                            checked={sendEmail}
+                            onChange={(e) => setSendEmail(e.target.checked)}
+                          />
+                          <Label htmlFor="sendEmail" style={{color: themeStyles.textPrimary}}>
+                            Send as Email (in addition to system message)
+                          </Label>
+                        </div>
+
+                        <Button
+                          onClick={handleSendBulkMessage}
+                          disabled={!messageType || !messageSubject || !messageContent || sendBulkMessageMutation.isPending}
+                          className="w-full"
+                        >
+                          {sendBulkMessageMutation.isPending ? (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="mr-2 h-4 w-4" />
+                              Send Message
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Recent Messages */}
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-semibold" style={{color: themeStyles.textPrimary}}>Recent Admin Messages</h3>
+                      
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {adminMessages?.map((message) => (
+                          <Card key={message.id} className="p-4" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-medium text-gray-900">{message.subject}</h4>
-                              <span className="text-xs text-gray-500">
-                                {message.created_at ? new Date(message.created_at).toLocaleDateString() : 'Recently'}
+                              <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>
+                                {message.subject}
+                              </h4>
+                              <span className="text-sm" style={{color: themeStyles.textSecondary}}>
+                                {message.createdAt ? new Date(message.createdAt).toLocaleDateString() : ''}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{message.message}</p>
-                            <div className="flex justify-between items-center text-xs text-gray-500">
-                              <span>From: {message.sender_name || 'Unknown'}</span>
-                              <span>To: {message.recipient_name || 'Unknown'}</span>
-                            </div>
-                            {message.priority === 'urgent' && (
-                              <Badge variant="destructive" className="mt-2">Urgent</Badge>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-8">
-                          <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                          <p className="text-gray-500">No messages found</p>
-                          <p className="text-sm text-gray-400">Messages between parents and teachers will appear here</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Send Message</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <Label htmlFor="message-subject">Subject</Label>
-                      <Input
-                        id="message-subject"
-                        placeholder="Message subject"
-                        value={messageForm.subject}
-                        onChange={(e) => setMessageForm(prev => ({ ...prev, subject: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label htmlFor="message-content">Message</Label>
-                      <textarea
-                        id="message-content"
-                        className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="Type your message here..."
-                        value={messageForm.message}
-                        onChange={(e) => setMessageForm(prev => ({ ...prev, message: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label htmlFor="message-type">Send To</Label>
-                      <Select onValueChange={(value) => setMessageForm(prev => ({ ...prev, recipientType: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select recipient type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all-parents">All Parents</SelectItem>
-                          <SelectItem value="all-teachers">All Teachers</SelectItem>
-                          <SelectItem value="broadcast">School-wide Announcement</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button 
-                      onClick={handleSendMessage}
-                      disabled={sendMessageMutation.isPending || !messageForm.subject || !messageForm.message || !messageForm.recipientType}
-                      className="w-full"
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
-                    </Button>
-                    <div className="pt-4 border-t space-y-2">
-                      <Button onClick={() => window.location.href = '/parent-letter'} variant="outline" className="w-full justify-start">
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Parent Portal Information
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
-                          toast({
-                            title: "Messages Refreshed",
-                            description: "Latest messages have been loaded.",
-                          });
-                        }}
-                        variant="outline" 
-                        className="w-full justify-start"
-                      >
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Refresh Messages
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="exports" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Data Export & Management</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-6">Export system data in various formats for analysis and reporting</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Button 
-                      onClick={() => handleExportData('csv')}
-                      className="bg-green-600 text-white hover:bg-green-700 justify-start h-auto p-4"
-                    >
-                      <div className="text-left">
-                        <div className="flex items-center">
-                          <Download className="mr-2 h-4 w-4" />
-                          Export CSV
-                        </div>
-                        <p className="text-sm text-gray-300 mt-1">All data in spreadsheet format</p>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => handleExportData('excel')}
-                      className="bg-green-700 text-white hover:bg-green-800 justify-start h-auto p-4"
-                    >
-                      <div className="text-left">
-                        <div className="flex items-center">
-                          <Download className="mr-2 h-4 w-4" />
-                          Export Excel
-                        </div>
-                        <p className="text-sm text-gray-300 mt-1">Formatted Excel workbook</p>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => window.location.href = '/qr-generator'}
-                      className="bg-blue-600 text-white hover:bg-blue-700 justify-start h-auto p-4"
-                    >
-                      <div className="text-left">
-                        <div className="flex items-center">
-                          <Plus className="mr-2 h-4 w-4" />
-                          QR Generator
-                        </div>
-                        <p className="text-sm text-gray-300 mt-1">Generate student QR codes</p>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => window.location.href = '/admin-settings'}
-                      className="bg-gray-600 text-white hover:bg-gray-700 justify-start h-auto p-4"
-                    >
-                      <div className="text-left">
-                        <div className="flex items-center">
-                          <User className="mr-2 h-4 w-4" />
-                          Email Settings
-                        </div>
-                        <p className="text-sm text-gray-300 mt-1">Configure email notifications</p>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => window.open("/parent-letter", "_blank")}
-                      className="bg-blue-600 text-white hover:bg-blue-700 justify-start h-auto p-4"
-                    >
-                      <div className="text-left">
-                        <div className="flex items-center">
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Parent Portal Info
-                        </div>
-                        <p className="text-sm text-gray-300 mt-1">Parent setup instructions</p>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => {
-                        if (confirm("Are you sure you want to reset all semester points? This action cannot be undone.")) {
-                          toast({
-                            title: "Feature Coming Soon",
-                            description: "Semester reset functionality will be available soon.",
-                          });
-                        }
-                      }}
-                      variant="destructive"
-                      className="justify-start h-auto p-4"
-                    >
-                      <div className="text-left">
-                        <div className="flex items-center">
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                          Reset Semester
-                        </div>
-                        <p className="text-sm text-red-300 mt-1">Clear all point data</p>
-                      </div>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="gallery" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Image className="h-5 w-5" />
-                      Activity Photo Gallery ({galleryPhotos?.length || 0} photos)
-                    </div>
-                    <Button
-                      onClick={() => setShowUploadModal(true)}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Camera className="h-4 w-4 mr-2" />
-                      Upload Photo
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {galleryPhotos && galleryPhotos.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {galleryPhotos.map((photo: any) => (
-                        <div key={photo.id} className="border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
-                          <div className="aspect-video bg-gray-100 flex items-center justify-center relative group">
-                            <img 
-                              src={`/uploads/${photo.filename}`}
-                              alt={photo.description || 'Activity photo'}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const next = e.currentTarget.nextElementSibling as HTMLElement;
-                                if (next) next.style.display = 'flex';
-                              }}
-                            />
-                            <div className="hidden w-full h-full items-center justify-center text-gray-400">
-                              <Image className="h-12 w-12" />
-                            </div>
-                            {/* Admin Download Button */}
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                size="sm"
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = `/uploads/${photo.filename}`;
-                                  link.download = photo.originalName || photo.filename;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                  toast({
-                                    title: "Download Started",
-                                    description: `Downloading ${photo.originalName || 'photo'}`,
-                                  });
-                                }}
-                              >
-                                <Download className="h-3 w-3 mr-1" />
-                                Download
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="p-4">
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                              {photo.description || 'No description provided'}
+                            <p className="text-sm mb-2" style={{color: themeStyles.textSecondary}}>
+                              To: {message.recipientType}
                             </p>
-                            <div className="flex justify-between items-center text-xs text-gray-500">
-                              <span className="font-medium">By: {photo.uploadedBy}</span>
-                              <span>
-                                {photo.createdAt 
-                                  ? new Date(photo.createdAt).toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric'
-                                    })
-                                  : 'Recently'
-                                }
-                              </span>
-                            </div>
-                            <div className="mt-2 pt-2 border-t border-gray-100">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = `/uploads/${photo.filename}`;
-                                  link.download = photo.originalName || photo.filename;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                  toast({
-                                    title: "Download Started",
-                                    description: `Downloading ${photo.originalName || 'photo'}`,
-                                  });
-                                }}
-                              >
-                                <Download className="h-3 w-3 mr-2" />
-                                Download Original
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Image className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Photos Yet</h3>
-                      <p className="text-gray-500 mb-4">
-                        Teachers haven't uploaded any activity photos yet. Photos uploaded by teachers will appear here.
-                      </p>
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-sm text-blue-700">
-                          <strong>For Teachers:</strong> Use the "Upload Photos" tab in your teacher dashboard to add activity photos that will appear in this gallery.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="reflections" className="space-y-6">
-              <ReflectionLogs />
-            </TabsContent>
-
-            <TabsContent value="exports" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>Data Export Center</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button 
-                      onClick={() => window.open('/api/admin/export/scholars', '_blank')}
-                      className="flex items-center gap-2 h-20"
-                      variant="outline"
-                    >
-                      <Download className="h-6 w-6" />
-                      <div className="text-left">
-                        <div className="font-semibold">Export Students</div>
-                        <div className="text-sm opacity-75">Download all student data</div>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => window.open('/api/admin/export/pbis', '_blank')}
-                      className="flex items-center gap-2 h-20"
-                      variant="outline"
-                    >
-                      <Download className="h-6 w-6" />
-                      <div className="text-left">
-                        <div className="font-semibold">Export PBIS Data</div>
-                        <div className="text-sm opacity-75">Download all PBIS entries</div>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => window.open('/api/admin/export/houses', '_blank')}
-                      className="flex items-center gap-2 h-20"
-                      variant="outline"
-                    >
-                      <Download className="h-6 w-6" />
-                      <div className="text-left">
-                        <div className="font-semibold">Export House Data</div>
-                        <div className="text-sm opacity-75">Download house standings</div>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => window.open('/api/admin/export/reflections', '_blank')}
-                      className="flex items-center gap-2 h-20"
-                      variant="outline"
-                    >
-                      <Download className="h-6 w-6" />
-                      <div className="text-left">
-                        <div className="font-semibold">Export Reflections</div>
-                        <div className="text-sm opacity-75">Download reflection logs</div>
-                      </div>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="scholars-dashboard" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>Scholar Dashboard Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {allScholars && allScholars.length > 0 ? (
-                      allScholars.map((scholar: any) => (
-                        <div key={scholar.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" 
-                             style={{backgroundColor: currentTheme === 'dark' ? '#374151' : '#ffffff', borderColor: themeStyles.border}}
-                             onClick={() => {
-                               setActiveTab("student-viewer");
-                               localStorage.setItem("selectedScholarId", scholar.id);
-                             }}>
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold`} 
-                                 style={{backgroundColor: houses?.find(h => h.id === scholar.houseId)?.color || '#6b7280'}}>
-                              {scholar.firstName?.charAt(0) || 'S'}
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-medium" style={{color: themeStyles.textPrimary}}>
-                                {scholar.firstName} {scholar.lastName}
-                              </h3>
-                              <p className="text-sm" style={{color: themeStyles.textSecondary}}>
-                                {houses?.find(h => h.id === scholar.houseId)?.name || 'No House'}
-                              </p>
-                            </div>
-                            <Badge variant="outline" style={{borderColor: houses?.find(h => h.id === scholar.houseId)?.color}}>
-                              {(scholar.academicPoints || 0) + (scholar.attendancePoints || 0) + (scholar.behaviorPoints || 0)} pts
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div className="text-center p-1 rounded" style={{backgroundColor: currentTheme === 'dark' ? '#4a5568' : '#f3f4f6'}}>
-                              <div style={{color: themeStyles.textSecondary}}>Academic</div>
-                              <div className="font-bold" style={{color: themeStyles.textPrimary}}>{scholar.academicPoints || 0}</div>
-                            </div>
-                            <div className="text-center p-1 rounded" style={{backgroundColor: currentTheme === 'dark' ? '#4a5568' : '#f3f4f6'}}>
-                              <div style={{color: themeStyles.textSecondary}}>Attendance</div>
-                              <div className="font-bold" style={{color: themeStyles.textPrimary}}>{scholar.attendancePoints || 0}</div>
-                            </div>
-                            <div className="text-center p-1 rounded" style={{backgroundColor: currentTheme === 'dark' ? '#4a5568' : '#f3f4f6'}}>
-                              <div style={{color: themeStyles.textSecondary}}>Behavior</div>
-                              <div className="font-bold" style={{color: themeStyles.textPrimary}}>{scholar.behaviorPoints || 0}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="col-span-full text-center py-8">
-                        <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                        <p style={{color: themeStyles.textSecondary}}>No scholars found</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="award-points" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>Award MUSTANG Points</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <Label htmlFor="award-scholar">Select Scholar</Label>
-                        <Select>
-                          <SelectTrigger id="award-scholar" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                            <SelectValue placeholder="Choose a scholar to award points" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allScholars?.map((scholar: any) => (
-                              <SelectItem key={scholar.id} value={scholar.id}>
-                                {scholar.firstName} {scholar.lastName} - {houses?.find(h => h.id === scholar.houseId)?.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="award-category">MUSTANG Category</Label>
-                        <Select>
-                          <SelectTrigger id="award-category" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                            <SelectValue placeholder="Select MUSTANG trait" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="academic">🎯 Academic Excellence</SelectItem>
-                            <SelectItem value="attendance">📅 Perfect Attendance</SelectItem>
-                            <SelectItem value="behavior">⭐ Positive Behavior</SelectItem>
-                            <SelectItem value="leadership">👑 Leadership</SelectItem>
-                            <SelectItem value="creativity">🎨 Creativity</SelectItem>
-                            <SelectItem value="teamwork">🤝 Teamwork</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <Label htmlFor="award-points">Points to Award</Label>
-                        <Select>
-                          <SelectTrigger id="award-points" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                            <SelectValue placeholder="Select point value" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1 Point - Good effort</SelectItem>
-                            <SelectItem value="2">2 Points - Great work</SelectItem>
-                            <SelectItem value="3">3 Points - Excellent achievement</SelectItem>
-                            <SelectItem value="5">5 Points - Outstanding performance</SelectItem>
-                            <SelectItem value="10">10 Points - Exceptional excellence</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="award-reason">Reason for Award</Label>
-                        <Input 
-                          id="award-reason"
-                          placeholder="Brief description of achievement"
-                          style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button className="bg-green-600 hover:bg-green-700 text-white">
-                        <Award className="mr-2 h-4 w-4" />
-                        Award Points
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="student-viewer" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>Individual Student Dashboard Viewer</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <Select>
-                      <SelectTrigger style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                        <SelectValue placeholder="Select a student to view their dashboard" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allScholars?.map((scholar: any) => (
-                          <SelectItem key={scholar.id} value={scholar.id}>
-                            {scholar.firstName} {scholar.lastName} - {houses?.find(h => h.id === scholar.houseId)?.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="border rounded-lg p-6" style={{borderColor: themeStyles.border, backgroundColor: currentTheme === 'dark' ? '#374151' : '#f9fafb'}}>
-                      <div className="text-center">
-                        <Eye className="mx-auto h-12 w-12 mb-4" style={{color: themeStyles.textSecondary}} />
-                        <p style={{color: themeStyles.textSecondary}}>Select a student above to view their personalized dashboard</p>
-                        <p className="text-sm mt-2" style={{color: themeStyles.textSecondary}}>
-                          This will show their points, achievements, house standing, and progress
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="deactivate" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>Student Account Management</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <UserMinus className="h-5 w-5 text-yellow-600 mr-2" />
-                        <p className="text-yellow-800 font-medium">Deactivate Student Accounts</p>
-                      </div>
-                      <p className="text-yellow-700 text-sm mt-1">
-                        Use this feature to temporarily deactivate student accounts when they transfer or are no longer enrolled.
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <Label>Select Students to Deactivate</Label>
-                      <div className="max-h-96 overflow-y-auto border rounded-lg" style={{borderColor: themeStyles.border}}>
-                        {allScholars && allScholars.length > 0 ? (
-                          allScholars.map((scholar: any) => (
-                            <div key={scholar.id} className="flex items-center justify-between p-3 border-b last:border-b-0" style={{borderColor: themeStyles.border}}>
-                              <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold`} 
-                                     style={{backgroundColor: houses?.find(h => h.id === scholar.houseId)?.color || '#6b7280'}}>
-                                  {scholar.firstName?.charAt(0) || 'S'}
-                                </div>
-                                <div>
-                                  <p className="font-medium" style={{color: themeStyles.textPrimary}}>
-                                    {scholar.firstName} {scholar.lastName}
-                                  </p>
-                                  <p className="text-sm" style={{color: themeStyles.textSecondary}}>
-                                    {houses?.find(h => h.id === scholar.houseId)?.name} • {((scholar.academicPoints || 0) + (scholar.attendancePoints || 0) + (scholar.behaviorPoints || 0))} points
-                                  </p>
-                                </div>
+                            <p className="text-sm" style={{color: themeStyles.textPrimary}}>
+                              {message.content}
+                            </p>
+                            {message.deliveryStatus && (
+                              <div className="mt-2 text-xs" style={{color: themeStyles.textSecondary}}>
+                                Status: {message.deliveryStatus}
                               </div>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={() => {
-                                  toast({
-                                    title: "Account Deactivated",
-                                    description: `${scholar.firstName} ${scholar.lastName}'s account has been deactivated.`,
-                                  });
-                                }}
-                              >
-                                <UserMinus className="h-4 w-4 mr-1" />
-                                Deactivate
-                              </Button>
-                            </div>
-                          ))
-                        ) : (
+                            )}
+                          </Card>
+                        ))}
+                        
+                        {(!adminMessages || adminMessages.length === 0) && (
                           <div className="text-center py-8">
-                            <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                            <p style={{color: themeStyles.textSecondary}}>No students found</p>
+                            <MessageSquare className="mx-auto h-12 w-12 mb-4" style={{color: themeStyles.textSecondary}} />
+                            <p style={{color: themeStyles.textSecondary}}>No admin messages yet</p>
                           </div>
                         )}
                       </div>
                     </div>
+
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="settings" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>System Settings & Configuration</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <h3 className="font-medium" style={{color: themeStyles.textPrimary}}>House Settings</h3>
-                        <div className="space-y-2">
-                          <Button variant="outline" className="w-full justify-start">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Configure House Points
-                          </Button>
-                          <Button variant="outline" className="w-full justify-start">
-                            <Trophy className="h-4 w-4 mr-2" />
-                            Manage House Competition
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h3 className="font-medium" style={{color: themeStyles.textPrimary}}>System Configuration</h3>
-                        <div className="space-y-2">
-                          <Button variant="outline" className="w-full justify-start">
-                            <Mail className="h-4 w-4 mr-2" />
-                            Email Settings
-                          </Button>
-                          <Button variant="outline" className="w-full justify-start">
-                            <Users className="h-4 w-4 mr-2" />
-                            User Management
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="border-t pt-6" style={{borderColor: themeStyles.border}}>
-                      <h3 className="font-medium mb-4" style={{color: themeStyles.textPrimary}}>Advanced Features</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Button 
-                          variant="outline" 
-                          className="flex-col h-auto p-4"
-                          onClick={() => setActiveTab("progress-reports")}
-                        >
-                          <FileText className="h-6 w-6 mb-2" />
-                          <span>Progress Reports</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="flex-col h-auto p-4"
-                          onClick={() => setActiveTab("achievement-playground")}
-                        >
-                          <Trophy className="h-6 w-6 mb-2" />
-                          <span>Achievement Hub</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="flex-col h-auto p-4"
-                          onClick={() => setActiveTab("performance-heatmap")}
-                        >
-                          <BarChart3 className="h-6 w-6 mb-2" />
-                          <span>Performance Analytics</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="flex-col h-auto p-4"
-                          onClick={() => setActiveTab("ai-recommendations")}
-                        >
-                          <Brain className="h-6 w-6 mb-2" />
-                          <span>AI Engine</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Advanced Features */}
-            <TabsContent value="progress-reports" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>One-Click Student Progress Report Generator</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p style={{color: themeStyles.textSecondary}} className="mb-4">
-                    Generate comprehensive progress reports for any student with one click. Advanced AI-powered analytics and insights included.
-                  </p>
-                  <div className="space-y-4">
-                    <ProgressReportGenerator isAdminView={true} />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="achievement-playground" className="space-y-6">
-              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>Achievement Playground Management</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p style={{color: themeStyles.textSecondary}} className="mb-4">
-                    Manage student achievement playgrounds and monitor gamified progress across all students
-                  </p>
-                  <div className="space-y-4">
-                    <AchievementPlayground studentId="" className="border-0" />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="performance-heatmap" className="space-y-6">
-              <TeacherPerformanceHeatmap />
-            </TabsContent>
-
-            <TabsContent value="ai-recommendations" className="space-y-6">
-              <AIRecommendationEngine />
             </TabsContent>
           </Tabs>
-
-          {/* Admin Photo Upload Modal */}
-          {showUploadModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">Upload Photo</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowUploadModal(false);
-                      setUploadedFile(null);
-                      setPhotoDescription("");
-                    }}
-                  >
-                    ×
-                  </Button>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="photo-upload">Select Photo</Label>
-                    <Input
-                      id="photo-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  {uploadedFile && (
-                    <div className="text-sm text-gray-600">
-                      Selected: {uploadedFile.name}
-                    </div>
-                  )}
-                  
-                  <div>
-                    <Label htmlFor="photo-description">Description</Label>
-                    <Input
-                      id="photo-description"
-                      value={photoDescription}
-                      onChange={(e) => setPhotoDescription(e.target.value)}
-                      placeholder="Enter photo description..."
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      onClick={() => {
-                        setShowUploadModal(false);
-                        setUploadedFile(null);
-                        setPhotoDescription("");
-                      }}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleUploadPhoto}
-                      disabled={!uploadedFile || uploadPhotoMutation.isPending}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                    >
-                      {uploadPhotoMutation.isPending ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Uploading...
-                        </div>
-                      ) : (
-                        <>
-                          <Camera className="h-4 w-4 mr-2" />
-                          Upload
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </Card>
       </div>
-
-      {/* Game Modal */}
-      {selectedGame && (
-        <GameModal
-          game={selectedGame}
-          isOpen={showGameModal}
-          onClose={() => {
-            setShowGameModal(false);
-            setSelectedGame(null);
-          }}
-        />
-      )}
     </div>
   );
-}
+};

@@ -1041,24 +1041,24 @@ export default function TeacherDashboard() {
 
         {/* Main Teacher Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full ${teacher?.gradeRole === 'Unified Arts' ? 'grid-cols-9' : 'grid-cols-8'}`} style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-            <TabsTrigger value="dashboard" style={{color: themeStyles.textPrimary}}>Dashboard</TabsTrigger>
-            <TabsTrigger value="scholars" style={{color: themeStyles.textPrimary}}>Scholars</TabsTrigger>
-            <TabsTrigger value="student-search" style={{color: themeStyles.textPrimary}}>
-              <Search className="h-4 w-4 mr-1" />
+          <TabsList className="flex w-full justify-center gap-2 p-2 h-auto" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+            <TabsTrigger value="dashboard" className="px-4 py-2 text-sm font-medium" style={{color: themeStyles.textPrimary}}>Dashboard</TabsTrigger>
+            <TabsTrigger value="scholars" className="px-4 py-2 text-sm font-medium" style={{color: themeStyles.textPrimary}}>Scholars</TabsTrigger>
+            <TabsTrigger value="student-search" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
+              <Search className="h-4 w-4" />
               Student Search
             </TabsTrigger>
             {teacher?.gradeRole === 'Unified Arts' && (
-              <TabsTrigger value="class-periods" style={{color: themeStyles.textPrimary}}>
-                <Calendar className="h-4 w-4 mr-1" />
+              <TabsTrigger value="class-periods" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
+                <Calendar className="h-4 w-4" />
                 Class Periods
               </TabsTrigger>
             )}
-            <TabsTrigger value="student-dashboards" style={{color: themeStyles.textPrimary}}>
-              <Users className="h-4 w-4 mr-1" />
+            <TabsTrigger value="student-dashboards" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
+              <Users className="h-4 w-4" />
               Student Views
             </TabsTrigger>
-            <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary}}>
+            <TabsTrigger value="reflections" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
               Reflections
               {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
                 <span className="ml-1 px-1 bg-red-500 text-white text-xs rounded-full">
@@ -1066,12 +1066,12 @@ export default function TeacherDashboard() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary}}>
-              <FileText className="h-4 w-4 mr-1" />
+            <TabsTrigger value="story-review" className="px-4 py-2 text-sm font-medium flex items-center gap-1" style={{color: themeStyles.textPrimary}}>
+              <FileText className="h-4 w-4" />
               Story Review
             </TabsTrigger>
-            <TabsTrigger value="upload" style={{color: themeStyles.textPrimary}}>Upload Photos</TabsTrigger>
-            <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
+            <TabsTrigger value="upload" className="px-4 py-2 text-sm font-medium" style={{color: themeStyles.textPrimary}}>Upload Photos</TabsTrigger>
+            <TabsTrigger value="gallery" className="px-4 py-2 text-sm font-medium" style={{color: themeStyles.textPrimary}}>Gallery</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">

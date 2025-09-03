@@ -11,8 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy } from "lucide-react";
 import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
+import { ProgressReportGenerator } from "@/components/ProgressReportGenerator";
+import { AchievementPlayground } from "@/components/AchievementPlayground";
+import { TeacherPerformanceHeatmap } from "@/components/TeacherPerformanceHeatmap";
+import { AIRecommendationEngine } from "@/components/AIRecommendationEngine";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -537,6 +541,25 @@ export default function AdminNew() {
               <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Gallery</TabsTrigger>
               <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Reflections</TabsTrigger>
               <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>Data Export</TabsTrigger>
+            </TabsList>
+
+            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
+              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <FileText className="h-3 w-3 mr-1" />
+                Progress Reports
+              </TabsTrigger>
+              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <Trophy className="h-3 w-3 mr-1" />
+                Achievement Hub
+              </TabsTrigger>
+              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <BarChart3 className="h-3 w-3 mr-1" />
+                Performance
+              </TabsTrigger>
+              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '14px'}}>
+                <Brain className="h-3 w-3 mr-1" />
+                AI Engine
+              </TabsTrigger>
             </TabsList>
 
 
@@ -1309,6 +1332,47 @@ export default function AdminNew() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Advanced Features */}
+            <TabsContent value="progress-reports" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>One-Click Student Progress Report Generator</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-4">
+                    Generate comprehensive progress reports for any student with one click. Advanced AI-powered analytics and insights included.
+                  </p>
+                  <div className="space-y-4">
+                    <ProgressReportGenerator studentId="admin-view" studentName="Admin Dashboard" />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="achievement-playground" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Achievement Playground Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p style={{color: themeStyles.textSecondary}} className="mb-4">
+                    Manage student achievement playgrounds and monitor gamified progress across all students
+                  </p>
+                  <div className="space-y-4">
+                    <AchievementPlayground studentId="" className="border-0" />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="performance-heatmap" className="space-y-6">
+              <TeacherPerformanceHeatmap />
+            </TabsContent>
+
+            <TabsContent value="ai-recommendations" className="space-y-6">
+              <AIRecommendationEngine />
             </TabsContent>
           </Tabs>
 

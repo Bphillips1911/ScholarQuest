@@ -77,20 +77,7 @@ export function ProgressReportGenerator({ studentId, studentName, onReportGenera
         throw new Error('No student selected');
       }
       
-      const token = localStorage.getItem('adminToken') || localStorage.getItem('teacherToken');
-      const response = await fetch(`/api/teacher/progress-report/${targetStudentId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(data)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
+      const response = await apiRequest('POST', `/api/teacher/progress-report/${targetStudentId}`, data);
       return await response.json();
     },
     onSuccess: (report) => {

@@ -202,6 +202,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (admin && (admin.isApproved || admin.title === "Principal")) {
           req.admin = admin;
+          // Also set teacher-like properties for compatibility
+          req.teacher = {
+            id: admin.id,
+            name: admin.name,
+            email: admin.email,
+            role: 'Administration',
+            gradeRole: 'Administration',
+            subject: null,
+            canSeeGrades: [6, 7, 8]
+          };
           return next();
         }
       } catch (adminError) {

@@ -38,7 +38,7 @@ export class ProgressReportService {
       const dateRange = this.calculateDateRange(reportType, customDateRange);
       
       // Get PBIS entries for the period
-      const pbisEntries = await db.select().from(pbisEntries)
+      const studentPbisEntries = await db.select().from(pbisEntries)
         .where(and(
           eq(pbisEntries.scholarId, studentId),
           gte(pbisEntries.createdAt, dateRange.start),
@@ -47,7 +47,7 @@ export class ProgressReportService {
         .orderBy(desc(pbisEntries.createdAt));
 
       // Get behavioral reflections for the period
-      const reflections = await db.select().from(reflections)
+      const studentReflections = await db.select().from(reflections)
         .where(and(
           eq(reflections.scholarId, studentId),
           gte(reflections.assignedAt, dateRange.start),
@@ -56,7 +56,7 @@ export class ProgressReportService {
         .orderBy(desc(reflections.assignedAt));
 
       // Calculate comprehensive analytics
-      const analytics = this.calculateAnalytics(student, pbisEntries, reflections, house);
+      const analytics = this.calculateAnalytics(student, studentPbisEntries, studentReflections, house);
       
       // Generate recommendations
       const recommendations = this.generateRecommendations(analytics);

@@ -59,19 +59,7 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
   // Generate new recommendations mutation
   const generateRecommendationsMutation = useMutation({
     mutationFn: async (targetStudentId: string) => {
-      const token = localStorage.getItem('adminToken') || localStorage.getItem('teacherToken');
-      const response = await fetch(`/api/teacher/recommendations/generate/${targetStudentId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
+      const response = await apiRequest('POST', `/api/teacher/recommendations/generate/${targetStudentId}`, {});
       return await response.json();
     },
     onSuccess: () => {
@@ -93,20 +81,10 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
   // Update recommendation status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, feedback }: { id: string; status: string; feedback?: string }) => {
-      const token = localStorage.getItem('adminToken') || localStorage.getItem('teacherToken');
-      const response = await fetch(`/api/teacher/recommendations/${id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status, implementationFeedback: feedback })
+      const response = await apiRequest('PUT', `/api/teacher/recommendations/${id}/status`, { 
+        status, 
+        implementationFeedback: feedback 
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
       return await response.json();
     },
     onSuccess: (_, variables) => {

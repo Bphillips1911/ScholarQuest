@@ -92,7 +92,6 @@ export interface IStorage {
   getScholarsByHouse(houseId: string): Promise<Scholar[]>;
   getScholarsByGrade(grade: number): Promise<Scholar[]>;
   getScholar(id: string): Promise<Scholar | undefined>;
-  getStudent(id: string): Promise<Scholar | undefined>;
   getScholarByUsername(username: string): Promise<Scholar | undefined>;
   getScholarByStudentId(studentId: string): Promise<Scholar | undefined>;
   getAllScholars(): Promise<Scholar[]>;
@@ -536,10 +535,6 @@ export class MemStorage implements IStorage {
   }
 
   async getScholar(id: string): Promise<Scholar | undefined> {
-    return this.scholars.get(id);
-  }
-
-  async getStudent(id: string): Promise<Scholar | undefined> {
     return this.scholars.get(id);
   }
 
@@ -1934,11 +1929,6 @@ export class PersistentDatabaseStorage implements IStorage {
   }
 
   async getScholar(id: string): Promise<Scholar | undefined> {
-    const [scholar] = await db.select().from(scholars).where(eq(scholars.id, id));
-    return scholar;
-  }
-
-  async getStudent(id: string): Promise<Scholar | undefined> {
     const [scholar] = await db.select().from(scholars).where(eq(scholars.id, id));
     return scholar;
   }

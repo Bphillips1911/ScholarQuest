@@ -29,9 +29,8 @@ export async function apiRequest(
   if ((url.startsWith('/api/student/') || url.startsWith('/api/mood/') || 
        url.startsWith('/api/progress/') || url.startsWith('/api/reflection/')) && studentToken) {
     headers.Authorization = `Bearer ${studentToken}`;
-  } else if (url.startsWith('/api/teacher/') && (teacherToken || adminToken)) {
-    // Use admin token for teacher routes if admin is logged in
-    headers.Authorization = `Bearer ${adminToken || teacherToken}`;
+  } else if (url.startsWith('/api/teacher/') && teacherToken) {
+    headers.Authorization = `Bearer ${teacherToken}`;
   } else if (url.startsWith('/api/parent/') && parentToken) {
     headers.Authorization = `Bearer ${parentToken}`;
   } else if (url.startsWith('/api/admin/') && adminToken) {

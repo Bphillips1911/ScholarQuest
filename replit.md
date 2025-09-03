@@ -2,7 +2,7 @@
 
 The "PBIS House of Champions" is a web application for Bush Hills STEAM Academy, designed to manage a house points system. It allows students to earn points for academic, attendance, and behavioral achievements within a comprehensive Positive Behavioral Interventions and Supports (PBIS) framework. Key features include individual teacher dashboards for recognizing "MUSTANG" traits, a house sorting generator, photo upload capabilities, and program information for parents. The application also incorporates the official BHSA Mustangs Crest logo, robust administrator authentication with role-based permissions, and a bi-directional parent-teacher messaging system. The project aims to foster positive behavior, academic achievement, and school pride.
 
-**Latest Update (September 2025):** Completely modernized teacher and admin dashboards with glassmorphism effects, gradient animations, and competitive market-level UI design. Both Progress Report Generator and AI Recommendation Engine are fully operational with enhanced authentication and database fixes.
+**Latest Update (September 2025):** Restored original teacher and admin dashboards based on user preference. Original admin-new.tsx and teacher-dashboard.tsx are now the default routes at `/admin` and `/teacher-dashboard`. Modern versions remain available at `/admin-modern` and `/teacher-dashboard-modern`. All original functionality, features, and capabilities have been preserved with proper database property fixes applied. Progress Report Generator and AI Recommendation Engine are fully operational in both dashboard versions.
 
 # User Preferences
 

@@ -586,7 +586,7 @@ export default function AdminNew() {
                       {pendingTeachers.map((teacher) => (
                         <div key={teacher.id} className="flex items-center justify-between p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
                           <div className="flex-1">
-                            <p className="font-medium" style={{color: themeStyles.textPrimary}}>{teacher.firstName} {teacher.lastName}</p>
+                            <p className="font-medium" style={{color: themeStyles.textPrimary}}>{teacher.name}</p>
                             <p className="text-sm" style={{color: themeStyles.textSecondary}}>{teacher.email}</p>
                             <p className="text-sm" style={{color: themeStyles.textSecondary}}>{teacher.gradeRole} • {teacher.subject}</p>
                             <p className="text-xs" style={{color: themeStyles.textSecondary}}>
@@ -657,7 +657,7 @@ export default function AdminNew() {
                       <div>
                         <p className="text-sm font-medium" style={{color: themeStyles.textSecondary}}>Badges Earned</p>
                         <p className="text-2xl font-bold" style={{color: themeStyles.textPrimary}}>
-                          {scholarBadges?.length || 0}
+                          {(allBadges?.length || 0)}
                         </p>
                       </div>
                     </div>
@@ -685,7 +685,7 @@ export default function AdminNew() {
                       <div className="grid gap-4">
                         {allScholars.map((scholar) => {
                           const house = houses?.find(h => h.id === scholar.houseId);
-                          const studentBadges = scholarBadges?.filter((sb: any) => sb.scholarId === scholar.id) || [];
+                          const studentBadges = [];
                           
                           return (
                             <div 
@@ -697,7 +697,7 @@ export default function AdminNew() {
                                 <div className="flex items-center space-x-3">
                                   <div>
                                     <p className="font-medium" style={{color: themeStyles.textPrimary}}>
-                                      {scholar.firstName} {scholar.lastName}
+                                      {scholar.name}
                                     </p>
                                     <p className="text-sm" style={{color: themeStyles.textSecondary}}>
                                       ID: {scholar.id.slice(0, 8)}... • Grade: {scholar.grade}
@@ -723,7 +723,7 @@ export default function AdminNew() {
                                 </Badge>
                                 <div className="text-right">
                                   <p className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>
-                                    {scholar.totalPoints || 0} points
+                                    {(scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints) || 0} points
                                   </p>
                                   <p className="text-xs" style={{color: themeStyles.textSecondary}}>
                                     Joined: {scholar.createdAt ? new Date(scholar.createdAt).toLocaleDateString() : 'Recently'}
@@ -759,7 +759,7 @@ export default function AdminNew() {
                           <h3 className="font-bold" style={{color: house.color}}>
                             {house.name}
                           </h3>
-                          <p className="text-sm" style={{color: themeStyles.textSecondary}}>{house.description}</p>
+                          <p className="text-sm" style={{color: themeStyles.textSecondary}}>{house.motto}</p>
                           <div className="mt-2">
                             <Badge>
                               {allScholars?.filter(s => s.houseId === house.id).length || 0} students
@@ -1166,7 +1166,8 @@ export default function AdminNew() {
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
-                                e.currentTarget.nextElementSibling!.style.display = 'flex';
+                                const next = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (next) next.style.display = 'flex';
                               }}
                             />
                             <div className="hidden w-full h-full items-center justify-center text-gray-400">

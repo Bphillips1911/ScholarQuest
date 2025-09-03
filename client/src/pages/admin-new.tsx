@@ -486,6 +486,7 @@ export default function AdminNew() {
   };
 
   return (
+    <>
     <div style={{
       minHeight: '100vh',
       background: themeStyles.background
@@ -2879,5 +2880,6 @@ export default function AdminNew() {
       )}
       </div>
     </div>
+    </>
   );
 }

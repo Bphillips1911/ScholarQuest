@@ -160,32 +160,50 @@ export function TeacherPerformanceHeatmap({ className }: TeacherPerformanceHeatm
 
   // Export performance data
   const exportPerformanceData = () => {
-    if (!heatmapData) return;
-    
-    const csvData = heatmapData.teachers.map((teacher: TeacherPerformanceData) => ({
-      Teacher: teacher.teacherName,
-      Grade: teacher.grade,
-      'Effectiveness Rating': teacher.effectivenessRating,
-      'Student Engagement': teacher.studentEngagementScore,
-      'PBIS Points': teacher.pbisPointsAwarded,
-      'Parent Communications': teacher.parentCommunications,
-      'Response Time (Hours)': teacher.avgResponseTime,
-      'Students Managed': teacher.totalStudentsManaged,
-      'Date Range': `${selectedDateRange} days`
-    }));
+    try {
+      if (!heatmapData || !heatmapData.teachers || heatmapData.teachers.length === 0) {
+        alert('No performance data available to export.');
+        return;
+      }
+      
+      console.log('Exporting performance data:', heatmapData.teachers.length, 'teachers');
+      
+      const csvData = heatmapData.teachers.map((teacher: TeacherPerformanceData) => ({
+        Teacher: teacher.teacherName || 'Unknown',
+        Grade: teacher.grade || 'N/A',
+        'Effectiveness Rating': teacher.effectivenessRating || 0,
+        'Student Engagement': teacher.studentEngagementScore || 0,
+        'PBIS Points': teacher.pbisPointsAwarded || 0,
+        'Parent Communications': teacher.parentCommunications || 0,
+        'Response Time (Hours)': teacher.avgResponseTime || 0,
+        'Students Managed': teacher.totalStudentsManaged || 0,
+        'Date Range': `${selectedDateRange} days`
+      }));
 
-    const csvString = [
-      Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
-    ].join('\n');
+      const csvString = [
+        Object.keys(csvData[0]).join(','),
+        ...csvData.map(row => Object.values(row).map(val => 
+          typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+        ).join(','))
+      ].join('\n');
 
-    const blob = new Blob([csvString], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `teacher-performance-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `teacher-performance-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('Export completed successfully');
+      alert(`Performance data exported successfully! File: teacher-performance-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export performance data. Please try again.');
+    }
   };
 
   if (isLoading) {

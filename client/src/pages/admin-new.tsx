@@ -90,6 +90,8 @@ export default function AdminNew() {
   const [selectedHouseName, setSelectedHouseName] = useState("");
   const [showHouseStudentsModal, setShowHouseStudentsModal] = useState(false);
   const [selectedStudentForDashboard, setSelectedStudentForDashboard] = useState("");
+  const [showCreateBadgeModal, setShowCreateBadgeModal] = useState(false);
+  const [showMassAwardModal, setShowMassAwardModal] = useState(false);
   const [qrCodeStudentId, setQrCodeStudentId] = useState("");
 
   useEffect(() => {
@@ -339,7 +341,8 @@ export default function AdminNew() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sendAdminCopy: true // Request admin copy
+          sendAdminCopy: true,
+          adminCopyEmail: "bhsahouses25@gmail.com"
         }),
       });
       if (!response.ok) throw new Error("Failed to send teacher notifications");
@@ -349,7 +352,7 @@ export default function AdminNew() {
       const { details } = data;
       toast({
         title: "Teacher Welcome Emails Sent",
-        description: `Welcome emails sent to ${details.success || 0} teachers successfully. Admin copies sent to ${adminData?.email || 'administrator'}.`,
+        description: `Welcome emails sent to ${details.success || 0} teachers successfully. Admin copies sent to bhsahouses25@gmail.com.`,
       });
       
       // Refresh teacher data
@@ -560,42 +563,42 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 gap-1 mb-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Teachers</TabsTrigger>
-              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Eye className="h-3 w-3 mr-1" />
+            <TabsList className="grid w-full grid-cols-6 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+                <Eye className="h-4 w-4 mr-1" />
                 Viewer
               </TabsTrigger>
-              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Students</TabsTrigger>
-              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Houses</TabsTrigger>
-              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Badges</TabsTrigger>
-              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Games</TabsTrigger>
+              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Students</TabsTrigger>
+              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Houses</TabsTrigger>
+              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Badges</TabsTrigger>
+              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Games</TabsTrigger>
             </TabsList>
             
-            <TabsList className="grid w-full grid-cols-6 gap-1 mb-1" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Quick Actions</TabsTrigger>
-              <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>AI Stories</TabsTrigger>
-              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Messages</TabsTrigger>
-              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Gallery</TabsTrigger>
-              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Reflections</TabsTrigger>
-              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>Data Export</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Quick Actions</TabsTrigger>
+              <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>AI Stories</TabsTrigger>
+              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Messages</TabsTrigger>
+              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Reflections</TabsTrigger>
+              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Data Export</TabsTrigger>
             </TabsList>
 
-            <TabsList className="grid w-full grid-cols-4 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '2px'}}>
-              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <FileText className="h-3 w-3 mr-1" />
+            <TabsList className="grid w-full grid-cols-4 gap-1 mb-3" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+                <FileText className="h-4 w-4 mr-1" />
                 Reports
               </TabsTrigger>
-              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Trophy className="h-3 w-3 mr-1" />
+              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+                <Trophy className="h-4 w-4 mr-1" />
                 Achievement
               </TabsTrigger>
-              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <BarChart3 className="h-3 w-3 mr-1" />
+              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+                <BarChart3 className="h-4 w-4 mr-1" />
                 Analytics
               </TabsTrigger>
-              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '6px 8px', fontSize: '12px'}}>
-                <Brain className="h-3 w-3 mr-1" />
+              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+                <Brain className="h-4 w-4 mr-1" />
                 AI Engine
               </TabsTrigger>
             </TabsList>
@@ -630,7 +633,7 @@ export default function AdminNew() {
                     <div className="text-sm text-gray-600 mt-2">
                       <p className="flex items-center">
                         <Mail className="w-4 h-4 mr-2" />
-                        Welcome emails include login credentials and system overview. Admin copies will be sent to {adminData?.email || 'you'}.
+                        Welcome emails include login credentials and system overview. Admin copies will be sent to bhsahouses25@gmail.com.
                       </p>
                     </div>
                     
@@ -1189,73 +1192,257 @@ export default function AdminNew() {
             </TabsContent>
 
             <TabsContent value="badges" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                {/* Badge Management Header */}
                 <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                   <CardHeader>
-                    <CardTitle style={{color: themeStyles.textPrimary}}>Badge Overview ({allBadges?.length || 0} Total)</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle style={{color: themeStyles.textPrimary}}>Badge Management System</CardTitle>
+                      <div className="flex gap-2">
+                        <Button className="bg-purple-600 hover:bg-purple-700" size="sm">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create New Badge
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Download className="w-4 h-4 mr-2" />
+                          Export Badge Data
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Upload className="w-4 h-4 mr-2" />
+                          Bulk Award Badges
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {allBadges && allBadges.length > 0 ? (
-                        allBadges.map((badge: any) => (
-                          <div key={badge.id} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}>
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex-1">
-                                <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>{badge.name}</h4>
-                                <p className="text-sm" style={{color: themeStyles.textSecondary}}>{badge.description}</p>
-                              </div>
-                              <Badge variant={badge.category === 'overall' ? 'default' : 'secondary'}>
-                                Level {badge.level}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span style={{color: themeStyles.textSecondary}}>
-                                {badge.category} • {badge.pointsRequired} points
-                              </span>
-                              <span style={{color: themeStyles.textSecondary}}>
-                                {badge.houseId ? badge.houseId.charAt(0).toUpperCase() + badge.houseId.slice(1) : 'Universal'}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-8">
-                          <Award className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                          <p style={{color: themeStyles.textSecondary}}>No badges found</p>
-                        </div>
-                      )}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-blue-600">{allBadges?.length || 0}</p>
+                        <p className="text-sm text-blue-600">Total Badges</p>
+                      </div>
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-green-600">{allBadges?.filter((b: any) => b.category === 'academic').length || 0}</p>
+                        <p className="text-sm text-green-600">Academic Badges</p>
+                      </div>
+                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-orange-600">{allBadges?.filter((b: any) => b.category === 'behavioral').length || 0}</p>
+                        <p className="text-sm text-orange-600">Behavioral Badges</p>
+                      </div>
+                      <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-purple-600">{allBadges?.filter((b: any) => b.category === 'overall').length || 0}</p>
+                        <p className="text-sm text-purple-600">Achievement Badges</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-
+                
                 <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                   <CardHeader>
                     <CardTitle style={{color: themeStyles.textPrimary}}>Badge Categories</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {['academic', 'behavior', 'attendance', 'overall'].map(category => {
-                        const categoryBadges = allBadges?.filter((b: any) => b.category === category) || [];
-                        return (
-                          <div key={category} className="p-3 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium capitalize" style={{color: themeStyles.textPrimary}}>
-                                {category}
-                              </span>
-                              <Badge variant="outline">
-                                {categoryBadges.length} badges
-                              </Badge>
-                            </div>
-                            <p className="text-xs mt-1" style={{color: themeStyles.textSecondary}}>
-                              {categoryBadges.map((b: any) => `${b.pointsRequired}pts`).join(', ')}
-                            </p>
-                          </div>
-                        );
-                      })}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {['academic', 'behavioral', 'attendance', 'overall'].map((category) => (
+                        <div key={category} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}>
+                          <h4 className="font-medium capitalize mb-2" style={{color: themeStyles.textPrimary}}>{category} Badges</h4>
+                          <p className="text-sm mb-3" style={{color: themeStyles.textSecondary}}>
+                            {allBadges?.filter((b: any) => b.category === category).length || 0} badges in this category
+                          </p>
+                          <Button size="sm" className="w-full">
+                            View {category} Badges
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Badge Overview */}
+                  <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle style={{color: themeStyles.textPrimary}}>Badge Library</CardTitle>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline">
+                            <Search className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Filter className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {allBadges && allBadges.length > 0 ? (
+                          allBadges.map((badge: any) => (
+                            <div key={badge.id} className="p-3 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}>
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                      {badge.level}
+                                    </div>
+                                    <div>
+                                      <h4 className="font-medium text-sm" style={{color: themeStyles.textPrimary}}>{badge.name}</h4>
+                                      <p className="text-xs" style={{color: themeStyles.textSecondary}}>{badge.description}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <Badge variant={badge.category === 'overall' ? 'default' : 'secondary'} className="text-xs">
+                                  {badge.category}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span style={{color: themeStyles.textSecondary}}>
+                                  {badge.pointsRequired} points required
+                                </span>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                                    Edit
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                                    Award
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <Award className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                            <p style={{color: themeStyles.textSecondary}}>No badges found</p>
+                            <Button className="mt-4 bg-purple-600 hover:bg-purple-700" size="sm">
+                              <Plus className="w-4 h-4 mr-2" />
+                              Create First Badge
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Badge Analytics */}
+                  <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                    <CardHeader>
+                      <CardTitle style={{color: themeStyles.textPrimary}}>Badge Analytics</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+                          <h4 className="font-medium text-blue-800 mb-2">Most Popular Badges</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-blue-700">Academic Achiever</span>
+                              <Badge className="bg-blue-100 text-blue-800">47 awarded</Badge>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-blue-700">Perfect Attendance</span>
+                              <Badge className="bg-blue-100 text-blue-800">31 awarded</Badge>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-blue-700">House Spirit</span>
+                              <Badge className="bg-blue-100 text-blue-800">28 awarded</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                          <h4 className="font-medium text-green-800 mb-2">Recent Awards</h4>
+                          <div className="space-y-2">
+                            <div className="text-sm text-green-700">
+                              <span className="font-medium">3 badges</span> awarded in the last 24 hours
+                            </div>
+                            <div className="text-sm text-green-700">
+                              <span className="font-medium">15 badges</span> awarded this week
+                            </div>
+                            <div className="text-sm text-green-700">
+                              <span className="font-medium">89 badges</span> awarded this month
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <Button className="w-full bg-green-600 hover:bg-green-700" size="sm">
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          View Detailed Analytics
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Quick Badge Actions */}
+                  <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                    <CardHeader>
+                      <CardTitle style={{color: themeStyles.textPrimary}}>Quick Badge Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <Users className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>Mass Badge Award</h4>
+                              <p className="text-sm" style={{color: themeStyles.textSecondary}}>Award badges to multiple students</p>
+                            </div>
+                          </div>
+                          <Button className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
+                            Start Mass Award
+                          </Button>
+                        </div>
+                        
+                        <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                              <Target className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>Achievement Tracker</h4>
+                              <p className="text-sm" style={{color: themeStyles.textSecondary}}>Track student progress toward badges</p>
+                            </div>
+                          </div>
+                          <Button className="w-full bg-purple-600 hover:bg-purple-700" size="sm">
+                            View Progress
+                          </Button>
+                        </div>
+                        
+                        <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                              <Calendar className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>Scheduled Awards</h4>
+                              <p className="text-sm" style={{color: themeStyles.textSecondary}}>Set up automatic badge awards</p>
+                            </div>
+                          </div>
+                          <Button className="w-full bg-green-600 hover:bg-green-700" size="sm">
+                            Schedule Awards
+                          </Button>
+                        </div>
+                        
+                        <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                              <Star className="w-5 h-5 text-orange-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>Badge Templates</h4>
+                              <p className="text-sm" style={{color: themeStyles.textSecondary}}>Pre-made badge templates</p>
+                            </div>
+                          </div>
+                          <Button className="w-full bg-orange-600 hover:bg-orange-700" size="sm">
+                            Browse Templates
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
             </TabsContent>
 
             <TabsContent value="games" className="space-y-6">
@@ -2873,6 +3060,8 @@ export default function AdminNew() {
           }}
         />
       )}
+        </Tabs>
+      </div>
     </div>
   );
 }

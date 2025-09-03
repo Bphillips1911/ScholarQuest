@@ -199,12 +199,36 @@ export async function sendTestEmail(recipientEmail: string, recipientName: strin
 </html>
   `;
 
-  // Log the test email content for troubleshooting
-  console.log(`📧 TEST EMAIL CONTENT FOR ${recipientEmail}:`);
-  console.log(`Subject: 🧪 PBIS System - Email Test Successful`);
-  console.log(`Content: ${testEmailContent}`);
-  console.log(`----- END TEST EMAIL CONTENT -----`);
-  
-  console.log(`✅ Test email content generated for ${recipientEmail} (ready for manual distribution)`);
-  return true;
+  try {
+    const emailData = {
+      personalizations: [
+        {
+          to: [{ email: recipientEmail }],
+          subject: "🧪 PBIS System - Email Test Successful",
+        }
+      ],
+      from: { 
+        email: "bhsahouses25@gmail.com",
+        name: "Bush Hills STEAM Academy"
+      },
+      content: [
+        { type: 'text/html', value: testEmailContent }
+      ]
+    };
+    
+    await mailService.send(emailData);
+    console.log(`✅ Test email sent successfully to ${recipientEmail}`);
+    return true;
+  } catch (error: any) {
+    console.error(`❌ Test email failed to send to ${recipientEmail}:`, error.message || error);
+    
+    // Log the email content for manual fallback
+    console.log(`📧 TEST EMAIL CONTENT FOR ${recipientEmail} (manual fallback):`);
+    console.log(`Subject: 🧪 PBIS System - Email Test Successful`);
+    console.log(`Content: ${testEmailContent}`);
+    console.log(`----- END TEST EMAIL CONTENT -----`);
+    
+    // Return false to indicate failure
+    return false;
+  }
 }

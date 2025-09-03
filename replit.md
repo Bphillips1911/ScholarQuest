@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Authentication and Authorization
 - **Administrator**: Role-based permissions (Principal, Assistant Principal, Counselor, Database Manager) with approval system.
-- **Teacher**: Grade-level permissions.
+- **Teacher**: Grade-level permissions with role-specific restrictions (Unified Arts teachers cannot add/deactivate students).
 - **Session Management**: JWT-based sessions.
 - **Credential Generation**: Automatic username/password generation for new students.
 
@@ -47,6 +47,7 @@ Preferred communication style: Simple, everyday language.
 - **Photo Management**: Bi-directional photo upload and gallery for teachers and administrators.
 - **Advanced UI System**: Micro-interactions, contextual emoji feedback, gamified achievement system, enhanced mobile responsiveness, and interactive house cards/achievement badges.
 - **House System**: Renamed to honor diverse STEAM pioneers (Johnson, Marshall, West, Drew, Tesla) with updated icons and storytelling.
+- **Role-Based Permissions**: Unified Arts teachers have restricted permissions - cannot add new students or deactivate student accounts, maintaining focus on their instructional role while preserving access to points, messaging, and class management features.
 
 # External Dependencies
 

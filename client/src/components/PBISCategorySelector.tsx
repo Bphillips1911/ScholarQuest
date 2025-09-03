@@ -153,7 +153,7 @@ export function PBISCategorySelector({
           {pbisCategories.map((category) => (
             <Card 
               key={category.id}
-              className={`cursor-pointer transition-all hover:shadow-md ${
+              className={`cursor-pointer transition-all hover:shadow-md border-0 ${
                 selectedCategory === category.id 
                   ? 'ring-2 ring-blue-500 bg-blue-50' 
                   : 'hover:bg-gray-50'
@@ -188,7 +188,7 @@ export function PBISCategorySelector({
             {selectedCategoryData.subcategories.map((subcategory) => (
               <Card 
                 key={subcategory.id}
-                className={`cursor-pointer transition-all hover:shadow-sm ${
+                className={`cursor-pointer transition-all hover:shadow-sm border-0 ${
                   selectedSubcategory === subcategory.id 
                     ? 'ring-2 ring-blue-500 bg-blue-50' 
                     : 'hover:bg-gray-50'

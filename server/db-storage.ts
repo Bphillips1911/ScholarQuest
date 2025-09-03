@@ -693,11 +693,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getScholarsByGrade(grade: number): Promise<Scholar[]> {
+  async getScholarsByGrade(gradeInput: string | number): Promise<Scholar[]> {
     try {
+      // Handle both string (e.g., "7th Grade") and number (e.g., 7) inputs
+      const grade = typeof gradeInput === 'string' 
+        ? parseInt(gradeInput.replace(/\D/g, '')) 
+        : gradeInput;
+      
+      console.log(`DATABASE: Getting scholars for grade ${grade}`);
       const scholars = await db.select()
         .from(schema.scholars)
         .where(eq(schema.scholars.grade, grade));
+      
+      console.log(`DATABASE: Found ${scholars.length} scholars for grade ${grade}`);
       return scholars;
     } catch (error) {
       console.error('Error getting scholars by grade:', error);
@@ -890,8 +898,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeacher(id: string): Promise<Teacher | undefined> {
-    const [teacher] = await db.select().from(schema.teachers).where(eq(schema.teachers.id, id));
-    return teacher || undefined;
+    // Use teacherAuth table since teachers table doesn't exist
+    const [teacher] = await db.select().from(teacherAuth).where(eq(teacherAuth.id, id));
+    if (!teacher) return undefined;
+    
+    // Convert teacherAuth to Teacher format with canSeeGrades
+    const gradeNumber = parseInt(teacher.gradeRole.replace(/\D/g, '')) || 0;
+    return {
+      id: teacher.id,
+      name: teacher.fullName,
+      email: teacher.email,
+      grade: gradeNumber,
+      subject: teacher.subject || '',
+      canSeeGrades: [gradeNumber]
+    };
   }
 
   async getTeacherByEmail(email: string): Promise<Teacher | undefined> {

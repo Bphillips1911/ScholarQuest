@@ -639,7 +639,7 @@ export default function AdminNew() {
                     </div>
                     
                     <Button
-                      onClick={() => sendTestEmailMutation.mutate({ email: "bphillips@bhm.k12.al.us", name: "Administrator" })}
+                      onClick={() => sendTestEmailMutation.mutate({ email: "bhsahouses25@gmail.com", name: "Administrator" })}
                       disabled={sendTestEmailMutation.isPending}
                       variant="outline"
                       className="border-green-600 text-green-600 hover:bg-green-50"
@@ -2395,7 +2395,7 @@ export default function AdminNew() {
       {/* Award MUSTANG Points Modal */}
       <Dialog open={showAwardPointsModal} onOpenChange={setShowAwardPointsModal}>
         <DialogContent className="max-w-2xl max-h-[90vh]">
-          <DialogHeader className="flex flex-row items-center justify-between sticky top-0 bg-white border-b pb-4">
+          <DialogHeader className="flex flex-row items-center justify-between sticky top-0 bg-white pb-4">
             <DialogTitle>Award MUSTANG Points</DialogTitle>
             <Button
               variant="outline"

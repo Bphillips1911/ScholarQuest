@@ -44,27 +44,7 @@ export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState<any>(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    const data = localStorage.getItem("adminData");
-    
-    if (token && data) {
-      try {
-        const parsedData = JSON.parse(data);
-        setAdminData(parsedData);
-        setIsAuthenticated(true);
-      } catch (error) {
-        // Invalid data, redirect to login
-        localStorage.removeItem("adminToken");
-        localStorage.removeItem("adminData");
-        setLocation("/admin-login");
-      }
-    } else {
-      setLocation("/admin-login");
-    }
-  }, [setLocation]);
-
-  // Fetch data hooks - must be called before any early returns
+  // Fetch data hooks - must be called before any conditional logic
   const { data: houses } = useQuery<House[]>({
     queryKey: ["/api/houses"],
     enabled: isAuthenticated,
@@ -100,6 +80,26 @@ export default function Admin() {
     queryKey: ["/api/admin/parents"],
     enabled: isAuthenticated && (activeTab === "messaging" || messageRecipientType === "parent"),
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    const data = localStorage.getItem("adminData");
+    
+    if (token && data) {
+      try {
+        const parsedData = JSON.parse(data);
+        setAdminData(parsedData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // Invalid data, redirect to login
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminData");
+        setLocation("/admin-login");
+      }
+    } else {
+      setLocation("/admin-login");
+    }
+  }, [setLocation]);
 
   // Show loading while checking authentication
   if (!isAuthenticated) {

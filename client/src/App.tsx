@@ -80,8 +80,8 @@ function Router() {
         <Route path="/gamified-learning" component={GamifiedLearning} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/admin-full" component={Admin} />
+        <Route path="/admin" component={AdminNew} />
+        <Route path="/admin-full" component={AdminNew} />
         <Route path="/admin-test" component={AdminNew} />
         <Route path="/admin-settings" component={AdminSettings} />
         <Route path="/admin-pbis" component={PBIS} />

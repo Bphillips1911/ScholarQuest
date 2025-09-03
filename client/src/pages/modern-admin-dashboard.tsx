@@ -54,7 +54,7 @@ import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 
 export default function ModernAdminDashboard() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("teachers");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -209,60 +209,79 @@ export default function ModernAdminDashboard() {
       {/* Modern Navigation */}
       <div className="container mx-auto px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-2 md:grid-cols-6 gap-2 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 p-1 h-auto">
-            <TabsTrigger 
-              value="overview" 
-              className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="students" 
-              className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200"
-            >
-              <GraduationCap className="h-4 w-4" />
-              <span className="hidden sm:inline">Students</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="teachers" 
-              className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200"
-            >
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Teachers</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="analytics" 
-              className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200"
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Analytics</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="ai-tools" 
-              className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200"
-            >
-              <Brain className="h-4 w-4" />
-              <span className="hidden sm:inline">AI Tools</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="messages" 
-              className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200"
-            >
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">Messages</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="gallery" 
-              className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200"
-            >
-              <Camera className="h-4 w-4" />
-              <span className="hidden sm:inline">Gallery</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
+            <TabsList className="grid grid-cols-6 gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 p-1 h-auto col-span-3 md:col-span-6">
+              <TabsTrigger value="teachers" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">
+                <Users className="h-3 w-3" />
+                <span className="hidden sm:inline">Teachers</span>
+              </TabsTrigger>
+              <TabsTrigger value="teacher-viewer" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white">
+                <Eye className="h-3 w-3" />
+                <span className="hidden sm:inline">Viewer</span>
+              </TabsTrigger>
+              <TabsTrigger value="students" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white">
+                <GraduationCap className="h-3 w-3" />
+                <span className="hidden sm:inline">Students</span>
+              </TabsTrigger>
+              <TabsTrigger value="houses" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white">
+                <Trophy className="h-3 w-3" />
+                <span className="hidden sm:inline">Houses</span>
+              </TabsTrigger>
+              <TabsTrigger value="badges" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white">
+                <Award className="h-3 w-3" />
+                <span className="hidden sm:inline">Badges</span>
+              </TabsTrigger>
+              <TabsTrigger value="games" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">
+                <Sparkles className="h-3 w-3" />
+                <span className="hidden sm:inline">Games</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+            <TabsList className="grid grid-cols-4 gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 p-1 h-auto col-span-2 md:col-span-4">
+              <TabsTrigger value="messaging" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">
+                <MessageSquare className="h-3 w-3" />
+                <span className="hidden sm:inline">Messages</span>
+              </TabsTrigger>
+              <TabsTrigger value="gallery" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white">
+                <Camera className="h-3 w-3" />
+                <span className="hidden sm:inline">Gallery</span>
+              </TabsTrigger>
+              <TabsTrigger value="reflections" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+                <FileText className="h-3 w-3" />
+                <span className="hidden sm:inline">Reflections</span>
+              </TabsTrigger>
+              <TabsTrigger value="exports" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-500 data-[state=active]:to-gray-600 data-[state=active]:text-white">
+                <Download className="h-3 w-3" />
+                <span className="hidden sm:inline">Exports</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+            <TabsList className="grid grid-cols-4 gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 p-1 h-auto col-span-2 md:col-span-4">
+              <TabsTrigger value="progress-reports" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white">
+                <BarChart3 className="h-3 w-3" />
+                <span className="hidden sm:inline">Reports</span>
+              </TabsTrigger>
+              <TabsTrigger value="achievement-hub" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white">
+                <Trophy className="h-3 w-3" />
+                <span className="hidden sm:inline">Achievements</span>
+              </TabsTrigger>
+              <TabsTrigger value="performance" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white">
+                <TrendingUp className="h-3 w-3" />
+                <span className="hidden sm:inline">Performance</span>
+              </TabsTrigger>
+              <TabsTrigger value="ai-engine" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+                <Brain className="h-3 w-3" />
+                <span className="hidden sm:inline">AI Engine</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Teachers Tab */}
+          <TabsContent value="teachers" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Key Metrics Cards */}
               <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
@@ -373,61 +392,194 @@ export default function ModernAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* AI Tools Tab */}
-          <TabsContent value="ai-tools" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-500" />
-                    Progress Report Generator
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ProgressReportGenerator />
-                </CardContent>
-              </Card>
+          {/* Teacher Viewer Tab */}
+          <TabsContent value="teacher-viewer" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-blue-500" />
+                  Teacher Management & Analytics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AdminTeacherViewer />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-purple-500" />
-                    AI Recommendation Engine
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <AIRecommendationEngine />
-                </CardContent>
-              </Card>
-            </div>
-
+          {/* Houses Tab */}
+          <TabsContent value="houses" className="space-y-6">
             <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-yellow-500" />
-                  Achievement Playground
+                  House Standings & Management
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <AchievementPlayground />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {houses?.map((house: House, index) => (
+                    <Card key={house.id} className="relative overflow-hidden group hover:scale-105 transition-transform duration-200" style={{ backgroundColor: `${house.color}15`, borderColor: house.color }}>
+                      <CardContent className="p-6 text-center">
+                        <div className="h-16 w-16 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-2xl" style={{ backgroundColor: house.color }}>
+                          {house.name.charAt(0)}
+                        </div>
+                        <h3 className="font-bold text-lg mb-2">{house.name}</h3>
+                        <div className="space-y-2">
+                          <div className="bg-white/50 rounded-lg p-2">
+                            <p className="text-sm font-medium">Total Points</p>
+                            <p className="text-2xl font-bold" style={{ color: house.color }}>{house.totalPoints}</p>
+                          </div>
+                          <Badge className="w-full" style={{ backgroundColor: house.color, color: 'white' }}>
+                            Rank #{index + 1}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
-                  Teacher Performance Heatmap
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TeacherPerformanceHeatmap />
-              </CardContent>
-            </Card>
+          {/* Badges Tab */}
+          <TabsContent value="badges" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-green-500" />
+                    Badge Overview ({allBadges?.length || 0} Total)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {allBadges?.map((badge: any) => (
+                      <div key={badge.id} className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-green-900">{badge.name}</h4>
+                            <p className="text-sm text-green-700">{badge.description}</p>
+                          </div>
+                          <Badge variant={badge.category === 'overall' ? 'default' : 'secondary'}>
+                            Level {badge.level}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-green-600">
+                          <span>{badge.category} • {badge.pointsRequired} points</span>
+                          <span>{badge.houseId ? badge.houseId.charAt(0).toUpperCase() + badge.houseId.slice(1) : 'Universal'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+                <CardHeader>
+                  <CardTitle>Badge Categories</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {['academic', 'behavior', 'attendance', 'overall'].map(category => {
+                      const categoryBadges = allBadges?.filter((b: any) => b.category === category) || [];
+                      return (
+                        <div key={category} className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium capitalize text-blue-900">{category}</span>
+                            <Badge variant="outline">{categoryBadges.length} badges</Badge>
+                          </div>
+                          <p className="text-xs mt-1 text-blue-700">
+                            {categoryBadges.map((b: any) => `${b.pointsRequired}pts`).join(', ')}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
+
+          {/* Games Tab */}
+          <TabsContent value="games" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-500" />
+                    Game Library ({allGames?.length || 0} Games)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {allGames?.map((game: any) => (
+                      <div key={game.id} className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-purple-900">{game.name}</h4>
+                            <p className="text-sm text-purple-700">{game.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={game.difficulty === 'easy' ? 'default' : game.difficulty === 'medium' ? 'secondary' : 'destructive'}>
+                              {game.difficulty}
+                            </Badge>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedGame(game);
+                                setShowGameModal(true);
+                              }}
+                              className="bg-purple-500 text-white hover:bg-purple-600"
+                            >
+                              Test Game
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-purple-600">
+                          <span>{game.category} • {game.pointsRequired} points required</span>
+                          <span className={`px-2 py-1 rounded ${game.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {game.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+                <CardHeader>
+                  <CardTitle>Game Categories</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {['sports', 'puzzle', 'strategy', 'arcade', 'adventure', 'racing'].map(category => {
+                      const categoryGames = allGames?.filter((g: any) => g.category === category) || [];
+                      return (
+                        <div key={category} className="p-3 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium capitalize text-indigo-900">{category}</span>
+                            <Badge variant="outline">{categoryGames.length} games</Badge>
+                          </div>
+                          {categoryGames.length > 0 && (
+                            <p className="text-xs mt-1 text-indigo-700">
+                              {categoryGames.map((g: any) => g.name).slice(0, 2).join(', ')}
+                              {categoryGames.length > 2 && ` +${categoryGames.length - 2} more`}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Messaging Tab */}
+          <TabsContent value="messaging" className="space-y-6">
 
           {/* Students Tab */}
           <TabsContent value="students" className="space-y-6">
@@ -504,8 +656,8 @@ export default function ModernAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Messages Tab */}
-          <TabsContent value="messages" className="space-y-6">
+          {/* Messaging Tab (renamed from messages) */}
+          <TabsContent value="messaging" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
                 <CardHeader>
@@ -645,6 +797,201 @@ export default function ModernAdminDashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Reflections Tab */}
+          <TabsContent value="reflections" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-indigo-500" />
+                  Behavioral Reflection Logs
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ReflectionLogs />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Exports Tab */}
+          <TabsContent value="exports" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5 text-slate-500" />
+                  Data Export Center
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button 
+                    onClick={() => window.open('/api/admin/export/scholars', '_blank')}
+                    className="flex items-center gap-2 h-20 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
+                  >
+                    <Download className="h-6 w-6" />
+                    <div className="text-left">
+                      <div className="font-semibold">Export Students</div>
+                      <div className="text-sm opacity-75">Download all student data</div>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => window.open('/api/admin/export/pbis', '_blank')}
+                    className="flex items-center gap-2 h-20 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+                  >
+                    <Download className="h-6 w-6" />
+                    <div className="text-left">
+                      <div className="font-semibold">Export PBIS Data</div>
+                      <div className="text-sm opacity-75">Download all PBIS entries</div>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => window.open('/api/admin/export/houses', '_blank')}
+                    className="flex items-center gap-2 h-20 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                  >
+                    <Download className="h-6 w-6" />
+                    <div className="text-left">
+                      <div className="font-semibold">Export House Data</div>
+                      <div className="text-sm opacity-75">Download house standings</div>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => window.open('/api/admin/export/reflections', '_blank')}
+                    className="flex items-center gap-2 h-20 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                  >
+                    <Download className="h-6 w-6" />
+                    <div className="text-left">
+                      <div className="font-semibold">Export Reflections</div>
+                      <div className="text-sm opacity-75">Download reflection logs</div>
+                    </div>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          </TabsContent>
+
+          {/* Progress Reports Tab */}
+          <TabsContent value="progress-reports" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-cyan-500" />
+                  AI-Powered Progress Report Generator
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ProgressReportGenerator />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Achievement Hub Tab */}
+          <TabsContent value="achievement-hub" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  Interactive Achievement Playground
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AchievementPlayground />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Performance Tab */}
+          <TabsContent value="performance" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-orange-500" />
+                  Teacher Performance Analytics & Heatmap
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TeacherPerformanceHeatmap />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* AI Engine Tab */}
+          <TabsContent value="ai-engine" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-violet-500" />
+                  AI-Powered Adaptive Recommendation Engine
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AIRecommendationEngine />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Progress Reports Tab */}
+          <TabsContent value="progress-reports" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-cyan-500" />
+                  AI-Powered Progress Report Generator
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ProgressReportGenerator />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Achievement Hub Tab */}
+          <TabsContent value="achievement-hub" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  Interactive Achievement Playground
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AchievementPlayground />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Performance Tab */}
+          <TabsContent value="performance" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-orange-500" />
+                  Teacher Performance Analytics & Heatmap
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TeacherPerformanceHeatmap />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* AI Engine Tab */}
+          <TabsContent value="ai-engine" className="space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-violet-500" />
+                  AI-Powered Adaptive Recommendation Engine
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AIRecommendationEngine />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

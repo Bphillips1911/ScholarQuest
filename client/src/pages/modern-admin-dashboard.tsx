@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
@@ -16,7 +17,6 @@ import { AchievementPlayground } from "@/components/AchievementPlayground";
 import { TeacherPerformanceHeatmap } from "@/components/TeacherPerformanceHeatmap";
 import { AIRecommendationEngine } from "@/components/AIRecommendationEngine";
 import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
-import { useLocation } from "wouter";
 import { 
   Users, 
   GraduationCap, 
@@ -59,367 +59,462 @@ export default function ModernAdminDashboard() {
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState<any>(null);
+  const [currentTheme, setCurrentTheme] = useState<'normal' | 'light' | 'dark'>('normal');
 
-  // Message form state
-  const [messageForm, setMessageForm] = useState({
-    subject: "",
-    message: "",
-    recipientType: ""
-  });
+  // Theme toggle function
+  const toggleTheme = () => {
+    setCurrentTheme(prev => {
+      if (prev === 'normal') return 'light';
+      if (prev === 'light') return 'dark';
+      return 'normal';
+    });
+  };
 
-  // Photo upload state
+  // Theme styles
+  const themeStyles = {
+    normal: {
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      cardBg: '#ffffff',
+      textPrimary: '#1a202c',
+      textSecondary: '#4a5568',
+      border: '#e2e8f0'
+    },
+    light: {
+      background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+      cardBg: '#f7fafc',
+      textPrimary: '#2d3748',
+      textSecondary: '#4a5568',
+      border: '#cbd5e0'
+    },
+    dark: {
+      background: 'linear-gradient(135deg, #2d3748 0%, #4a5568 100%)',
+      cardBg: '#2d3748',
+      textPrimary: '#f7fafc',
+      textSecondary: '#cbd5e0',
+      border: '#4a5568'
+    }
+  }[currentTheme];
+
+  // Photo upload states
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [photoDescription, setPhotoDescription] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
-
-  // Theme state
-  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'normal'>('normal');
-  
-  // Game modal state
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [showGameModal, setShowGameModal] = useState(false);
 
+  // Authentication check
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
-    const data = localStorage.getItem("adminData");
-    const savedTheme = localStorage.getItem("adminTheme") as 'light' | 'dark' | 'normal' || 'normal';
+    const storedAdminData = localStorage.getItem("adminData");
     
-    setCurrentTheme(savedTheme);
-    
-    if (token && data) {
-      try {
-        const parsedData = JSON.parse(data);
-        setAdminData(parsedData);
-        setIsAuthenticated(true);
-      } catch (error) {
-        localStorage.removeItem("adminToken");
-        localStorage.removeItem("adminData");
-        setLocation("/admin-login");
-      }
+    if (token && storedAdminData) {
+      setIsAuthenticated(true);
+      setAdminData(JSON.parse(storedAdminData));
     } else {
       setLocation("/admin-login");
     }
   }, [setLocation]);
 
-  // Theme toggle function
-  const toggleTheme = () => {
-    const themes: ('light' | 'dark' | 'normal')[] = ['normal', 'light', 'dark'];
-    const currentIndex = themes.indexOf(currentTheme);
-    const nextTheme = themes[(currentIndex + 1) % themes.length];
-    setCurrentTheme(nextTheme);
-    localStorage.setItem("adminTheme", nextTheme);
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminData");
+    setLocation("/admin-login");
   };
 
-  // Fetch data hooks
-  const { data: houses } = useQuery<House[]>({
-    queryKey: ["/api/houses"],
+  // Fetch all data
+  const { data: pendingTeachers = [] } = useQuery({
+    queryKey: ["/api/admin/teachers/pending"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/teachers/pending", {
+        headers: { "Authorization": `Bearer ${localStorage.getItem("adminToken")}` }
+      });
+      if (!response.ok) throw new Error("Failed to fetch pending teachers");
+      return response.json();
+    },
     enabled: isAuthenticated,
   });
 
-  const { data: allScholars } = useQuery<Scholar[]>({
+  const { data: allScholars = [] } = useQuery({
     queryKey: ["/api/scholars"],
     enabled: isAuthenticated,
   });
 
-  const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
-    queryKey: ["/api/admin/teachers/pending"],
+  const { data: houses = [] } = useQuery({
+    queryKey: ["/api/houses"],
     enabled: isAuthenticated,
   });
 
-  // Fetch admin messages
-  const { data: adminMessages = [] } = useQuery({
-    queryKey: ["/api/admin/messages"],
-    enabled: isAuthenticated,
-  });
-
-  // Fetch gallery photos for admin
-  const { data: galleryPhotos = [] } = useQuery({
-    queryKey: ["/api/pbis-photos"],
-    enabled: isAuthenticated,
-  });
-
-  // Fetch badges data
   const { data: allBadges = [] } = useQuery({
     queryKey: ["/api/badges"],
     enabled: isAuthenticated,
   });
 
-  // Fetch games data
   const { data: allGames = [] } = useQuery({
     queryKey: ["/api/games"],
     enabled: isAuthenticated,
   });
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminData");
-    setLocation("/admin-login");
-    toast({
-      title: "Logged out successfully",
-      description: "You have been safely logged out of the admin portal.",
-    });
+  const { data: galleryPhotos = [] } = useQuery({
+    queryKey: ["/api/pbis-photos"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: adminMessages = [] } = useQuery({
+    queryKey: ["/api/admin/messages"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/messages", {
+        headers: { "Authorization": `Bearer ${localStorage.getItem("adminToken")}` }
+      });
+      if (!response.ok) throw new Error("Failed to fetch messages");
+      return response.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  // Mutations
+  const approveTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      return apiRequest(`/api/admin/approve-teacher/${teacherId}`, { method: "POST" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teachers/pending"] });
+      toast({ title: "Teacher approved successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to approve teacher", variant: "destructive" });
+    },
+  });
+
+  const sendTeacherNotificationsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/admin/send-teacher-notifications", { method: "POST" });
+    },
+    onSuccess: () => {
+      toast({ title: "Notifications sent successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to send notifications", variant: "destructive" });
+    },
+  });
+
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async (data: { email: string; name: string }) => {
+      return apiRequest("/api/admin/send-test-email", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Test email sent successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to send test email", variant: "destructive" });
+    },
+  });
+
+  const uploadPhotoMutation = useMutation({
+    mutationFn: async ({ file, description }: { file: File; description: string }) => {
+      const formData = new FormData();
+      formData.append("photo", file);
+      formData.append("description", description);
+      formData.append("uploadedBy", adminData?.firstName + " " + adminData?.lastName || "Admin");
+
+      const response = await fetch("/api/upload-pbis-photo", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${localStorage.getItem("adminToken")}` },
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Failed to upload photo");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pbis-photos"] });
+      setUploadedFile(null);
+      setPhotoDescription("");
+      setShowUploadModal(false);
+      toast({ title: "Photo uploaded successfully" });
+    },
+    onError: () => {
+      toast({ title: "Upload failed", variant: "destructive" });
+    },
+  });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setUploadedFile(file);
+    } else {
+      toast({ title: "Please select an image file", variant: "destructive" });
+    }
   };
 
-  if (!isAuthenticated) return null;
+  const handleUploadPhoto = () => {
+    if (!uploadedFile) {
+      toast({ title: "Please select a photo to upload", variant: "destructive" });
+      return;
+    }
+    uploadPhotoMutation.mutate({ file: uploadedFile, description: photoDescription });
+  };
+
+  if (!isAuthenticated) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
-      {/* Modern Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-white/20">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: themeStyles.background }}>
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse delay-700"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 bg-white/10 backdrop-blur-lg border-b border-white/20">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <img 
-                  src={schoolLogoPath} 
-                  alt="BHSA Mustangs" 
-                  className="h-12 w-12 rounded-full shadow-lg ring-2 ring-blue-500/20"
-                />
-                <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
-              </div>
+              <img 
+                src={schoolLogoPath} 
+                alt="Bush Hills STEAM Academy" 
+                className="h-12 w-auto"
+              />
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  PBIS Command Center
-                </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Welcome back, {adminData?.name || 'Administrator'}
-                </p>
+                <h1 className="text-2xl font-bold text-white">Modern Admin Portal</h1>
+                <p className="text-white/80">Welcome, {adminData?.firstName} {adminData?.lastName} ({adminData?.title})</p>
               </div>
             </div>
-            
             <div className="flex items-center gap-3">
-              <Badge variant="outline" className="hidden md:flex items-center gap-2 px-3 py-1.5">
-                <Shield className="h-4 w-4 text-green-500" />
-                {adminData?.title || 'Principal'}
-              </Badge>
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="flex items-center gap-2 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+                onClick={toggleTheme}
+                variant="outline"
+                className="bg-white/20 border-white/30 text-white hover:bg-white/30"
               >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline">Sign Out</span>
+                <Palette className="h-4 w-4 mr-2" />
+                {currentTheme === 'normal' ? 'Normal' : currentTheme === 'light' ? 'Light' : 'Dark'}
+              </Button>
+              
+              <Select onValueChange={(value) => window.location.href = value}>
+                <SelectTrigger className="w-40 bg-white/20 border-white/30 text-white">
+                  <SelectValue placeholder="Main Pages" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="/dashboard">Main Dashboard</SelectItem>
+                  <SelectItem value="/tutorial">Tutorial</SelectItem>
+                  <SelectItem value="/houses">Houses</SelectItem>
+                  <SelectItem value="/pbis">PBIS System</SelectItem>
+                  <SelectItem value="/house-sorting">House Sorting</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select onValueChange={(value) => window.location.href = value}>
+                <SelectTrigger className="w-40 bg-white/20 border-white/30 text-white">
+                  <SelectValue placeholder="Reports & Tools" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="/monthly-pbis">Monthly Tracking</SelectItem>
+                  <SelectItem value="/parent-letter">Parent Letter</SelectItem>
+                  <SelectItem value="/pledge">House Pledge</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                onClick={handleLogout}
+                variant="outline"
+                className="bg-red-500/20 border-red-400/30 text-white hover:bg-red-500/30"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Modern Navigation */}
-      <div className="container mx-auto px-6 py-6">
+      {/* Main Content */}
+      <div className="container mx-auto px-6 py-6 relative z-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
-            <TabsList className="grid grid-cols-6 gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 p-1 h-auto col-span-3 md:col-span-6">
-              <TabsTrigger value="teachers" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">
-                <Users className="h-3 w-3" />
-                <span className="hidden sm:inline">Teachers</span>
+          {/* Tab Navigation */}
+          <div className="space-y-4">
+            <TabsList className="grid grid-cols-6 gap-2 bg-white/10 backdrop-blur-sm border border-white/20 p-2">
+              <TabsTrigger value="teachers" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
+                <Eye className="h-3 w-3 mr-1" />Viewer
               </TabsTrigger>
-              <TabsTrigger value="teacher-viewer" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white">
-                <Eye className="h-3 w-3" />
-                <span className="hidden sm:inline">Viewer</span>
-              </TabsTrigger>
-              <TabsTrigger value="students" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white">
-                <GraduationCap className="h-3 w-3" />
-                <span className="hidden sm:inline">Students</span>
-              </TabsTrigger>
-              <TabsTrigger value="houses" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white">
-                <Trophy className="h-3 w-3" />
-                <span className="hidden sm:inline">Houses</span>
-              </TabsTrigger>
-              <TabsTrigger value="badges" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white">
-                <Award className="h-3 w-3" />
-                <span className="hidden sm:inline">Badges</span>
-              </TabsTrigger>
-              <TabsTrigger value="games" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">
-                <Sparkles className="h-3 w-3" />
-                <span className="hidden sm:inline">Games</span>
-              </TabsTrigger>
+              <TabsTrigger value="students" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Students</TabsTrigger>
+              <TabsTrigger value="houses" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Houses</TabsTrigger>
+              <TabsTrigger value="badges" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Badges</TabsTrigger>
+              <TabsTrigger value="games" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Games</TabsTrigger>
             </TabsList>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-            <TabsList className="grid grid-cols-4 gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 p-1 h-auto col-span-2 md:col-span-4">
-              <TabsTrigger value="messaging" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">
-                <MessageSquare className="h-3 w-3" />
-                <span className="hidden sm:inline">Messages</span>
+            
+            <TabsList className="grid grid-cols-4 gap-2 bg-white/10 backdrop-blur-sm border border-white/20 p-2">
+              <TabsTrigger value="messaging" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Messages</TabsTrigger>
+              <TabsTrigger value="gallery" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Reflections</TabsTrigger>
+              <TabsTrigger value="exports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">Data Export</TabsTrigger>
+            </TabsList>
+
+            <TabsList className="grid grid-cols-4 gap-2 bg-white/10 backdrop-blur-sm border border-white/20 p-2">
+              <TabsTrigger value="progress-reports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
+                <FileText className="h-3 w-3 mr-1" />Progress Reports
               </TabsTrigger>
-              <TabsTrigger value="gallery" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white">
-                <Camera className="h-3 w-3" />
-                <span className="hidden sm:inline">Gallery</span>
+              <TabsTrigger value="achievement-playground" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
+                <Trophy className="h-3 w-3 mr-1" />Achievement Hub
               </TabsTrigger>
-              <TabsTrigger value="reflections" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
-                <FileText className="h-3 w-3" />
-                <span className="hidden sm:inline">Reflections</span>
+              <TabsTrigger value="performance-heatmap" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
+                <BarChart3 className="h-3 w-3 mr-1" />Performance
               </TabsTrigger>
-              <TabsTrigger value="exports" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-500 data-[state=active]:to-gray-600 data-[state=active]:text-white">
-                <Download className="h-3 w-3" />
-                <span className="hidden sm:inline">Exports</span>
+              <TabsTrigger value="ai-recommendations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/80">
+                <Brain className="h-3 w-3 mr-1" />AI Engine
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-            <TabsList className="grid grid-cols-4 gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 p-1 h-auto col-span-2 md:col-span-4">
-              <TabsTrigger value="progress-reports" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white">
-                <BarChart3 className="h-3 w-3" />
-                <span className="hidden sm:inline">Reports</span>
-              </TabsTrigger>
-              <TabsTrigger value="achievement-hub" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white">
-                <Trophy className="h-3 w-3" />
-                <span className="hidden sm:inline">Achievements</span>
-              </TabsTrigger>
-              <TabsTrigger value="performance" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white">
-                <TrendingUp className="h-3 w-3" />
-                <span className="hidden sm:inline">Performance</span>
-              </TabsTrigger>
-              <TabsTrigger value="ai-engine" className="flex items-center gap-1 px-2 py-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
-                <Brain className="h-3 w-3" />
-                <span className="hidden sm:inline">AI Engine</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          {/* Teachers Tab */}
+          {/* Teachers Tab - Exact replica of original functionality */}
           <TabsContent value="teachers" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Key Metrics Cards */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-100 text-sm font-medium">Total Students</p>
-                      <p className="text-3xl font-bold">847</p>
-                      <p className="text-blue-200 text-xs">+12 this month</p>
-                    </div>
-                    <div className="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center">
-                      <GraduationCap className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="absolute -right-4 -bottom-4 h-20 w-20 bg-white/10 rounded-full"></div>
-                </CardContent>
-              </Card>
-
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-emerald-100 text-sm font-medium">Active Teachers</p>
-                      <p className="text-3xl font-bold">42</p>
-                      <p className="text-emerald-200 text-xs">All systems active</p>
-                    </div>
-                    <div className="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center">
-                      <Users className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="absolute -right-4 -bottom-4 h-20 w-20 bg-white/10 rounded-full"></div>
-                </CardContent>
-              </Card>
-
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-100 text-sm font-medium">PBIS Points Today</p>
-                      <p className="text-3xl font-bold">1,247</p>
-                      <p className="text-purple-200 text-xs">+18% vs yesterday</p>
-                    </div>
-                    <div className="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center">
-                      <Award className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="absolute -right-4 -bottom-4 h-20 w-20 bg-white/10 rounded-full"></div>
-                </CardContent>
-              </Card>
-
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-orange-100 text-sm font-medium">AI Insights</p>
-                      <p className="text-3xl font-bold">94%</p>
-                      <p className="text-orange-200 text-xs">Student engagement</p>
-                    </div>
-                    <div className="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center">
-                      <Brain className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="absolute -right-4 -bottom-4 h-20 w-20 bg-white/10 rounded-full"></div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Quick Actions */}
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Zap className="h-5 w-5 text-yellow-500" />
-                  Quick Actions
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Teacher Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Button 
-                    onClick={() => setActiveTab("ai-tools")}
-                    className="h-20 flex flex-col items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                <p style={{ color: themeStyles.textSecondary }} className="mb-4">Manage teacher approvals and access</p>
+                
+                {/* Email Notification Controls */}
+                <div className="flex flex-wrap gap-3 mb-6 p-4 rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border }}>
+                  <Button
+                    onClick={() => sendTeacherNotificationsMutation.mutate()}
+                    disabled={sendTeacherNotificationsMutation.isPending}
+                    className="bg-blue-600 text-white hover:bg-blue-700"
                   >
-                    <Brain className="h-6 w-6" />
-                    <span className="text-sm font-medium">AI Reports</span>
+                    <Mail className="mr-2 h-4 w-4" />
+                    {sendTeacherNotificationsMutation.isPending ? "Sending..." : "Send Welcome Emails to New Teachers"}
                   </Button>
-                  <Button 
-                    onClick={() => setActiveTab("analytics")}
-                    className="h-20 flex flex-col items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                  
+                  <Button
+                    onClick={() => sendTestEmailMutation.mutate({ email: "bphillips@bhm.k12.al.us", name: "Administrator" })}
+                    disabled={sendTestEmailMutation.isPending}
+                    variant="outline"
+                    className="border-green-600 text-green-600 hover:bg-green-50"
                   >
-                    <BarChart3 className="h-6 w-6" />
-                    <span className="text-sm font-medium">Analytics</span>
-                  </Button>
-                  <Button 
-                    onClick={() => setActiveTab("students")}
-                    className="h-20 flex flex-col items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <GraduationCap className="h-6 w-6" />
-                    <span className="text-sm font-medium">Students</span>
-                  </Button>
-                  <Button 
-                    onClick={() => setActiveTab("teachers")}
-                    className="h-20 flex flex-col items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <Users className="h-6 w-6" />
-                    <span className="text-sm font-medium">Teachers</span>
+                    <TestTube className="mr-2 h-4 w-4" />
+                    {sendTestEmailMutation.isPending ? "Sending..." : "Send Test Email"}
                   </Button>
                 </div>
+                
+                {pendingTeachers && pendingTeachers.length > 0 ? (
+                  <div className="space-y-4">
+                    {pendingTeachers.map((teacher: any) => (
+                      <div key={teacher.id} className="flex items-center justify-between p-4 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border }}>
+                        <div className="flex-1">
+                          <p className="font-medium" style={{ color: themeStyles.textPrimary }}>{teacher.firstName} {teacher.lastName}</p>
+                          <p className="text-sm" style={{ color: themeStyles.textSecondary }}>{teacher.email}</p>
+                          <p className="text-sm" style={{ color: themeStyles.textSecondary }}>{teacher.gradeRole} • {teacher.subject}</p>
+                          <p className="text-xs" style={{ color: themeStyles.textSecondary }}>
+                            Applied: {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'Recently'}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => approveTeacherMutation.mutate(teacher.id)}
+                          disabled={approveTeacherMutation.isPending}
+                          className="bg-green-600 text-white hover:bg-green-700"
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          {approveTeacherMutation.isPending ? "Approving..." : "Approve"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+                    <p style={{ color: themeStyles.textSecondary }}>No pending teacher approvals</p>
+                    <p className="text-sm" style={{ color: themeStyles.textSecondary }}>All teachers have been approved</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Teacher Viewer Tab */}
           <TabsContent value="teacher-viewer" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardContent className="p-0">
+                <AdminTeacherViewer />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Students Tab */}
+          <TabsContent value="students" className="space-y-6">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-blue-500" />
-                  Teacher Management & Analytics
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Student Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <AdminTeacherViewer />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb' }}>
+                      <h3 className="font-medium mb-2" style={{ color: themeStyles.textPrimary }}>Student Overview</h3>
+                      <p style={{ color: themeStyles.textSecondary }}>Total Students: {allScholars?.length || 0}</p>
+                    </div>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {allScholars?.map((scholar: Scholar) => (
+                        <div key={scholar.id} className="flex items-center justify-between p-4 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border }}>
+                          <div className="flex-1">
+                            <p className="font-medium" style={{ color: themeStyles.textPrimary }}>{scholar.name}</p>
+                            <p className="text-sm" style={{ color: themeStyles.textSecondary }}>Grade {scholar.grade} • ID: {scholar.studentId}</p>
+                            <p className="text-xs" style={{ color: themeStyles.textSecondary }}>
+                              Academic: {scholar.academicPoints} | Attendance: {scholar.attendancePoints} | Behavior: {scholar.behaviorPoints}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline" className="text-xs">
+                              {scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints} Total
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Card style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
+                      <CardHeader>
+                        <CardTitle style={{ color: themeStyles.textPrimary }}>House Distribution</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {houses?.map((house: House) => {
+                          const houseScholars = allScholars?.filter((s: Scholar) => s.houseId === house.id) || [];
+                          return (
+                            <div key={house.id} className="flex items-center justify-between p-3 rounded-lg border" style={{ backgroundColor: `${house.color}20`, borderColor: house.color }}>
+                              <div className="flex items-center gap-2">
+                                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: house.color }}></div>
+                                <span className="font-medium">{house.name}</span>
+                              </div>
+                              <Badge variant="outline">{houseScholars.length} students</Badge>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Houses Tab */}
           <TabsContent value="houses" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-yellow-500" />
-                  House Standings & Management
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>House Management</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   {houses?.map((house: House, index) => (
-                    <Card key={house.id} className="relative overflow-hidden group hover:scale-105 transition-transform duration-200" style={{ backgroundColor: `${house.color}15`, borderColor: house.color }}>
+                    <Card key={house.id} className="relative overflow-hidden group" style={{ backgroundColor: `${house.color}15`, borderColor: house.color }}>
                       <CardContent className="p-6 text-center">
                         <div className="h-16 w-16 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-2xl" style={{ backgroundColor: house.color }}>
                           {house.name.charAt(0)}
@@ -445,51 +540,63 @@ export default function ModernAdminDashboard() {
           {/* Badges Tab */}
           <TabsContent value="badges" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-green-500" />
-                    Badge Overview ({allBadges?.length || 0} Total)
-                  </CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Badge Overview ({allBadges?.length || 0} Total)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {allBadges?.map((badge: any) => (
-                      <div key={badge.id} className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-green-900">{badge.name}</h4>
-                            <p className="text-sm text-green-700">{badge.description}</p>
+                    {allBadges && allBadges.length > 0 ? (
+                      allBadges.map((badge: any) => (
+                        <div key={badge.id} className="p-4 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border }}>
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>{badge.name}</h4>
+                              <p className="text-sm" style={{ color: themeStyles.textSecondary }}>{badge.description}</p>
+                            </div>
+                            <Badge variant={badge.category === 'overall' ? 'default' : 'secondary'}>
+                              Level {badge.level}
+                            </Badge>
                           </div>
-                          <Badge variant={badge.category === 'overall' ? 'default' : 'secondary'}>
-                            Level {badge.level}
-                          </Badge>
+                          <div className="flex items-center justify-between text-xs">
+                            <span style={{ color: themeStyles.textSecondary }}>
+                              {badge.category} • {badge.pointsRequired} points
+                            </span>
+                            <span style={{ color: themeStyles.textSecondary }}>
+                              {badge.houseId ? badge.houseId.charAt(0).toUpperCase() + badge.houseId.slice(1) : 'Universal'}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between text-xs text-green-600">
-                          <span>{badge.category} • {badge.pointsRequired} points</span>
-                          <span>{badge.houseId ? badge.houseId.charAt(0).toUpperCase() + badge.houseId.slice(1) : 'Universal'}</span>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <Award className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <p style={{ color: themeStyles.textSecondary }}>No badges found</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
                 <CardHeader>
-                  <CardTitle>Badge Categories</CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Badge Categories</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {['academic', 'behavior', 'attendance', 'overall'].map(category => {
                       const categoryBadges = allBadges?.filter((b: any) => b.category === category) || [];
                       return (
-                        <div key={category} className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                        <div key={category} className="p-3 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border }}>
                           <div className="flex justify-between items-center">
-                            <span className="font-medium capitalize text-blue-900">{category}</span>
-                            <Badge variant="outline">{categoryBadges.length} badges</Badge>
+                            <span className="font-medium capitalize" style={{ color: themeStyles.textPrimary }}>
+                              {category}
+                            </span>
+                            <Badge variant="outline">
+                              {categoryBadges.length} badges
+                            </Badge>
                           </div>
-                          <p className="text-xs mt-1 text-blue-700">
+                          <p className="text-xs mt-1" style={{ color: themeStyles.textSecondary }}>
                             {categoryBadges.map((b: any) => `${b.pointsRequired}pts`).join(', ')}
                           </p>
                         </div>
@@ -504,67 +611,77 @@ export default function ModernAdminDashboard() {
           {/* Games Tab */}
           <TabsContent value="games" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-purple-500" />
-                    Game Library ({allGames?.length || 0} Games)
-                  </CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Game Library ({allGames?.length || 0} Games)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {allGames?.map((game: any) => (
-                      <div key={game.id} className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-purple-900">{game.name}</h4>
-                            <p className="text-sm text-purple-700">{game.description}</p>
+                    {allGames && allGames.length > 0 ? (
+                      allGames.map((game: any) => (
+                        <div key={game.id} className="p-4 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border }}>
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>{game.name}</h4>
+                              <p className="text-sm" style={{ color: themeStyles.textSecondary }}>{game.description}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={game.difficulty === 'easy' ? 'default' : game.difficulty === 'medium' ? 'secondary' : 'destructive'}>
+                                {game.difficulty}
+                              </Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedGame(game);
+                                  setShowGameModal(true);
+                                }}
+                                style={{ color: themeStyles.textPrimary, borderColor: themeStyles.border }}
+                              >
+                                Test Game
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={game.difficulty === 'easy' ? 'default' : game.difficulty === 'medium' ? 'secondary' : 'destructive'}>
-                              {game.difficulty}
-                            </Badge>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedGame(game);
-                                setShowGameModal(true);
-                              }}
-                              className="bg-purple-500 text-white hover:bg-purple-600"
-                            >
-                              Test Game
-                            </Button>
+                          <div className="flex items-center justify-between text-xs">
+                            <span style={{ color: themeStyles.textSecondary }}>
+                              {game.category} • {game.pointsRequired} points required
+                            </span>
+                            <span className={`px-2 py-1 rounded ${game.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                              {game.isActive ? 'Active' : 'Inactive'}
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between text-xs text-purple-600">
-                          <span>{game.category} • {game.pointsRequired} points required</span>
-                          <span className={`px-2 py-1 rounded ${game.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {game.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <GraduationCap className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <p style={{ color: themeStyles.textSecondary }}>No games found</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
                 <CardHeader>
-                  <CardTitle>Game Categories</CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Game Categories</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {['sports', 'puzzle', 'strategy', 'arcade', 'adventure', 'racing'].map(category => {
                       const categoryGames = allGames?.filter((g: any) => g.category === category) || [];
                       return (
-                        <div key={category} className="p-3 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
+                        <div key={category} className="p-3 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border }}>
                           <div className="flex justify-between items-center">
-                            <span className="font-medium capitalize text-indigo-900">{category}</span>
-                            <Badge variant="outline">{categoryGames.length} games</Badge>
+                            <span className="font-medium capitalize" style={{ color: themeStyles.textPrimary }}>
+                              {category}
+                            </span>
+                            <Badge variant="outline">
+                              {categoryGames.length} games
+                            </Badge>
                           </div>
                           {categoryGames.length > 0 && (
-                            <p className="text-xs mt-1 text-indigo-700">
+                            <p className="text-xs mt-1" style={{ color: themeStyles.textSecondary }}>
                               {categoryGames.map((g: any) => g.name).slice(0, 2).join(', ')}
                               {categoryGames.length > 2 && ` +${categoryGames.length - 2} more`}
                             </p>
@@ -580,96 +697,15 @@ export default function ModernAdminDashboard() {
 
           {/* Messaging Tab */}
           <TabsContent value="messaging" className="space-y-6">
-
-          {/* Students Tab */}
-          <TabsContent value="students" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5 text-blue-500" />
-                    Student Roster ({allScholars?.length || 0} Students)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {allScholars?.map((scholar: Scholar) => (
-                      <div key={scholar.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                            {scholar.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium text-blue-900">{scholar.name}</p>
-                            <p className="text-sm text-blue-700">Grade {scholar.grade} • {scholar.studentId}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-blue-900">{scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints} Points</p>
-                          <p className="text-xs text-blue-700">Total PBIS</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    House Standings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {houses?.map((house: House, index) => (
-                      <div key={house.id} className="flex items-center justify-between p-3 rounded-lg border" style={{ backgroundColor: `${house.color}20`, borderColor: house.color }}>
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full" style={{ backgroundColor: house.color }}></div>
-                          <span className="font-medium">{house.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <Badge className="text-xs">#{index + 1}</Badge>
-                          <p className="text-sm font-medium">{house.totalPoints} pts</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Teachers Tab */}
-          <TabsContent value="teachers" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-purple-500" />
-                  Teacher Management & Analytics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AdminTeacherViewer />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Messaging Tab (renamed from messages) */}
-          <TabsContent value="messaging" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Send className="h-5 w-5 text-green-500" />
-                    Send Message
-                  </CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Send Message</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="recipientType">Send To</Label>
-                    <Select value={messageForm.recipientType} onValueChange={(value) => setMessageForm(prev => ({ ...prev, recipientType: value }))}>
+                    <Select>
                       <SelectTrigger>
                         <SelectValue placeholder="Select recipients" />
                       </SelectTrigger>
@@ -684,22 +720,11 @@ export default function ModernAdminDashboard() {
                   </div>
                   <div>
                     <Label htmlFor="subject">Subject</Label>
-                    <Input 
-                      id="subject"
-                      placeholder="Message subject"
-                      value={messageForm.subject}
-                      onChange={(e) => setMessageForm(prev => ({ ...prev, subject: e.target.value }))}
-                    />
+                    <Input placeholder="Message subject" />
                   </div>
                   <div>
                     <Label htmlFor="message">Message</Label>
-                    <textarea 
-                      id="message"
-                      className="w-full h-32 p-3 border rounded-lg resize-none"
-                      placeholder="Type your message here..."
-                      value={messageForm.message}
-                      onChange={(e) => setMessageForm(prev => ({ ...prev, message: e.target.value }))}
-                    />
+                    <textarea className="w-full h-32 p-3 border rounded-lg resize-none" placeholder="Type your message here..." />
                   </div>
                   <Button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600">
                     <Send className="h-4 w-4 mr-2" />
@@ -708,23 +733,20 @@ export default function ModernAdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-blue-500" />
-                    Recent Messages
-                  </CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Recent Messages</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 max-h-80 overflow-y-auto">
                     {adminMessages?.slice(0, 10).map((message: any) => (
-                      <div key={message.id} className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                      <div key={message.id} className="p-3 border rounded-lg" style={{ backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border }}>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-blue-900">{message.subject}</span>
+                          <span className="font-medium" style={{ color: themeStyles.textPrimary }}>{message.subject}</span>
                           <Badge variant="outline">{message.type}</Badge>
                         </div>
-                        <p className="text-sm text-blue-700 mb-1">{message.message.substring(0, 100)}...</p>
-                        <p className="text-xs text-blue-600">To: {message.recipientType}</p>
+                        <p className="text-sm mb-1" style={{ color: themeStyles.textSecondary }}>{message.message.substring(0, 100)}...</p>
+                        <p className="text-xs" style={{ color: themeStyles.textSecondary }}>To: {message.recipientType}</p>
                       </div>
                     ))}
                   </div>
@@ -736,45 +758,41 @@ export default function ModernAdminDashboard() {
           {/* Gallery Tab */}
           <TabsContent value="gallery" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-5 w-5 text-green-500" />
-                    Upload Photo
-                  </CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Upload Photo</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="photo">Select Photo</Label>
                     <Input 
-                      id="photo"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
+                      onChange={handleFileChange}
                     />
                   </div>
                   <div>
                     <Label htmlFor="description">Description</Label>
                     <Input 
-                      id="description"
                       placeholder="Photo description"
                       value={photoDescription}
                       onChange={(e) => setPhotoDescription(e.target.value)}
                     />
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600">
+                  <Button 
+                    onClick={handleUploadPhoto}
+                    disabled={uploadPhotoMutation.isPending}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  >
                     <Camera className="h-4 w-4 mr-2" />
-                    Upload Photo
+                    {uploadPhotoMutation.isPending ? "Uploading..." : "Upload Photo"}
                   </Button>
                 </CardContent>
               </Card>
 
-              <Card className="lg:col-span-2 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+              <Card className="lg:col-span-2 bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Image className="h-5 w-5 text-purple-500" />
-                    PBIS Photo Gallery
-                  </CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>PBIS Photo Gallery</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
@@ -801,12 +819,9 @@ export default function ModernAdminDashboard() {
 
           {/* Reflections Tab */}
           <TabsContent value="reflections" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-indigo-500" />
-                  Behavioral Reflection Logs
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Behavioral Reflection Logs</CardTitle>
               </CardHeader>
               <CardContent>
                 <ReflectionLogs />
@@ -814,14 +829,11 @@ export default function ModernAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Exports Tab */}
+          {/* Data Export Tab */}
           <TabsContent value="exports" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5 text-slate-500" />
-                  Data Export Center
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Data Export Center</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -872,16 +884,12 @@ export default function ModernAdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-          </TabsContent>
 
           {/* Progress Reports Tab */}
           <TabsContent value="progress-reports" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-cyan-500" />
-                  AI-Powered Progress Report Generator
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>AI-Powered Progress Report Generator</CardTitle>
               </CardHeader>
               <CardContent>
                 <ProgressReportGenerator />
@@ -889,14 +897,11 @@ export default function ModernAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Achievement Hub Tab */}
-          <TabsContent value="achievement-hub" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+          {/* Achievement Playground Tab */}
+          <TabsContent value="achievement-playground" className="space-y-6">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-yellow-500" />
-                  Interactive Achievement Playground
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Interactive Achievement Playground</CardTitle>
               </CardHeader>
               <CardContent>
                 <AchievementPlayground />
@@ -904,14 +909,11 @@ export default function ModernAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Performance Tab */}
-          <TabsContent value="performance" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+          {/* Performance Heatmap Tab */}
+          <TabsContent value="performance-heatmap" className="space-y-6">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-orange-500" />
-                  Teacher Performance Analytics & Heatmap
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Teacher Performance Analytics & Heatmap</CardTitle>
               </CardHeader>
               <CardContent>
                 <TeacherPerformanceHeatmap />
@@ -919,14 +921,11 @@ export default function ModernAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* AI Engine Tab */}
-          <TabsContent value="ai-engine" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
+          {/* AI Recommendations Tab */}
+          <TabsContent value="ai-recommendations" className="space-y-6">
+            <Card className="bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl" style={{ backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-violet-500" />
-                  AI-Powered Adaptive Recommendation Engine
-                </CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>AI-Powered Adaptive Recommendation Engine</CardTitle>
               </CardHeader>
               <CardContent>
                 <AIRecommendationEngine />
@@ -934,67 +933,17 @@ export default function ModernAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Progress Reports Tab */}
-          <TabsContent value="progress-reports" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-cyan-500" />
-                  AI-Powered Progress Report Generator
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ProgressReportGenerator />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Achievement Hub Tab */}
-          <TabsContent value="achievement-hub" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-yellow-500" />
-                  Interactive Achievement Playground
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AchievementPlayground />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Performance Tab */}
-          <TabsContent value="performance" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-orange-500" />
-                  Teacher Performance Analytics & Heatmap
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TeacherPerformanceHeatmap />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* AI Engine Tab */}
-          <TabsContent value="ai-engine" className="space-y-6">
-            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-violet-500" />
-                  AI-Powered Adaptive Recommendation Engine
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AIRecommendationEngine />
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Game Modal */}
+      {selectedGame && (
+        <GameModal 
+          game={selectedGame} 
+          isOpen={showGameModal} 
+          onClose={() => setShowGameModal(false)} 
+        />
+      )}
     </div>
   );
 }

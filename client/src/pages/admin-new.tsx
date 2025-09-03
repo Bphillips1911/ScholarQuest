@@ -491,6 +491,7 @@ export default function AdminNew() {
       background: themeStyles.background
     }}>
       <div style={{padding: '20px'}}>
+        <div>
         <Card className="rounded-2xl shadow-lg p-8" style={{backgroundColor: themeStyles.cardBg, border: `1px solid ${themeStyles.border}`}}>
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
             <div className="flex items-center">
@@ -2874,6 +2875,7 @@ export default function AdminNew() {
           }}
         />
       )}
+        </div>
       </div>
     </div>
   );

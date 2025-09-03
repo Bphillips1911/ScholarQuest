@@ -926,7 +926,7 @@ export default function TeacherDashboard() {
       <div className="bg-blue-600 text-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-12 overflow-hidden">
-            <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0 mr-4">
               
               {/* Notification Bell */}
               <NotificationHeader className="text-white" />
@@ -1001,7 +1001,7 @@ export default function TeacherDashboard() {
 
             </div>
             
-            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
               {/* Theme Toggle Button */}
               <Button
                 onClick={toggleTheme}

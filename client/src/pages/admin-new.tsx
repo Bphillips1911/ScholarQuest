@@ -2433,7 +2433,7 @@ export default function AdminNew() {
               </Select>
             </div>
 
-            <div className="border rounded-lg p-4">
+            <div className="rounded-lg p-4">
               <PBISCategorySelector
                 selectedCategory={awardPointsForm.category}
                 selectedSubcategory={awardPointsForm.subcategory}

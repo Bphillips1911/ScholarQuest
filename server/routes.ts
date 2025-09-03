@@ -4942,11 +4942,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/teacher/scholars/grade/:grade', authenticateTeacher, async (req, res) => {
     try {
       const grade = parseInt(req.params.grade);
-      const teacherId = req.user?.id;
+      const teacherId = req.teacher?.id;
+      
+      console.log(`API: Teacher scholars request - Teacher ID: ${teacherId}, Grade: ${grade}`);
+      
+      if (!teacherId) {
+        return res.status(401).json({ error: 'Teacher ID missing from request' });
+      }
       
       // Get the teacher data to verify they can see this grade
       const teacher = await storage.getTeacher(teacherId);
       if (!teacher) {
+        console.log(`API: Teacher not found in database for ID: ${teacherId}`);
         return res.status(401).json({ error: 'Teacher not found' });
       }
       

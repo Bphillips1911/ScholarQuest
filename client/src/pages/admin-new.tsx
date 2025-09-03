@@ -1330,7 +1330,7 @@ export default function AdminNew() {
                     Generate comprehensive progress reports for any student with one click. Advanced AI-powered analytics and insights included.
                   </p>
                   <div className="space-y-4">
-                    <ProgressReportGenerator studentId="admin-view" studentName="Admin Dashboard" />
+                    <ProgressReportGenerator isAdminView={true} />
                   </div>
                 </CardContent>
               </Card>

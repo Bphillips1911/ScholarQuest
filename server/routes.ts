@@ -5430,6 +5430,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get teacher information for a specific student
+  app.get("/api/teacher/by-student/:studentId", authenticateTeacherOrAdmin, async (req, res) => {
+    try {
+      const { studentId } = req.params;
+      const student = await storage.getStudent(studentId);
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+      
+      const teacher = await storage.getTeacherAuthById(student.createdBy);
+      res.json({
+        name: teacher?.name || 'Unknown Teacher',
+        email: teacher?.email || 'N/A',
+        gradeRole: teacher?.gradeRole || 'N/A',
+        subject: teacher?.subject || 'N/A'
+      });
+    } catch (error) {
+      console.error("Get teacher by student error:", error);
+      res.status(500).json({ message: "Failed to get teacher information" });
+    }
+  });
+
   // Teacher Performance Heatmap Routes (Admin only)
   app.get("/api/admin/performance-heatmap", authenticateTeacher, async (req, res) => {
     try {

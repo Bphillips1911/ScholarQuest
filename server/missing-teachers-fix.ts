@@ -7,17 +7,17 @@ export const addMissingTeachers = async () => {
   console.log("🏫 MISSING TEACHERS FIX: Adding missing teacher accounts");
   
   const missingTeachers = [
-    { name: 'Geralyn Buford', email: 'geralyn.buford@bhsteam.edu', gradeRole: '6th Grade', subject: 'ELA' },
-    { name: 'Aleisha Lewis', email: 'aleisha.lewis@bhsteam.edu', gradeRole: '7th Grade', subject: 'Math' },
-    { name: 'Destine Wilson', email: 'destine.wilson@bhsteam.edu', gradeRole: '8th Grade', subject: 'Science' },
-    { name: 'Keijka Brown', email: 'keijka.brown@bhsteam.edu', gradeRole: '6th Grade', subject: 'Social Studies' },
-    { name: 'Isabella Patton', email: 'isabella.patton@bhsteam.edu', gradeRole: '7th Grade', subject: 'ELA' },
-    { name: 'Camisha Spencer', email: 'camisha.spencer@bhsteam.edu', gradeRole: '8th Grade', subject: 'Math' },
-    { name: 'Javen Radney', email: 'javen.radney@bhsteam.edu', gradeRole: 'Unified Arts', subject: 'PE' },
-    { name: 'Kenneth Shepherd', email: 'kenneth.shepherd@bhsteam.edu', gradeRole: 'Unified Arts', subject: 'Music' },
-    { name: 'Kelli Curry', email: 'kelli.curry@bhsteam.edu', gradeRole: 'Counselor', subject: 'Guidance' },
-    { name: 'Stanley Powell', email: 'stanley.powell@bhsteam.edu', gradeRole: 'Administration', subject: 'Principal' },
-    { name: 'April Eatmon', email: 'april.eatmon@bhsteam.edu', gradeRole: '6th Grade', subject: 'Math' }
+    { name: 'Geralyn Buford', email: 'gbuford@bhm.k12.al.us', gradeRole: '6th Grade', subject: 'Science' },
+    { name: 'Aleisha Lewis', email: 'alewis11@bhm.k12.al.us', gradeRole: '6th Grade', subject: 'Math' },
+    { name: 'Destine Wilson', email: 'wilson.estine23@icloud.com', gradeRole: '7th Grade', subject: 'Social Studies' },
+    { name: 'Keijka Brown', email: 'kbrown12@bhm.k12.al.us', gradeRole: '6th Grade', subject: 'ELA' },
+    { name: 'Isabella Patton', email: 'ipatten@bhm.k12.al.us', gradeRole: '7th Grade', subject: 'Science' },
+    { name: 'Camisha Spencer', email: 'cspencer@bhm.k12.al.us', gradeRole: '8th Grade', subject: 'Special Education' },
+    { name: 'Javen Radney', email: 'jradney@bhm.k12.al.us', gradeRole: 'Unified Arts', subject: 'Choir' },
+    { name: 'Kenneth Shepherd', email: 'kshepherd2@bhm.k12.al.us', gradeRole: 'Unified Arts', subject: 'Physical Education' },
+    { name: 'Kelli Curry', email: 'kcurry2@bhm.k12.al.us', gradeRole: '8th Grade', subject: 'Science' },
+    { name: 'Stanley Powell', email: 'spowell@bhm.k12.al.us', gradeRole: '8th Grade', subject: 'Social Studies' },
+    { name: 'April Eatmon', email: 'aeatmon@bhm.k12.al.us', gradeRole: '6th Grade', subject: 'Social Studies' }
   ];
 
   try {

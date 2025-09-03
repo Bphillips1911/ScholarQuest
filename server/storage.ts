@@ -31,6 +31,19 @@ import {
   type InsertMoodEntry,
   type InsertProgressGoal,
   type InsertDailyReflection,
+  type SelLesson,
+  type SelQuizQuestion,
+  type SelQuizResponse,
+  type SelQuizResult,
+  type SelNotification,
+  type SelProgressAnalytics,
+  type SelBehaviorDefinition,
+  type InsertSelLesson,
+  type InsertSelQuizQuestion,
+  type InsertSelQuizResponse,
+  type InsertSelQuizResult,
+  type InsertSelNotification,
+  type InsertSelBehaviorDefinition,
   houses, 
   scholars, 
   teachers, 
@@ -46,7 +59,14 @@ import {
   adminSessions,
   moodEntries,
   progressGoals,
-  dailyReflections
+  dailyReflections,
+  selLessons,
+  selQuizQuestions,
+  selQuizResponses,
+  selQuizResults,
+  selNotifications,
+  selProgressAnalytics,
+  selBehaviorDefinitions
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";

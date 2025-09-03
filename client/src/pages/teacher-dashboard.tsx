@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2 } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -651,7 +651,7 @@ export default function TeacherDashboard() {
       if (!response.ok) throw new Error("Failed to award PBIS points");
       return response.json();
     },
-    onSuccess: (response, variables) => {
+    onSuccess: async (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
       queryClient.invalidateQueries({ queryKey: ["houses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/pbis"] });
@@ -667,6 +667,49 @@ export default function TeacherDashboard() {
         houseName: selectedHouse?.name || 'House',
         behavior: variables.mustangTrait,
       });
+      
+      // SEL: Auto-trigger lesson generation for negative PBIS points
+      if (variables.points < 0 && response.pbisEntry) {
+        try {
+          console.log('SEL: Triggering lesson for negative PBIS points:', {
+            points: variables.points,
+            category: pbisForm.category,
+            subcategory: pbisForm.subcategory
+          });
+
+          const selResponse = await fetch("/api/sel/trigger-lesson", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+            body: JSON.stringify({
+              pbisEntryId: response.pbisEntry.id,
+              scholarId: variables.scholarId,
+              teacherName: variables.teacherName,
+              behaviorType: pbisForm.category,
+              specificBehavior: pbisForm.subcategory,
+              mustangTrait: variables.mustangTrait
+            }),
+          });
+
+          if (selResponse.ok) {
+            const selResult = await selResponse.json();
+            console.log('SEL: Lesson auto-generated:', selResult);
+            
+            // Show additional toast for SEL lesson creation
+            toast({
+              title: "SEL Lesson Generated",
+              description: `A behavioral intervention lesson has been automatically assigned to help ${selectedScholar?.name} improve their choices.`,
+              duration: 5000,
+            });
+          } else {
+            console.error('SEL: Failed to generate lesson:', await selResponse.text());
+          }
+        } catch (error) {
+          console.error('SEL: Error triggering lesson:', error);
+        }
+      }
       
       setShowAwardPoints(false);
       setSelectedScholar(null);
@@ -1138,6 +1181,11 @@ export default function TeacherDashboard() {
               <TabsTrigger value="gallery" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
                 <Image className="h-3 w-3 sm:h-4 sm:w-4" />
                 Gallery
+              </TabsTrigger>
+              <TabsTrigger value="sel" className="px-3 py-2 text-xs sm:text-sm font-medium flex items-center justify-center gap-1 whitespace-nowrap" style={{color: themeStyles.textPrimary}}>
+                <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">SEL</span>
+                <span className="sm:hidden">SEL</span>
               </TabsTrigger>
             </div>
           </TabsList>
@@ -1744,6 +1792,50 @@ export default function TeacherDashboard() {
               <UnifiedArtsClassManager teacher={teacher} />
             </TabsContent>
           )}
+
+          {/* SEL Tab */}
+          <TabsContent value="sel" className="space-y-6">
+            <div className="grid gap-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, color: themeStyles.textPrimary}}>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2" style={{color: themeStyles.textPrimary}}>
+                    <Brain className="h-5 w-5" />
+                    Social Emotional Learning (SEL) Dashboard
+                  </CardTitle>
+                  <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                    Monitor and manage student behavioral intervention lessons assigned automatically when negative PBIS points are given.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-gray-500">
+                    <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">SEL System Coming Soon</h3>
+                    <p className="mb-4">
+                      The AI-powered Social Emotional Learning system will automatically generate personalized behavioral intervention lessons when students receive negative PBIS points.
+                    </p>
+                    <div className="text-sm text-left max-w-md mx-auto space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        Automatic lesson generation based on behavior type
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        AI-graded quizzes with instant feedback
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        Multi-stakeholder notifications (parents, teachers, admins)
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                        Progress tracking and behavioral analytics
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
         </Tabs>
 

@@ -23,6 +23,7 @@ import {
   sendParentReflectionNotification,
   sendParentReflectionApproval
 } from "./emailService";
+import { registerSELRoutes } from "./selRoutes";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -231,6 +232,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register force deployment API endpoints
   const { registerForceDeploymentAPI } = await import('./deployment-force-api');
   registerForceDeploymentAPI(app);
+
+  // Register SEL routes
+  registerSELRoutes(app);
   // Get all houses with standings
   app.get("/api/houses", async (_req, res) => {
     try {

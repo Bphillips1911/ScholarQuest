@@ -27,7 +27,8 @@ import {
   Book,
   Palette,
   TrendingUp,
-  HelpCircle
+  HelpCircle,
+  Brain
 } from "lucide-react";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
 import { ReflectionModal } from "@/components/ReflectionModal";
@@ -669,6 +670,50 @@ function StudentDashboardContent() {
                 </Card>
               </StaggerItem>
             )}
+
+            {/* Social Emotional Learning (SEL) Section */}
+            <StaggerItem>
+              <Card className={`col-span-1 md:col-span-2 lg:col-span-3 ${themeStyles.cardBg} border-white/20`}>
+                <CardHeader>
+                  <CardTitle className={`flex items-center ${themeStyles.textPrimary}`}>
+                    <Brain className="mr-2 h-5 w-5 text-purple-600" />
+                    Social Emotional Learning
+                    <Badge variant="secondary" className="ml-2">
+                      0 lessons
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <Brain className="h-12 w-12 mx-auto mb-4 text-purple-400 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2" style={{color: themeStyles.textPrimary}}>
+                      SEL System Coming Soon
+                    </h3>
+                    <p className="text-sm mb-4" style={{color: themeStyles.textSecondary}}>
+                      When you receive negative PBIS points, you'll get personalized learning lessons to help improve your behavior and social skills.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto text-sm">
+                      <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">AI-powered lessons</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                        <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">Interactive quizzes</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">Progress tracking</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">Parent notifications</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </StaggerItem>
 
             </div>
           </StaggerContainer>

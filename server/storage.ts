@@ -123,6 +123,7 @@ export interface IStorage {
   getPbisEntries(): Promise<PbisEntry[]>;
   getAllPbisEntries(): Promise<PbisEntry[]>;
   getPbisEntriesByScholar(scholarId: string): Promise<PbisEntry[]>;
+  getPBISEntriesForScholar(scholarId: string): Promise<PbisEntry[]>;
   createPbisEntry(entry: InsertPbisEntry): Promise<PbisEntry>;
   
   // PBIS Photos
@@ -247,6 +248,12 @@ export interface IStorage {
   getScholarMoodAnalytics(scholarId: string): Promise<any>;
   getClassMoodAnalytics(grade: number): Promise<any>;
   getHouseMoodAnalytics(houseId: string): Promise<any>;
+  
+  // Badge System
+  getScholarBadges(scholarId: string): Promise<any[]>;
+  
+  // Reflections for Scholar
+  getReflectionsForScholar(scholarId: string): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2496,6 +2503,66 @@ class PersistentMemStorage extends MemStorage {
     
     this.reflections.set(reflectionId, updated);
     return true;
+  }
+
+  // Additional methods needed for teacher student dashboard viewer
+  async getPBISEntriesForScholar(scholarId: string): Promise<PbisEntry[]> {
+    return this.getPbisEntriesByScholar(scholarId);
+  }
+
+  async getScholarBadges(scholarId: string): Promise<any[]> {
+    // This would return actual badge data from database
+    // For now, return sample badge data based on PBIS entries
+    const pbisEntries = await this.getPbisEntriesByScholar(scholarId);
+    const scholar = this.scholars.get(scholarId);
+    
+    if (!scholar) return [];
+    
+    const badges = [];
+    
+    // Award badges based on points
+    if (scholar.academicPoints >= 100) {
+      badges.push({
+        badgeName: "Academic Excellence",
+        badgeIcon: "🎓",
+        awardedAt: new Date(),
+        description: "Earned 100+ academic points"
+      });
+    }
+    
+    if (scholar.behaviorPoints >= 50) {
+      badges.push({
+        badgeName: "MUSTANG Behavior",
+        badgeIcon: "🌟",
+        awardedAt: new Date(),
+        description: "Demonstrated excellent MUSTANG traits"
+      });
+    }
+    
+    if (scholar.attendancePoints >= 30) {
+      badges.push({
+        badgeName: "Perfect Attendance",
+        badgeIcon: "📅",
+        awardedAt: new Date(),
+        description: "Excellent attendance record"
+      });
+    }
+    
+    // Badge based on total entries
+    if (pbisEntries.length >= 10) {
+      badges.push({
+        badgeName: "Active Participant",
+        badgeIcon: "🏆",
+        awardedAt: new Date(),
+        description: "Active engagement in school activities"
+      });
+    }
+    
+    return badges;
+  }
+
+  async getReflectionsForScholar(scholarId: string): Promise<any[]> {
+    return this.getReflectionsForStudent(scholarId);
   }
 }
 

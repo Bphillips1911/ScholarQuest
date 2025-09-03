@@ -4938,6 +4938,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Failed to add missing teachers:", error);
   }
 
+  // Teacher Student Dashboard Viewer Routes
+  app.get('/api/teacher/student-dashboard/:studentId', authenticateTeacher, async (req, res) => {
+    try {
+      const { studentId } = req.params;
+      const teacherId = req.user?.id;
+      
+      // Get the teacher data to verify they can see this student
+      const teacher = await storage.getTeacher(teacherId);
+      if (!teacher) {
+        return res.status(401).json({ error: 'Teacher not found' });
+      }
+      
+      // Get the student data
+      const scholar = await storage.getScholar(studentId);
+      if (!scholar) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+      
+      // Verify teacher can see this student's grade
+      if (!teacher.canSeeGrades.includes(scholar.grade)) {
+        return res.status(403).json({ error: 'Not authorized to view this student' });
+      }
+      
+      // Get house data
+      const house = await storage.getHouse(scholar.houseId);
+      
+      // Get student's recent activities (PBIS entries)
+      const recentActivities = await storage.getPBISEntriesForScholar(studentId);
+      
+      // Get student's badges
+      const badges = await storage.getScholarBadges(studentId);
+      
+      // Calculate total points and rank
+      const totalPoints = scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints;
+      
+      // Get all scholars in same grade to calculate rank
+      const gradeScholars = await storage.getScholarsByGrade(scholar.grade);
+      const sortedScholars = gradeScholars
+        .map(s => ({
+          id: s.id,
+          totalPoints: s.academicPoints + s.attendancePoints + s.behaviorPoints
+        }))
+        .sort((a, b) => b.totalPoints - a.totalPoints);
+      
+      const rank = sortedScholars.findIndex(s => s.id === studentId) + 1;
+      
+      // Get recent reflections
+      const reflections = await storage.getReflectionsForScholar(studentId);
+      
+      const dashboardData = {
+        scholar,
+        house,
+        totalPoints,
+        rank,
+        recentActivities: recentActivities.slice(0, 10), // Last 10 activities
+        badges: badges.slice(0, 20), // Last 20 badges
+        skillTree: null, // Placeholder for future skill tree data
+        learningPath: null, // Placeholder for future learning path data
+        reflections: reflections.slice(0, 5), // Last 5 reflections
+        moodData: [] // Placeholder for future mood data
+      };
+      
+      res.json(dashboardData);
+    } catch (error) {
+      console.error('Error fetching student dashboard:', error);
+      res.status(500).json({ error: 'Failed to fetch student dashboard' });
+    }
+  });
+
   // Teacher Email Notification Routes
   app.post('/api/admin/send-teacher-notifications', authenticateAdmin, async (req, res) => {
     try {

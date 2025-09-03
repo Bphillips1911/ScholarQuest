@@ -198,7 +198,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const jwtSecret = "bhsa-admin-secret-2025-stable";
         const decoded: any = jwt.verify(token, jwtSecret);
+        console.log("Admin token decoded:", decoded);
         const admin = await storage.getAdministratorByEmail(decoded.email);
+        console.log("Admin found:", admin ? admin.email : 'not found');
         
         if (admin && (admin.isApproved || admin.title === "Principal")) {
           req.admin = admin;
@@ -212,10 +214,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subject: null,
             canSeeGrades: [6, 7, 8]
           };
+          console.log("Admin authenticated successfully:", admin.email);
           return next();
         }
       } catch (adminError) {
-        // Admin auth failed
+        console.log("Admin auth failed:", adminError.message);
       }
 
       // Both failed
@@ -5335,7 +5338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { achievementPlaygroundService } = await import('./achievementPlaygroundService');
 
   // AI Recommendations Routes
-  app.get("/api/teacher/recommendations/:studentId", authenticateTeacher, async (req, res) => {
+  app.get("/api/teacher/recommendations/:studentId", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const { studentId } = req.params;
       const recommendations = await aiRecommendationService.getStudentRecommendations(studentId);
@@ -5346,7 +5349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/teacher/recommendations/generate/:studentId", authenticateTeacher, async (req, res) => {
+  app.post("/api/teacher/recommendations/generate/:studentId", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const { studentId } = req.params;
       const recommendations = await aiRecommendationService.generateRecommendations(studentId);
@@ -5395,9 +5398,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { studentId } = req.params;
       const { reportType, customDateRange } = req.body;
       
-      const token = req.headers.authorization?.replace("Bearer ", "");
-      const session = await storage.getTeacherSession(token);
-      const teacherId = session?.teacherId;
+      // Get teacher or admin ID from the authenticated request
+      const teacherId = req.teacher?.id || req.admin?.id || 'admin-generated';
 
       const report = await progressReportService.generateStudentReport(
         studentId, 

@@ -234,7 +234,7 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
   };
 
   const openStudentDashboard = (student: Student) => {
-    window.open(`/student-portal?student=${student.id}`, '_blank');
+    window.open(`/student-dashboard?studentId=${student.id}`, '_blank');
   };
 
   const getAvailableStudents = () => {

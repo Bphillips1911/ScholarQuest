@@ -1005,17 +1005,13 @@ export default function TeacherDashboard() {
               {/* Theme Toggle Button */}
               <Button
                 onClick={toggleTheme}
-                variant="outline"
-                className="flex items-center gap-2"
-                style={{
-                  backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#22c55e' : '#ffffff',
-                  color: currentTheme === 'dark' ? '#f7fafc' : currentTheme === 'light' ? '#ffffff' : '#1a202c',
-                  borderColor: themeStyles.border
-                }}
+                variant="ghost"
+                className="text-white hover:text-blue-200 hover:bg-blue-700 text-sm px-2"
                 data-testid="button-theme-toggle"
               >
-                <Palette className="h-4 w-4" />
-                {currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : 'Normal'}
+                <Palette className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">{currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : 'Normal'}</span>
+                <span className="sm:hidden">{currentTheme === 'dark' ? 'D' : currentTheme === 'light' ? 'L' : 'N'}</span>
               </Button>
               
               <Button 

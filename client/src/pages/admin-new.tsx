@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube } from "lucide-react";
 import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
@@ -274,6 +274,71 @@ export default function AdminNew() {
       return response.json();
     },
     onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "Broadcast message sent successfully.",
+      });
+    },
+  });
+
+  // Send teacher notifications mutation
+  const sendTeacherNotificationsMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/send-teacher-notifications", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error("Failed to send teacher notifications");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Teacher Notifications Sent",
+        description: `Email notifications sent to ${data.details.success} teachers successfully.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Notification Failed",
+        description: "Failed to send teacher notifications. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Send test email mutation
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async (emailData: { email: string; name?: string }) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/send-test-email", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailData),
+      });
+      if (!response.ok) throw new Error("Failed to send test email");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Test Email Sent",
+        description: `Test email sent successfully to ${data.message.split(' ').pop()}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Test Email Failed",
+        description: "Failed to send test email. Please try again.",
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
       setMessageForm({ subject: "", message: "", recipientType: "" });
       toast({
@@ -483,6 +548,31 @@ export default function AdminNew() {
                 </CardHeader>
                 <CardContent>
                   <p style={{color: themeStyles.textSecondary}} className="mb-4">Manage teacher approvals and access</p>
+                  
+                  {/* Email Notification Controls */}
+                  <div className="flex flex-wrap gap-3 mb-6 p-4 rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#f9fafb', borderColor: themeStyles.border}}>
+                    <Button
+                      onClick={() => sendTeacherNotificationsMutation.mutate()}
+                      disabled={sendTeacherNotificationsMutation.isPending}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                      data-testid="button-send-teacher-notifications"
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      {sendTeacherNotificationsMutation.isPending ? "Sending..." : "Send Welcome Emails to New Teachers"}
+                    </Button>
+                    
+                    <Button
+                      onClick={() => sendTestEmailMutation.mutate({ email: "bphillips@bhm.k12.al.us", name: "Administrator" })}
+                      disabled={sendTestEmailMutation.isPending}
+                      variant="outline"
+                      className="border-green-600 text-green-600 hover:bg-green-50"
+                      data-testid="button-send-test-email"
+                    >
+                      <TestTube className="mr-2 h-4 w-4" />
+                      {sendTestEmailMutation.isPending ? "Sending..." : "Send Test Email"}
+                    </Button>
+                  </div>
+                  
                   {pendingTeachers && pendingTeachers.length > 0 ? (
                     <div className="space-y-4">
                       {pendingTeachers.map((teacher) => (

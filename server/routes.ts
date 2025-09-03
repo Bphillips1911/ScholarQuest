@@ -4938,6 +4938,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Failed to add missing teachers:", error);
   }
 
+  // Teacher Email Notification Routes
+  app.post('/api/admin/send-teacher-notifications', authenticateAdmin, async (req, res) => {
+    try {
+      const { sendBulkTeacherNotifications } = await import('./teacher-email-notifications');
+      const result = await sendBulkTeacherNotifications();
+      res.json({
+        success: true,
+        message: `Email notifications sent successfully`,
+        details: result
+      });
+    } catch (error) {
+      console.error('Error sending teacher notifications:', error);
+      res.status(500).json({ error: 'Failed to send teacher notifications' });
+    }
+  });
+
+  app.post('/api/admin/send-test-email', authenticateAdmin, async (req, res) => {
+    try {
+      const { email, name } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Email address required' });
+      }
+      
+      const { sendTestEmail } = await import('./teacher-email-notifications');
+      const success = await sendTestEmail(email, name || 'Administrator');
+      
+      if (success) {
+        res.json({ success: true, message: `Test email sent to ${email}` });
+      } else {
+        res.status(500).json({ error: 'Failed to send test email' });
+      }
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      res.status(500).json({ error: 'Failed to send test email' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

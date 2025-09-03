@@ -2464,7 +2464,7 @@ export default function AdminNew() {
             </div>
           </div>
           
-          <DialogFooter className="sticky bottom-0 bg-white border-t pt-4">
+          <DialogFooter className="sticky bottom-0 bg-white pt-4">
             <Button variant="outline" onClick={() => setShowAwardPointsModal(false)}>
               Cancel
             </Button>

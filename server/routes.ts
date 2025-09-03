@@ -5383,7 +5383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Progress Reports Routes
-  app.post("/api/teacher/progress-report/:studentId", authenticateTeacher, async (req, res) => {
+  app.post("/api/teacher/progress-report/:studentId", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const { studentId } = req.params;
       const { reportType, customDateRange } = req.body;
@@ -5405,7 +5405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/teacher/progress-reports/:studentId", authenticateTeacher, async (req, res) => {
+  app.get("/api/teacher/progress-reports/:studentId", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const { studentId } = req.params;
       const reports = await progressReportService.getStudentReports(studentId);

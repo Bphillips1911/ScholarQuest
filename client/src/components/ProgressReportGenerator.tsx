@@ -37,10 +37,7 @@ export function ProgressReportGenerator({ studentId, studentName, onReportGenera
   // Generate new report mutation
   const generateReportMutation = useMutation({
     mutationFn: async (data: { reportType: string; customDateRange?: any }) => {
-      return await apiRequest(`/api/teacher/progress-report/${studentId}`, {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      return await apiRequest(`/api/teacher/progress-report/${studentId}`, 'POST', data);
     },
     onSuccess: (report) => {
       toast({

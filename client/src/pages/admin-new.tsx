@@ -342,21 +342,6 @@ export default function AdminNew() {
         variant: "destructive",
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
-      setMessageForm({ subject: "", message: "", recipientType: "" });
-      toast({
-        title: "Message Sent",
-        description: "Your message has been sent successfully.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Send Failed",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
-    },
   });
 
   const handleSendMessage = () => {

@@ -378,7 +378,7 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
                     <SelectValue placeholder="Select student for personalized recommendations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Students (Class View)</SelectItem>
+                    <SelectItem value="all">All Students (Class View)</SelectItem>
                     {/* This would be populated with actual students from the API */}
                   </SelectContent>
                 </Select>

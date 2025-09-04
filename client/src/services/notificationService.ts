@@ -112,6 +112,46 @@ class NotificationService {
     });
   }
 
+  // Create notification for teacher messages to students/parents
+  notifyTeacherMessage(data: {
+    studentName: string;
+    teacherName: string;
+    subject: string;
+    recipientType: string;
+  }) {
+    this.addNotification({
+      type: 'info',
+      title: '📩 New Message from Teacher',
+      message: `${data.teacherName} sent a message about ${data.subject}`,
+      metadata: {
+        studentName: data.studentName,
+        teacherName: data.teacherName,
+        subject: data.subject,
+        recipientType: data.recipientType,
+      },
+    });
+  }
+
+  // Create notification for admin messages to students/parents/teachers
+  notifyAdminMessage(data: {
+    studentName?: string;
+    adminName: string;
+    subject: string;
+    recipientType: string;
+  }) {
+    this.addNotification({
+      type: 'info',
+      title: '📢 Message from Administration',
+      message: `${data.adminName} sent: ${data.subject}`,
+      metadata: {
+        studentName: data.studentName,
+        adminName: data.adminName,
+        subject: data.subject,
+        recipientType: data.recipientType,
+      },
+    });
+  }
+
   // Create notification for new student registrations
   notifyNewStudent(data: {
     studentName: string;
@@ -279,6 +319,24 @@ class NotificationService {
             points: update.data.points || 0,
             reason: update.data.reason || 'behavioral concern',
             category: update.data.category || 'behavior',
+          });
+        }
+        break;
+
+      case 'MESSAGE_UPDATE':
+        if (update.data?.action === 'teacher_message') {
+          this.notifyTeacherMessage({
+            studentName: update.data.studentName || 'Student',
+            teacherName: update.data.teacherName || 'Teacher',
+            subject: update.data.subject || 'New Message',
+            recipientType: update.data.recipientType || 'student',
+          });
+        } else if (update.data?.action === 'admin_message') {
+          this.notifyAdminMessage({
+            studentName: update.data.studentName,
+            adminName: update.data.adminName || 'Administrator',
+            subject: update.data.subject || 'New Message',
+            recipientType: update.data.recipientType || 'student',
           });
         }
         break;

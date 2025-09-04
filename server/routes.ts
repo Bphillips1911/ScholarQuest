@@ -601,6 +601,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Due in 7 days
           );
           console.log(`✅ REFLECTION: Assigned reflection ${reflection.id} to scholar ${entry.scholarId}, assigned by teacher ${teacherId}`);
+          
+          // Send real-time notification for reflection assignment
+          const scholar = await storage.getScholar(entry.scholarId);
+          if (scholar) {
+            const broadcastFn = (global as any).broadcastRealtimeUpdate;
+            if (broadcastFn) {
+              console.log(`🔔 REFLECTION ASSIGNMENT NOTIFICATION: Broadcasting for ${scholar.name}`);
+              broadcastFn('REFLECTION_UPDATE', {
+                action: 'assigned',
+                studentName: scholar.name,
+                teacherName: entry.teacherName,
+                reason: entry.reason || entry.subcategory,
+                timestamp: new Date().toISOString()
+              });
+            }
+          }
         } catch (reflectionError) {
           console.error("Failed to assign reflection:", reflectionError);
           // Continue even if reflection assignment fails
@@ -1524,6 +1540,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("TEACHER MESSAGE: Creating message with data:", messageData);
       const createdMessage = await storage.createMessage(messageData);
       console.log("TEACHER MESSAGE: Message sent successfully to parent:", createdMessage.id);
+      
+      // Send real-time notification for teacher message
+      const scholar = scholarId ? await storage.getScholar(scholarId) : null;
+      const broadcastFn = (global as any).broadcastRealtimeUpdate;
+      if (broadcastFn && scholar) {
+        console.log(`🔔 TEACHER MESSAGE NOTIFICATION: Broadcasting for ${scholar.name}`);
+        broadcastFn('MESSAGE_UPDATE', {
+          action: 'teacher_message',
+          studentName: scholar.name,
+          teacherName: req.teacher.name,
+          subject: subject,
+          recipientType: recipientType,
+          timestamp: new Date().toISOString()
+        });
+      }
       
       res.json({
         success: true,
@@ -3376,12 +3407,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const message = await storage.createParentTeacherMessage(messageData);
       
-      // Send email notifications
+      // Send email notifications and real-time notifications
       const [parent, teacher, scholar] = await Promise.all([
         storage.getParent(messageData.parentId),
         storage.getTeacherAuthById ? storage.getTeacherAuthById(messageData.teacherId) : null,
         storage.getScholar(messageData.scholarId)
       ]);
+
+      // Send real-time notification for parent-teacher message
+      if (scholar && teacher) {
+        const broadcastFn = (global as any).broadcastRealtimeUpdate;
+        if (broadcastFn) {
+          console.log(`🔔 PARENT-TEACHER MESSAGE NOTIFICATION: Broadcasting for ${scholar.name}`);
+          broadcastFn('MESSAGE_UPDATE', {
+            action: 'teacher_message',
+            studentName: scholar.name,
+            teacherName: teacher.name,
+            subject: messageData.subject,
+            recipientType: 'parent',
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
       
       if (parent && teacher && scholar) {
         if (messageData.senderType === 'teacher') {
@@ -3789,6 +3836,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           const newMessage = await storage.createParentTeacherMessage(messageData);
           messagesSent.push(newMessage);
+          
+          // Send real-time notification for admin broadcast to parent
+          const broadcastFn = (global as any).broadcastRealtimeUpdate;
+          if (broadcastFn) {
+            console.log(`🔔 ADMIN BROADCAST NOTIFICATION: Broadcasting to parent ${parent.firstName} ${parent.lastName}`);
+            broadcastFn('MESSAGE_UPDATE', {
+              action: 'admin_message',
+              adminName: req.admin.name || 'Administrator',
+              subject: subject,
+              recipientType: 'parent',
+              parentName: `${parent.firstName} ${parent.lastName}`,
+              timestamp: new Date().toISOString()
+            });
+          }
         }
       } else if (recipientType === "all-teachers") {
         // Send to all teachers
@@ -3910,6 +3971,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const newMessage = await storage.createParentTeacherMessage(messageData);
+      
+      // Send real-time notification for direct admin message
+      const broadcastFn = (global as any).broadcastRealtimeUpdate;
+      if (broadcastFn) {
+        console.log(`🔔 ADMIN DIRECT MESSAGE NOTIFICATION: Broadcasting to ${recipientType}`);
+        broadcastFn('MESSAGE_UPDATE', {
+          action: 'admin_message',
+          adminName: req.admin.name || 'Administrator',
+          subject: subject,
+          recipientType: recipientType,
+          timestamp: new Date().toISOString()
+        });
+      }
       
       console.log("ADMIN SEND MESSAGE: Message created successfully:", newMessage.id);
       

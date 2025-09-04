@@ -125,9 +125,33 @@ export default function TeacherStudentView() {
   });
 
   const handleReturnToTeacher = () => {
-    // Clear teacher viewing session
-    sessionStorage.removeItem('teacherViewingStudent');
-    window.close();
+    // Get viewing session data to determine where to return
+    const viewingData = sessionStorage.getItem('teacherViewingStudent');
+    let returnPath = '/teacher-dashboard'; // default
+    
+    if (viewingData) {
+      const data = JSON.parse(viewingData);
+      returnPath = data.returnTo || '/teacher-dashboard';
+      
+      // Clear teacher viewing session
+      sessionStorage.removeItem('teacherViewingStudent');
+      
+      // If opened in new tab, try to navigate parent window
+      if (window.opener && !window.opener.closed) {
+        window.opener.location.href = returnPath;
+        window.close();
+      } else {
+        // Fallback: navigate current window
+        window.location.href = returnPath;
+      }
+    } else {
+      // Fallback: close window or navigate to teacher dashboard
+      if (window.opener && !window.opener.closed) {
+        window.close();
+      } else {
+        window.location.href = '/teacher-dashboard';
+      }
+    }
   };
 
   const getThemeStyles = (theme: string) => {
@@ -316,7 +340,7 @@ export default function TeacherStudentView() {
               size="sm"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Return to Teacher
+              {teacherViewData?.adminMode ? 'Return to Admin' : 'Return to Teacher'}
             </Button>
           </div>
         </div>

@@ -30,12 +30,6 @@ export default function AdminNew() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // SEL lessons query for admin monitoring
-  const { data: selLessons, isLoading: selLessonsLoading } = useQuery({
-    queryKey: ['/api/admin/sel/lessons'],
-    enabled: isAuthenticated
-  });
-
   // Check if admin is logged in
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState<any>(null);
@@ -240,6 +234,12 @@ export default function AdminNew() {
   const { data: gameAccess = [] } = useQuery({
     queryKey: ["/api/game-access"],
     enabled: isAuthenticated,
+  });
+
+  // SEL lessons query for admin monitoring
+  const { data: selLessons = [], isLoading: selLessonsLoading } = useQuery({
+    queryKey: ['/api/admin/sel/lessons'],
+    enabled: isAuthenticated
   });
 
   const handleLogout = () => {

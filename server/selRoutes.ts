@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { 
   selLessons, 
   selQuizQuestions, 
@@ -292,20 +292,17 @@ export function registerSELRoutes(app: Express) {
     try {
       console.log('ADMIN-SEL: Getting all SEL lessons for admin monitoring');
 
-      const lessons = await db
-        .select({
-          lesson: selLessons,
-          scholar: {
-            id: scholars.id,
-            name: scholars.name,
-            grade: scholars.grade
-          },
-          quizResult: selQuizResults
-        })
-        .from(selLessons)
-        .leftJoin(scholars, eq(selLessons.scholarId, scholars.id))
-        .leftJoin(selQuizResults, eq(selLessons.id, selQuizResults.lessonId))
-        .orderBy(desc(selLessons.assignedAt));
+      // Use raw SQL since the existing table has different column names
+      const lessons = await db.execute(sql`
+        SELECT 
+          sl.*,
+          s.id as scholar_id,
+          s.name as scholar_name,
+          s.grade as scholar_grade
+        FROM sel_lessons sl
+        LEFT JOIN scholars s ON sl.student_id = s.id
+        ORDER BY sl.assigned_at DESC
+      `);
 
       console.log(`ADMIN-SEL: Found ${lessons.length} SEL lessons for admin monitoring`);
       res.json(lessons);

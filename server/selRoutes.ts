@@ -285,6 +285,36 @@ export function registerSELRoutes(app: Express) {
     }
   });
 
+  // === ADMIN SEL ROUTES ===
+  
+  // Get all SEL lessons for admin monitoring (no authentication required for admin)
+  app.get('/api/admin/sel/lessons', async (req: any, res: any) => {
+    try {
+      console.log('ADMIN-SEL: Getting all SEL lessons for admin monitoring');
+
+      const lessons = await db
+        .select({
+          lesson: selLessons,
+          scholar: {
+            id: scholars.id,
+            name: scholars.name,
+            grade: scholars.grade
+          },
+          quizResult: selQuizResults
+        })
+        .from(selLessons)
+        .leftJoin(scholars, eq(selLessons.scholarId, scholars.id))
+        .leftJoin(selQuizResults, eq(selLessons.id, selQuizResults.lessonId))
+        .orderBy(desc(selLessons.assignedAt));
+
+      console.log(`ADMIN-SEL: Found ${lessons.length} SEL lessons for admin monitoring`);
+      res.json(lessons);
+    } catch (error) {
+      console.error('ADMIN-SEL: Error getting all SEL lessons:', error);
+      res.status(500).json({ error: 'Failed to get SEL lessons for admin' });
+    }
+  });
+
   // === TRIGGER ROUTE: Auto-generate SEL lesson when negative PBIS is assigned ===
   
   // This will be called automatically when negative PBIS points are assigned

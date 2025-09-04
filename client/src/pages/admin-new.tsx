@@ -19,6 +19,8 @@ import { ProgressReportGenerator } from "@/components/ProgressReportGenerator";
 import { AchievementPlayground } from "@/components/AchievementPlayground";
 import { TeacherPerformanceHeatmap } from "@/components/TeacherPerformanceHeatmap";
 import { AIRecommendationEngine } from "@/components/AIRecommendationEngine";
+import { NotificationBell, NotificationPanel, useNotifications } from "@/components/NotificationSystem";
+import { notificationService } from "@/services/notificationService";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -27,6 +29,12 @@ export default function AdminNew() {
   const [activeTab, setActiveTab] = useState("teachers");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // SEL lessons query for admin monitoring
+  const { data: selLessons, isLoading: selLessonsLoading } = useQuery({
+    queryKey: ['/api/admin/sel/lessons'],
+    enabled: isAuthenticated
+  });
 
   // Check if admin is logged in
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -50,6 +58,10 @@ export default function AdminNew() {
   // Game modal state
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [showGameModal, setShowGameModal] = useState(false);
+
+  // Notification state
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const { addNotification } = useNotifications();
 
   // Student management state
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -102,6 +114,10 @@ export default function AdminNew() {
     
     setCurrentTheme(savedTheme);
     
+    // Set up notification service callback
+    notificationService.setNotificationCallback(addNotification);
+    notificationService.initializeRealTimeListeners();
+    
     if (token && data) {
       try {
         const parsedData = JSON.parse(data);
@@ -115,7 +131,7 @@ export default function AdminNew() {
     } else {
       setLocation("/admin-login");
     }
-  }, [setLocation]);
+  }, [setLocation, addNotification]);
 
   // Theme toggle function
   const toggleTheme = () => {
@@ -521,6 +537,12 @@ export default function AdminNew() {
                 <Palette className="h-4 w-4" />
                 {currentTheme === 'normal' ? 'Normal' : currentTheme === 'light' ? 'Light' : 'Dark'}
               </Button>
+              
+              {/* Notification Bell */}
+              <NotificationBell 
+                onClick={() => setShowNotificationPanel(true)}
+                className="text-gray-600 hover:text-gray-900"
+              />
               
               <Select onValueChange={(value) => window.location.href = value}>
                 <SelectTrigger className="w-40" style={{backgroundColor: themeStyles.cardBg, color: themeStyles.textPrimary, borderColor: themeStyles.border}}>
@@ -1627,62 +1649,94 @@ export default function AdminNew() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* SEL System Overview */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-purple-600">12</div>
-                      <div className="text-sm text-purple-600">Active Lessons</div>
-                    </div>
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-blue-600">8</div>
-                      <div className="text-sm text-blue-600">Completed</div>
-                    </div>
-                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-orange-600">3</div>
-                      <div className="text-sm text-orange-600">Overdue</div>
-                    </div>
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-green-600">85%</div>
-                      <div className="text-sm text-green-600">Success Rate</div>
-                    </div>
-                  </div>
+                  {(() => {
+                    const activeLessons = selLessons?.filter((l: any) => l.lesson.status === 'pending').length || 0;
+                    const completedLessons = selLessons?.filter((l: any) => l.lesson.status === 'completed').length || 0;
+                    const overdueLessons = selLessons?.filter((l: any) => {
+                      const dueDate = new Date(l.lesson.dueDate);
+                      const now = new Date();
+                      return l.lesson.status === 'pending' && dueDate < now;
+                    }).length || 0;
+                    const successRate = selLessons?.length > 0 ? Math.round((completedLessons / selLessons.length) * 100) : 0;
+                    
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-purple-600">{activeLessons}</div>
+                          <div className="text-sm text-purple-600">Active Lessons</div>
+                        </div>
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-blue-600">{completedLessons}</div>
+                          <div className="text-sm text-blue-600">Completed</div>
+                        </div>
+                        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-orange-600">{overdueLessons}</div>
+                          <div className="text-sm text-orange-600">Overdue</div>
+                        </div>
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-green-600">{successRate}%</div>
+                          <div className="text-sm text-green-600">Success Rate</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Recent SEL Activity */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4" style={{color: themeStyles.textPrimary}}>Recent SEL Lesson Activity</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                          <div>
-                            <div className="font-medium text-gray-900">Anger Management Lesson - Maria Garcia</div>
-                            <div className="text-sm text-gray-600">Triggered by negative behavior points • Due: Today</div>
-                          </div>
-                        </div>
-                        <Badge variant="secondary">In Progress</Badge>
+                    {selLessonsLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                        <p className="text-gray-500 mt-2">Loading SEL lessons...</p>
                       </div>
-                      
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                          <div>
-                            <div className="font-medium text-gray-900">Empathy & Understanding - Jordan Smith</div>
-                            <div className="text-sm text-gray-600">Quiz completed with 92% score • Completed 2h ago</div>
-                          </div>
-                        </div>
-                        <Badge variant="default" className="bg-green-100 text-green-800">Completed</Badge>
+                    ) : selLessons && selLessons.length > 0 ? (
+                      <div className="space-y-3">
+                        {selLessons.slice(0, 5).map((lessonData: any) => {
+                          const lesson = lessonData.lesson;
+                          const scholar = lessonData.scholar;
+                          const isOverdue = lesson.status === 'pending' && new Date(lesson.dueDate) < new Date();
+                          const statusColor = lesson.status === 'completed' ? 'bg-green-500' : 
+                                             isOverdue ? 'bg-red-500' : 'bg-purple-500';
+                          const statusText = lesson.status === 'completed' ? 'Completed' :
+                                            isOverdue ? 'Overdue' : 'In Progress';
+                          const statusVariant = lesson.status === 'completed' ? 'default' :
+                                               isOverdue ? 'destructive' : 'secondary';
+                          
+                          return (
+                            <div key={lesson.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${statusColor}`}></div>
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {lesson.lessonTitle} - {scholar?.name || 'Unknown Student'}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {lesson.status === 'completed' 
+                                      ? `Completed ${lesson.completedAt ? new Date(lesson.completedAt).toLocaleDateString() : 'recently'}`
+                                      : `Due: ${new Date(lesson.dueDate).toLocaleDateString()}`
+                                    } • {lesson.behaviorType}
+                                  </div>
+                                </div>
+                              </div>
+                              <Badge 
+                                variant={statusVariant}
+                                className={lesson.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
+                              >
+                                {statusText}
+                              </Badge>
+                            </div>
+                          );
+                        })}
                       </div>
-                      
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                          <div>
-                            <div className="font-medium text-gray-900">Respect & Cooperation - Alex Johnson</div>
-                            <div className="text-sm text-gray-600">Auto-assigned after disruption incident • Overdue</div>
-                          </div>
-                        </div>
-                        <Badge variant="destructive">Overdue</Badge>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Brain className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <p className="text-gray-500">No SEL lessons found</p>
+                        <p className="text-sm text-gray-400">
+                          SEL lessons will appear here when students receive negative PBIS points
+                        </p>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* SEL System Status */}
@@ -2981,6 +3035,12 @@ export default function AdminNew() {
           }}
         />
       )}
+
+      {/* Notification Panel */}
+      <NotificationPanel 
+        isOpen={showNotificationPanel}
+        onClose={() => setShowNotificationPanel(false)}
+      />
     </div>
   );
 }

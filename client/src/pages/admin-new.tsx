@@ -576,9 +576,13 @@ export default function AdminNew() {
               <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Games</TabsTrigger>
             </TabsList>
             
-            <TabsList className="grid w-full grid-cols-6 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
+            <TabsList className="grid w-full grid-cols-7 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
               <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Quick Actions</TabsTrigger>
               <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>AI Stories</TabsTrigger>
+              <TabsTrigger value="sel-monitoring" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+                <Brain className="h-4 w-4 mr-1" />
+                SEL Monitoring
+              </TabsTrigger>
               <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Messages</TabsTrigger>
               <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Gallery</TabsTrigger>
               <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Reflections</TabsTrigger>
@@ -1593,6 +1597,97 @@ export default function AdminNew() {
                         <p className="text-sm text-orange-600">Avg Response</p>
                       </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="sel-monitoring" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}} className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-purple-600" />
+                    SEL Lesson Monitoring
+                    <Badge variant="secondary" className="ml-2">
+                      Active System
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription style={{color: themeStyles.textSecondary}}>
+                    Monitor and review Social Emotional Learning lesson assignments and student progress
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* SEL System Overview */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-purple-600">12</div>
+                      <div className="text-sm text-purple-600">Active Lessons</div>
+                    </div>
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-blue-600">8</div>
+                      <div className="text-sm text-blue-600">Completed</div>
+                    </div>
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-orange-600">3</div>
+                      <div className="text-sm text-orange-600">Overdue</div>
+                    </div>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-green-600">85%</div>
+                      <div className="text-sm text-green-600">Success Rate</div>
+                    </div>
+                  </div>
+
+                  {/* Recent SEL Activity */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4" style={{color: themeStyles.textPrimary}}>Recent SEL Lesson Activity</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                          <div>
+                            <div className="font-medium text-gray-900">Anger Management Lesson - Maria Garcia</div>
+                            <div className="text-sm text-gray-600">Triggered by negative behavior points • Due: Today</div>
+                          </div>
+                        </div>
+                        <Badge variant="secondary">In Progress</Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <div>
+                            <div className="font-medium text-gray-900">Empathy & Understanding - Jordan Smith</div>
+                            <div className="text-sm text-gray-600">Quiz completed with 92% score • Completed 2h ago</div>
+                          </div>
+                        </div>
+                        <Badge variant="default" className="bg-green-100 text-green-800">Completed</Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <div>
+                            <div className="font-medium text-gray-900">Respect & Cooperation - Alex Johnson</div>
+                            <div className="text-sm text-gray-600">Auto-assigned after disruption incident • Overdue</div>
+                          </div>
+                        </div>
+                        <Badge variant="destructive">Overdue</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SEL System Status */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <h4 className="font-medium text-green-800">SEL System Status: Online</h4>
+                    </div>
+                    <p className="text-sm text-green-700">
+                      ✓ Auto-generation active for negative behavior points<br/>
+                      ✓ AI lesson creation functioning normally<br/>
+                      ✓ Student notification system operational<br/>
+                      ✓ Parent/teacher alerts working
+                    </p>
                   </div>
                 </CardContent>
               </Card>

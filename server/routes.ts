@@ -634,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Continue with successful response even if email fails
       }
       
-      res.status(201).json(entry);
+      res.status(201).json({ pbisEntry: entry, success: true });
     } catch (error) {
       console.error("PBIS ENTRY ERROR:", error);
       res.status(400).json({ message: "Invalid PBIS entry data", error: error.message });

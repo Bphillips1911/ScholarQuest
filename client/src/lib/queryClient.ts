@@ -27,8 +27,8 @@ export async function apiRequest(
   
   // Student routes (including mood tracking, progress, and reflection endpoints)
   if ((url.startsWith('/api/student/') || url.startsWith('/api/mood/') || 
-       url.startsWith('/api/progress/') || url.startsWith('/api/reflection/')) && studentToken) {
-    headers.Authorization = `Bearer ${studentToken}`;
+       url.startsWith('/api/progress/') || url.startsWith('/api/reflection/')) && (studentToken || adminToken)) {
+    headers.Authorization = `Bearer ${studentToken || adminToken}`;
   } else if (url.startsWith('/api/teacher/') && (teacherToken || adminToken)) {
     // Use admin token for teacher routes if admin is logged in
     headers.Authorization = `Bearer ${adminToken || teacherToken}`;
@@ -87,10 +87,10 @@ export const getQueryFn: <T>(options: {
     
     // Student routes (including mood tracking, progress, and reflection endpoints)
     if ((url.includes('/api/student/') || url.includes('/api/mood/') || 
-         url.includes('/api/progress/') || url.includes('/api/reflection/')) && studentToken) {
-      headers.Authorization = `Bearer ${studentToken}`;
-    } else if (url.includes('/api/teacher/') && teacherToken) {
-      headers.Authorization = `Bearer ${teacherToken}`;
+         url.includes('/api/progress/') || url.includes('/api/reflection/')) && (studentToken || adminToken)) {
+      headers.Authorization = `Bearer ${studentToken || adminToken}`;
+    } else if (url.includes('/api/teacher/') && (teacherToken || adminToken)) {
+      headers.Authorization = `Bearer ${teacherToken || adminToken}`;
     } else if (url.includes('/api/parent/') && parentToken) {
       headers.Authorization = `Bearer ${parentToken}`;
     } else if (url.includes('/api/admin/') && adminToken) {

@@ -19,10 +19,13 @@ import {
   HelpCircle,
   LogOut,
   Map,
-  FileText
+  FileText,
+  Bell,
+  Brain
 } from 'lucide-react';
 import { InteractiveLearningAssistant } from '@/components/learning-assistant/InteractiveLearningAssistant';
 import { DashboardThemes } from '@/components/DashboardThemes';
+import { NotificationBell } from '@/components/NotificationSystem';
 import logoPath from '@assets/_BHSA Mustang 1_1754780382943.png';
 
 interface StudentData {
@@ -112,6 +115,12 @@ export default function TeacherStudentView() {
   // Fetch behavioral reflections for the student
   const { data: reflections = [] } = useQuery({
     queryKey: [`/api/student/reflections`, params?.studentId],
+    enabled: !!params?.studentId,
+  });
+
+  // Fetch SEL lessons for the student
+  const { data: selLessons = [] } = useQuery({
+    queryKey: [`/api/sel/lessons/${params?.studentId}`],
     enabled: !!params?.studentId,
   });
 
@@ -279,6 +288,25 @@ export default function TeacherStudentView() {
                 <HelpCircle className="h-4 w-4 mr-1" />
                 Help Quests
               </Button>
+              
+              {/* SEL Button */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="bg-purple-100 text-purple-700 hover:bg-purple-200"
+                onClick={() => {
+                  const selElement = document.getElementById('sel-section');
+                  if (selElement) {
+                    selElement.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              >
+                <Brain className="h-4 w-4 mr-1" />
+                SEL
+              </Button>
+              
+              {/* Notification Bell */}
+              <NotificationBell />
             </div>
             
             {/* Return Button - Fixed Position */}
@@ -595,7 +623,58 @@ export default function TeacherStudentView() {
         </motion.div>
       </div>
 
-      
+      {/* SEL Section */}
+      <div id="sel-section" className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <Card className="bg-white rounded-2xl shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <Brain className="h-5 w-5 text-purple-600" />
+                Social Emotional Learning (SEL)
+                <Badge variant="secondary" className="ml-2">
+                  {selLessons.length} lessons
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {selLessons.length > 0 ? (
+                <div className="space-y-4">
+                  {selLessons.map((lesson: any, index: number) => (
+                    <div key={lesson.id || index} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-900">{lesson.title || 'SEL Lesson'}</h4>
+                        <Badge 
+                          variant={lesson.status === 'completed' ? 'default' : 'secondary'}
+                          className={lesson.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
+                        >
+                          {lesson.status || 'pending'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">{lesson.content || lesson.description}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Due: {lesson.dueDate ? new Date(lesson.dueDate).toLocaleDateString() : 'N/A'}</span>
+                        <span>{lesson.behaviorType} - {lesson.specificBehavior}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Brain className="h-12 w-12 mx-auto mb-4 text-purple-400 opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2 text-gray-900">No SEL Lessons Assigned</h3>
+                  <p className="text-sm text-gray-600">
+                    SEL lessons will automatically appear here when negative PBIS points are assigned to help improve behavior and social skills.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
 
       {/* Interactive Learning Assistant */}
       <InteractiveLearningAssistant 

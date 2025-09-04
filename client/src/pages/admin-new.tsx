@@ -739,9 +739,18 @@ export default function AdminNew() {
                           }
                           
                           const selectedStudent = allScholars?.find(s => s.id === selectedStudentForDashboard);
-                          if (selectedStudent?.username) {
-                            // Open student dashboard in new tab
-                            const dashboardUrl = `/student-dashboard?username=${encodeURIComponent(selectedStudent.username)}`;
+                          if (selectedStudent) {
+                            // Store admin viewing data for teacher-student-view route
+                            sessionStorage.setItem('teacherViewingStudent', JSON.stringify({
+                              studentId: selectedStudent.id,
+                              studentName: selectedStudent.name,
+                              teacherMode: true,
+                              adminMode: true,
+                              returnTo: '/admin'
+                            }));
+                            
+                            // Open admin student dashboard viewer in new tab using teacher-student-view route
+                            const dashboardUrl = `/teacher-student-view/${selectedStudent.id}`;
                             window.open(dashboardUrl, '_blank');
                             
                             toast({
@@ -750,8 +759,8 @@ export default function AdminNew() {
                             });
                           } else {
                             toast({
-                              title: "No Login Credentials",
-                              description: "This student doesn't have login credentials yet.",
+                              title: "Student Not Found",
+                              description: "Unable to find the selected student.",
                               variant: "destructive",
                             });
                           }

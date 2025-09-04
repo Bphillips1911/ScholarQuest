@@ -293,7 +293,7 @@ export function registerSELRoutes(app: Express) {
       console.log('ADMIN-SEL: Getting all SEL lessons for admin monitoring');
 
       // Use raw SQL since the existing table has different column names
-      const lessons = await db.execute(sql`
+      const result = await db.execute(sql`
         SELECT 
           sl.*,
           s.id as scholar_id,
@@ -304,6 +304,8 @@ export function registerSELRoutes(app: Express) {
         ORDER BY sl.assigned_at DESC
       `);
 
+      // Extract rows from the database result
+      const lessons = result.rows || [];
       console.log(`ADMIN-SEL: Found ${lessons.length} SEL lessons for admin monitoring`);
       res.json(lessons);
     } catch (error) {

@@ -358,7 +358,7 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
     );
   };
 
-  const currentRecommendations = recommendations || classRecommendations || [];
+  const currentRecommendations = Array.isArray(recommendations) ? recommendations : Array.isArray(classRecommendations) ? classRecommendations : [];
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -451,19 +451,19 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
       )}
 
       {/* Recommendations List */}
-      {currentRecommendations.length > 0 && (
+      {Array.isArray(currentRecommendations) && currentRecommendations.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">
               {selectedStudent ? 'Personalized Recommendations' : 'Class Recommendations'}
             </h3>
             <Badge variant="outline">
-              {currentRecommendations.length} Recommendations
+              {Array.isArray(currentRecommendations) ? currentRecommendations.length : 0} Recommendations
             </Badge>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {currentRecommendations.map((recommendation: any) => (
+            {Array.isArray(currentRecommendations) && currentRecommendations.map((recommendation: any) => (
               <RecommendationCard key={recommendation.id} recommendation={recommendation} />
             ))}
           </div>
@@ -471,7 +471,7 @@ export function AIRecommendationEngine({ studentId, grade, className }: AIRecomm
       )}
 
       {/* Empty State */}
-      {!isLoading && currentRecommendations.length === 0 && (
+      {!isLoading && (!Array.isArray(currentRecommendations) || currentRecommendations.length === 0) && (
         <Card>
           <CardContent className="p-8 text-center">
             <Brain className="mx-auto h-12 w-12 text-muted-foreground mb-4" />

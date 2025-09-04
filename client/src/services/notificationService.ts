@@ -40,6 +40,28 @@ class NotificationService {
     });
   }
 
+  // Create notification for negative PBIS points
+  notifyNegativePBISPoints(data: {
+    studentName: string;
+    teacherName: string;
+    points: number;
+    reason: string;
+    category: string;
+  }) {
+    this.addNotification({
+      type: 'warning',
+      title: '⚠️ PBIS Points Deducted',
+      message: `${data.studentName} lost ${Math.abs(data.points)} points for ${data.reason}`,
+      metadata: {
+        studentName: data.studentName,
+        teacherName: data.teacherName,
+        points: data.points,
+        reason: data.reason,
+        category: data.category,
+      },
+    });
+  }
+
   // Create notification for reflection assignments
   notifyReflectionAssigned(data: {
     studentName: string;
@@ -249,6 +271,14 @@ class NotificationService {
             points: update.data.points || 0,
             houseName: update.data.houseName || 'House',
             behavior: update.data.behavior || 'positive behavior',
+          });
+        } else if (update.data?.action === 'negative_points') {
+          this.notifyNegativePBISPoints({
+            studentName: update.data.studentName || 'Student',
+            teacherName: update.data.teacherName || 'Teacher',
+            points: update.data.points || 0,
+            reason: update.data.reason || 'behavioral concern',
+            category: update.data.category || 'behavior',
           });
         }
         break;

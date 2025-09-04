@@ -713,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Send parent notification
+        // Send parent notification and real-time notification
         try {
           console.log("TEACHER PBIS: Getting parents for scholar:", scholarId);
           const parents = await storage.getParentsByScholarId(scholarId);
@@ -741,6 +741,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log("✅ TEACHER PBIS: Parent notification sent successfully to:", parent.email);
             } else {
               console.log("❌ TEACHER PBIS: Failed to send parent notification to:", parent.email);
+            }
+          }
+          
+          // Send real-time notification for negative points
+          if (pointsToAdd < 0) {
+            console.log(`🔔 NEGATIVE POINTS NOTIFICATION: Broadcasting for ${scholar.name} (${pointsToAdd} points)`);
+            const broadcastFn = (global as any).broadcastRealtimeUpdate;
+            if (broadcastFn) {
+              broadcastFn('PBIS_UPDATE', {
+                action: 'negative_points',
+                studentName: scholar.name,
+                teacherName: teacher.name,
+                points: pointsToAdd,
+                reason: reason,
+                category: category,
+                timestamp: new Date().toISOString()
+              });
             }
           }
         } catch (emailError) {

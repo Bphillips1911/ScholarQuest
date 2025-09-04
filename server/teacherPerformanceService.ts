@@ -247,8 +247,10 @@ export class TeacherPerformanceService {
         summary: {
           totalTeachers: teachers.length,
           activeTeachers: teacherData.filter(t => t.totalInteractions > 0).length,
-          avgEffectiveness: schoolAverages.effectivenessRating,
-          avgEngagement: schoolAverages.studentEngagementScore
+          averageEffectiveness: schoolAverages.effectivenessRating,
+          totalPBISPoints: teacherData.reduce((sum, t) => sum + t.pbisPointsAwarded, 0),
+          totalCommunications: teacherData.reduce((sum, t) => sum + t.parentCommunications, 0),
+          averageResponseTime: schoolAverages.responseTime
         }
       };
 

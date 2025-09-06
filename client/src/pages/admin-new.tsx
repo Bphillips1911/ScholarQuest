@@ -99,6 +99,7 @@ export default function AdminNew() {
   const [showCreateBadgeModal, setShowCreateBadgeModal] = useState(false);
   const [showMassAwardModal, setShowMassAwardModal] = useState(false);
   const [qrCodeStudentId, setQrCodeStudentId] = useState("");
+  const [selectedBadgeCategory, setSelectedBadgeCategory] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("AdminNew component mounted");
@@ -1284,8 +1285,12 @@ export default function AdminNew() {
                           <p className="text-sm mb-3" style={{color: themeStyles.textSecondary}}>
                             {allBadges?.filter((b: any) => b.category === category).length || 0} badges in this category
                           </p>
-                          <Button size="sm" className="w-full">
-                            View {category} Badges
+                          <Button 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => setSelectedBadgeCategory(selectedBadgeCategory === category ? null : category)}
+                          >
+                            {selectedBadgeCategory === category ? 'Hide' : 'View'} {category} Badges
                           </Button>
                         </div>
                       ))}

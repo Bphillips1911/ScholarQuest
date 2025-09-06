@@ -50,9 +50,15 @@ export class AIRecommendationService {
         .orderBy(desc(reflections.assignedAt))
         .limit(10);
 
-      // Get current gamified progress
-      const currentProgress = await db.select().from(gamifiedProgress)
-        .where(eq(gamifiedProgress.studentId, studentId));
+      // Get current gamified progress (handle missing table gracefully)
+      let currentProgress = [];
+      try {
+        currentProgress = await db.select().from(gamifiedProgress)
+          .where(eq(gamifiedProgress.studentId, studentId));
+      } catch (error) {
+        console.log('Gamified progress table not available, using empty progress data');
+        currentProgress = [];
+      }
 
       // Analyze patterns and generate AI recommendations
       const analysisPrompt = this.buildAnalysisPrompt(student, recentPbisEntries, recentReflections, currentProgress);
@@ -156,9 +162,9 @@ ${pbisEntries.slice(0, 10).map(entry =>
 ).join('\n')}
 
 Current Gamified Progress:
-${progress.map(p => 
+${progress.length > 0 ? progress.map(p => 
   `- ${p.skillName}: Level ${p.currentLevel} (${p.currentXP}/${p.nextLevelXP} XP, ${p.streakDays} day streak)`
-).join('\n')}
+).join('\n') : '- No gamified progress data available yet'}
 
 Provide recommendations in this JSON format:
 {

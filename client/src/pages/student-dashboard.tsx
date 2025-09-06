@@ -52,9 +52,22 @@ import {
 } from "@/components/MicroAnimations";
 import { motion } from "framer-motion";
 
+// Types for SEL lessons
+interface SELLesson {
+  id: string;
+  scholarId: string;
+  lessonTitle: string;
+  status: 'assigned' | 'in_progress' | 'completed';
+  assignedAt: string;
+  dueDate?: string;
+  estimatedTime: number;
+  difficulty: string;
+  interventionLevel: number;
+}
+
 // Student SEL Lessons Component
 function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; themeStyles: any }) {
-  const { data: selLessons, isLoading } = useQuery({
+  const { data: selLessons, isLoading } = useQuery<SELLesson[]>({
     queryKey: ['/api/student/sel/lessons', studentId],
     enabled: !!studentId,
   });
@@ -134,7 +147,7 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
               </p>
             </div>
 
-            {selLessons.map((lesson: any) => (
+            {selLessons?.map((lesson: SELLesson) => (
               <div key={lesson.id} className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -194,6 +207,7 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
     </Card>
   );
 }
+
 import { NotificationHeader } from "@/components/NotificationHeader";
 
 interface StudentData {
@@ -219,7 +233,7 @@ interface ScholarData {
 interface HouseData {
   id: string;
   name: string;
-  colors: string[];
+  color: string;
   motto: string;
   totalPoints: number;
 }
@@ -369,26 +383,26 @@ function StudentDashboardContent() {
   }, [setLocation]);
 
   // Fetch scholar details with authentication
-  const { data: scholarData, isLoading: scholarLoading } = useQuery({
+  const { data: scholarData, isLoading: scholarLoading } = useQuery<ScholarData>({
     queryKey: ["/api/student/profile"],
     enabled: !!studentData,
     retry: 1,
   });
 
   // Fetch houses data
-  const { data: houses } = useQuery({
+  const { data: houses } = useQuery<HouseData[]>({
     queryKey: ["/api/houses"],
     enabled: !!studentData,
   });
 
   // Fetch PBIS entries for this student
-  const { data: pbisEntries } = useQuery({
+  const { data: pbisEntries } = useQuery<PBISEntry[]>({
     queryKey: ["/api/pbis-entries", studentData?.id],
     enabled: !!studentData?.id,
   });
 
   // Fetch reflections for this student
-  const { data: reflections = [], isLoading: reflectionsLoading } = useQuery({
+  const { data: reflections = [], isLoading: reflectionsLoading } = useQuery<Reflection[]>({
     queryKey: ["/api/student/reflections"],
     enabled: !!studentData,
   });
@@ -627,7 +641,7 @@ function StudentDashboardContent() {
                     </div>
                     <Badge variant="secondary" className="text-sm">
                       <Trophy className="mr-1 h-3 w-3" />
-                      House Total: {(currentHouse.academicPoints || 0) + (currentHouse.attendancePoints || 0) + (currentHouse.behaviorPoints || 0)} points
+                      House Total: {currentHouse.totalPoints} points
                     </Badge>
                   </div>
                 </CardContent>

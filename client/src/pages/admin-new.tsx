@@ -2656,18 +2656,18 @@ export default function AdminNew() {
             </div>
             
             <div className="text-sm text-gray-600 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="font-medium text-green-800">MUSTANG Recognition System:</p>
-              <p>• <strong>M</strong>otivated - Makes good choices</p>
-              <p>• <strong>U</strong>nderstanding - Shows empathy and kindness</p>
-              <p>• <strong>S</strong>killed - Demonstrates academic excellence</p>
-              <p>• <strong>T</strong>alented - Showcases unique abilities</p>
-              <p>• <strong>A</strong>mazing - Goes above and beyond</p>
-              <p>• <strong>N</strong>oble - Acts with integrity</p>
-              <p>• <strong>G</strong>reat - Displays leadership qualities</p>
+              <p className="font-medium text-green-800">BHSA MUSTANG Traits Recognition System:</p>
+              <p>• <strong>M</strong> - Make Good Choices</p>
+              <p>• <strong>U</strong> - Use Kind Words</p>
+              <p>• <strong>S</strong> - Show School Pride</p>
+              <p>• <strong>T</strong> - Tolerant of Others</p>
+              <p>• <strong>A</strong> - Aim for Excellence</p>
+              <p>• <strong>N</strong> - Need to be Responsible</p>
+              <p>• <strong>G</strong> - Give 100% Everyday</p>
             </div>
           </div>
           
-          <DialogFooter className="sticky bottom-0 bg-white pt-4">
+          <DialogFooter className="px-4 pb-4 mt-auto bg-white pt-4">
             <Button variant="outline" onClick={() => setShowAwardPointsModal(false)}>
               Cancel
             </Button>

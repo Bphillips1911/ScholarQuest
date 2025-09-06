@@ -292,20 +292,22 @@ export function registerSELRoutes(app: Express) {
     try {
       console.log('ADMIN-SEL: Getting all SEL lessons for admin monitoring');
 
-      // Use raw SQL since the existing table has different column names
-      const result = await db.execute(sql`
-        SELECT 
-          sl.*,
-          s.id as scholar_id,
-          s.name as scholar_name,
-          s.grade as scholar_grade
-        FROM sel_lessons sl
-        LEFT JOIN scholars s ON sl.student_id = s.id
-        ORDER BY sl.assigned_at DESC
-      `);
+      // Query using Drizzle ORM for type safety
+      const lessons = await db
+        .select({
+          lesson: selLessons,
+          scholar: {
+            id: scholars.id,
+            name: scholars.name,
+            grade: scholars.grade
+          },
+          quizResult: selQuizResults
+        })
+        .from(selLessons)
+        .leftJoin(scholars, eq(selLessons.scholarId, scholars.id))
+        .leftJoin(selQuizResults, eq(selLessons.id, selQuizResults.lessonId))
+        .orderBy(desc(selLessons.assignedAt));
 
-      // Extract rows from the database result
-      const lessons = result.rows || [];
       console.log(`ADMIN-SEL: Found ${lessons.length} SEL lessons for admin monitoring`);
       res.json(lessons);
     } catch (error) {

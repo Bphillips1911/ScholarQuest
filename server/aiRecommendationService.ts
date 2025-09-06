@@ -63,23 +63,33 @@ export class AIRecommendationService {
       // Analyze patterns and generate AI recommendations
       const analysisPrompt = this.buildAnalysisPrompt(student, recentPbisEntries, recentReflections, currentProgress);
       
-      const response = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert educational AI assistant specializing in middle school student development and PBIS (Positive Behavioral Interventions and Supports). Analyze student data and provide actionable, personalized recommendations for academic, behavioral, and social-emotional growth. Respond with JSON format."
-          },
-          {
-            role: "user",
-            content: analysisPrompt
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.7,
-      });
-
-      const recommendations = JSON.parse(response.choices[0].message.content || '{"recommendations": []}');
+      let response;
+      let recommendations;
+      
+      try {
+        response = await openai.chat.completions.create({
+          model: "gpt-5",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert educational AI assistant specializing in middle school student development and PBIS (Positive Behavioral Interventions and Supports). Analyze student data and provide actionable, personalized recommendations for academic, behavioral, and social-emotional growth. Respond with JSON format."
+            },
+            {
+              role: "user",
+              content: analysisPrompt
+            }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        });
+        
+        recommendations = JSON.parse(response.choices[0].message.content || '{"recommendations": []}');
+      } catch (openaiError: any) {
+        console.log('OpenAI API error, using fallback recommendations:', openaiError.message);
+        
+        // Generate fallback recommendations based on student data
+        recommendations = this.generateFallbackRecommendations(student, recentPbisEntries, recentReflections);
+      }
       
       // Store recommendations in database
       const storedRecommendations: AIRecommendation[] = [];
@@ -109,6 +119,116 @@ export class AIRecommendationService {
       console.error('AI Recommendation Error:', error);
       throw error;
     }
+  }
+
+  // Generate fallback recommendations when OpenAI is unavailable
+  private generateFallbackRecommendations(
+    student: Scholar,
+    pbisEntries: PbisEntry[],
+    reflections: any[]
+  ): { recommendations: any[] } {
+    const totalPoints = student.academicPoints + student.attendancePoints + student.behaviorPoints;
+    const positiveEntries = pbisEntries.filter(entry => entry.points > 0);
+    const negativeEntries = pbisEntries.filter(entry => entry.points < 0);
+    
+    const recommendations = [];
+
+    // Basic academic recommendation
+    if (student.academicPoints < 20) {
+      recommendations.push({
+        type: 'learning_activity',
+        priority: 'medium',
+        title: 'Academic Skills Enhancement',
+        description: `Focus on building foundational academic skills for Grade ${student.grade}. Encourage daily reading, math practice, and study organization.`,
+        actionItems: [
+          'Set up a daily 20-minute reading routine',
+          'Create a homework organization system',
+          'Meet with teachers for academic support'
+        ],
+        targetSkills: ['Study Skills', 'Academic Performance', 'Time Management'],
+        estimatedDuration: 30,
+        confidence: 90,
+        reasoning: 'Student has fewer than 20 academic points, indicating need for academic support'
+      });
+    }
+
+    // Behavioral recommendation
+    if (negativeEntries.length > positiveEntries.length || student.behaviorPoints < 15) {
+      recommendations.push({
+        type: 'behavioral_support',
+        priority: 'high',
+        title: 'PBIS Behavioral Support',
+        description: 'Strengthen positive behavioral patterns using PBIS MUSTANG traits: Motivated, Understanding, Safe, Teamwork, Accountable, Noble, Growth.',
+        actionItems: [
+          'Practice daily MUSTANG trait reflection',
+          'Set weekly behavioral goals',
+          'Participate in peer mentoring activities'
+        ],
+        targetSkills: ['Self-Regulation', 'Social Skills', 'PBIS Traits'],
+        estimatedDuration: 25,
+        confidence: 85,
+        reasoning: 'Student needs support with behavioral expectations and PBIS traits'
+      });
+    }
+
+    // Engagement recommendation
+    if (totalPoints < 30) {
+      recommendations.push({
+        type: 'enrichment',
+        priority: 'medium',
+        title: 'School Engagement Activities',
+        description: `Increase school involvement through house activities and Grade ${student.grade} programs to build school connection and pride.`,
+        actionItems: [
+          'Join house team activities',
+          'Participate in school clubs or sports',
+          'Volunteer for school events'
+        ],
+        targetSkills: ['Leadership', 'School Pride', 'Community Engagement'],
+        estimatedDuration: 45,
+        confidence: 80,
+        reasoning: 'Low total points suggest need for increased school engagement'
+      });
+    }
+
+    // High performer recommendation
+    if (totalPoints > 50) {
+      recommendations.push({
+        type: 'enrichment',
+        priority: 'low',
+        title: 'Leadership Development',
+        description: 'Leverage strong performance to develop leadership skills and mentor other students.',
+        actionItems: [
+          'Become a peer tutor',
+          'Lead house team projects',
+          'Mentor younger students'
+        ],
+        targetSkills: ['Leadership', 'Mentoring', 'Communication'],
+        estimatedDuration: 40,
+        confidence: 95,
+        reasoning: 'High total points indicate readiness for leadership opportunities'
+      });
+    }
+
+    // Default general recommendation if no specific ones apply
+    if (recommendations.length === 0) {
+      recommendations.push({
+        type: 'learning_activity',
+        priority: 'medium',
+        title: 'Continued Growth Plan',
+        description: `Maintain momentum with personalized learning activities for Grade ${student.grade}. Focus on consistent daily habits.`,
+        actionItems: [
+          'Set daily learning goals',
+          'Practice MUSTANG traits',
+          'Engage in house activities'
+        ],
+        targetSkills: ['Consistency', 'Growth Mindset', 'School Engagement'],
+        estimatedDuration: 30,
+        confidence: 85,
+        reasoning: 'Supporting continued student development and growth'
+      });
+    }
+
+    return { recommendations: recommendations.slice(0, 4) }; // Limit to 4 recommendations
   }
 
   // Build comprehensive analysis prompt for AI

@@ -635,6 +635,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 houseUpdates.academicPoints = (house.academicPoints || 0) + pointsToAdd;
               } else if (entry.category === "attendance") {
                 houseUpdates.attendancePoints = (house.attendancePoints || 0) + pointsToAdd;
+              } else if (entry.category === "bhsa_mustang_traits") {
+                houseUpdates.bhsaMustangTraitsPoints = (house.bhsaMustangTraitsPoints || 0) + pointsToAdd;
               }
               
               console.log(`🏠 HOUSE POINTS: Updating ${entry.category} points by ${pointsToAdd} for house ${house.name}`);

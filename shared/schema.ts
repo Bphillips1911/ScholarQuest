@@ -16,6 +16,7 @@ export const houses = pgTable("houses", {
   academicPoints: integer("academic_points").notNull().default(0),
   attendancePoints: integer("attendance_points").notNull().default(0),
   behaviorPoints: integer("behavior_points").notNull().default(0),
+  bhsaMustangTraitsPoints: integer("bhsa_mustang_traits_points").notNull().default(0),
   memberCount: integer("member_count").notNull().default(0),
 });
 
@@ -28,6 +29,7 @@ export const scholars = pgTable("scholars", {
   academicPoints: integer("academic_points").notNull().default(0),
   attendancePoints: integer("attendance_points").notNull().default(0),
   behaviorPoints: integer("behavior_points").notNull().default(0),
+  bhsaMustangTraitsPoints: integer("bhsa_mustang_traits_points").notNull().default(0),
   isHouseSorted: boolean("is_house_sorted").notNull().default(false),
   sortingNumber: integer("sorting_number"),
   addedByTeacher: varchar("added_by_teacher"),

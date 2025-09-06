@@ -205,86 +205,125 @@ export default function ParentPortalEnhanced() {
     return {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
     };
   };
 
-  // Fetch parent's scholars
+  // Fetch parent's scholars with cache-busting
   const { data: scholars = [] } = useQuery<Scholar[]>({
-    queryKey: ["/api/parent/scholars"],
+    queryKey: ["/api/parent/scholars", Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch("/api/parent/scholars", {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch scholars");
+      if (!response.ok) {
+        console.error("Parent scholars fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch scholars");
+      }
       return response.json();
     },
     enabled: !!parentData,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch selected scholar details
+  // Fetch selected scholar details with cache-busting
   const { data: scholarDetail } = useQuery<ScholarDetail>({
-    queryKey: ["/api/parent/scholar", selectedScholarId],
+    queryKey: ["/api/parent/scholar", selectedScholarId, Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch(`/api/parent/scholar/${selectedScholarId}`, {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch scholar details");
+      if (!response.ok) {
+        console.error("Parent scholar detail fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch scholar details");
+      }
       return response.json();
     },
     enabled: !!selectedScholarId,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch houses data for context
+  // Fetch houses data for context with cache-busting
   const { data: houses = [] } = useQuery<HouseData[]>({
-    queryKey: ["/api/houses"],
+    queryKey: ["/api/houses", Date.now()], // Cache-busting key
     queryFn: async () => {
-      const response = await fetch("/api/houses");
-      if (!response.ok) throw new Error("Failed to fetch houses");
+      const response = await fetch("/api/houses", {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        },
+      });
+      if (!response.ok) {
+        console.error("Parent houses fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch houses");
+      }
       return response.json();
     },
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch parent messages
+  // Fetch parent messages with cache-busting
   const { data: messages = [] } = useQuery<ParentTeacherMessage[]>({
-    queryKey: ["/api/parent/messages"],
+    queryKey: ["/api/parent/messages", Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch("/api/parent/messages", {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch messages");
+      if (!response.ok) {
+        console.error("Parent messages fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch messages");
+      }
       return response.json();
     },
     enabled: !!parentData,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch teachers for messaging
+  // Fetch teachers for messaging with cache-busting
   const { data: teachers = [] } = useQuery({
-    queryKey: ["/api/teachers"],
+    queryKey: ["/api/teachers", Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch("/api/teachers", {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch teachers");
+      if (!response.ok) {
+        console.error("Parent teachers fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch teachers");
+      }
       return response.json();
     },
     enabled: showSendMessage,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch reflections for the parent
+  // Fetch reflections for the parent with cache-busting
   const { data: reflections = [], refetch: refetchReflections } = useQuery({
-    queryKey: ["/api/parent/reflections"],
+    queryKey: ["/api/parent/reflections", Date.now()], // Cache-busting key
     queryFn: async () => {
       console.log('🔍 PARENT PORTAL: Fetching reflections...');
       const response = await fetch("/api/parent/reflections", {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch reflections");
+      if (!response.ok) {
+        console.error("Parent reflections fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch reflections");
+      }
       const data = await response.json();
       console.log('🔍 PARENT PORTAL: Received reflections:', data);
       return data;
     },
     enabled: !!parentData,
     refetchInterval: 30000, // Auto-refresh every 30 seconds to check for new approved reflections
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   // Add scholar by credentials mutation

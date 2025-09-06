@@ -1058,10 +1058,9 @@ export default function TeacherDashboard() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Teacher Dashboard Content */}
-      <section className="p-4" data-testid="teacher-dashboard-section">
+      
+        {/* Teacher Dashboard Content */}
+        <section className="p-4" data-testid="teacher-dashboard-section">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
         <Card className="mb-6 shadow-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
@@ -2878,7 +2877,8 @@ export default function TeacherDashboard() {
           />
         )}
         </div>
-      </section>
+        </section>
+      </div>
     </>
   );
 }

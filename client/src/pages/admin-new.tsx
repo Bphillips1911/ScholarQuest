@@ -1297,6 +1297,46 @@ export default function AdminNew() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Filtered Badge Display */}
+                {selectedBadgeCategory && (
+                  <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                    <CardHeader>
+                      <CardTitle style={{color: themeStyles.textPrimary}}>
+                        {selectedBadgeCategory.charAt(0).toUpperCase() + selectedBadgeCategory.slice(1)} Badges
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {allBadges?.filter((badge: any) => badge.category === selectedBadgeCategory).length > 0 ? (
+                          allBadges.filter((badge: any) => badge.category === selectedBadgeCategory).map((badge: any) => (
+                            <div key={badge.id} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}>
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>{badge.name}</h4>
+                                <Badge variant="secondary">{badge.category}</Badge>
+                              </div>
+                              <p className="text-sm mb-3" style={{color: themeStyles.textSecondary}}>
+                                {badge.description}
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <Badge variant="outline">
+                                  {badge.level} Level
+                                </Badge>
+                                <Button size="sm" variant="outline">
+                                  View Details
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="col-span-full text-center py-8">
+                            <p style={{color: themeStyles.textSecondary}}>No {selectedBadgeCategory} badges found.</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
 

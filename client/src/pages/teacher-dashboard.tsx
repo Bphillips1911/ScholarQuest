@@ -404,7 +404,7 @@ export default function TeacherDashboard() {
     
     // DEPLOYMENT FIX: Add deployment-specific headers for cache-busting
     const isDeployment = window.location.hostname.includes('replit.app');
-    const headers = {
+    const headers: Record<string, string> = {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
       "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -438,7 +438,7 @@ export default function TeacherDashboard() {
     },
     enabled: !!selectedGrade,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch houses for dashboard and scholar creation
@@ -463,7 +463,7 @@ export default function TeacherDashboard() {
     },
     enabled: !!teacher?.id,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch parents for compose message dropdown with cache-busting
@@ -481,7 +481,7 @@ export default function TeacherDashboard() {
     },
     enabled: !!teacher?.id,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch administrators for compose message dropdown with cache-busting
@@ -501,7 +501,7 @@ export default function TeacherDashboard() {
     },
     enabled: !!teacher?.id,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch reflections for teacher with cache-busting
@@ -519,7 +519,7 @@ export default function TeacherDashboard() {
     },
     enabled: !!teacher?.id,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Query for fetching teacher's class periods

@@ -91,7 +91,7 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
     enabled: !!studentId,
     refetchInterval: 30000, // Auto-refresh to catch real-time updates
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   if (isLoading) {
@@ -445,7 +445,7 @@ function StudentDashboardContent() {
     enabled: !!studentData,
     retry: 1,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch houses data with cache-busting
@@ -467,7 +467,7 @@ function StudentDashboardContent() {
     },
     enabled: !!studentData,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch PBIS entries for this student with cache-busting
@@ -490,7 +490,7 @@ function StudentDashboardContent() {
     },
     enabled: !!studentData?.id,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch reflections for this student
@@ -513,7 +513,7 @@ function StudentDashboardContent() {
     },
     enabled: !!studentData,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   const handleLogout = () => {

@@ -3270,7 +3270,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      if (!admin.isApproved) {
+      // Principals are always approved automatically, others require approval
+      if (!admin.isApproved && admin.title !== "Principal") {
         return res.status(403).json({ message: "Account pending approval. Please contact the principal for access." });
       }
 

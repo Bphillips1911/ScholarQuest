@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 // Tabs removed - using parent-portal style navigation
@@ -22,6 +22,74 @@ import { StudentSearchTab } from "@/components/StudentSearchTab";
 import { UnifiedArtsClassManager } from "@/components/UnifiedArtsClassManager";
 import { NotificationHeader } from "@/components/NotificationHeader";
 import { notificationService } from "@/services/notificationService";
+
+// SEL Lessons List Component
+function SELLessonsList({ teacherName }: { teacherName: string }) {
+  const { data: selLessons, isLoading } = useQuery({
+    queryKey: ['/api/teacher/sel/lessons', teacherName],
+    enabled: !!teacherName,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+        <span className="ml-2 text-gray-500">Loading SEL lessons...</span>
+      </div>
+    );
+  }
+
+  if (!selLessons || selLessons.length === 0) {
+    return (
+      <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200">
+        <Brain className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+        <p className="text-gray-600">No SEL lessons assigned yet</p>
+        <p className="text-sm text-gray-500">Lessons will appear here when you award negative PBIS points</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 max-h-64 overflow-y-auto">
+      {selLessons.slice(0, 5).map((item: any) => (
+        <div key={item.lesson.id} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h5 className="font-medium text-blue-900">{item.lesson.lessonTitle}</h5>
+              <p className="text-sm text-blue-700">{item.scholar?.name} • Grade {item.scholar?.grade}</p>
+              <div className="flex items-center gap-4 mt-2 text-xs text-blue-600">
+                <span>Assigned: {new Date(item.lesson.assignedAt).toLocaleDateString()}</span>
+                {item.lesson.dueDate && (
+                  <span>Due: {new Date(item.lesson.dueDate).toLocaleDateString()}</span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {item.lesson.status === 'assigned' && (
+                <div className="flex items-center gap-1">
+                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                  <span className="text-xs text-orange-700">Assigned</span>
+                </div>
+              )}
+              {item.lesson.status === 'in_progress' && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4 text-blue-500" />
+                  <span className="text-xs text-blue-700">In Progress</span>
+                </div>
+              )}
+              {item.lesson.status === 'completed' && (
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span className="text-xs text-green-700">Completed</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 interface Teacher {
   id: string;
@@ -1988,11 +2056,17 @@ export default function TeacherDashboard() {
                       </div>
                     </div>
 
+                    {/* Recent SEL Lessons */}
+                    <div>
+                      <h4 className="font-medium text-gray-800 mb-3">Your Recent SEL Lessons</h4>
+                      <SELLessonsList teacherName={teacher?.name || ''} />
+                    </div>
+
                     {/* Quick Action */}
                     <div className="text-center">
                       <p className="text-sm text-gray-600 mb-3">
                         SEL lessons are generated automatically when you award negative PBIS points. 
-                        Check the admin portal to monitor all active SEL interventions.
+                        Students receive personalized behavioral intervention lessons.
                       </p>
                       <div className="flex items-center justify-center gap-2 text-xs text-green-600">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

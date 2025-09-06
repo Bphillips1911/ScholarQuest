@@ -2597,7 +2597,7 @@ export default function AdminNew() {
 
       {/* Award MUSTANG Points Modal */}
       <Dialog open={showAwardPointsModal} onOpenChange={setShowAwardPointsModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] border-0">
+        <DialogContent className="max-w-md max-h-[90vh] border-0 fixed right-4 top-4 bottom-4 left-auto translate-x-0 translate-y-0 m-0 rounded-lg shadow-xl bg-white overflow-hidden flex flex-col">
           <DialogHeader className="flex flex-row items-center justify-between sticky top-0 bg-white pb-4">
             <DialogTitle>Award MUSTANG Points</DialogTitle>
             <Button
@@ -2609,7 +2609,7 @@ export default function AdminNew() {
               ✕
             </Button>
           </DialogHeader>
-          <div className="overflow-y-auto max-h-[60vh] space-y-4 pt-4 border-0">
+          <div className="overflow-y-auto flex-1 space-y-4 pt-4 border-0 px-4">
             {selectedStudent && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="font-medium">Selected Student:</p>

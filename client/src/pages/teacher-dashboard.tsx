@@ -964,7 +964,7 @@ export default function TeacherDashboard() {
   ];
 
   return (
-    <div className="min-h-screen" style={{background: themeStyles.background}}>
+    <section className="min-h-screen" style={{background: themeStyles.background}}>
       {/* Main Navigation Bar with Dropdown Menus */}
       <div className="bg-blue-600 text-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1059,7 +1059,7 @@ export default function TeacherDashboard() {
         </div>
         
         {/* Teacher Dashboard Content */}
-        <section className="p-4" data-testid="teacher-dashboard-section">
+        <div className="p-4" data-testid="teacher-dashboard-section">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
         <Card className="mb-6 shadow-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
@@ -2863,20 +2863,20 @@ export default function TeacherDashboard() {
           </div>
         )}
 
-      {/* Teacher Reflection Modal */}
-      {selectedReflection && (
-        <TeacherReflectionModal
-          reflection={selectedReflection}
-          isOpen={showReflectionModal}
-          onClose={() => {
-            setShowReflectionModal(false);
-            setSelectedReflection(null);
-          }}
-          studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
-        />
-      )}
+        {/* Teacher Reflection Modal */}
+        {selectedReflection && (
+          <TeacherReflectionModal
+            reflection={selectedReflection}
+            isOpen={showReflectionModal}
+            onClose={() => {
+              setShowReflectionModal(false);
+              setSelectedReflection(null);
+            }}
+            studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
+          />
+        )}
+        </div>
       </div>
-      </section>
-    </div>
+    </section>
   );
 }

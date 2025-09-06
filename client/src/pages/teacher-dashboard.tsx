@@ -2876,7 +2876,7 @@ export default function TeacherDashboard() {
           />
         )}
         </div>
-      </section>
+        </section>
     </div>
   );
 }

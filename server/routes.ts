@@ -5853,78 +5853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Real-time update endpoints for live synchronization
-  const connectedClients = new Set<any>();
-  
-  // Server-Sent Events endpoint for real-time updates
-  app.get('/api/realtime/updates', (req, res) => {
-    // Set headers for Server-Sent Events
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    });
 
-    // Add client to connected clients set
-    connectedClients.add(res);
-    console.log(`🔗 Real-time client connected. Total clients: ${connectedClients.size}`);
-
-    // Send initial connection message
-    res.write('data: {"type":"CONNECTED","message":"Real-time sync established"}\n\n');
-
-    // Handle client disconnect
-    req.on('close', () => {
-      connectedClients.delete(res);
-      console.log(`🔌 Real-time client disconnected. Total clients: ${connectedClients.size}`);
-    });
-
-    // Keep connection alive with periodic heartbeat
-    const heartbeat = setInterval(() => {
-      try {
-        res.write('data: {"type":"HEARTBEAT"}\n\n');
-      } catch (error) {
-        clearInterval(heartbeat);
-        connectedClients.delete(res);
-      }
-    }, 30000);
-
-    req.on('close', () => {
-      clearInterval(heartbeat);
-    });
-  });
-
-  // Endpoint to check for updates (fallback for polling)
-  app.get('/api/realtime/check-updates', (req, res) => {
-    res.json({ hasUpdates: false, timestamp: Date.now() });
-  });
-
-  // Function to broadcast updates to all connected clients
-  const broadcastUpdate = (updateType: string, data?: any) => {
-    const message = JSON.stringify({
-      type: updateType,
-      data,
-      timestamp: Date.now()
-    });
-
-    let activeClients = 0;
-    connectedClients.forEach((client) => {
-      try {
-        client.write(`data: ${message}\n\n`);
-        activeClients++;
-      } catch (error) {
-        connectedClients.delete(client);
-      }
-    });
-
-    if (activeClients > 0) {
-      console.log(`📡 Broadcasted ${updateType} to ${activeClients} clients`);
-    }
-  };
-
-  // Store the broadcast function globally for use in other parts of the application
-  (global as any).broadcastRealtimeUpdate = broadcastUpdate;
 
   const httpServer = createServer(app);
   return httpServer;

@@ -26,7 +26,18 @@ import { notificationService } from "@/services/notificationService";
 // SEL Lessons List Component
 function SELLessonsList({ teacherName }: { teacherName: string }) {
   const { data: selLessons, isLoading } = useQuery({
-    queryKey: ['/api/teacher/sel/lessons', teacherName],
+    queryKey: ['/api/teacher/sel/lessons', { teacherName }],
+    queryFn: async () => {
+      const response = await fetch(`/api/teacher/sel/lessons?teacherName=${encodeURIComponent(teacherName)}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('teacherToken')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch SEL lessons');
+      }
+      return response.json();
+    },
     enabled: !!teacherName,
   });
 

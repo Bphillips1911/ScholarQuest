@@ -58,12 +58,31 @@ export function TeacherReflectionModal({
       rejectionReason?: string;
       customReason?: string;
     }) => {
-      return apiRequest("POST", `/api/teacher/reflections/${reflection.id}/review`, { 
-        status, 
-        feedback: feedbackText,
-        rejectionReason,
-        customReason 
+      const token = localStorage.getItem("teacherToken");
+      if (!token) {
+        throw new Error("Teacher authentication required");
+      }
+      
+      const response = await fetch(`/api/teacher/reflections/${reflection.id}/review`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status, 
+          feedback: feedbackText,
+          rejectionReason,
+          customReason 
+        })
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
+
+      return response.json();
     },
     onSuccess: (_, variables) => {
       toast({

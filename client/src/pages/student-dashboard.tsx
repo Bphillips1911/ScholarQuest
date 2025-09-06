@@ -68,7 +68,18 @@ interface SELLesson {
 // Student SEL Lessons Component
 function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; themeStyles: any }) {
   const { data: selLessons, isLoading } = useQuery<SELLesson[]>({
-    queryKey: ['/api/student/sel/lessons', studentId],
+    queryKey: ['/api/student/sel/lessons', { studentId }],
+    queryFn: async () => {
+      const response = await fetch(`/api/student/sel/lessons?studentId=${studentId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch SEL lessons');
+      }
+      return response.json();
+    },
     enabled: !!studentId,
   });
 

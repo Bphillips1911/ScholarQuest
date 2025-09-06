@@ -226,7 +226,7 @@ export default function ParentPortalEnhanced() {
     },
     enabled: !!parentData,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch selected scholar details with cache-busting
@@ -244,7 +244,7 @@ export default function ParentPortalEnhanced() {
     },
     enabled: !!selectedScholarId,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch houses data for context with cache-busting
@@ -265,7 +265,7 @@ export default function ParentPortalEnhanced() {
       return response.json();
     },
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch parent messages with cache-busting
@@ -283,7 +283,7 @@ export default function ParentPortalEnhanced() {
     },
     enabled: !!parentData,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch teachers for messaging with cache-busting
@@ -301,7 +301,7 @@ export default function ParentPortalEnhanced() {
     },
     enabled: showSendMessage,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Fetch reflections for the parent with cache-busting
@@ -323,7 +323,7 @@ export default function ParentPortalEnhanced() {
     enabled: !!parentData,
     refetchInterval: 30000, // Auto-refresh every 30 seconds to check for new approved reflections
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
   });
 
   // Add scholar by credentials mutation

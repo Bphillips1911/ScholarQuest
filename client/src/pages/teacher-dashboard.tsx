@@ -459,7 +459,9 @@ export default function TeacherDashboard() {
         console.error("Teacher messages fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch messages");
       }
-      return response.json();
+      const data = await response.json(); // CRITICAL FIX: Added missing await
+      console.log("🔍 FRONTEND: Messages data received:", data);
+      return data;
     },
     enabled: !!teacher?.id,
     staleTime: 0, // Always fetch fresh data

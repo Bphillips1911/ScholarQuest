@@ -442,7 +442,7 @@ function StudentDashboardContent() {
       }
       return response.json();
     },
-    enabled: !!studentData,
+    enabled: true, // Always try to fetch profile data
     retry: 1,
     staleTime: 0, // Always fetch fresh data
     gcTime: 0, // Don't cache results (renamed from cacheTime in v5)

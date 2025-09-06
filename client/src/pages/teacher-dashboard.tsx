@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain, AlertTriangle, CheckCircle2, UserPlus, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 // Tabs removed - using parent-portal style navigation
@@ -156,6 +156,7 @@ export default function TeacherDashboard() {
     name: "",
     description: ""
   });
+  const [selectedClassForEnrollment, setSelectedClassForEnrollment] = useState("");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -886,6 +887,33 @@ export default function TeacherDashboard() {
       toast({
         title: "Error",
         description: "Failed to create class period",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Add students to class period mutation
+  const addStudentsToClassMutation = useMutation({
+    mutationFn: async ({ classId, studentIds }: { classId: string; studentIds: string[] }) => {
+      const response = await fetch(`/api/teacher/class-periods/${classId}/students`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ studentIds })
+      });
+      if (!response.ok) throw new Error('Failed to add students to class');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Students Added",
+        description: "Students have been successfully added to the class period",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/teacher/class-periods'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add students to class period",
         variant: "destructive",
       });
     }
@@ -2125,9 +2153,28 @@ export default function TeacherDashboard() {
 
                     {/* Grade-Level Students Section */}
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center gap-3 mb-4">
-                        <Users className="h-5 w-5 text-blue-600" />
-                        <h3 className="font-semibold text-blue-800">Available {teacher?.gradeRole} Students</h3>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <Users className="h-5 w-5 text-blue-600" />
+                          <h3 className="font-semibold text-blue-800">Available {teacher?.gradeRole} Students</h3>
+                        </div>
+                        {classPeriods && classPeriods.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">Add to:</span>
+                            <Select value={selectedClassForEnrollment} onValueChange={setSelectedClassForEnrollment}>
+                              <SelectTrigger className="w-40">
+                                <SelectValue placeholder="Select Class" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {classPeriods.map((period: any) => (
+                                  <SelectItem key={period.id} value={period.id}>
+                                    {period.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
                       
                       {scholars && scholars.length > 0 ? (
@@ -2137,20 +2184,65 @@ export default function TeacherDashboard() {
                               teacher?.gradeRole === '6th Grade' ? 6 :
                               teacher?.gradeRole === '7th Grade' ? 7 : 8
                             ))
-                            .map((scholar) => (
-                            <div key={scholar.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                              <div>
-                                <p className="font-medium text-gray-900">{scholar.name}</p>
-                                <p className="text-sm text-gray-600">ID: {scholar.studentId}</p>
-                                <p className="text-sm text-gray-600">House: {houses?.find(h => h.id === scholar.houseId)?.name || 'Not assigned'}</p>
+                            .map((scholar) => {
+                              // Check if student is already enrolled in any class period
+                              const isEnrolled = classPeriods?.some((period: any) => 
+                                period.enrollments?.some((enrollment: any) => enrollment.scholar.id === scholar.id)
+                              );
+                              
+                              return (
+                              <div key={scholar.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900">{scholar.name}</p>
+                                  <p className="text-sm text-gray-600">ID: {scholar.studentId}</p>
+                                  <p className="text-sm text-gray-600">House: {houses?.find(h => h.id === scholar.houseId)?.name || 'Not assigned'}</p>
+                                  <p className="text-sm font-medium text-blue-600">
+                                    {scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints} pts
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  {isEnrolled && (
+                                    <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                      Enrolled
+                                    </div>
+                                  )}
+                                  {classPeriods && classPeriods.length > 0 && selectedClassForEnrollment && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        if (!selectedClassForEnrollment) {
+                                          toast({
+                                            title: "Select Class Period",
+                                            description: "Please select a class period first",
+                                            variant: "destructive",
+                                          });
+                                          return;
+                                        }
+                                        addStudentsToClassMutation.mutate({
+                                          classId: selectedClassForEnrollment,
+                                          studentIds: [scholar.id]
+                                        });
+                                      }}
+                                      disabled={addStudentsToClassMutation.isPending || isEnrolled}
+                                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1"
+                                      data-testid={`button-enroll-${scholar.id}`}
+                                    >
+                                      {addStudentsToClassMutation.isPending ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : isEnrolled ? (
+                                        <Check className="h-3 w-3" />
+                                      ) : (
+                                        <UserPlus className="h-3 w-3" />
+                                      )}
+                                      <span className="ml-1">
+                                        {isEnrolled ? 'Enrolled' : 'Add'}
+                                      </span>
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-sm font-medium text-blue-600">
-                                  {scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints} pts
-                                </p>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="text-gray-600">No students assigned to your grade level yet.</p>

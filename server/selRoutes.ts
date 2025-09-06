@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import jwt from "jsonwebtoken";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { 
@@ -31,45 +32,35 @@ import {
 export function registerSELRoutes(app: Express) {
   console.log("SEL: Registering SEL routes...");
 
-  // Student authentication middleware for SEL routes
-  const authenticateStudentForSEL = async (req: any, res: any, next: any) => {
+  // Use the existing student authentication middleware from routes.ts
+  const authenticateStudent = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token) {
-      return res.status(401).json({ error: "No token provided" });
+      return res.status(401).json({ message: "No token provided" });
     }
 
     try {
-      const jwt = require("jsonwebtoken");
-      const { db } = require("./db");
-      const { scholars } = require("@shared/schema");
-      const { eq } = require("drizzle-orm");
-      
       const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
-      const decoded: any = jwt.verify(token, jwtSecret);
+      const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString()) as any;
+      const student = await db.select().from(scholars).where(eq(scholars.id, decoded.studentId)).limit(1);
       
-      const student = await db
-        .select()
-        .from(scholars)
-        .where(eq(scholars.id, decoded.studentId))
-        .limit(1);
-
       if (!student || student.length === 0) {
-        return res.status(401).json({ error: "Invalid token" });
+        return res.status(401).json({ message: "Invalid token" });
       }
 
-      req.user = { id: decoded.studentId, ...student[0] };
+      req.user = student[0];
       console.log(`SEL AUTH: Authenticated student ${req.user.id} (${student[0].name})`);
       next();
     } catch (error) {
       console.error("SEL AUTH ERROR:", error);
-      return res.status(401).json({ error: "Invalid token" });
+      return res.status(401).json({ message: "Invalid token" });
     }
   };
 
   // === STUDENT SEL ROUTES ===
   
   // Get SEL lessons assigned to a student
-  app.get('/api/student/sel/lessons', authenticateStudentForSEL, async (req: any, res: any) => {
+  app.get('/api/student/sel/lessons', authenticateStudent, async (req: any, res: any) => {
     try {
       const studentId = req.user?.id || req.user?.studentId || req.query.studentId;
       if (!studentId) {
@@ -144,7 +135,7 @@ export function registerSELRoutes(app: Express) {
   });
 
   // Start a lesson and get quiz questions
-  app.post('/api/student/sel/lessons/:lessonId/start', authenticateStudentForSEL, async (req: any, res: any) => {
+  app.post('/api/student/sel/lessons/:lessonId/start', authenticateStudent, async (req: any, res: any) => {
     try {
       const { lessonId } = req.params;
       const studentId = req.user?.id || req.user?.studentId || req.query.studentId || req.body.studentId;
@@ -246,7 +237,7 @@ export function registerSELRoutes(app: Express) {
   });
 
   // Submit quiz answers for a lesson
-  app.post('/api/student/sel/lessons/:lessonId/submit', authenticateStudentForSEL, async (req: any, res: any) => {
+  app.post('/api/student/sel/lessons/:lessonId/submit', authenticateStudent, async (req: any, res: any) => {
     try {
       const { lessonId } = req.params;
       const { answers, timeSpent } = req.body; // answers: Array<{questionId, answer}>

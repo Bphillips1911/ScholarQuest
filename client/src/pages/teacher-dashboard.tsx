@@ -1316,6 +1316,21 @@ export default function TeacherDashboard() {
               <Image className="h-4 w-4" />
               <span>Gallery</span>
             </button>
+            {(teacher?.gradeRole === '6th Grade' || teacher?.gradeRole === '7th Grade' || teacher?.gradeRole === '8th Grade') && (
+              <button
+                onClick={() => setActiveTab('class-periods')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'class-periods'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                data-testid="tab-class-periods"
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Class Periods</span>
+                <span className="sm:hidden">Periods</span>
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('sel')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
@@ -1968,6 +1983,123 @@ export default function TeacherDashboard() {
           {teacher?.gradeRole === 'Unified Arts' && activeTab === 'class-periods' && (
             <div className="space-y-6">
               <UnifiedArtsClassManager teacher={teacher} />
+            </div>
+          )}
+
+          {/* Grade-Level Class Periods Tab */}
+          {(teacher?.gradeRole === '6th Grade' || teacher?.gradeRole === '7th Grade' || teacher?.gradeRole === '8th Grade') && activeTab === 'class-periods' && (
+            <div className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2" style={{color: themeStyles.textPrimary}}>
+                    <Calendar className="h-5 w-5" />
+                    Class Period Management - {teacher?.gradeRole}
+                  </CardTitle>
+                  <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                    Manage your class periods and assigned students for {teacher?.gradeRole} {teacher?.subject || 'classes'}.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Grade-Level Students Section */}
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Users className="h-5 w-5 text-blue-600" />
+                        <h3 className="font-semibold text-blue-800">Your {teacher?.gradeRole} Students</h3>
+                      </div>
+                      
+                      {scholars && scholars.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {scholars
+                            .filter(scholar => scholar.grade === (
+                              teacher?.gradeRole === '6th Grade' ? 6 :
+                              teacher?.gradeRole === '7th Grade' ? 7 : 8
+                            ))
+                            .map((scholar) => (
+                            <div key={scholar.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                              <div>
+                                <p className="font-medium text-gray-900">{scholar.name}</p>
+                                <p className="text-sm text-gray-600">ID: {scholar.studentId}</p>
+                                <p className="text-sm text-gray-600">House: {houses?.find(h => h.id === scholar.houseId)?.name || 'Not assigned'}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-blue-600">
+                                  {scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints} pts
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-600">No students assigned to your grade level yet.</p>
+                      )}
+                    </div>
+
+                    {/* Class Period Features */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <h4 className="font-medium">Grade-Level Focus</h4>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Automatically filtered to show only your {teacher?.gradeRole} students for streamlined management.
+                        </p>
+                      </div>
+                      
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <h4 className="font-medium">Quick Actions</h4>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Award points, send messages, and track progress for your assigned students.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <p className="text-2xl font-bold text-blue-600">
+                          {scholars?.filter(s => s.grade === (
+                            teacher?.gradeRole === '6th Grade' ? 6 :
+                            teacher?.gradeRole === '7th Grade' ? 7 : 8
+                          )).length || 0}
+                        </p>
+                        <p className="text-sm text-gray-600">Total Students</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <p className="text-2xl font-bold text-green-600">
+                          {scholars?.filter(s => s.grade === (
+                            teacher?.gradeRole === '6th Grade' ? 6 :
+                            teacher?.gradeRole === '7th Grade' ? 7 : 8
+                          )).reduce((sum, s) => sum + s.academicPoints, 0) || 0}
+                        </p>
+                        <p className="text-sm text-gray-600">Academic Points</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <p className="text-2xl font-bold text-purple-600">
+                          {scholars?.filter(s => s.grade === (
+                            teacher?.gradeRole === '6th Grade' ? 6 :
+                            teacher?.gradeRole === '7th Grade' ? 7 : 8
+                          )).reduce((sum, s) => sum + s.behaviorPoints, 0) || 0}
+                        </p>
+                        <p className="text-sm text-gray-600">Behavior Points</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <p className="text-2xl font-bold text-orange-600">
+                          {scholars?.filter(s => s.grade === (
+                            teacher?.gradeRole === '6th Grade' ? 6 :
+                            teacher?.gradeRole === '7th Grade' ? 7 : 8
+                          )).reduce((sum, s) => sum + s.attendancePoints, 0) || 0}
+                        </p>
+                        <p className="text-sm text-gray-600">Attendance Points</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
 

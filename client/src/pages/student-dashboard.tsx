@@ -72,20 +72,26 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
   const [showLessonModal, setShowLessonModal] = useState(false);
 
   const { data: selLessons, isLoading } = useQuery<SELLesson[]>({
-    queryKey: ['/api/student/sel/lessons', { studentId }],
+    queryKey: ['/api/student/sel/lessons', { studentId }, Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch(`/api/student/sel/lessons?studentId=${studentId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
         },
       });
       if (!response.ok) {
+        console.error('Student SEL lessons fetch failed:', response.status, response.statusText);
         throw new Error('Failed to fetch SEL lessons');
       }
       return response.json();
     },
     enabled: !!studentId,
     refetchInterval: 30000, // Auto-refresh to catch real-time updates
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   if (isLoading) {
@@ -420,36 +426,94 @@ function StudentDashboardContent() {
 
   // Fetch scholar details with authentication
   const { data: scholarData, isLoading: scholarLoading } = useQuery<ScholarData>({
-    queryKey: ["/api/student/profile"],
+    queryKey: ["/api/student/profile", Date.now()], // Cache-busting key
+    queryFn: async () => {
+      const response = await fetch("/api/student/profile", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+      if (!response.ok) {
+        console.error('Student profile fetch failed:', response.status, response.statusText);
+        throw new Error('Failed to fetch student profile');
+      }
+      return response.json();
+    },
     enabled: !!studentData,
     retry: 1,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch houses data
+  // Fetch houses data with cache-busting
   const { data: houses } = useQuery<HouseData[]>({
-    queryKey: ["/api/houses"],
+    queryKey: ["/api/houses", Date.now()], // Cache-busting key
+    queryFn: async () => {
+      const response = await fetch("/api/houses", {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+      if (!response.ok) {
+        console.error('Student houses fetch failed:', response.status, response.statusText);
+        throw new Error('Failed to fetch houses');
+      }
+      return response.json();
+    },
     enabled: !!studentData,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch PBIS entries for this student
+  // Fetch PBIS entries for this student with cache-busting
   const { data: pbisEntries } = useQuery<PBISEntry[]>({
-    queryKey: ["/api/scholars", studentData?.id, "pbis"],
+    queryKey: ["/api/scholars", studentData?.id, "pbis", Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch(`/api/scholars/${studentData?.id}/pbis`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
         }
       });
-      if (!response.ok) throw new Error('Failed to fetch PBIS entries');
+      if (!response.ok) {
+        console.error('Student PBIS entries fetch failed:', response.status, response.statusText);
+        throw new Error('Failed to fetch PBIS entries');
+      }
       return response.json();
     },
     enabled: !!studentData?.id,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   // Fetch reflections for this student
   const { data: reflections = [], isLoading: reflectionsLoading } = useQuery<Reflection[]>({
-    queryKey: ["/api/student/reflections"],
+    queryKey: ["/api/student/reflections", Date.now()], // Cache-busting key
+    queryFn: async () => {
+      const response = await fetch("/api/student/reflections", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+      if (!response.ok) {
+        console.error('Student reflections fetch failed:', response.status, response.statusText);
+        throw new Error('Failed to fetch reflections');
+      }
+      return response.json();
+    },
     enabled: !!studentData,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   const handleLogout = () => {

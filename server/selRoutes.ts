@@ -36,9 +36,9 @@ export function registerSELRoutes(app: Express) {
   // Get SEL lessons assigned to a student
   app.get('/api/student/sel/lessons', async (req: any, res: any) => {
     try {
-      const studentId = req.user?.studentId || req.query.studentId || req.user?.id;
+      const studentId = req.user?.id || req.user?.studentId || req.query.studentId;
       if (!studentId) {
-        console.log('SEL ERROR: No student ID found for lessons request');
+        console.log('SEL ERROR: No student ID found for lessons request. req.user:', req.user);
         return res.status(401).json({ error: 'Student not authenticated' });
       }
 
@@ -112,7 +112,7 @@ export function registerSELRoutes(app: Express) {
   app.post('/api/student/sel/lessons/:lessonId/start', async (req: any, res: any) => {
     try {
       const { lessonId } = req.params;
-      const studentId = req.user?.studentId || req.query.studentId || req.body.studentId;
+      const studentId = req.user?.id || req.user?.studentId || req.query.studentId || req.body.studentId;
 
       // Also try to get studentId from token if user is authenticated as student
       if (!studentId && req.user?.id && req.user?.name) {
@@ -162,7 +162,7 @@ export function registerSELRoutes(app: Express) {
       }
 
       if (!studentId) {
-        console.log('SEL ERROR: No student ID found in request');
+        console.log('SEL ERROR: No student ID found in request. req.user:', req.user);
         return res.status(401).json({ error: 'Student not authenticated' });
       }
 
@@ -215,7 +215,7 @@ export function registerSELRoutes(app: Express) {
     try {
       const { lessonId } = req.params;
       const { answers, timeSpent } = req.body; // answers: Array<{questionId, answer}>
-      const studentId = req.user?.studentId || req.query.studentId || req.user?.id;
+      const studentId = req.user?.id || req.user?.studentId || req.query.studentId;
 
       console.log(`SEL: Submitting quiz for lesson ${lessonId}, student ${studentId}`);
 

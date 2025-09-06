@@ -964,6 +964,7 @@ export default function TeacherDashboard() {
   ];
 
   return (
+    <>
     <div className="min-h-screen" style={{background: themeStyles.background}}>
       {/* Main Navigation Bar with Dropdown Menus */}
       <div className="bg-blue-600 text-white shadow-sm border-b border-gray-200">
@@ -2876,9 +2877,8 @@ export default function TeacherDashboard() {
             studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
           />
         )}
-
         </div>
       </section>
-    </div>
+    </>
   );
 }

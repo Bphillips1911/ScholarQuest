@@ -31,10 +31,43 @@ import {
 export function registerSELRoutes(app: Express) {
   console.log("SEL: Registering SEL routes...");
 
+  // Student authentication middleware for SEL routes
+  const authenticateStudentForSEL = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    try {
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
+      const decoded: any = require('jsonwebtoken').verify(token, jwtSecret);
+      const { db } = require("./db");
+      const { scholars } = require("@shared/schema");
+      const { eq } = require("drizzle-orm");
+      
+      const student = await db
+        .select()
+        .from(scholars)
+        .where(eq(scholars.id, decoded.studentId))
+        .limit(1);
+
+      if (!student || student.length === 0) {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+
+      req.user = { id: decoded.studentId, ...student[0] };
+      console.log(`SEL AUTH: Authenticated student ${req.user.id} (${student[0].name})`);
+      next();
+    } catch (error) {
+      console.error("SEL AUTH ERROR:", error);
+      return res.status(401).json({ error: "Invalid token" });
+    }
+  };
+
   // === STUDENT SEL ROUTES ===
   
   // Get SEL lessons assigned to a student
-  app.get('/api/student/sel/lessons', async (req: any, res: any) => {
+  app.get('/api/student/sel/lessons', authenticateStudentForSEL, async (req: any, res: any) => {
     try {
       const studentId = req.user?.id || req.user?.studentId || req.query.studentId;
       if (!studentId) {
@@ -109,7 +142,7 @@ export function registerSELRoutes(app: Express) {
   });
 
   // Start a lesson and get quiz questions
-  app.post('/api/student/sel/lessons/:lessonId/start', async (req: any, res: any) => {
+  app.post('/api/student/sel/lessons/:lessonId/start', authenticateStudentForSEL, async (req: any, res: any) => {
     try {
       const { lessonId } = req.params;
       const studentId = req.user?.id || req.user?.studentId || req.query.studentId || req.body.studentId;
@@ -211,7 +244,7 @@ export function registerSELRoutes(app: Express) {
   });
 
   // Submit quiz answers for a lesson
-  app.post('/api/student/sel/lessons/:lessonId/submit', async (req: any, res: any) => {
+  app.post('/api/student/sel/lessons/:lessonId/submit', authenticateStudentForSEL, async (req: any, res: any) => {
     try {
       const { lessonId } = req.params;
       const { answers, timeSpent } = req.body; // answers: Array<{questionId, answer}>

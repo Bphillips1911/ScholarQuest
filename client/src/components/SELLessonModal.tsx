@@ -122,7 +122,7 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden relative">
         <div className="flex items-center justify-between p-6 border-b">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">{lesson.lessonTitle}</h2>
@@ -252,8 +252,8 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
           )}
         </div>
 
-        <div className="flex items-center justify-between p-6 border-t bg-gray-50 relative z-10">
-          <div className="text-sm text-gray-500">
+        <div className="flex items-center justify-between p-6 border-t bg-white shadow-lg relative z-30">
+          <div className="text-sm text-gray-600 font-medium">
             {currentStep === 'lesson' && 'Step 1 of 3: Read the lesson'}
             {currentStep === 'quiz' && `Step 2 of 3: Answer ${quizQuestions.length} questions`}
             {currentStep === 'results' && 'Step 3 of 3: Completed!'}
@@ -263,9 +263,10 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
             {currentStep === 'lesson' && (
               <Button 
                 onClick={() => startLesson()} 
-                className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-2 min-h-[44px] relative z-20"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-3 text-base shadow-md hover:shadow-lg transition-all duration-200 relative z-40 border-0"
+                style={{ zIndex: 9999 }}
               >
-                <PlayCircle className="h-4 w-4 mr-2" />
+                <PlayCircle className="h-5 w-5 mr-2" />
                 Start Quiz
               </Button>
             )}
@@ -274,7 +275,8 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
               <Button 
                 onClick={() => submitQuiz()}
                 disabled={!isQuizComplete || isSubmitting}
-                className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 min-h-[44px] relative z-20"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 text-base shadow-md hover:shadow-lg transition-all duration-200 relative z-40 border-0"
+                style={{ zIndex: 9999 }}
               >
                 {isSubmitting ? (
                   <>
@@ -293,7 +295,8 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
             {currentStep === 'results' && (
               <Button 
                 onClick={onClose} 
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 min-h-[44px] relative z-20"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 text-base shadow-md hover:shadow-lg transition-all duration-200 relative z-40 border-0"
+                style={{ zIndex: 9999 }}
               >
                 Close
               </Button>

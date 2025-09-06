@@ -716,7 +716,7 @@ export default function TeacherDashboard() {
       } catch (error) {
         console.error("ADD SCHOLAR: Mutation error:", error);
         // DEPLOYMENT FIX: Special handling for deployment auth errors
-        if (error.message.includes("token") || error.message.includes("401")) {
+        if ((error as Error).message?.includes("token") || (error as Error).message?.includes("401")) {
           toast({
             variant: "destructive",
             title: "Authentication Error",
@@ -1049,7 +1049,6 @@ export default function TeacherDashboard() {
       teacherName: teacher?.name || "Unknown Teacher",
       teacherRole: teacher?.gradeRole as "6th Grade" | "7th Grade" | "8th Grade" | "Unified Arts" | "Administration" | "Counselor",
       mustangTrait: "Make good choices",
-      category: pbisForm.category,
       subcategory: pbisForm.subcategory,
       points: pbisForm.points,
       reason: finalReason,
@@ -1497,9 +1496,9 @@ export default function TeacherDashboard() {
             )}
 
             {/* House Statistics Dashboard */}
-            {houses && houses.length > 0 && (
+            {houses && Array.isArray(houses) && houses.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                {houses.map((house) => (
+                {houses.map((house: any) => (
                   <Card key={house.id} className="text-center" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg" style={{ color: house.color }}>
@@ -2204,12 +2203,12 @@ export default function TeacherDashboard() {
                       
                       {scholars && scholars.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {scholars
-                            .filter(scholar => scholar.grade === (
+                          {Array.isArray(scholars) && scholars
+                            .filter((scholar: any) => scholar.grade === (
                               teacher?.gradeRole === '6th Grade' ? 6 :
                               teacher?.gradeRole === '7th Grade' ? 7 : 8
                             ))
-                            .map((scholar) => {
+                            .map((scholar: any) => {
                               // Check if student is already enrolled in any class period
                               const isEnrolled = classPeriods?.some((period: any) => 
                                 period.enrollments?.some((enrollment: any) => enrollment.scholar.id === scholar.id)
@@ -2220,7 +2219,7 @@ export default function TeacherDashboard() {
                                 <div className="flex-1">
                                   <p className="font-medium text-gray-900">{scholar.name}</p>
                                   <p className="text-sm text-gray-600">ID: {scholar.studentId}</p>
-                                  <p className="text-sm text-gray-600">House: {houses?.find(h => h.id === scholar.houseId)?.name || 'Not assigned'}</p>
+                                  <p className="text-sm text-gray-600">House: {Array.isArray(houses) ? houses.find((h: any) => h.id === scholar.houseId)?.name || 'Not assigned' : 'Not assigned'}</p>
                                   <p className="text-sm font-medium text-blue-600">
                                     {scholar.academicPoints + scholar.attendancePoints + scholar.behaviorPoints} pts
                                   </p>
@@ -2301,37 +2300,37 @@ export default function TeacherDashboard() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="text-center p-3 bg-gray-50 rounded-lg">
                         <p className="text-2xl font-bold text-blue-600">
-                          {scholars?.filter(s => s.grade === (
+                          {Array.isArray(scholars) ? scholars.filter((s: any) => s.grade === (
                             teacher?.gradeRole === '6th Grade' ? 6 :
                             teacher?.gradeRole === '7th Grade' ? 7 : 8
-                          )).length || 0}
+                          )).length || 0 : 0}
                         </p>
                         <p className="text-sm text-gray-600">Total Students</p>
                       </div>
                       <div className="text-center p-3 bg-gray-50 rounded-lg">
                         <p className="text-2xl font-bold text-green-600">
-                          {scholars?.filter(s => s.grade === (
+                          {Array.isArray(scholars) ? scholars.filter((s: any) => s.grade === (
                             teacher?.gradeRole === '6th Grade' ? 6 :
                             teacher?.gradeRole === '7th Grade' ? 7 : 8
-                          )).reduce((sum, s) => sum + s.academicPoints, 0) || 0}
+                          )).reduce((sum: any, s: any) => sum + s.academicPoints, 0) || 0 : 0}
                         </p>
                         <p className="text-sm text-gray-600">Academic Points</p>
                       </div>
                       <div className="text-center p-3 bg-gray-50 rounded-lg">
                         <p className="text-2xl font-bold text-purple-600">
-                          {scholars?.filter(s => s.grade === (
+                          {Array.isArray(scholars) ? scholars.filter((s: any) => s.grade === (
                             teacher?.gradeRole === '6th Grade' ? 6 :
                             teacher?.gradeRole === '7th Grade' ? 7 : 8
-                          )).reduce((sum, s) => sum + s.behaviorPoints, 0) || 0}
+                          )).reduce((sum: any, s: any) => sum + s.behaviorPoints, 0) || 0 : 0}
                         </p>
                         <p className="text-sm text-gray-600">Behavior Points</p>
                       </div>
                       <div className="text-center p-3 bg-gray-50 rounded-lg">
                         <p className="text-2xl font-bold text-orange-600">
-                          {scholars?.filter(s => s.grade === (
+                          {Array.isArray(scholars) ? scholars.filter((s: any) => s.grade === (
                             teacher?.gradeRole === '6th Grade' ? 6 :
                             teacher?.gradeRole === '7th Grade' ? 7 : 8
-                          )).reduce((sum, s) => sum + s.attendancePoints, 0) || 0}
+                          )).reduce((sum: any, s: any) => sum + s.attendancePoints, 0) || 0 : 0}
                         </p>
                         <p className="text-sm text-gray-600">Attendance Points</p>
                       </div>

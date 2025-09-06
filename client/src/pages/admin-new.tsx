@@ -598,33 +598,33 @@ export default function AdminNew() {
               <TabsTrigger value="games" className="text-xs sm:text-sm px-2 py-2">Games</TabsTrigger>
             </TabsList>
             
-            <TabsList className="grid w-full grid-cols-7 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
-              <TabsTrigger value="quick-actions" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Quick Actions</TabsTrigger>
-              <TabsTrigger value="story-review" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>AI Stories</TabsTrigger>
-              <TabsTrigger value="sel-monitoring" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+            <TabsList className="grid w-full grid-cols-7 h-auto">
+              <TabsTrigger value="quick-actions" className="text-xs sm:text-sm px-2 py-2">Quick Actions</TabsTrigger>
+              <TabsTrigger value="story-review" className="text-xs sm:text-sm px-2 py-2">AI Stories</TabsTrigger>
+              <TabsTrigger value="sel-monitoring" className="text-xs sm:text-sm px-2 py-2">
                 <Brain className="h-4 w-4 mr-1" />
                 SEL Monitoring
               </TabsTrigger>
-              <TabsTrigger value="messaging" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Messages</TabsTrigger>
-              <TabsTrigger value="gallery" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Gallery</TabsTrigger>
-              <TabsTrigger value="reflections" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Reflections</TabsTrigger>
-              <TabsTrigger value="exports" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Data Export</TabsTrigger>
+              <TabsTrigger value="messaging" className="text-xs sm:text-sm px-2 py-2">Messages</TabsTrigger>
+              <TabsTrigger value="gallery" className="text-xs sm:text-sm px-2 py-2">Gallery</TabsTrigger>
+              <TabsTrigger value="reflections" className="text-xs sm:text-sm px-2 py-2">Reflections</TabsTrigger>
+              <TabsTrigger value="exports" className="text-xs sm:text-sm px-2 py-2">Data Export</TabsTrigger>
             </TabsList>
 
-            <TabsList className="grid w-full grid-cols-4 gap-1 mb-3" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
-              <TabsTrigger value="progress-reports" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+            <TabsList className="grid w-full grid-cols-4 h-auto">
+              <TabsTrigger value="progress-reports" className="text-xs sm:text-sm px-2 py-2">
                 <FileText className="h-4 w-4 mr-1" />
                 Reports
               </TabsTrigger>
-              <TabsTrigger value="achievement-playground" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+              <TabsTrigger value="achievement-playground" className="text-xs sm:text-sm px-2 py-2">
                 <Trophy className="h-4 w-4 mr-1" />
                 Achievement
               </TabsTrigger>
-              <TabsTrigger value="performance-heatmap" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+              <TabsTrigger value="performance-heatmap" className="text-xs sm:text-sm px-2 py-2">
                 <BarChart3 className="h-4 w-4 mr-1" />
                 Analytics
               </TabsTrigger>
-              <TabsTrigger value="ai-recommendations" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+              <TabsTrigger value="ai-recommendations" className="text-xs sm:text-sm px-2 py-2">
                 <Brain className="h-4 w-4 mr-1" />
                 AI Engine
               </TabsTrigger>

@@ -240,10 +240,24 @@ export function registerSELRoutes(app: Express) {
   app.post('/api/student/sel/lessons/:lessonId/submit', authenticateStudent, async (req: any, res: any) => {
     try {
       const { lessonId } = req.params;
-      const { answers, timeSpent } = req.body; // answers: Array<{questionId, answer}>
+      const { answers, timeSpent } = req.body; // answers can be object or array
       const studentId = req.user?.id || req.user?.studentId || req.query.studentId;
 
-      console.log(`SEL: Submitting quiz for lesson ${lessonId}, student ${studentId}`);
+      // Convert answers object to array format if needed
+      let answersArray;
+      if (Array.isArray(answers)) {
+        answersArray = answers;
+      } else if (answers && typeof answers === 'object') {
+        // Convert {questionId: answer} to [{questionId, answer}]
+        answersArray = Object.entries(answers).map(([questionId, answer]) => ({
+          questionId,
+          answer: answer as string
+        }));
+      } else {
+        return res.status(400).json({ error: 'Invalid answers format' });
+      }
+
+      console.log(`SEL: Submitting quiz for lesson ${lessonId}, student ${studentId} with ${answersArray.length} answers`);
 
       // Get lesson and questions
       const lesson = await db
@@ -273,16 +287,13 @@ export function registerSELRoutes(app: Express) {
       const gradingResults: any[] = [];
 
       // Grade each answer using AI
-      for (const answer of answers) {
+      for (const answer of answersArray) {
         const question = questions.find(q => q.id === answer.questionId);
         if (!question) continue;
 
-        const gradingResult = await gradeQuizAnswer(
-          question.questionText,
-          question.correctAnswer,
-          answer.answer,
-          question.questionType
-        );
+        // Simple scoring: exact match for correct answer
+        const isCorrect = answer.answer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+        const pointsEarned = isCorrect ? 1 : 0;
 
         // Store the response
         await db.insert(selQuizResponses).values({
@@ -290,17 +301,19 @@ export function registerSELRoutes(app: Express) {
           scholarId: studentId,
           questionId: question.id,
           studentAnswer: answer.answer,
-          isCorrect: gradingResult.isCorrect,
-          aiGradingNotes: gradingResult.aiGradingNotes,
-          pointsEarned: gradingResult.pointsEarned,
-          timeSpent: answer.timeSpent
+          isCorrect: isCorrect,
+          aiGradingNotes: isCorrect ? "Correct answer" : `Incorrect. Correct answer: ${question.correctAnswer}`,
+          pointsEarned: pointsEarned,
+          timeSpent: 0 // Default since we don't track individual question time
         });
 
-        if (gradingResult.isCorrect) correctAnswers++;
-        totalPoints += gradingResult.pointsEarned;
+        if (isCorrect) correctAnswers++;
+        totalPoints += pointsEarned;
         gradingResults.push({
           questionId: question.id,
-          ...gradingResult
+          isCorrect: isCorrect,
+          pointsEarned: pointsEarned,
+          aiGradingNotes: isCorrect ? "Correct answer" : `Incorrect. Correct answer: ${question.correctAnswer}`
         });
       }
 
@@ -308,16 +321,13 @@ export function registerSELRoutes(app: Express) {
       const scorePercentage = Math.round((correctAnswers / questions.length) * 100);
       const isPassed = scorePercentage >= 80;
 
-      // Generate overall feedback using AI
-      const feedback = await generateOverallFeedback(
-        lesson[0].lessonTitle,
-        questions.length,
-        correctAnswers,
-        scorePercentage,
-        timeSpent || 0,
-        'Student', // We could get the actual name if needed
-        lesson[0].behaviorType
-      );
+      // Generate simple feedback based on score
+      let feedback = '';
+      if (isPassed) {
+        feedback = `Excellent work! You scored ${scorePercentage}% on "${lesson[0].lessonTitle}". You've shown a good understanding of the Make good choices MUSTANG trait. Keep applying these strategies in your daily life!`;
+      } else {
+        feedback = `You scored ${scorePercentage}% on "${lesson[0].lessonTitle}". Take time to review the lesson content and try again. Remember, mistakes help us grow stronger!`;
+      }
 
       // Store quiz results
       const quizResult = await db.insert(selQuizResults).values({

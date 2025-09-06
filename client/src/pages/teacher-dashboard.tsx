@@ -1907,28 +1907,96 @@ export default function TeacherDashboard() {
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-gray-500">
-                    <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-lg font-semibold mb-2">SEL System Coming Soon</h3>
-                    <p className="mb-4">
-                      The AI-powered Social Emotional Learning system will automatically generate personalized behavioral intervention lessons when students receive negative PBIS points.
-                    </p>
-                    <div className="text-sm text-left max-w-md mx-auto space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        Automatic lesson generation based on behavior type
+                  <div className="space-y-6">
+                    {/* System Status */}
+                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <div>
+                          <h3 className="font-semibold text-green-800">SEL System Active</h3>
+                          <p className="text-sm text-green-600">
+                            AI-powered lessons automatically generated for negative PBIS entries
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        AI-graded quizzes with instant feedback
+                      <Brain className="h-8 w-8 text-green-600" />
+                    </div>
+
+                    {/* System Features */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <h4 className="font-medium">Auto-Generation</h4>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Personalized SEL lessons created instantly when negative PBIS points are awarded
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        Multi-stakeholder notifications (parents, teachers, admins)
+                      
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <h4 className="font-medium">Smart Assessment</h4>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          AI-graded comprehension quizzes with detailed feedback and progress tracking
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                        Progress tracking and behavioral analytics
+                      
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <h4 className="font-medium">MUSTANG Integration</h4>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Lessons focus on specific MUSTANG traits to reinforce positive behavior
+                        </p>
+                      </div>
+                      
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          <h4 className="font-medium">Multi-Stakeholder</h4>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Automatic notifications to teachers, parents, and administrators
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* How It Works */}
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <h4 className="font-medium text-blue-800 mb-3">How It Works</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                          <span className="text-blue-700">Award negative PBIS points for behavioral incidents</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                          <span className="text-blue-700">AI automatically generates a personalized SEL lesson</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                          <span className="text-blue-700">Student completes lesson and comprehension quiz</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                          <span className="text-blue-700">Results shared with teachers, parents, and administrators</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Action */}
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-3">
+                        SEL lessons are generated automatically when you award negative PBIS points. 
+                        Check the admin portal to monitor all active SEL interventions.
+                      </p>
+                      <div className="flex items-center justify-center gap-2 text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span>System Ready & Monitoring</span>
                       </div>
                     </div>
                   </div>

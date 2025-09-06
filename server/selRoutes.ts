@@ -588,5 +588,77 @@ export function registerSELRoutes(app: Express) {
     }
   });
 
+  // === ADMIN SEL ROUTES ===
+  
+  // Admin authentication middleware (reused from routes.ts)
+  const authenticateAdmin = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+      const jwtSecret = "bhsa-admin-secret-2025-stable";
+      const decoded: any = jwt.verify(token, jwtSecret);
+      
+      // Check if admin session exists (similar to main routes.ts logic)
+      const admin = await db.execute(sql`
+        SELECT id, email, first_name, last_name, title, is_approved 
+        FROM administrators 
+        WHERE email = ${decoded.email} AND is_active = true
+      `);
+      
+      if (!admin.rows || admin.rows.length === 0) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      
+      const adminData = admin.rows[0] as any;
+      
+      // Principals are always approved automatically, others require approval
+      if (!adminData.is_approved && adminData.title !== "Principal") {
+        return res.status(403).json({ message: "Account pending approval" });
+      }
+      
+      req.admin = {
+        id: adminData.id,
+        email: adminData.email,
+        firstName: adminData.first_name,
+        lastName: adminData.last_name,
+        title: adminData.title
+      };
+      next();
+    } catch (error) {
+      console.error("SEL Admin auth error:", error);
+      res.status(401).json({ message: "Invalid token" });
+    }
+  };
+
+  // Get all SEL lessons for admin monitoring
+  app.get('/api/admin/sel/lessons', authenticateAdmin, async (req: any, res: any) => {
+    try {
+      console.log("ADMIN-SEL: Getting all SEL lessons for admin monitoring");
+      
+      const lessons = await db
+        .select({
+          lesson: selLessons,
+          scholar: {
+            id: scholars.id,
+            name: scholars.name,
+            studentId: scholars.studentId,
+            grade: scholars.grade
+          }
+        })
+        .from(selLessons)
+        .leftJoin(scholars, eq(selLessons.scholarId, scholars.id))
+        .orderBy(desc(selLessons.assignedAt));
+
+      console.log(`ADMIN-SEL: Found ${lessons.length} SEL lessons for admin monitoring`);
+      res.json(lessons);
+    } catch (error) {
+      console.error('ADMIN-SEL: Error getting SEL lessons for admin:', error);
+      res.status(500).json({ error: 'Failed to get SEL lessons' });
+    }
+  });
+
   console.log("SEL: SEL routes registered successfully");
 }

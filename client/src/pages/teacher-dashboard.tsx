@@ -151,6 +151,11 @@ export default function TeacherDashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [showCreateClassPeriodModal, setShowCreateClassPeriodModal] = useState(false);
+  const [classPeriodForm, setClassPeriodForm] = useState({
+    name: "",
+    description: ""
+  });
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -182,6 +187,9 @@ export default function TeacherDashboard() {
         } else if (showDeactivateStudent) {
           setShowDeactivateStudent(false);
           setDeactivationReason("");
+        } else if (showCreateClassPeriodModal) {
+          setShowCreateClassPeriodModal(false);
+          setClassPeriodForm({ name: "", description: "" });
         }
       }
     };
@@ -486,6 +494,19 @@ export default function TeacherDashboard() {
       return response.json();
     },
     enabled: !!teacher?.id,
+  });
+
+  // Query for fetching teacher's class periods
+  const { data: classPeriods = [], refetch: refetchClassPeriods } = useQuery({
+    queryKey: ['/api/teacher/class-periods'],
+    queryFn: async () => {
+      const response = await fetch('/api/teacher/class-periods', {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error('Failed to fetch class periods');
+      return response.json();
+    },
+    enabled: activeTab === 'class-periods' && (teacher?.gradeRole === '6th Grade' || teacher?.gradeRole === '7th Grade' || teacher?.gradeRole === '8th Grade')
   });
 
   // Reply to parent or admin mutation
@@ -836,6 +857,38 @@ export default function TeacherDashboard() {
         variant: "destructive",
       });
     },
+  });
+
+  // Create class period mutation
+  const createClassPeriodMutation = useMutation({
+    mutationFn: async (data: { name: string; description: string }) => {
+      const response = await fetch('/api/teacher/class-periods', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          ...data,
+          teacherId: teacher?.id
+        })
+      });
+      if (!response.ok) throw new Error('Failed to create class period');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Class period created successfully",
+      });
+      setShowCreateClassPeriodModal(false);
+      setClassPeriodForm({ name: '', description: '' });
+      queryClient.invalidateQueries({ queryKey: ['/api/teacher/class-periods'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create class period",
+        variant: "destructive",
+      });
+    }
   });
 
   const handleLogout = () => {
@@ -2001,11 +2054,80 @@ export default function TeacherDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
+                    {/* Add Class Period Button */}
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold" style={{color: themeStyles.textPrimary}}>Class Periods</h3>
+                      <Button
+                        onClick={() => setShowCreateClassPeriodModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        data-testid="button-add-class-period"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Class Period
+                      </Button>
+                    </div>
+
+                    {/* Existing Class Periods */}
+                    {classPeriods && classPeriods.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {classPeriods.map((period: any) => (
+                          <Card key={period.id} className="border-2 border-gray-200 hover:border-blue-300 transition-colors">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-lg text-blue-800 flex items-center gap-2">
+                                <Calendar className="h-5 w-5" />
+                                {period.name}
+                              </CardTitle>
+                              {period.description && (
+                                <p className="text-sm text-gray-600">{period.description}</p>
+                              )}
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-700">Enrolled Students:</span>
+                                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                    {period.enrollments?.length || 0} students
+                                  </span>
+                                </div>
+                                {period.enrollments && period.enrollments.length > 0 ? (
+                                  <div className="max-h-32 overflow-y-auto">
+                                    <div className="space-y-1">
+                                      {period.enrollments.map((enrollment: any) => (
+                                        <div key={enrollment.scholar.id} className="flex items-center justify-between text-sm">
+                                          <span className="text-gray-700">{enrollment.scholar.name}</span>
+                                          <span className="text-gray-500">ID: {enrollment.scholar.studentId}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-500 italic">No students enrolled yet</p>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <h3 className="text-lg font-medium mb-2">No Class Periods Yet</h3>
+                        <p className="text-sm mb-4">Create your first class period to organize your {teacher?.gradeRole} students.</p>
+                        <Button
+                          onClick={() => setShowCreateClassPeriodModal(true)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create First Class Period
+                        </Button>
+                      </div>
+                    )}
+
                     {/* Grade-Level Students Section */}
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-center gap-3 mb-4">
                         <Users className="h-5 w-5 text-blue-600" />
-                        <h3 className="font-semibold text-blue-800">Your {teacher?.gradeRole} Students</h3>
+                        <h3 className="font-semibold text-blue-800">Available {teacher?.gradeRole} Students</h3>
                       </div>
                       
                       {scholars && scholars.length > 0 ? (
@@ -3170,6 +3292,119 @@ export default function TeacherDashboard() {
         }}
         studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
       />
+    )}
+
+    {/* Create Class Period Modal */}
+    {showCreateClassPeriodModal && (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowCreateClassPeriodModal(false);
+            setClassPeriodForm({ name: "", description: "" });
+          }
+        }}
+      >
+        <Card className="w-full max-w-md">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                Create Class Period
+              </CardTitle>
+              <p className="text-sm text-gray-600">Add a new class period for your {teacher?.gradeRole} students</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowCreateClassPeriodModal(false);
+                setClassPeriodForm({ name: "", description: "" });
+              }}
+              className="h-10 w-10 p-0 border-2 border-gray-600 bg-white hover:bg-red-100 hover:border-red-500"
+              data-testid="button-close-class-period-modal"
+            >
+              <span className="text-xl font-bold text-gray-800 hover:text-red-600">✕</span>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!classPeriodForm.name.trim()) {
+                toast({
+                  title: "Missing information",
+                  description: "Please enter a class period name.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              createClassPeriodMutation.mutate({
+                name: classPeriodForm.name.trim(),
+                description: classPeriodForm.description.trim()
+              });
+            }} className="space-y-4">
+              
+              <div>
+                <Label htmlFor="classperiod-name">Class Period Name *</Label>
+                <Input
+                  id="classperiod-name"
+                  type="text"
+                  placeholder="e.g., 1st Period Science, Morning Math"
+                  value={classPeriodForm.name}
+                  onChange={(e) => setClassPeriodForm({...classPeriodForm, name: e.target.value})}
+                  data-testid="input-class-period-name"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="classperiod-description">Description (Optional)</Label>
+                <textarea
+                  id="classperiod-description"
+                  className="w-full p-2 border border-gray-300 rounded-md resize-none h-20"
+                  placeholder="e.g., Advanced placement science course for gifted students"
+                  value={classPeriodForm.description}
+                  onChange={(e) => setClassPeriodForm({...classPeriodForm, description: e.target.value})}
+                  data-testid="input-class-period-description"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreateClassPeriodModal(false);
+                    setClassPeriodForm({ name: "", description: "" });
+                  }}
+                  data-testid="button-cancel-class-period"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={createClassPeriodMutation.isPending || !classPeriodForm.name.trim()}
+                  data-testid="button-create-class-period"
+                >
+                  {createClassPeriodMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Class Period
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     )}
     </>
   );

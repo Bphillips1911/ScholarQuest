@@ -96,10 +96,119 @@ Create a comprehensive SEL lesson. Respond with JSON in this exact format:
       difficulty: lesson.difficulty || "age_appropriate",
       estimatedTime: lesson.estimatedTime || 15
     };
-  } catch (error) {
-    console.error('SEL AI: Error generating lesson:', error);
-    throw new Error('Failed to generate SEL lesson: ' + (error as Error).message);
+  } catch (openaiError: any) {
+    console.log('SEL AI: OpenAI error, using fallback lesson generation:', openaiError.message);
+    
+    // Generate fallback lesson based on behavior context
+    return generateFallbackSELLesson(context);
   }
+}
+
+/**
+ * Generate fallback SEL lesson when OpenAI is unavailable
+ */
+function generateFallbackSELLesson(context: BehaviorContext): GeneratedLesson {
+  const interventionLevel = Math.min(context.previousOffenses + 1, 3);
+  const gradeLevel = context.studentGrade === 6 ? "6th grade" : 
+                    context.studentGrade === 7 ? "7th grade" : "8th grade";
+
+  // Create customized content based on behavior type and MUSTANG trait
+  const lessonContent = createBehaviorSpecificContent(context.specificBehavior, context.mustangTrait, gradeLevel, interventionLevel);
+  
+  return {
+    lessonTitle: `Building Better Choices: ${context.mustangTrait} Focus`,
+    lessonContent,
+    learningObjectives: [
+      `Understand why ${context.specificBehavior} impacts the learning environment`,
+      `Practice the ${context.mustangTrait} MUSTANG trait in daily situations`,
+      `Develop strategies to make better choices in similar situations`
+    ],
+    difficulty: interventionLevel === 1 ? 'age_appropriate' : interventionLevel === 2 ? 'intermediate' : 'advanced',
+    estimatedTime: interventionLevel === 1 ? 15 : interventionLevel === 2 ? 20 : 25
+  };
+}
+
+/**
+ * Create behavior-specific lesson content
+ */
+function createBehaviorSpecificContent(behavior: string, mustangTrait: string, gradeLevel: string, level: number): string {
+  const baseContent = `
+## Welcome, Scholar!
+
+Today's lesson focuses on building stronger **${mustangTrait}** skills. Every MUSTANG scholar has the power to make positive choices that help themselves and their classmates succeed.
+
+## Understanding the Situation
+
+Let's talk about what happened: **${behavior}**. 
+
+At Bush Hills STEAM Academy, we believe every mistake is a learning opportunity. This lesson will help you understand the impact of your choices and develop better strategies for the future.
+
+## The ${mustangTrait} MUSTANG Trait
+
+**${mustangTrait}** means:
+${getMustangTraitDefinition(mustangTrait)}
+
+## Reflection Questions
+
+Think about these questions:
+1. How did your actions affect others around you?
+2. What were you feeling or thinking when this happened?
+3. How can you use the ${mustangTrait} trait to handle similar situations differently?
+
+## Building Better Strategies
+
+Here are some practical strategies you can use:
+${getBehaviorStrategies(behavior, mustangTrait, gradeLevel)}
+
+## Your Action Plan
+
+Moving forward, remember:
+- Pause and think before acting
+- Ask yourself: "Is this showing ${mustangTrait}?"
+- Use the strategies you learned today
+- Talk to a trusted adult if you need help
+
+## Conclusion
+
+You have the power to make positive choices that show your MUSTANG character. Every day is a new opportunity to demonstrate **${mustangTrait}** and help create a positive learning environment for everyone.
+
+Remember: Mistakes help us grow, and you're growing stronger every day! 🌟
+  `;
+
+  return baseContent;
+}
+
+/**
+ * Get MUSTANG trait definition
+ */
+function getMustangTraitDefinition(trait: string): string {
+  const definitions: Record<string, string> = {
+    'Motivated': '- Setting goals and working hard to achieve them\n- Showing enthusiasm for learning and growth\n- Encouraging others to do their best',
+    'Understanding': '- Listening to others with respect\n- Considering different perspectives\n- Showing empathy and kindness',
+    'Safe': '- Making choices that protect yourself and others\n- Following safety rules and procedures\n- Creating a secure environment for learning',
+    'Teamwork': '- Working together respectfully with others\n- Contributing positively to group activities\n- Supporting classmates in their success',
+    'Accountable': '- Taking responsibility for your actions and words\n- Being honest about mistakes and learning from them\n- Following through on commitments',
+    'Noble': '- Acting with integrity and honor\n- Standing up for what is right\n- Treating everyone with dignity and respect',
+    'Growth': '- Embracing challenges as opportunities to learn\n- Asking for help when needed\n- Celebrating progress and improvement'
+  };
+  
+  return definitions[trait] || '- Making positive choices that help everyone succeed';
+}
+
+/**
+ * Get behavior-specific strategies
+ */
+function getBehaviorStrategies(behavior: string, trait: string, gradeLevel: string): string {
+  const strategies = [
+    `**Take a Deep Breath**: When you feel frustrated or upset, take three deep breaths before responding.`,
+    `**Use "I" Statements**: Express your feelings without blaming others. Example: "I feel frustrated when..."`,
+    `**Ask for Help**: Talk to your teacher, counselor, or a trusted adult when you need support.`,
+    `**Think Before You Act**: Ask yourself: "Will this help me show ${trait}?"`,
+    `**Practice Self-Control**: Count to 10, take a walk, or use another calming strategy.`,
+    `**Make Amends**: If your actions affected others, think about how you can make things right.`
+  ];
+
+  return strategies.join('\n\n');
 }
 
 /**

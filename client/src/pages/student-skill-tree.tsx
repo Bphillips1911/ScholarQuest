@@ -76,7 +76,16 @@ export default function StudentSkillTree() {
 
   // Fetch PBIS entries for skill calculations
   const { data: pbisEntries = [] } = useQuery({
-    queryKey: ["/api/pbis-entries", studentData?.id],
+    queryKey: ["/api/scholars", studentData?.id, "pbis"],
+    queryFn: async () => {
+      const response = await fetch(`/api/scholars/${studentData?.id}/pbis`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch PBIS entries');
+      return response.json();
+    },
     enabled: !!studentData?.id,
   });
 

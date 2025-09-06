@@ -85,7 +85,7 @@ class RealTimeSync {
   private invalidateStudentQueries(studentId?: string) {
     if (studentId) {
       queryClient.invalidateQueries({ queryKey: ['/api/student', studentId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/pbis-entries', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scholars', studentId, 'pbis'] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/reflections', studentId] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/reflections'] });
@@ -119,7 +119,7 @@ class RealTimeSync {
   private invalidatePBISQueries(studentId?: string) {
     queryClient.invalidateQueries({ queryKey: ['/api/pbis-photos'] });
     if (studentId) {
-      queryClient.invalidateQueries({ queryKey: ['/api/pbis-entries', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/scholars', studentId, 'pbis'] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/sel/lessons'] });
     }

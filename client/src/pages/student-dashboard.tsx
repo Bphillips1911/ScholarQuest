@@ -433,7 +433,16 @@ function StudentDashboardContent() {
 
   // Fetch PBIS entries for this student
   const { data: pbisEntries } = useQuery<PBISEntry[]>({
-    queryKey: ["/api/pbis-entries", studentData?.id],
+    queryKey: ["/api/scholars", studentData?.id, "pbis"],
+    queryFn: async () => {
+      const response = await fetch(`/api/scholars/${studentData?.id}/pbis`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch PBIS entries');
+      return response.json();
+    },
     enabled: !!studentData?.id,
   });
 

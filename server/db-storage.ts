@@ -366,7 +366,15 @@ export class DatabaseStorage implements IStorage {
     // Update scholar points and house points
     const scholar = await this.getScholarById(pbisData.scholarId);
     if (scholar) {
-      const pointsToAdd = pbisData.entryType === "positive" ? pbisData.points : -pbisData.points;
+      // Correctly handle positive and negative points
+      let pointsToAdd: number;
+      if (pbisData.entryType === "negative" || pbisData.points < 0) {
+        pointsToAdd = -Math.abs(pbisData.points); // Ensure negative
+      } else {
+        pointsToAdd = Math.abs(pbisData.points); // Ensure positive
+      }
+      
+      console.log(`📊 DATABASE: Updating ${pbisData.category} points by ${pointsToAdd} for scholar ${scholar.name} (Current: ${pbisData.category === 'behavior' ? scholar.behaviorPoints : pbisData.category === 'academic' ? scholar.academicPoints : scholar.attendancePoints})`);
       
       // Update scholar points
       const updates: any = {};
@@ -381,6 +389,8 @@ export class DatabaseStorage implements IStorage {
           updates.behaviorPoints = scholar.behaviorPoints + pointsToAdd;
           break;
       }
+      
+      console.log(`📊 DATABASE: New ${pbisData.category} total will be: ${updates[pbisData.category + 'Points']}`);
       
       if (Object.keys(updates).length > 0) {
         await db.update(scholars)

@@ -39,11 +39,13 @@ export function registerSELRoutes(app: Express) {
     }
 
     try {
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
-      const decoded: any = require('jsonwebtoken').verify(token, jwtSecret);
+      const jwt = require("jsonwebtoken");
       const { db } = require("./db");
       const { scholars } = require("@shared/schema");
       const { eq } = require("drizzle-orm");
+      
+      const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
+      const decoded: any = jwt.verify(token, jwtSecret);
       
       const student = await db
         .select()

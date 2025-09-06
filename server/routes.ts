@@ -599,25 +599,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const entry = await storage.createPbisEntry(validationResult.data);
       
-      // Update scholar points based on entry type and category
+      // Get updated scholar data (points already calculated in storage.createPbisEntry)
       if (entry.scholarId) {
         const scholar = await storage.getScholar(entry.scholarId);
         if (scholar) {
-          // Determine if points should be positive or negative
           const pointsToAdd = entry.entryType === 'negative' || entry.points < 0 ? -Math.abs(entry.points) : Math.abs(entry.points);
-          
-          // Update points based on category
-          const updates: Partial<Scholar> = {};
-          if (entry.category === "behavior") {
-            updates.behaviorPoints = (scholar.behaviorPoints || 0) + pointsToAdd;
-          } else if (entry.category === "academic") {
-            updates.academicPoints = (scholar.academicPoints || 0) + pointsToAdd;
-          } else if (entry.category === "attendance") {
-            updates.attendancePoints = (scholar.attendancePoints || 0) + pointsToAdd;
-          }
-          
-          console.log(`📊 PBIS POINTS: Updating ${entry.category} points by ${pointsToAdd} for scholar ${scholar.name}`);
-          await storage.updateScholar(entry.scholarId, updates);
+          console.log(`🎯 PBIS POINTS: ${scholar.name} ${entry.entryType === 'negative' ? 'lost' : 'earned'} ${Math.abs(entry.points)} ${entry.category} points (Total: ${entry.category === 'behavior' ? scholar.behaviorPoints : entry.category === 'academic' ? scholar.academicPoints : scholar.attendancePoints})`);
           
           // Broadcast real-time update for PBIS points
           if (typeof (global as any).broadcastUpdate === 'function') {
@@ -781,20 +768,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("TEACHER PBIS: Creating entry:", pbisData);
       const entry = await storage.createPbisEntry(pbisData);
 
-      // Update scholar points based on category
+      // Get updated scholar data (points already calculated in storage.createPbisEntry)
       const scholar = await storage.getScholar(scholarId);
       if (scholar) {
         const pointsToAdd = pbisData.points;
-        
-        if (category === "behavior") {
-          scholar.behaviorPoints = (scholar.behaviorPoints || 0) + pointsToAdd;
-        } else if (category === "academic") {
-          scholar.academicPoints = (scholar.academicPoints || 0) + pointsToAdd;
-        } else if (category === "attendance") {
-          scholar.attendancePoints = (scholar.attendancePoints || 0) + pointsToAdd;
-        }
-
-        await storage.updateScholar(scholarId, scholar);
+        console.log(`🎯 TEACHER PBIS: ${scholar.name} ${pointsToAdd < 0 ? 'lost' : 'earned'} ${Math.abs(pointsToAdd)} ${category} points (New total: ${category === 'behavior' ? scholar.behaviorPoints : category === 'academic' ? scholar.academicPoints : scholar.attendancePoints})`);
 
         // Broadcast real-time update for PBIS points
         if (typeof (global as any).broadcastUpdate === 'function') {

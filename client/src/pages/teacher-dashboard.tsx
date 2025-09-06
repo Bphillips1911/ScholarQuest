@@ -1057,7 +1057,7 @@ export default function TeacherDashboard() {
             </div>
           </div>
         </div>
-      
+        
         {/* Teacher Dashboard Content */}
         <section className="p-4" data-testid="teacher-dashboard-section">
         <div className="max-w-7xl mx-auto">
@@ -2876,7 +2876,7 @@ export default function TeacherDashboard() {
           />
         )}
         </div>
-      </section>
+        </section>
     </div>
   );
 }

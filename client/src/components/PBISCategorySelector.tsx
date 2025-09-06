@@ -31,6 +31,21 @@ export interface PBISSubcategory {
 // PBIS Recognition Categories - Expanded with 20+ specific recognitions and variable points (1-10)
 export const pbisCategories: PBISCategory[] = [
   {
+    id: "bhsa_mustang_traits",
+    name: "BHSA Mustang Traits",
+    icon: <Target className="h-4 w-4" />,
+    color: "bg-orange-500",
+    subcategories: [
+      { id: "make_good_choices", name: "M - Make Good Choices", points: 5, description: "Demonstrates responsible decision-making and positive choices" },
+      { id: "use_kind_words", name: "U - Use Kind Words", points: 5, description: "Shows respect through positive and encouraging communication" },
+      { id: "show_school_pride", name: "S - Show School Pride", points: 5, description: "Displays pride in BHSA and represents the school positively" },
+      { id: "tolerant_of_others", name: "T - Tolerant of Others", points: 5, description: "Accepts and respects differences in others with understanding" },
+      { id: "aim_for_excellence", name: "A - Aim for Excellence", points: 5, description: "Strives for the highest quality in work and behavior" },
+      { id: "need_to_be_responsible", name: "N - Need to be Responsible", points: 5, description: "Takes ownership of actions and completes tasks reliably" },
+      { id: "give_100_everyday", name: "G - Give 100% Everyday", points: 5, description: "Shows maximum effort and commitment in all activities" }
+    ]
+  },
+  {
     id: "attendance",
     name: "Attendance",
     icon: <Clock className="h-4 w-4" />,

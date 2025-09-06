@@ -1232,9 +1232,9 @@ export default function AdminNew() {
                 {/* Badge Management Header */}
                 <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <CardTitle style={{color: themeStyles.textPrimary}}>Badge Management System</CardTitle>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2 items-center">
                         <Button className="bg-purple-600 hover:bg-purple-700" size="sm">
                           <Plus className="w-4 h-4 mr-2" />
                           Create New Badge

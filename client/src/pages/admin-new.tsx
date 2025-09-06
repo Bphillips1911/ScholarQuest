@@ -175,9 +175,26 @@ export default function AdminNew() {
     enabled: isAuthenticated,
   });
 
+  // Fetch all scholars with cache-busting for deployment
   const { data: allScholars } = useQuery<Scholar[]>({
-    queryKey: ["/api/scholars"],
+    queryKey: ["/api/scholars", Date.now()], // Cache-busting key
+    queryFn: async () => {
+      const response = await fetch("/api/scholars", {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        },
+      });
+      if (!response.ok) {
+        console.error("Scholars fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch scholars");
+      }
+      return response.json();
+    },
     enabled: isAuthenticated,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
@@ -185,21 +202,29 @@ export default function AdminNew() {
     enabled: isAuthenticated,
   });
 
-  // Fetch admin messages
+  // Fetch admin messages with cache-busting for deployment
   const { data: adminMessages = [] } = useQuery({
-    queryKey: ["/api/admin/messages"],
+    queryKey: ["/api/admin/messages", Date.now()], // Cache-busting key
     queryFn: async () => {
       const token = localStorage.getItem("adminToken");
       const response = await fetch("/api/admin/messages", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
         },
       });
-      if (!response.ok) throw new Error("Failed to fetch messages");
+      if (!response.ok) {
+        console.error("Admin messages fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch messages");
+      }
       return response.json();
     },
     enabled: isAuthenticated,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   // Fetch gallery photos for admin
@@ -213,10 +238,26 @@ export default function AdminNew() {
     enabled: isAuthenticated,
   });
 
-  // Fetch badges data
+  // Fetch badges data with cache-busting for deployment
   const { data: allBadges = [] } = useQuery({
-    queryKey: ["/api/badges"],
+    queryKey: ["/api/badges", Date.now()], // Cache-busting key
+    queryFn: async () => {
+      const response = await fetch("/api/badges", {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache", 
+          "Expires": "0",
+        },
+      });
+      if (!response.ok) {
+        console.error("Badges fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch badges");
+      }
+      return response.json();
+    },
     enabled: isAuthenticated,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   // Fetch games data
@@ -225,10 +266,26 @@ export default function AdminNew() {
     enabled: isAuthenticated,
   });
 
-  // Fetch scholar badges (badges earned by students)
+  // Fetch scholar badges with cache-busting for deployment
   const { data: scholarBadges = [] } = useQuery({
-    queryKey: ["/api/scholar-badges"],
+    queryKey: ["/api/scholar-badges", Date.now()], // Cache-busting key
+    queryFn: async () => {
+      const response = await fetch("/api/scholar-badges", {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0", 
+        },
+      });
+      if (!response.ok) {
+        console.error("Scholar badges fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch scholar badges");
+      }
+      return response.json();
+    },
     enabled: isAuthenticated,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   // Fetch game access data
@@ -238,9 +295,29 @@ export default function AdminNew() {
   });
 
   // SEL lessons query for admin monitoring
+  // Fetch SEL lessons with cache-busting for deployment
   const { data: selLessons = [], isLoading: selLessonsLoading } = useQuery({
-    queryKey: ['/api/admin/sel/lessons'],
-    enabled: isAuthenticated
+    queryKey: ['/api/admin/sel/lessons', Date.now()], // Cache-busting key
+    queryFn: async () => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/sel/lessons", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        },
+      });
+      if (!response.ok) {
+        console.error("SEL lessons fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch SEL lessons");
+      }
+      return response.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   const handleLogout = () => {

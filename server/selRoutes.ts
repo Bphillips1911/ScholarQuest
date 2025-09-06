@@ -338,8 +338,8 @@ export function registerSELRoutes(app: Express) {
         scorePercentage,
         isPassed,
         timeSpent: timeSpent || 0,
-        aiOverallFeedback: feedback.aiOverallFeedback,
-        bonusPbisPoints: feedback.bonusPbisPoints
+        aiOverallFeedback: feedback,
+        bonusPbisPoints: isPassed ? 1 : 0
       }).returning();
 
       // Update lesson status
@@ -351,22 +351,8 @@ export function registerSELRoutes(app: Express) {
         })
         .where(eq(selLessons.id, lessonId));
 
-      // Create notifications for teacher, parent, and administrators
-      const notifications = [
-        {
-          lessonId,
-          recipientType: 'teacher' as const,
-          recipientId: lesson[0].teacherName, // We'd need to map this to teacher ID
-          notificationType: isPassed ? 'quiz_passed' as const : 'quiz_failed' as const,
-          title: `SEL Quiz ${isPassed ? 'Passed' : 'Failed'}`,
-          message: `Student completed "${lesson[0].lessonTitle}" with ${scorePercentage}% score`,
-          sentVia: 'dashboard' as const
-        }
-      ];
-
-      for (const notification of notifications) {
-        await db.insert(selNotifications).values(notification);
-      }
+      // Skip notifications for now - table doesn't exist yet
+      // TODO: Create notifications when sel_notifications table is ready
 
       console.log(`SEL: Quiz completed - Score: ${scorePercentage}%, Passed: ${isPassed}`);
 

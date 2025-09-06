@@ -107,8 +107,62 @@ export function registerSELRoutes(app: Express) {
     }
   });
 
+  // Start a lesson and get quiz questions
+  app.post('/api/student/sel/lessons/:lessonId/start', async (req: any, res: any) => {
+    try {
+      const { lessonId } = req.params;
+      const studentId = req.user?.studentId || req.query.studentId;
+
+      if (!studentId) {
+        return res.status(401).json({ error: 'Student not authenticated' });
+      }
+
+      console.log(`SEL: Starting lesson ${lessonId} for student ${studentId}`);
+
+      // Get lesson details
+      const lesson = await db
+        .select()
+        .from(selLessons)
+        .where(and(
+          eq(selLessons.id, lessonId),
+          eq(selLessons.scholarId, studentId)
+        ))
+        .limit(1);
+
+      if (lesson.length === 0) {
+        return res.status(404).json({ error: 'Lesson not found' });
+      }
+
+      // Get quiz questions
+      const questions = await db
+        .select()
+        .from(selQuizQuestions)
+        .where(eq(selQuizQuestions.lessonId, lessonId))
+        .orderBy(selQuizQuestions.questionNumber);
+
+      // Mark lesson as started if not already
+      if (lesson[0].status === 'assigned') {
+        await db
+          .update(selLessons)
+          .set({ 
+            status: 'in_progress',
+            startedAt: new Date()
+          })
+          .where(eq(selLessons.id, lessonId));
+      }
+
+      res.json({
+        lesson: lesson[0],
+        questions
+      });
+    } catch (error) {
+      console.error('SEL: Error starting lesson:', error);
+      res.status(500).json({ error: 'Failed to start lesson' });
+    }
+  });
+
   // Submit quiz answers for a lesson
-  app.post('/api/student/sel/lessons/:lessonId/quiz', async (req: any, res: any) => {
+  app.post('/api/student/sel/lessons/:lessonId/submit', async (req: any, res: any) => {
     try {
       const { lessonId } = req.params;
       const { answers, timeSpent } = req.body; // answers: Array<{questionId, answer}>

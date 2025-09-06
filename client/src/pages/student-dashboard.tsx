@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
 import { ReflectionModal } from "@/components/ReflectionModal";
+import { SELLessonModal } from "@/components/SELLessonModal";
 import { DashboardThemes } from "@/components/DashboardThemes";
 import { InteractiveLearningAssistant } from "@/components/learning-assistant/InteractiveLearningAssistant";
 import { LearningAssistantProvider, useLearningAssistant, useCelebrationTrigger, useAutoTips } from "@/components/learning-assistant/LearningAssistantProvider";
@@ -67,6 +68,9 @@ interface SELLesson {
 
 // Student SEL Lessons Component
 function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; themeStyles: any }) {
+  const [selectedLesson, setSelectedLesson] = useState<SELLesson | null>(null);
+  const [showLessonModal, setShowLessonModal] = useState(false);
+
   const { data: selLessons, isLoading } = useQuery<SELLesson[]>({
     queryKey: ['/api/student/sel/lessons', { studentId }],
     queryFn: async () => {
@@ -81,6 +85,7 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
       return response.json();
     },
     enabled: !!studentId,
+    refetchInterval: 30000, // Auto-refresh to catch real-time updates
   });
 
   if (isLoading) {
@@ -159,7 +164,15 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
             </div>
 
             {selLessons?.map((lesson: SELLesson) => (
-              <div key={lesson.id} className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div 
+                key={lesson.id} 
+                className="p-4 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors cursor-pointer"
+                onClick={() => {
+                  setSelectedLesson(lesson);
+                  setShowLessonModal(true);
+                }}
+                data-testid={`sel-lesson-${lesson.id}`}
+              >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <h5 className="font-medium text-purple-900 mb-1">{lesson.lessonTitle}</h5>
@@ -183,13 +196,13 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
                     {lesson.status === 'assigned' && (
                       <div className="flex items-center gap-1">
                         <PlayCircle className="h-4 w-4 text-orange-500" />
-                        <span className="text-xs text-orange-700">Ready</span>
+                        <span className="text-xs text-orange-700">Start Lesson</span>
                       </div>
                     )}
                     {lesson.status === 'in_progress' && (
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-blue-500" />
-                        <span className="text-xs text-blue-700">In Progress</span>
+                        <span className="text-xs text-blue-700">Continue</span>
                       </div>
                     )}
                     {lesson.status === 'completed' && (
@@ -215,6 +228,18 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
           </div>
         )}
       </CardContent>
+    
+      {/* SEL Lesson Modal */}
+      {selectedLesson && (
+        <SELLessonModal
+          lesson={selectedLesson}
+          isOpen={showLessonModal}
+          onClose={() => {
+            setShowLessonModal(false);
+            setSelectedLesson(null);
+          }}
+        />
+      )}
     </Card>
   );
 }

@@ -2864,19 +2864,19 @@ export default function TeacherDashboard() {
           </div>
         )}
 
-        {/* Teacher Reflection Modal */}
-        {selectedReflection && (
-          <TeacherReflectionModal
-            reflection={selectedReflection}
-            isOpen={showReflectionModal}
-            onClose={() => {
-              setShowReflectionModal(false);
-              setSelectedReflection(null);
-            }}
-            studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
-          />
-        )}
-        </div>
+      {/* Teacher Reflection Modal */}
+      {selectedReflection && (
+        <TeacherReflectionModal
+          reflection={selectedReflection}
+          isOpen={showReflectionModal}
+          onClose={() => {
+            setShowReflectionModal(false);
+            setSelectedReflection(null);
+          }}
+          studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
+        />
+      )}
+      </div>
       </section>
       </div>
     </>

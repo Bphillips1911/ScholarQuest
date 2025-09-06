@@ -12,7 +12,7 @@ import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
 import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Tabs removed - using parent-portal style navigation
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { TeacherReflectionModal } from "@/components/TeacherReflectionModal";
 import { PBISCategorySelector } from "@/components/PBISCategorySelector";
@@ -1097,141 +1097,182 @@ export default function TeacherDashboard() {
           </CardHeader>
         </Card>
 
-        {/* Main Teacher Dashboard Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full p-4 h-auto border rounded-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-            {/* Primary Row - Main Navigation Tabs with Better Spacing */}
-            <div className="flex flex-wrap items-center justify-start gap-3 w-full mb-4">
-              <TabsTrigger 
-                value="dashboard" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <Home className="h-4 w-4" />
-                <span>Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="scholars" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <Users className="h-4 w-4" />
-                <span>Scholars</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="messaging" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all relative" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span>Messages</span>
-                {messages.length > 0 && (
-                  <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
-                    {messages.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="student-search" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <Search className="h-4 w-4" />
-                <span className="hidden lg:inline">Student Search</span>
-                <span className="lg:hidden">Search</span>
-              </TabsTrigger>
-              {teacher?.gradeRole === 'Unified Arts' && (
-                <TabsTrigger 
-                  value="class-periods" 
-                  className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                  style={{color: themeStyles.textPrimary}}
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden lg:inline">Class Periods</span>
-                  <span className="lg:hidden">Classes</span>
-                </TabsTrigger>
+        {/* Navigation Tabs - Parent Portal Style */}
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'dashboard'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-dashboard"
+            >
+              <Home className="h-4 w-4" />
+              <span>Dashboard</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('scholars')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'scholars'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-scholars"
+            >
+              <Users className="h-4 w-4" />
+              <span>Scholars</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('messaging')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'messaging'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-messaging"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Messages</span>
+              {messages.length > 0 && (
+                <span className="ml-1 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                  {messages.length}
+                </span>
               )}
-              <TabsTrigger 
-                value="student-dashboards" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                style={{color: themeStyles.textPrimary}}
+            </button>
+            <button
+              onClick={() => setActiveTab('student-search')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'student-search'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-student-search"
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">Student Search</span>
+              <span className="sm:hidden">Search</span>
+            </button>
+            {teacher?.gradeRole === 'Unified Arts' && (
+              <button
+                onClick={() => setActiveTab('class-periods')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'class-periods'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                data-testid="tab-class-periods"
               >
-                <Trophy className="h-4 w-4" />
-                <span className="hidden lg:inline">Student Views</span>
-                <span className="lg:hidden">Views</span>
-              </TabsTrigger>
-              
-              {/* Theme Toggle Button */}
-              <Button
-                onClick={toggleTheme}
-                variant="outline"
-                className="flex items-center gap-2 px-4 py-3 text-sm font-medium ml-auto rounded-lg"
-                style={{
-                  backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#22c55e' : themeStyles.cardBg,
-                  color: currentTheme === 'dark' ? '#f7fafc' : currentTheme === 'light' ? '#ffffff' : themeStyles.textPrimary,
-                  borderColor: themeStyles.border
-                }}
-                data-testid="button-theme-toggle"
-              >
-                <Palette className="h-4 w-4" />
-                <span className="hidden lg:inline">{currentTheme === 'dark' ? 'Dark Theme' : currentTheme === 'light' ? 'Light Theme' : 'Normal Theme'}</span>
-                <span className="lg:hidden">{currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : 'Normal'}</span>
-              </Button>
-            </div>
-            
-            {/* Secondary Row - Additional Features with Balanced Layout */}
-            <div className="flex flex-wrap items-center justify-start gap-3 w-full pt-4 border-t" style={{borderColor: themeStyles.border}}>
-              <TabsTrigger 
-                value="reflections" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all relative" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <BookOpen className="h-4 w-4" />
-                <span>Reflections</span>
-                {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
-                  <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-                    {reflections.filter((r: Reflection) => r.status === 'submitted').length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="story-review" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <FileText className="h-4 w-4" />
-                <span className="hidden lg:inline">Story Review</span>
-                <span className="lg:hidden">Stories</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="upload" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <Camera className="h-4 w-4" />
-                <span className="hidden lg:inline">Upload Photos</span>
-                <span className="lg:hidden">Upload</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="gallery" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <Image className="h-4 w-4" />
-                <span>Gallery</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="sel" 
-                className="px-4 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap min-w-fit rounded-lg transition-all" 
-                style={{color: themeStyles.textPrimary}}
-              >
-                <Brain className="h-4 w-4" />
-                <span>SEL</span>
-              </TabsTrigger>
-            </div>
-          </TabsList>
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Class Periods</span>
+                <span className="sm:hidden">Classes</span>
+              </button>
+            )}
+            <button
+              onClick={() => setActiveTab('student-dashboards')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'student-dashboards'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-student-dashboards"
+            >
+              <Trophy className="h-4 w-4" />
+              <span className="hidden sm:inline">Student Views</span>
+              <span className="sm:hidden">Views</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('reflections')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'reflections'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-reflections"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Reflections</span>
+              {reflections.filter((r: Reflection) => r.status === 'submitted').length > 0 && (
+                <span className="ml-1 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                  {reflections.filter((r: Reflection) => r.status === 'submitted').length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('story-review')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'story-review'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-story-review"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Story Review</span>
+              <span className="sm:hidden">Stories</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'upload'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-upload"
+            >
+              <Camera className="h-4 w-4" />
+              <span className="hidden sm:inline">Upload Photos</span>
+              <span className="sm:hidden">Upload</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'gallery'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-gallery"
+            >
+              <Image className="h-4 w-4" />
+              <span>Gallery</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('sel')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'sel'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-sel"
+            >
+              <Brain className="h-4 w-4" />
+              <span>SEL</span>
+            </button>
 
-          <TabsContent value="dashboard" className="space-y-6">
+            {/* Theme Toggle Button */}
+            <Button
+              onClick={toggleTheme}
+              variant="outline"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium ml-auto rounded-md"
+              style={{
+                backgroundColor: currentTheme === 'dark' ? '#4a5568' : currentTheme === 'light' ? '#22c55e' : '#f3f4f6',
+                color: currentTheme === 'dark' ? '#f7fafc' : currentTheme === 'light' ? '#ffffff' : '#4b5563'
+              }}
+              data-testid="button-theme-toggle"
+            >
+              <Palette className="h-4 w-4" />
+              <span className="hidden lg:inline">{currentTheme === 'dark' ? 'Dark Theme' : currentTheme === 'light' ? 'Light Theme' : 'Normal Theme'}</span>
+              <span className="lg:hidden">{currentTheme === 'dark' ? 'Dark' : currentTheme === 'light' ? 'Light' : 'Normal'}</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="space-y-6">
+
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6">
             {/* Grade Selection */}
             {teacher.canSeeGrades?.length > 1 && (
               <Card className="mb-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
@@ -1280,9 +1321,10 @@ export default function TeacherDashboard() {
                 ))}
               </div>
             )}
-          </TabsContent>
+          )}
 
-          <TabsContent value="scholars" className="space-y-6">
+          {activeTab === 'scholars' && (
+            <div className="space-y-6">
             {/* Grade Selection for Scholars Tab */}
             {teacher.canSeeGrades?.length > 1 && (
               <Card className="mb-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
@@ -1376,16 +1418,20 @@ export default function TeacherDashboard() {
             </div>
 
             {/* Scholars and Messages Content would go here - keeping existing content */}
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="student-dashboards" className="space-y-6">
+          {activeTab === 'student-dashboards' && (
+            <div className="space-y-6">
             <TeacherStudentDashboardViewer 
               teacherGrades={teacher?.canSeeGrades || []}
               themeStyles={themeStyles}
             />
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="reflections" className="space-y-6">
+          {activeTab === 'reflections' && (
+            <div className="space-y-6">
             <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2" style={{color: themeStyles.textPrimary}}>
@@ -1473,13 +1519,16 @@ export default function TeacherDashboard() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="story-review" className="space-y-6">
-            <TeacherStoryReview />
-          </TabsContent>
+          {activeTab === 'story-review' && (
+            <div className="space-y-6">
+              <TeacherStoryReview />
+            </div>
+          )}
 
-          <TabsContent value="upload" className="space-y-6">
+          {activeTab === 'upload' && (
+            <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1537,9 +1586,10 @@ export default function TeacherDashboard() {
                 </Button>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="gallery" className="space-y-6">
+          {activeTab === 'gallery' && (
+            <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1636,10 +1686,11 @@ export default function TeacherDashboard() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
           {/* Student Search Tab */}
-          <TabsContent value="student-search" className="space-y-6">
+          {activeTab === 'student-search' && (
+            <div className="space-y-6">
             <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
               <CardHeader>
                 <CardTitle style={{color: themeStyles.textPrimary}}>Student Search & Management</CardTitle>
@@ -1651,10 +1702,11 @@ export default function TeacherDashboard() {
                 <StudentSearchTab teacher={teacher} />
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
           {/* Messaging Tab */}
-          <TabsContent value="messaging" className="space-y-6">
+          {activeTab === 'messaging' && (
+            <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Message History */}
               <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
@@ -1825,17 +1877,19 @@ export default function TeacherDashboard() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+            </div>
+          )}
 
           {/* Unified Arts Class Periods Tab */}
-          {teacher?.gradeRole === 'Unified Arts' && (
-            <TabsContent value="class-periods" className="space-y-6">
+          {teacher?.gradeRole === 'Unified Arts' && activeTab === 'class-periods' && (
+            <div className="space-y-6">
               <UnifiedArtsClassManager teacher={teacher} />
-            </TabsContent>
+            </div>
           )}
 
           {/* SEL Tab */}
-          <TabsContent value="sel" className="space-y-6">
+          {activeTab === 'sel' && (
+            <div className="space-y-6">
             <div className="grid gap-6">
               <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, color: themeStyles.textPrimary}}>
                 <CardHeader className="pb-4">
@@ -1876,11 +1930,12 @@ export default function TeacherDashboard() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+            </div>
+          )}
 
-        </Tabs>
+        {/* Main content area closed above */}
 
-        {/* Content for existing sections would continue here */}
+        {/* Legacy content sections */}
         {teacher && activeView === 'scholars' && selectedGrade && (
           <Card className="mb-6">
             <CardHeader>

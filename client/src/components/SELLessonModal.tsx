@@ -252,7 +252,7 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
           )}
         </div>
 
-        <div className="flex items-center justify-between p-6 border-t bg-gray-50">
+        <div className="flex items-center justify-between p-6 border-t bg-gray-50 relative z-10">
           <div className="text-sm text-gray-500">
             {currentStep === 'lesson' && 'Step 1 of 3: Read the lesson'}
             {currentStep === 'quiz' && `Step 2 of 3: Answer ${quizQuestions.length} questions`}
@@ -261,7 +261,10 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
           
           <div className="flex items-center gap-3">
             {currentStep === 'lesson' && (
-              <Button onClick={() => startLesson()} className="bg-purple-600 hover:bg-purple-700">
+              <Button 
+                onClick={() => startLesson()} 
+                className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-2 min-h-[44px] relative z-20"
+              >
                 <PlayCircle className="h-4 w-4 mr-2" />
                 Start Quiz
               </Button>
@@ -271,7 +274,7 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
               <Button 
                 onClick={() => submitQuiz()}
                 disabled={!isQuizComplete || isSubmitting}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 min-h-[44px] relative z-20"
               >
                 {isSubmitting ? (
                   <>
@@ -288,7 +291,10 @@ export function SELLessonModal({ lesson, isOpen, onClose }: SELLessonModalProps)
             )}
 
             {currentStep === 'results' && (
-              <Button onClick={onClose} className="bg-blue-600 hover:bg-blue-700">
+              <Button 
+                onClick={onClose} 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 min-h-[44px] relative z-20"
+              >
                 Close
               </Button>
             )}

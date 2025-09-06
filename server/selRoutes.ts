@@ -36,8 +36,9 @@ export function registerSELRoutes(app: Express) {
   // Get SEL lessons assigned to a student
   app.get('/api/student/sel/lessons', async (req: any, res: any) => {
     try {
-      const studentId = req.user?.studentId || req.query.studentId;
+      const studentId = req.user?.studentId || req.query.studentId || req.user?.id;
       if (!studentId) {
+        console.log('SEL ERROR: No student ID found for lessons request');
         return res.status(401).json({ error: 'Student not authenticated' });
       }
 
@@ -111,9 +112,57 @@ export function registerSELRoutes(app: Express) {
   app.post('/api/student/sel/lessons/:lessonId/start', async (req: any, res: any) => {
     try {
       const { lessonId } = req.params;
-      const studentId = req.user?.studentId || req.query.studentId;
+      const studentId = req.user?.studentId || req.query.studentId || req.body.studentId;
+
+      // Also try to get studentId from token if user is authenticated as student
+      if (!studentId && req.user?.id && req.user?.name) {
+        // Use the authenticated user's ID as studentId
+        const authenticatedStudentId = req.user.id;
+        console.log(`SEL: Using authenticated student ID: ${authenticatedStudentId}`);
+        
+        const { lessonId } = req.params;
+        console.log(`SEL: Starting lesson ${lessonId} for authenticated student ${authenticatedStudentId}`);
+
+        // Get lesson details
+        const lesson = await db
+          .select()
+          .from(selLessons)
+          .where(and(
+            eq(selLessons.id, lessonId),
+            eq(selLessons.scholarId, authenticatedStudentId)
+          ))
+          .limit(1);
+
+        if (lesson.length === 0) {
+          return res.status(404).json({ error: 'Lesson not found' });
+        }
+
+        // Get quiz questions
+        const questions = await db
+          .select()
+          .from(selQuizQuestions)
+          .where(eq(selQuizQuestions.lessonId, lessonId))
+          .orderBy(selQuizQuestions.questionNumber);
+
+        // Mark lesson as started if not already
+        if (lesson[0].status === 'assigned') {
+          await db
+            .update(selLessons)
+            .set({ 
+              status: 'in_progress',
+              startedAt: new Date()
+            })
+            .where(eq(selLessons.id, lessonId));
+        }
+
+        return res.json({
+          lesson: lesson[0],
+          questions
+        });
+      }
 
       if (!studentId) {
+        console.log('SEL ERROR: No student ID found in request');
         return res.status(401).json({ error: 'Student not authenticated' });
       }
 
@@ -166,7 +215,7 @@ export function registerSELRoutes(app: Express) {
     try {
       const { lessonId } = req.params;
       const { answers, timeSpent } = req.body; // answers: Array<{questionId, answer}>
-      const studentId = req.user?.studentId || req.query.studentId;
+      const studentId = req.user?.studentId || req.query.studentId || req.user?.id;
 
       console.log(`SEL: Submitting quiz for lesson ${lessonId}, student ${studentId}`);
 

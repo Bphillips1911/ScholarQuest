@@ -586,16 +586,16 @@ export default function AdminNew() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>
-              <TabsTrigger value="teachers" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Teachers</TabsTrigger>
-              <TabsTrigger value="teacher-viewer" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>
+            <TabsList className="grid w-full grid-cols-6 h-auto">
+              <TabsTrigger value="teachers" className="text-xs sm:text-sm px-2 py-2">Teachers</TabsTrigger>
+              <TabsTrigger value="teacher-viewer" className="text-xs sm:text-sm px-2 py-2">
                 <Eye className="h-4 w-4 mr-1" />
                 Viewer
               </TabsTrigger>
-              <TabsTrigger value="students" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Students</TabsTrigger>
-              <TabsTrigger value="houses" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Houses</TabsTrigger>
-              <TabsTrigger value="badges" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Badges</TabsTrigger>
-              <TabsTrigger value="games" style={{color: themeStyles.textPrimary, padding: '8px 12px', fontSize: '13px', minHeight: '40px'}}>Games</TabsTrigger>
+              <TabsTrigger value="students" className="text-xs sm:text-sm px-2 py-2">Students</TabsTrigger>
+              <TabsTrigger value="houses" className="text-xs sm:text-sm px-2 py-2">Houses</TabsTrigger>
+              <TabsTrigger value="badges" className="text-xs sm:text-sm px-2 py-2">Badges</TabsTrigger>
+              <TabsTrigger value="games" className="text-xs sm:text-sm px-2 py-2">Games</TabsTrigger>
             </TabsList>
             
             <TabsList className="grid w-full grid-cols-7 gap-1 mb-2" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, padding: '4px'}}>

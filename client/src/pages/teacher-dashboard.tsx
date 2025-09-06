@@ -422,18 +422,23 @@ export default function TeacherDashboard() {
     return headers;
   };
 
-  // Fetch scholars based on selected grade
+  // Fetch scholars based on selected grade with cache-busting
   const { data: scholars = [], isLoading } = useQuery({
-    queryKey: ["scholars", "grade", selectedGrade],
+    queryKey: ["scholars", "grade", selectedGrade, Date.now()], // Cache-busting key
     queryFn: async () => {
       if (!selectedGrade) return [];
       const response = await fetch(`/api/scholars/grade/${selectedGrade}`, {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch scholars");
+      if (!response.ok) {
+        console.error("Scholars fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch scholars");
+      }
       return response.json();
     },
     enabled: !!selectedGrade,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   // Fetch houses for dashboard and scholar creation
@@ -442,59 +447,79 @@ export default function TeacherDashboard() {
     // Always fetch houses for dashboard display
   });
 
-  // Fetch messages for the teacher
+  // Fetch messages for the teacher with cache-busting
   const { data: messages = [] } = useQuery({
-    queryKey: ["/api/teacher/messages", teacher?.id],
+    queryKey: ["/api/teacher/messages", teacher?.id, Date.now()], // Cache-busting key
     queryFn: async () => {
       if (!teacher?.id) return [];
       const response = await fetch(`/api/teacher/messages`, {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch messages");
+      if (!response.ok) {
+        console.error("Teacher messages fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch messages");
+      }
       return response.json();
     },
     enabled: !!teacher?.id,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch parents for compose message dropdown
+  // Fetch parents for compose message dropdown with cache-busting
   const { data: parents = [] } = useQuery({
-    queryKey: ["/api/teacher/parents"],
+    queryKey: ["/api/teacher/parents", Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch(`/api/teacher/parents`, {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch parents");
+      if (!response.ok) {
+        console.error("Teacher parents fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch parents");
+      }
       return response.json();
     },
     enabled: !!teacher?.id,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch administrators for compose message dropdown
+  // Fetch administrators for compose message dropdown with cache-busting
   const { data: administrators = [] } = useQuery({
-    queryKey: ["/api/teacher/administrators"],
+    queryKey: ["/api/teacher/administrators", Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch(`/api/teacher/administrators`, {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch administrators");
-      const data = response.json();
+      if (!response.ok) {
+        console.error("Teacher administrators fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch administrators");
+      }
+      const data = await response.json(); // CRITICAL FIX: Added missing await
       console.log("🔍 FRONTEND: Administrators data received:", data);
       return data;
     },
     enabled: !!teacher?.id,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Fetch reflections for teacher
+  // Fetch reflections for teacher with cache-busting
   const { data: reflections = [] } = useQuery({
-    queryKey: ["/api/teacher/reflections"],
+    queryKey: ["/api/teacher/reflections", Date.now()], // Cache-busting key
     queryFn: async () => {
       const response = await fetch("/api/teacher/reflections", {
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch reflections");
+      if (!response.ok) {
+        console.error("Teacher reflections fetch failed:", response.status, response.statusText);
+        throw new Error("Failed to fetch reflections");
+      }
       return response.json();
     },
     enabled: !!teacher?.id,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   // Query for fetching teacher's class periods

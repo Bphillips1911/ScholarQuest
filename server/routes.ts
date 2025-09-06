@@ -235,6 +235,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register SEL routes
   registerSELRoutes(app);
+
+  // Real-time updates endpoint (Server-Sent Events)
+  const clients: { res: any; id: string; type?: string }[] = [];
+  
+  app.get('/api/realtime/updates', (req: any, res: any) => {
+    // Set headers for Server-Sent Events
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+
+    // Generate unique client ID
+    const clientId = Date.now().toString();
+    const clientType = req.headers['user-type'] || 'unknown';
+    
+    // Add client to list
+    const client = { res, id: clientId, type: clientType };
+    clients.push(client);
+    console.log(`🔗 Real-time client connected. Total clients: ${clients.length}`);
+
+    // Send initial connection message
+    res.write(`data: ${JSON.stringify({ type: 'CONNECTED', clientId })}\n\n`);
+
+    // Handle client disconnect
+    req.on('close', () => {
+      const index = clients.findIndex(c => c.id === clientId);
+      if (index !== -1) {
+        clients.splice(index, 1);
+        console.log(`🔌 Real-time client disconnected. Total clients: ${clients.length}`);
+      }
+    });
+
+    // Keep connection alive with heartbeat
+    const heartbeat = setInterval(() => {
+      try {
+        res.write(`data: ${JSON.stringify({ type: 'HEARTBEAT', timestamp: Date.now() })}\n\n`);
+      } catch (error) {
+        clearInterval(heartbeat);
+        const index = clients.findIndex(c => c.id === clientId);
+        if (index !== -1) {
+          clients.splice(index, 1);
+        }
+      }
+    }, 30000); // 30 second heartbeat
+
+    req.on('close', () => clearInterval(heartbeat));
+  });
+
+  // Function to broadcast updates to all clients
+  function broadcastUpdate(updateType: string, data: any = {}) {
+    const message = JSON.stringify({ type: updateType, ...data, timestamp: Date.now() });
+    
+    // Remove disconnected clients and send to active ones
+    for (let i = clients.length - 1; i >= 0; i--) {
+      try {
+        clients[i].res.write(`data: ${message}\n\n`);
+      } catch (error) {
+        // Remove disconnected client
+        clients.splice(i, 1);
+      }
+    }
+    console.log(`📡 Broadcast update: ${updateType} to ${clients.length} clients`);
+  }
+
+  // Make broadcastUpdate available globally
+  (global as any).broadcastUpdate = broadcastUpdate;
   // Get all houses with standings
   app.get("/api/houses", async (_req, res) => {
     try {
@@ -552,6 +619,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`📊 PBIS POINTS: Updating ${entry.category} points by ${pointsToAdd} for scholar ${scholar.name}`);
           await storage.updateScholar(entry.scholarId, updates);
           
+          // Broadcast real-time update for PBIS points
+          if (typeof (global as any).broadcastUpdate === 'function') {
+            (global as any).broadcastUpdate('PBIS_UPDATE', {
+              studentId: entry.scholarId,
+              studentName: scholar.name,
+              points: pointsToAdd,
+              pointType: entry.category,
+              houseId: scholar.houseId,
+              reason: entry.reason
+            });
+            
+            // Also broadcast student-specific update
+            (global as any).broadcastUpdate('STUDENT_UPDATE', {
+              studentId: entry.scholarId,
+              type: 'points_update'
+            });
+          }
+          
           // Update house points if scholar belongs to a house
           if (scholar.houseId && entry.category) {
             const house = await storage.getHouse(scholar.houseId);
@@ -710,6 +795,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         await storage.updateScholar(scholarId, scholar);
+
+        // Broadcast real-time update for PBIS points
+        if (typeof (global as any).broadcastUpdate === 'function') {
+          (global as any).broadcastUpdate('PBIS_UPDATE', {
+            studentId: scholarId,
+            studentName: scholar.name,
+            points: pointsToAdd,
+            pointType: category,
+            houseId: scholar.houseId,
+            teacherName: teacher.name,
+            reason: subcategory
+          });
+          
+          // Also broadcast student-specific update
+          (global as any).broadcastUpdate('STUDENT_UPDATE', {
+            studentId: scholarId,
+            type: 'points_update'
+          });
+        }
 
         // Assign reflection for negative points
         if (pointsToAdd < 0) {

@@ -86,11 +86,15 @@ class RealTimeSync {
     if (studentId) {
       queryClient.invalidateQueries({ queryKey: ['/api/student', studentId] });
       queryClient.invalidateQueries({ queryKey: ['/api/pbis-entries', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/student/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/reflections', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/student/reflections'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/student/sel/lessons'] });
       queryClient.invalidateQueries({ queryKey: ['/api/achievements/student', studentId] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/skill-tree', studentId] });
     }
     queryClient.invalidateQueries({ queryKey: ['/api/scholars'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/houses'] });
   }
 
   // Invalidate teacher-related queries
@@ -116,9 +120,12 @@ class RealTimeSync {
     queryClient.invalidateQueries({ queryKey: ['/api/pbis-photos'] });
     if (studentId) {
       queryClient.invalidateQueries({ queryKey: ['/api/pbis-entries', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/student/profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/student/sel/lessons'] });
     }
     queryClient.invalidateQueries({ queryKey: ['/api/houses'] });
     queryClient.invalidateQueries({ queryKey: ['/api/scholars'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/pbis'] });
   }
 
   // Invalidate reflection-related queries

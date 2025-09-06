@@ -218,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("Admin authenticated successfully:", admin.email);
           return next();
         }
-      } catch (adminError) {
+      } catch (adminError: any) {
         console.log("Admin auth failed:", adminError.message);
       }
 
@@ -309,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const houses = await storage.getHouseStandings();
       console.log("HOUSES: Successfully fetched", houses.length, "houses");
       res.json(houses);
-    } catch (error) {
+    } catch (error: any) {
       console.error("HOUSES: Error fetching houses:", error);
       res.status(500).json({ message: "Failed to fetch houses", error: error.message });
     }
@@ -323,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "House not found" });
       }
       res.json(house);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch house" });
     }
   });
@@ -429,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         afterCount: finalTeachers.length,
         teachers: finalTeachers.map(t => ({ email: t.email, name: t.name, approved: t.isApproved }))
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("EMERGENCY SEED ERROR:", error);
       res.status(500).json({ error: error.message, stack: error.stack });
     }
@@ -440,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const scholars = await storage.getScholarsByHouse(req.params.id);
       res.json(scholars);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch scholars" });
     }
   });
@@ -451,7 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertScholarSchema.parse(req.body);
       const scholar = await storage.createScholar(validatedData);
       res.status(201).json(scholar);
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({ message: "Invalid scholar data" });
     }
   });

@@ -2875,7 +2875,7 @@ export default function TeacherDashboard() {
             studentName={scholars.find((s: Scholar) => s.id === selectedReflection.scholarId)?.name || 'Unknown Student'}
           />
         )}
-      </div>
+        </div>
       </section>
     </div>
   );

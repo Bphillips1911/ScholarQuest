@@ -2026,6 +2026,33 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async removeStudentFromClass(classId: string, studentId: string): Promise<any> {
+    try {
+      console.log(`STORAGE: Removing student ${studentId} from class ${classId}`);
+      
+      const result = await db
+        .delete(classPeriodEnrollments)
+        .where(
+          and(
+            eq(classPeriodEnrollments.classPeriodId, classId),
+            eq(classPeriodEnrollments.scholarId, studentId)
+          )
+        )
+        .returning();
+      
+      if (result.length === 0) {
+        console.log(`STORAGE: Student ${studentId} was not enrolled in class ${classId}`);
+        return { success: false, message: "Student was not enrolled in this class" };
+      }
+      
+      console.log(`STORAGE: Successfully removed student ${studentId} from class ${classId}`);
+      return { success: true, message: "Student removed from class" };
+    } catch (error) {
+      console.error('Error removing student from class:', error);
+      throw error;
+    }
+  }
+
   async deleteClassPeriod(classId: string): Promise<void> {
     try {
       console.log(`STORAGE: Deleting class period ${classId}`);

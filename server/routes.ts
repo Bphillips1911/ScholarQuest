@@ -5446,6 +5446,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove a student from class period
+  app.delete('/api/teacher/class-periods/:classId/students/:studentId', authenticateTeacher, async (req, res) => {
+    try {
+      const teacherId = req.teacher?.id;
+      const { classId, studentId } = req.params;
+      
+      console.log(`API: Remove student from class - Teacher ID: ${teacherId}, Class ID: ${classId}, Student: ${studentId}`);
+      
+      if (!teacherId) {
+        return res.status(401).json({ error: 'Teacher ID missing from request' });
+      }
+      
+      // Verify the class belongs to this teacher
+      const classPeriod = await storage.getClassPeriod(classId);
+      if (!classPeriod || classPeriod.teacherId !== teacherId) {
+        return res.status(403).json({ error: 'Class not found or access denied' });
+      }
+      
+      const result = await storage.removeStudentFromClass(classId, studentId);
+      res.json(result);
+    } catch (error) {
+      console.error('Error removing student from class:', error);
+      res.status(500).json({ error: 'Failed to remove student from class' });
+    }
+  });
+
   // Delete class period
   app.delete('/api/teacher/class-periods/:classId', authenticateTeacher, async (req, res) => {
     try {

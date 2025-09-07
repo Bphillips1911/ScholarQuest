@@ -192,11 +192,21 @@ export default function ParentPortalEnhanced() {
     const savedParentData = localStorage.getItem("parentData");
     
     if (!token || !savedParentData) {
+      console.log("🔐 PARENT AUTH: No token or data found, redirecting to login");
       window.location.href = "/parent-login";
       return;
     }
     
-    setParentData(JSON.parse(savedParentData));
+    try {
+      const parsedData = JSON.parse(savedParentData);
+      console.log("🔐 PARENT AUTH: Successfully parsed parent data:", parsedData?.firstName);
+      setParentData(parsedData);
+    } catch (error) {
+      console.error("🔐 PARENT AUTH: Failed to parse parent data, clearing and redirecting");
+      localStorage.removeItem("parentData");
+      localStorage.removeItem("parentToken");
+      window.location.href = "/parent-login";
+    }
   }, []);
 
   const getAuthHeaders = () => {

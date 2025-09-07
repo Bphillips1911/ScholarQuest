@@ -422,7 +422,7 @@ function StudentDashboardContent() {
   }, [setLocation]);
 
   // Fetch scholar details with authentication
-  const { data: scholarData, isLoading: scholarLoading } = useQuery<ScholarData>({
+  const { data: scholarData, isLoading: scholarLoading, refetch: refetchScholar } = useQuery<ScholarData>({
     queryKey: ["/api/student/profile"],
     queryFn: async () => {
       const response = await fetch("/api/student/profile", {
@@ -438,8 +438,9 @@ function StudentDashboardContent() {
     },
     enabled: !!studentData,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // Cache for 30 seconds for real-time updates
+    refetchOnWindowFocus: true, // Refetch when window gets focus  
+    refetchInterval: 60 * 1000, // Auto-refetch every minute
   });
 
   // Fetch houses data
@@ -459,10 +460,10 @@ function StudentDashboardContent() {
   });
 
   // Fetch PBIS entries for this student
-  const { data: pbisEntries } = useQuery<PBISEntry[]>({
-    queryKey: ["/api/scholars", studentData?.id, "pbis"],
+  const { data: pbisEntries, refetch: refetchPBIS } = useQuery<PBISEntry[]>({
+    queryKey: ["/api/pbis-entries", studentData?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/scholars/${studentData?.id}/pbis`, {
+      const response = await fetch(`/api/pbis-entries/${studentData?.id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
         }
@@ -474,8 +475,9 @@ function StudentDashboardContent() {
       return response.json();
     },
     enabled: !!studentData?.id,
-    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // Cache for 30 seconds for real-time updates
+    refetchOnWindowFocus: true, // Refetch when window gets focus
+    refetchInterval: 60 * 1000, // Auto-refetch every minute
   });
 
   // Fetch reflections for this student
@@ -515,8 +517,11 @@ function StudentDashboardContent() {
   const currentHouse = (houses && Array.isArray(houses)) ? houses.find((h: HouseData) => h.id === scholar?.houseId) : undefined;
   const recentPBIS = (pbisEntries && Array.isArray(pbisEntries)) ? pbisEntries.slice(0, 5) : [];
 
-  // Calculate total points and legendary progress
-  const totalPoints = (scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0);
+  // Calculate total points and legendary progress - Fixed calculation
+  const academicPts = scholar?.academicPoints || 0;
+  const attendancePts = scholar?.attendancePoints || 0;
+  const behaviorPts = scholar?.behaviorPoints || 0;
+  const totalPoints = academicPts + attendancePts + behaviorPts;
   const totalPBISPoints = (pbisEntries && Array.isArray(pbisEntries)) ? pbisEntries.reduce((sum: number, entry: PBISEntry) => sum + entry.points, 0) : 0;
   const legendaryRequirement = 1000;
   const legendaryProgress = Math.min(100, (totalPoints / legendaryRequirement) * 100);

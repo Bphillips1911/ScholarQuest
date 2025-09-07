@@ -1935,7 +1935,7 @@ export default function TeacherDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {messages && messages.length > 0 ? (
+                    {messages && Array.isArray(messages) && messages.length > 0 ? (
                       messages.slice(0, 10).map((message: any) => (
                         <div key={message.id} className="p-4 border rounded-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                           <div className="flex justify-between items-start mb-2">
@@ -2609,7 +2609,7 @@ export default function TeacherDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {messages.length > 0 ? (
+              {messages && Array.isArray(messages) && messages.length > 0 ? (
                 <div className="space-y-4">
                   {messages.map((message: any) => (
                     <div

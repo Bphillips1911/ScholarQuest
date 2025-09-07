@@ -447,8 +447,15 @@ export default function TeacherDashboard() {
     // Always fetch houses for dashboard display
   });
 
+  // Debug logging
+  useEffect(() => {
+    console.log("🔍 TEACHER DASHBOARD: Component mounted");
+    console.log("🔍 TEACHER DASHBOARD: Teacher data:", teacher);
+    console.log("🔍 TEACHER DASHBOARD: Teacher ID:", teacher?.id);
+  }, [teacher]);
+
   // Fetch messages for the teacher with cache-busting
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: ["/api/teacher/messages", teacher?.id, Date.now()], // Cache-busting key
     queryFn: async () => {
       if (!teacher?.id) return [];
@@ -461,6 +468,7 @@ export default function TeacherDashboard() {
       }
       const data = await response.json(); // CRITICAL FIX: Added missing await
       console.log("🔍 FRONTEND: Messages data received:", data);
+      console.log("🔍 FRONTEND: Messages count:", data?.length || 0);
       return data;
     },
     enabled: !!teacher?.id,
@@ -1475,7 +1483,7 @@ export default function TeacherDashboard() {
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
             {/* Grade Selection */}
-            {teacher.canSeeGrades?.length > 1 && (
+            {teacher && teacher.canSeeGrades && teacher.canSeeGrades.length > 1 && (
               <Card className="mb-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
                   <CardTitle style={{color: themeStyles.textPrimary}}>Select Grade Level</CardTitle>
@@ -1528,7 +1536,7 @@ export default function TeacherDashboard() {
           {activeTab === 'scholars' && (
             <div className="space-y-6">
             {/* Grade Selection for Scholars Tab */}
-            {teacher.canSeeGrades?.length > 1 && (
+            {teacher && teacher.canSeeGrades && teacher.canSeeGrades.length > 1 && (
               <Card className="mb-6" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
                   <CardTitle style={{color: themeStyles.textPrimary}}>Select Grade Level</CardTitle>
@@ -1917,7 +1925,10 @@ export default function TeacherDashboard() {
               {/* Message History */}
               <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
-                  <CardTitle style={{color: themeStyles.textPrimary}}>Your Messages ({messages.length})</CardTitle>
+                  <CardTitle style={{color: themeStyles.textPrimary}}>Your Messages ({messages?.length || 0})</CardTitle>
+                  <div style={{fontSize: '12px', color: 'red', fontFamily: 'monospace'}}>
+                    DEBUG: Teacher ID: {teacher?.id || 'NULL'} | Messages: {JSON.stringify(messages?.slice(0,2)) || 'NULL'} | Type: {typeof messages}
+                  </div>
                   <p className="text-sm" style={{color: themeStyles.textSecondary}}>
                     View your message history with parents and administrators
                   </p>

@@ -1992,13 +1992,21 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`STORAGE: Adding ${studentIds.length} students to class ${classId}`);
       
-      // Remove existing enrollments for this class to avoid duplicates
-      await db
-        .delete(classPeriodEnrollments)
+      // Get existing enrollments for this class to avoid duplicates
+      const existingEnrollments = await db
+        .select()
+        .from(classPeriodEnrollments)
         .where(eq(classPeriodEnrollments.classPeriodId, classId));
       
-      // Add new enrollments
-      const enrollments = studentIds.map(studentId => ({
+      const existingStudentIds = existingEnrollments.map(e => e.scholarId);
+      console.log(`STORAGE: Found ${existingStudentIds.length} existing enrollments:`, existingStudentIds);
+      
+      // Only add students who aren't already enrolled
+      const newStudentIds = studentIds.filter(studentId => !existingStudentIds.includes(studentId));
+      console.log(`STORAGE: ${newStudentIds.length} new students to enroll:`, newStudentIds);
+      
+      // Add new enrollments (keep existing ones)
+      const enrollments = newStudentIds.map(studentId => ({
         id: crypto.randomUUID(),
         classPeriodId: classId,
         scholarId: studentId,
@@ -2009,8 +2017,9 @@ export class DatabaseStorage implements IStorage {
         await db.insert(classPeriodEnrollments).values(enrollments);
       }
       
-      console.log(`STORAGE: Added ${enrollments.length} student enrollments`);
-      return { success: true, enrolled: enrollments.length };
+      const totalEnrollments = existingStudentIds.length + enrollments.length;
+      console.log(`STORAGE: Added ${enrollments.length} new enrollments. Total: ${totalEnrollments}`);
+      return { success: true, enrolled: enrollments.length, total: totalEnrollments };
     } catch (error) {
       console.error('Error adding students to class:', error);
       throw error;

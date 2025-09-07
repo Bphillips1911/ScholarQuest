@@ -482,7 +482,11 @@ function StudentDashboardContent() {
     refetchInterval: 60 * 1000, // Auto-refetch every minute
   });
 
-  // Fetch reflections for this student
+  // Check if student has negative behavior points to determine if reflections should be fetched
+  const hasNegativeBehavior = (pbisEntries && Array.isArray(pbisEntries)) ? 
+    pbisEntries.some((entry: PBISEntry) => entry.points < 0) : false;
+
+  // FIXED: Only fetch reflections for students who have negative behavior points
   const { data: reflections = [], isLoading: reflectionsLoading } = useQuery<Reflection[]>({
     queryKey: ["/api/student/reflections"],
     queryFn: async () => {
@@ -493,14 +497,22 @@ function StudentDashboardContent() {
       });
       if (!response.ok) {
         console.error('Student reflections fetch failed:', response.status, response.statusText);
-        throw new Error('Failed to fetch reflections');
+        return []; // Return empty array instead of throwing error
       }
       return response.json();
     },
-    enabled: !!studentData,
+    enabled: !!studentData && hasNegativeBehavior, // FIXED: Only enabled for students with negative behavior
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
     refetchOnWindowFocus: false,
   });
+
+  // FIXED: Initialize real-time sync for MUSTANG Traits Recognition updates
+  useEffect(() => {
+    realTimeSync.start();
+    return () => {
+      realTimeSync.stop();
+    };
+  }, []);
 
   const handleLogout = () => {
     clearStudentAuth();

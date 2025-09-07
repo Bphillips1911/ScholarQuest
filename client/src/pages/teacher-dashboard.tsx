@@ -424,7 +424,7 @@ export default function TeacherDashboard() {
 
   // Fetch scholars based on selected grade with cache-busting
   const { data: scholars = [], isLoading } = useQuery({
-    queryKey: ["scholars", "grade", selectedGrade, Date.now()], // Cache-busting key
+    queryKey: ["scholars", "grade", selectedGrade],
     queryFn: async () => {
       if (!selectedGrade) return [];
       const response = await fetch(`/api/scholars/grade/${selectedGrade}`, {
@@ -437,8 +437,8 @@ export default function TeacherDashboard() {
       return response.json();
     },
     enabled: !!selectedGrade,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    refetchOnWindowFocus: false,
   });
 
   // Fetch houses for dashboard and scholar creation
@@ -454,9 +454,9 @@ export default function TeacherDashboard() {
     console.log("🔍 TEACHER DASHBOARD: Teacher ID:", teacher?.id);
   }, [teacher]);
 
-  // Fetch messages for the teacher with cache-busting
+  // Fetch messages for the teacher
   const { data: messages = [], refetch: refetchMessages } = useQuery({
-    queryKey: ["/api/teacher/messages", teacher?.id, Date.now()], // Cache-busting key
+    queryKey: ["/api/teacher/messages"],
     queryFn: async () => {
       if (!teacher?.id) return [];
       const response = await fetch(`/api/teacher/messages`, {
@@ -466,19 +466,19 @@ export default function TeacherDashboard() {
         console.error("Teacher messages fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch messages");
       }
-      const data = await response.json(); // CRITICAL FIX: Added missing await
+      const data = await response.json();
       console.log("🔍 FRONTEND: Messages data received:", data);
       console.log("🔍 FRONTEND: Messages count:", data?.length || 0);
       return data;
     },
     enabled: !!teacher?.id,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    refetchOnWindowFocus: false,
   });
 
-  // Fetch parents for compose message dropdown with cache-busting
+  // Fetch parents for compose message dropdown
   const { data: parents = [] } = useQuery({
-    queryKey: ["/api/teacher/parents", Date.now()], // Cache-busting key
+    queryKey: ["/api/teacher/parents"],
     queryFn: async () => {
       const response = await fetch(`/api/teacher/parents`, {
         headers: getAuthHeaders(),
@@ -490,13 +490,13 @@ export default function TeacherDashboard() {
       return response.json();
     },
     enabled: !!teacher?.id,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
   });
 
-  // Fetch administrators for compose message dropdown with cache-busting
+  // Fetch administrators for compose message dropdown
   const { data: administrators = [] } = useQuery({
-    queryKey: ["/api/teacher/administrators", Date.now()], // Cache-busting key
+    queryKey: ["/api/teacher/administrators"],
     queryFn: async () => {
       const response = await fetch(`/api/teacher/administrators`, {
         headers: getAuthHeaders(),
@@ -505,18 +505,18 @@ export default function TeacherDashboard() {
         console.error("Teacher administrators fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch administrators");
       }
-      const data = await response.json(); // CRITICAL FIX: Added missing await
+      const data = await response.json();
       console.log("🔍 FRONTEND: Administrators data received:", data);
       return data;
     },
     enabled: !!teacher?.id,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   // Fetch reflections for teacher with cache-busting
   const { data: reflections = [] } = useQuery({
-    queryKey: ["/api/teacher/reflections", Date.now()], // Cache-busting key
+    queryKey: ["/api/teacher/reflections"],
     queryFn: async () => {
       const response = await fetch("/api/teacher/reflections", {
         headers: getAuthHeaders(),
@@ -528,8 +528,8 @@ export default function TeacherDashboard() {
       return response.json();
     },
     enabled: !!teacher?.id,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    refetchOnWindowFocus: false,
   });
 
   // Query for fetching teacher's class periods

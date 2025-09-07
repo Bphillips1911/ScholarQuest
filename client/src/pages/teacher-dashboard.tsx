@@ -778,6 +778,11 @@ export default function TeacherDashboard() {
       mustangTrait: string;
       points: number;
       reason: string;
+      category: string;
+      subcategory: string;
+      entryType: string;
+      month: number;
+      year: number;
     }) => {
       const response = await fetch("/api/pbis", {
         method: "POST",
@@ -1059,6 +1064,7 @@ export default function TeacherDashboard() {
       teacherName: teacher?.name || "Unknown Teacher",
       teacherRole: teacher?.gradeRole as "6th Grade" | "7th Grade" | "8th Grade" | "Unified Arts" | "Administration" | "Counselor",
       mustangTrait: "Make good choices",
+      category: pbisForm.category,
       subcategory: pbisForm.subcategory,
       points: pbisForm.points,
       reason: finalReason,

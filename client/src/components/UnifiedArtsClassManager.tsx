@@ -192,6 +192,39 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
     }
   });
 
+  // Remove student from class mutation
+  const removeStudentMutation = useMutation({
+    mutationFn: async (data: { classId: string; studentId: string }) => {
+      const response = await fetch(`/api/teacher/class-periods/${data.classId}/students/${data.studentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('teacherToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove student from class');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Student removed from class period",
+        variant: "default"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/teacher/class-periods'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove student from class",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleCreateClass = () => {
     if (!classForm.name.trim()) {
       toast({
@@ -235,6 +268,12 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
 
   const openStudentDashboard = (student: Student) => {
     window.open(`/student-dashboard?studentId=${student.id}`, '_blank');
+  };
+
+  const handleRemoveStudent = (classId: string, studentId: string, studentName: string) => {
+    if (confirm(`Are you sure you want to remove ${studentName} from this class period?`)) {
+      removeStudentMutation.mutate({ classId, studentId });
+    }
   };
 
   const getAvailableStudents = () => {
@@ -502,6 +541,14 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
                         onClick={() => openStudentDashboard(student)}
                       >
                         <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleRemoveStudent(selectedClass!.id, student.id, student.name)}
+                        title={`Remove ${student.name} from class`}
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>

@@ -997,6 +997,13 @@ export default function TeacherDashboard() {
     }
   });
 
+  // Function to remove student from class with confirmation
+  const removeStudentFromClass = (classId: string, studentId: string, studentName: string) => {
+    if (confirm(`Are you sure you want to remove ${studentName} from this class period?`)) {
+      removeStudentFromClassMutation.mutate({ classId, studentId });
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("teacherToken");
     localStorage.removeItem("teacherData");

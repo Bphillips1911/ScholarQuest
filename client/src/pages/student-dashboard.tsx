@@ -506,13 +506,22 @@ function StudentDashboardContent() {
     refetchOnWindowFocus: false,
   });
 
-  // FIXED: Initialize real-time sync for MUSTANG Traits Recognition updates
+  // FIXED: Initialize real-time sync and force refresh for MUSTANG Traits Recognition updates
   useEffect(() => {
     realTimeSync.start();
+    
+    // Force immediate refresh of PBIS data when component mounts
+    if (studentData?.id) {
+      setTimeout(() => {
+        refetchPBIS();
+        refetchScholar();
+      }, 500);
+    }
+    
     return () => {
       realTimeSync.stop();
     };
-  }, []);
+  }, [studentData?.id, refetchPBIS, refetchScholar]);
 
   const handleLogout = () => {
     clearStudentAuth();

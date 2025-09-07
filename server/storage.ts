@@ -1917,6 +1917,19 @@ export class MemStorage implements IStorage {
     const { getMessagesForAdminFixed } = await import('./db-storage-messaging-fix');
     return await getMessagesForAdminFixed(adminId);
   }
+
+  // Missing methods for admin teacher viewer
+  async getTeacherById(teacherId: string): Promise<TeacherAuth | null> {
+    return this.teacherAuth.get(teacherId) || null;
+  }
+
+  async getReflectionsByTeacher(teacherId: string): Promise<Reflection[]> {
+    return Array.from(this.reflections.values()).filter(r => r.teacherId === teacherId);
+  }
+
+  async getPhotosByTeacher(teacherId: string): Promise<PBISPhoto[]> {
+    return Array.from(this.pbisPhotos.values()).filter(p => p.uploadedBy === teacherId);
+  }
 }
 
 export class PersistentDatabaseStorage implements IStorage {

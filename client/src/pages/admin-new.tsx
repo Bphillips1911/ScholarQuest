@@ -1371,17 +1371,29 @@ export default function AdminNew() {
                 </Card>
 
                 {/* Filtered Badge Display */}
-                {selectedBadgeCategory && (
-                  <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
-                    <CardHeader>
-                      <CardTitle style={{color: themeStyles.textPrimary}}>
-                        {selectedBadgeCategory.charAt(0).toUpperCase() + selectedBadgeCategory.slice(1)} Badges
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {allBadges?.filter((badge: any) => badge.category === selectedBadgeCategory).length > 0 ? (
-                          allBadges.filter((badge: any) => badge.category === selectedBadgeCategory).map((badge: any) => (
+                {/* Show all badges by default if no category selected */}
+                <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                  <CardHeader>
+                    <CardTitle style={{color: themeStyles.textPrimary}}>
+                      {selectedBadgeCategory ? `${selectedBadgeCategory.charAt(0).toUpperCase() + selectedBadgeCategory.slice(1)} Badges` : 'All Available Badges'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {(() => {
+                        const badgesToShow = selectedBadgeCategory 
+                          ? allBadges?.filter((badge: any) => badge.category === selectedBadgeCategory) || []
+                          : allBadges || [];
+                        
+                        console.log('🏆 BADGES DEBUG:', {
+                          selectedCategory: selectedBadgeCategory,
+                          allBadgesLength: allBadges?.length,
+                          filteredBadgesLength: badgesToShow.length,
+                          badgesToShow: badgesToShow.slice(0, 3) // Show first 3 for debugging
+                        });
+                        
+                        return badgesToShow.length > 0 ? (
+                          badgesToShow.map((badge: any) => (
                             <div key={badge.id} className="p-4 border rounded-lg" style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', borderColor: themeStyles.border}}>
                               <div className="flex items-center justify-between mb-2">
                                 <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>{badge.name}</h4>

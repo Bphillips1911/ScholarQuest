@@ -1063,7 +1063,7 @@ export default function TeacherDashboard() {
       scholarId: selectedScholar.id,
       teacherName: teacher?.name || "Unknown Teacher",
       teacherRole: teacher?.gradeRole as "6th Grade" | "7th Grade" | "8th Grade" | "Unified Arts" | "Administration" | "Counselor",
-      mustangTrait: "Make good choices",
+      mustangTrait: getMustangTraitFromSubcategory(pbisForm.subcategory),
       category: pbisForm.category,
       subcategory: pbisForm.subcategory,
       points: pbisForm.points,
@@ -1088,6 +1088,21 @@ export default function TeacherDashboard() {
       studentId: selectedScholar.id,
       reason: deactivationReason,
     });
+  };
+
+  // Map subcategory to MUSTANG trait
+  const getMustangTraitFromSubcategory = (subcategory: string): string => {
+    const traitMap: { [key: string]: string } = {
+      "make_good_choices": "M - Make Good Choices",
+      "use_kind_words": "U - Use Kind Words",
+      "show_school_pride": "S - Show School Pride",
+      "tolerant_of_others": "T - Tolerant of Others",
+      "aim_for_excellence": "A - Aim for Excellence",
+      "need_to_be_responsible": "N - Need to be Responsible",
+      "give_100_everyday": "G - Give 100% Everyday"
+    };
+    
+    return traitMap[subcategory] || "M - Make Good Choices";
   };
 
   if (!teacher) {

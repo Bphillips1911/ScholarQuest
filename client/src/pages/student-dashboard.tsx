@@ -558,10 +558,10 @@ function StudentDashboardContent() {
 
   // MUSTANG trait definitions
   const mustangTraits = {
-    "M": "Make good choices",
-    "U": "Use kind words", 
-    "S": "Show school pride",
-    "T": "Tolerant of others",
+    "M": "M - Make Good Choices",
+    "U": "U - Use Kind Words", 
+    "S": "S - Show School Pride",
+    "T": "T - Tolerant of Others",
     "A": "Aim for excellence",
     "N": "Need to be responsible",
     "G": "Give 100% everyday"

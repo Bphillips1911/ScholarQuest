@@ -102,13 +102,13 @@ const pbisCategories = {
 };
 
 const mustangTraits = [
-  { value: "Make good choices", label: "M - Make good choices", color: "bg-red-500" },
-  { value: "Use kind words", label: "U - Use kind words", color: "bg-orange-500" },
-  { value: "Show school pride", label: "S - Show school pride", color: "bg-yellow-500" },
-  { value: "Tolerant of others", label: "T - Tolerant of others", color: "bg-green-500" },
-  { value: "Aim for excellence", label: "A - Aim for excellence", color: "bg-blue-500" },
-  { value: "Need to be responsible", label: "N - Need to be responsible", color: "bg-indigo-500" },
-  { value: "Give 100% everyday", label: "G - Give 100% everyday", color: "bg-purple-500" }
+  { value: "M - Make Good Choices", label: "M - Make Good Choices", color: "bg-red-500" },
+  { value: "U - Use Kind Words", label: "U - Use Kind Words", color: "bg-orange-500" },
+  { value: "S - Show School Pride", label: "S - Show School Pride", color: "bg-yellow-500" },
+  { value: "T - Tolerant of Others", label: "T - Tolerant of Others", color: "bg-green-500" },
+  { value: "A - Aim for Excellence", label: "A - Aim for Excellence", color: "bg-blue-500" },
+  { value: "N - Need to be Responsible", label: "N - Need to be Responsible", color: "bg-indigo-500" },
+  { value: "G - Give 100% Everyday", label: "G - Give 100% Everyday", color: "bg-purple-500" }
 ];
 
 const gradeTeachers = {

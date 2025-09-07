@@ -42,6 +42,7 @@ import { LearningAssistantProvider, useLearningAssistant, useCelebrationTrigger,
 import { AnimatedTutorials, tutorialLibrary } from "@/components/learning-assistant/AnimatedTutorials";
 import { GamifiedHelpSystem } from "@/components/learning-assistant/GamifiedHelpSystem";
 import { LearningAssistantIntegration } from "@/components/learning-assistant/LearningAssistantIntegration";
+import { realTimeSync } from "@/lib/realTimeSync";
 import { 
   InteractiveScale, 
   SlideIn, 

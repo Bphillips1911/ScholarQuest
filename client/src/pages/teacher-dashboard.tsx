@@ -801,12 +801,21 @@ export default function TeacherDashboard() {
       const houseQuery = queryClient.getQueryData(['houses']) as any[];
       const selectedHouse = houseQuery?.find(h => h.id === selectedScholar?.houseId);
       
+      // Use appropriate behavior text based on category
+      const getBehaviorText = (category: string, subcategory: string, mustangTrait: string): string => {
+        if (category === 'bhsa_mustang_traits') {
+          return mustangTrait;
+        }
+        // For other categories, use the subcategory name or custom reason
+        return pbisForm.customReason.trim() || subcategory;
+      };
+
       notificationService.notifyPBISPointsAdded({
         studentName: selectedScholar?.name || 'Student',
         teacherName: teacher?.name || 'Teacher',
         points: variables.points,
         houseName: selectedHouse?.name || 'House',
-        behavior: variables.mustangTrait,
+        behavior: getBehaviorText(variables.category, variables.subcategory, variables.mustangTrait),
       });
       
       // SEL: Auto-trigger lesson generation for negative PBIS points

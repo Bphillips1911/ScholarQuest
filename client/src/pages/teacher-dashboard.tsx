@@ -1926,9 +1926,6 @@ export default function TeacherDashboard() {
               <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                 <CardHeader>
                   <CardTitle style={{color: themeStyles.textPrimary}}>Your Messages ({messages?.length || 0})</CardTitle>
-                  <div style={{fontSize: '12px', color: 'red', fontFamily: 'monospace'}}>
-                    DEBUG: Teacher ID: {teacher?.id || 'NULL'} | Messages: {JSON.stringify(messages?.slice(0,2)) || 'NULL'} | Type: {typeof messages}
-                  </div>
                   <p className="text-sm" style={{color: themeStyles.textSecondary}}>
                     View your message history with parents and administrators
                   </p>

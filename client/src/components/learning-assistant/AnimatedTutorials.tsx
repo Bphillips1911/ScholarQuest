@@ -295,7 +295,7 @@ export const tutorialLibrary = {
       {
         id: 'mustang-traits',
         title: 'MUSTANG Traits',
-        description: 'Show these traits to earn points: Make good choices, Use kind words, Show school pride, Tolerant of others, Aim for excellence, Need to be responsible, Give 100% everyday.',
+        description: 'Show these traits to earn points: M - Make Good Choices, U - Use Kind Words, S - Show School Pride, T - Tolerant of Others, A - Aim for Excellence, N - Need to be Responsible, G - Give 100% Everyday.',
         animation: 'circle' as const,
         duration: 5000
       },

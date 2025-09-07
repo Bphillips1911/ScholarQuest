@@ -68,7 +68,7 @@ export function InteractiveLearningAssistant({
       id: 'mustang-traits-tip',
       category: 'behavior',
       title: 'MUSTANG Power',
-      content: 'MUSTANG traits are your guide to success: Make good choices, Use kind words, Show school pride, Tolerant of others, Aim for excellence, Need to be responsible, Give 100% everyday!',
+      content: 'MUSTANG traits are your guide to success: M - Make Good Choices, U - Use Kind Words, S - Show School Pride, T - Tolerant of Others, A - Aim for Excellence, N - Need to be Responsible, G - Give 100% Everyday!',
     },
     {
       id: 'dashboard-themes-tip',

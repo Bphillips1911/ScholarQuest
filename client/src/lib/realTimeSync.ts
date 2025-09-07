@@ -73,6 +73,10 @@ class RealTimeSync {
         case 'GLOBAL_UPDATE':
           this.invalidateAllQueries();
           break;
+        case 'points_update':
+          // Handle legacy points_update messages as PBIS_UPDATE
+          this.invalidatePBISQueries(update.studentId);
+          break;
         default:
           console.log('Unknown update type:', update.type);
       }

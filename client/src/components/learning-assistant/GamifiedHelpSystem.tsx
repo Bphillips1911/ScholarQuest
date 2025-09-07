@@ -145,7 +145,7 @@ export function GamifiedHelpSystem({
       completed: completedQuests.includes('mustang-behavior'),
       icon: <Trophy className="w-5 h-5" />,
       steps: [
-        'Learn all 7 MUSTANG traits: Make good choices, Use kind words, Show school pride, Tolerant of others, Aim for excellence, Need to be responsible, Give 100% everyday',
+        'Learn all 7 MUSTANG traits: M - Make Good Choices, U - Use Kind Words, S - Show School Pride, T - Tolerant of Others, A - Aim for Excellence, N - Need to be Responsible, G - Give 100% Everyday',
         'Understand how each trait earns you behavior points',
         'Practice applying MUSTANG traits in daily school situations',
         'See how behavior points contribute to your house success',

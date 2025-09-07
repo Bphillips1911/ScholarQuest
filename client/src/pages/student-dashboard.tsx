@@ -73,14 +73,11 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
   const [showLessonModal, setShowLessonModal] = useState(false);
 
   const { data: selLessons, isLoading } = useQuery<SELLesson[]>({
-    queryKey: ['/api/student/sel/lessons', { studentId }, Date.now()], // Cache-busting key
+    queryKey: ['/api/student/sel/lessons', studentId],
     queryFn: async () => {
       const response = await fetch(`/api/student/sel/lessons?studentId=${studentId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
         },
       });
       if (!response.ok) {
@@ -90,9 +87,8 @@ function StudentSELLessons({ studentId, themeStyles }: { studentId?: string; the
       return response.json();
     },
     enabled: !!studentId,
-    refetchInterval: 30000, // Auto-refresh to catch real-time updates
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   if (isLoading) {
@@ -427,14 +423,11 @@ function StudentDashboardContent() {
 
   // Fetch scholar details with authentication
   const { data: scholarData, isLoading: scholarLoading } = useQuery<ScholarData>({
-    queryKey: ["/api/student/profile", Date.now()], // Cache-busting key
+    queryKey: ["/api/student/profile"],
     queryFn: async () => {
       const response = await fetch("/api/student/profile", {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
         },
       });
       if (!response.ok) {
@@ -443,23 +436,17 @@ function StudentDashboardContent() {
       }
       return response.json();
     },
-    enabled: true, // Always try to fetch profile data
+    enabled: !!studentData,
     retry: 1,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
   });
 
-  // Fetch houses data with cache-busting
+  // Fetch houses data
   const { data: houses } = useQuery<HouseData[]>({
-    queryKey: ["/api/houses", Date.now()], // Cache-busting key
+    queryKey: ["/api/houses"],
     queryFn: async () => {
-      const response = await fetch("/api/houses", {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
-      });
+      const response = await fetch("/api/houses");
       if (!response.ok) {
         console.error('Student houses fetch failed:', response.status, response.statusText);
         throw new Error('Failed to fetch houses');
@@ -467,20 +454,17 @@ function StudentDashboardContent() {
       return response.json();
     },
     enabled: !!studentData,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    refetchOnWindowFocus: false,
   });
 
-  // Fetch PBIS entries for this student with cache-busting
+  // Fetch PBIS entries for this student
   const { data: pbisEntries } = useQuery<PBISEntry[]>({
-    queryKey: ["/api/scholars", studentData?.id, "pbis", Date.now()], // Cache-busting key
+    queryKey: ["/api/scholars", studentData?.id, "pbis"],
     queryFn: async () => {
       const response = await fetch(`/api/scholars/${studentData?.id}/pbis`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
         }
       });
       if (!response.ok) {
@@ -490,20 +474,17 @@ function StudentDashboardContent() {
       return response.json();
     },
     enabled: !!studentData?.id,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    refetchOnWindowFocus: false,
   });
 
   // Fetch reflections for this student
   const { data: reflections = [], isLoading: reflectionsLoading } = useQuery<Reflection[]>({
-    queryKey: ["/api/student/reflections", Date.now()], // Cache-busting key
+    queryKey: ["/api/student/reflections"],
     queryFn: async () => {
       const response = await fetch("/api/student/reflections", {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
         },
       });
       if (!response.ok) {
@@ -513,8 +494,8 @@ function StudentDashboardContent() {
       return response.json();
     },
     enabled: !!studentData,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    refetchOnWindowFocus: false,
   });
 
   const handleLogout = () => {

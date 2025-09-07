@@ -958,6 +958,8 @@ export default function TeacherDashboard() {
         description: "Students have been successfully added to the class period",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/teacher/class-periods'] });
+      // Force immediate refresh of class periods to show updated counts
+      refetchClassPeriods();
     },
     onError: () => {
       toast({
@@ -2178,16 +2180,16 @@ export default function TeacherDashboard() {
                                 <div className="flex items-center justify-between">
                                   <span className="text-sm font-medium text-gray-700">Enrolled Students:</span>
                                   <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                    {period.enrollments?.length || 0} students
+                                    {period.studentCount || period.students?.length || 0} students
                                   </span>
                                 </div>
-                                {period.enrollments && period.enrollments.length > 0 ? (
+                                {period.students && period.students.length > 0 ? (
                                   <div className="max-h-32 overflow-y-auto">
                                     <div className="space-y-1">
-                                      {period.enrollments.map((enrollment: any) => (
-                                        <div key={enrollment.scholar.id} className="flex items-center justify-between text-sm">
-                                          <span className="text-gray-700">{enrollment.scholar.name}</span>
-                                          <span className="text-gray-500">ID: {enrollment.scholar.studentId}</span>
+                                      {period.students.map((student: any) => (
+                                        <div key={student.id} className="flex items-center justify-between text-sm">
+                                          <span className="text-gray-700">{student.name}</span>
+                                          <span className="text-gray-500">ID: {student.studentId}</span>
                                         </div>
                                       ))}
                                     </div>

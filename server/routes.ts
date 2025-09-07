@@ -5257,12 +5257,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/teacher/student-dashboard/:studentId', authenticateTeacher, async (req, res) => {
     try {
       const { studentId } = req.params;
-      const teacherId = req.teacher?.id;
+      const teacherId = (req as any).teacher?.id;
       
       console.log(`API: Student dashboard request - Teacher ID: ${teacherId}, Student ID: ${studentId}`);
       
       // Get the teacher data to verify they can see this student
-      const teacher = await storage.getTeacher(teacherId);
+      const teacher = await storage.getTeacherAuthById(teacherId);
       if (!teacher) {
         return res.status(401).json({ error: 'Teacher not found' });
       }
@@ -5292,7 +5292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get house data
-      const house = await storage.getHouse(scholar.houseId);
+      const house = scholar.houseId ? await storage.getHouse(scholar.houseId) : null;
       
       // Get student's recent activities (PBIS entries)
       const recentActivities = await storage.getPBISEntriesForScholar(studentId);

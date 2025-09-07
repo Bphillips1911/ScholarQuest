@@ -74,8 +74,11 @@ export default function ParentPortalEnhanced() {
         setLanguage((parsedParent.preferredLanguage as Language) || "en");
       }
     } catch (error) {
-      console.warn("Could not parse parent data for language");
-      setLanguage("en");
+      console.error("ERROR: Could not parse parent data - clearing invalid data and redirecting to login");
+      localStorage.removeItem("parentData");
+      localStorage.removeItem("parentToken");
+      window.location.href = "/parent-login";
+      return;
     }
   }, []);
 

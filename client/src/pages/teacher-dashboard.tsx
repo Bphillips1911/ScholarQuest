@@ -1490,7 +1490,7 @@ export default function TeacherDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    {teacher.canSeeGrades.map((grade) => (
+                    {teacher.canSeeGrades.map((grade: number) => (
                       <Button
                         key={grade}
                         variant={selectedGrade === grade ? "default" : "outline"}
@@ -1543,7 +1543,7 @@ export default function TeacherDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    {teacher.canSeeGrades.map((grade) => (
+                    {teacher.canSeeGrades.map((grade: number) => (
                       <Button
                         key={grade}
                         variant={selectedGrade === grade ? "default" : "outline"}
@@ -1937,15 +1937,15 @@ export default function TeacherDashboard() {
                   <div className="space-y-4 max-h-96 overflow-y-auto">
                     {messages && messages.length > 0 ? (
                       messages.slice(0, 10).map((message: any) => (
-                        <div key={message.id} className="p-4 border rounded-lg bg-gray-50">
+                        <div key={message.id} className="p-4 border rounded-lg" style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
                           <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-medium text-gray-900">{message.subject}</h4>
-                            <span className="text-xs text-gray-500">
+                            <h4 className="font-medium" style={{color: themeStyles.textPrimary}}>{message.subject}</h4>
+                            <span className="text-xs" style={{color: themeStyles.textSecondary}}>
                               {message.created_at ? new Date(message.created_at).toLocaleDateString() : 'Recently'}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">{message.message}</p>
-                          <div className="flex justify-between items-center text-xs text-gray-500">
+                          <p className="text-sm mb-2 line-clamp-2" style={{color: themeStyles.textSecondary}}>{message.message}</p>
+                          <div className="flex justify-between items-center text-xs" style={{color: themeStyles.textSecondary}}>
                             <span>
                               {message.sender_type === 'teacher' ? 'To: ' : 'From: '}
                               {message.sender_name || message.recipient_name || 'Unknown'}
@@ -1965,9 +1965,9 @@ export default function TeacherDashboard() {
                       ))
                     ) : (
                       <div className="text-center py-8">
-                        <MessageCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                        <p className="text-gray-500">No messages yet</p>
-                        <p className="text-sm text-gray-400">Your conversations with parents and administrators will appear here</p>
+                        <MessageCircle className="mx-auto h-12 w-12 mb-4" style={{color: themeStyles.textSecondary}} />
+                        <p style={{color: themeStyles.textSecondary}}>No messages yet</p>
+                        <p className="text-sm" style={{color: themeStyles.textSecondary}}>Your conversations with parents and administrators will appear here</p>
                       </div>
                     )}
                   </div>

@@ -58,6 +58,7 @@ interface SELLesson {
   id: string;
   scholarId: string;
   lessonTitle: string;
+  lessonContent?: string;
   status: 'assigned' | 'in_progress' | 'completed';
   assignedAt: string;
   dueDate?: string;

@@ -225,9 +225,10 @@ export default function ParentPortalEnhanced() {
   };
 
   // Fetch parent's scholars with cache-busting
-  const { data: scholars = [] } = useQuery<Scholar[]>({
-    queryKey: ["/api/parent/scholars", Date.now()], // Cache-busting key
+  const { data: scholars = [], isLoading: scholarsLoading, error: scholarsError } = useQuery<Scholar[]>({
+    queryKey: ["/api/parent/scholars"], // Remove Date.now() to avoid constant refetching
     queryFn: async () => {
+      console.log("🎓 FETCHING SCHOLARS for parent:", parentData?.firstName);
       const response = await fetch("/api/parent/scholars", {
         headers: getAuthHeaders(),
       });
@@ -235,11 +236,15 @@ export default function ParentPortalEnhanced() {
         console.error("Parent scholars fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch scholars");
       }
-      return response.json();
+      const data = await response.json();
+      console.log("🎓 SCHOLARS DATA RECEIVED:", data, "Length:", data.length);
+      return data;
     },
     enabled: !!parentData,
     staleTime: 0, // Always fetch fresh data
     gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch selected scholar details with cache-busting
@@ -642,7 +647,21 @@ export default function ParentPortalEnhanced() {
               </Button>
             </div>
 
-            {scholars.length === 0 ? (
+            {scholarsLoading ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading your students...</p>
+                </CardContent>
+              </Card>
+            ) : scholarsError ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <p className="text-red-600 mb-4">Error loading students: {scholarsError.message}</p>
+                  <Button onClick={() => window.location.reload()}>Retry</Button>
+                </CardContent>
+              </Card>
+            ) : scholars.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-12">
                   <GraduationCap className="h-12 w-12 mx-auto text-gray-400 mb-4" />

@@ -224,9 +224,9 @@ export default function ParentPortalEnhanced() {
     };
   };
 
-  // Fetch parent's scholars with cache-busting
+  // Fetch parent's scholars
   const { data: scholars = [], isLoading: scholarsLoading, error: scholarsError } = useQuery<Scholar[]>({
-    queryKey: ["/api/parent/scholars"], // Remove Date.now() to avoid constant refetching
+    queryKey: ["/api/parent/scholars"],
     queryFn: async () => {
       console.log("🎓 FETCHING SCHOLARS for parent:", parentData?.firstName);
       const response = await fetch("/api/parent/scholars", {
@@ -241,15 +241,15 @@ export default function ParentPortalEnhanced() {
       return data;
     },
     enabled: !!parentData,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 1 * 60 * 1000, // Cache for 1 minute
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
 
-  // Fetch selected scholar details with cache-busting
+  // Fetch selected scholar details
   const { data: scholarDetail } = useQuery<ScholarDetail>({
-    queryKey: ["/api/parent/scholar", selectedScholarId, Date.now()], // Cache-busting key
+    queryKey: ["/api/parent/scholar", selectedScholarId],
     queryFn: async () => {
       const response = await fetch(`/api/parent/scholar/${selectedScholarId}`, {
         headers: getAuthHeaders(),
@@ -261,35 +261,30 @@ export default function ParentPortalEnhanced() {
       return response.json();
     },
     enabled: !!selectedScholarId,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
-  // Fetch houses data for context with cache-busting
+  // Fetch houses data for context
   const { data: houses = [] } = useQuery<HouseData[]>({
-    queryKey: ["/api/houses", Date.now()], // Cache-busting key
+    queryKey: ["/api/houses"],
     queryFn: async () => {
-      const response = await fetch("/api/houses", {
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0",
-        },
-      });
+      const response = await fetch("/api/houses");
       if (!response.ok) {
         console.error("Parent houses fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch houses");
       }
       return response.json();
     },
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 
-  // Fetch parent messages with cache-busting
+  // Fetch parent messages
   const { data: messages = [] } = useQuery<ParentTeacherMessage[]>({
-    queryKey: ["/api/parent/messages", Date.now()], // Cache-busting key
+    queryKey: ["/api/parent/messages"],
     queryFn: async () => {
+      console.log("💬 FETCHING MESSAGES for parent:", parentData?.firstName);
       const response = await fetch("/api/parent/messages", {
         headers: getAuthHeaders(),
       });
@@ -297,16 +292,18 @@ export default function ParentPortalEnhanced() {
         console.error("Parent messages fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch messages");
       }
-      return response.json();
+      const data = await response.json();
+      console.log("💬 MESSAGES DATA RECEIVED:", data, "Length:", data.length);
+      return data;
     },
     enabled: !!parentData,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 1 * 60 * 1000, // Cache for 1 minute
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
-  // Fetch teachers for messaging with cache-busting
+  // Fetch teachers for messaging
   const { data: teachers = [] } = useQuery({
-    queryKey: ["/api/teachers", Date.now()], // Cache-busting key
+    queryKey: ["/api/teachers"],
     queryFn: async () => {
       const response = await fetch("/api/teachers", {
         headers: getAuthHeaders(),
@@ -318,13 +315,13 @@ export default function ParentPortalEnhanced() {
       return response.json();
     },
     enabled: showSendMessage,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
-  // Fetch reflections for the parent with cache-busting
+  // Fetch reflections for the parent
   const { data: reflections = [], refetch: refetchReflections } = useQuery({
-    queryKey: ["/api/parent/reflections", Date.now()], // Cache-busting key
+    queryKey: ["/api/parent/reflections"],
     queryFn: async () => {
       console.log('🔍 PARENT PORTAL: Fetching reflections...');
       const response = await fetch("/api/parent/reflections", {
@@ -335,13 +332,13 @@ export default function ParentPortalEnhanced() {
         throw new Error("Failed to fetch reflections");
       }
       const data = await response.json();
-      console.log('🔍 PARENT PORTAL: Received reflections:', data);
+      console.log('🔍 PARENT PORTAL: Received reflections:', data, "Length:", data.length);
       return data;
     },
     enabled: !!parentData,
-    refetchInterval: 30000, // Auto-refresh every 30 seconds to check for new approved reflections
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    refetchInterval: 60000, // Auto-refresh every 60 seconds to check for new approved reflections
+    staleTime: 30 * 1000, // Cache for 30 seconds
+    gcTime: 2 * 60 * 1000, // Keep in cache for 2 minutes
   });
 
   // Add scholar by credentials mutation

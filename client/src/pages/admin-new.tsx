@@ -250,15 +250,9 @@ export default function AdminNew() {
 
   // Fetch badges data with cache-busting for deployment
   const { data: allBadges = [] } = useQuery({
-    queryKey: ["/api/badges", Date.now()], // Cache-busting key
+    queryKey: ["/api/badges"],
     queryFn: async () => {
-      const response = await fetch("/api/badges", {
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache", 
-          "Expires": "0",
-        },
-      });
+      const response = await fetch("/api/badges");
       if (!response.ok) {
         console.error("Badges fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch badges");
@@ -266,8 +260,8 @@ export default function AdminNew() {
       return response.json();
     },
     enabled: isAuthenticated,
-    staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   // Fetch games data
@@ -278,15 +272,9 @@ export default function AdminNew() {
 
   // Fetch scholar badges with cache-busting for deployment
   const { data: scholarBadges = [] } = useQuery({
-    queryKey: ["/api/scholar-badges", Date.now()], // Cache-busting key
+    queryKey: ["/api/scholar-badges"],
     queryFn: async () => {
-      const response = await fetch("/api/scholar-badges", {
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0", 
-        },
-      });
+      const response = await fetch("/api/scholar-badges");
       if (!response.ok) {
         console.error("Scholar badges fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch scholar badges");
@@ -294,8 +282,8 @@ export default function AdminNew() {
       return response.json();
     },
     enabled: isAuthenticated,
-    staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   // Fetch game access data
@@ -307,16 +295,13 @@ export default function AdminNew() {
   // SEL lessons query for admin monitoring
   // Fetch SEL lessons with cache-busting for deployment
   const { data: selLessons = [], isLoading: selLessonsLoading } = useQuery({
-    queryKey: ['/api/admin/sel/lessons', Date.now()], // Cache-busting key
+    queryKey: ['/api/admin/sel/lessons'],
     queryFn: async () => {
       const token = localStorage.getItem("adminToken");
       const response = await fetch("/api/admin/sel/lessons", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0",
         },
       });
       if (!response.ok) {
@@ -326,8 +311,8 @@ export default function AdminNew() {
       return response.json();
     },
     enabled: isAuthenticated,
-    staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   const handleLogout = () => {

@@ -459,11 +459,11 @@ function StudentDashboardContent() {
     refetchOnWindowFocus: false,
   });
 
-  // Fetch PBIS entries for this student
+  // Fetch PBIS entries for this student - Corrected endpoint
   const { data: pbisEntries, refetch: refetchPBIS } = useQuery<PBISEntry[]>({
-    queryKey: ["/api/pbis-entries", studentData?.id],
+    queryKey: ["/api/scholars", studentData?.id, "pbis"],
     queryFn: async () => {
-      const response = await fetch(`/api/pbis-entries/${studentData?.id}`, {
+      const response = await fetch(`/api/scholars/${studentData?.id}/pbis`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('studentToken')}`,
         }
@@ -472,7 +472,9 @@ function StudentDashboardContent() {
         console.error('Student PBIS entries fetch failed:', response.status, response.statusText);
         throw new Error('Failed to fetch PBIS entries');
       }
-      return response.json();
+      const data = await response.json();
+      console.log('PBIS Entries fetched from correct endpoint:', data?.length || 0, 'entries');
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!studentData?.id,
     staleTime: 30 * 1000, // Cache for 30 seconds for real-time updates
@@ -516,6 +518,13 @@ function StudentDashboardContent() {
   const scholar: ScholarData | undefined = scholarData as ScholarData;
   const currentHouse = (houses && Array.isArray(houses)) ? houses.find((h: HouseData) => h.id === scholar?.houseId) : undefined;
   const recentPBIS = (pbisEntries && Array.isArray(pbisEntries)) ? pbisEntries.slice(0, 5) : [];
+  
+  console.log('Dashboard data check:', {
+    pbisEntriesCount: pbisEntries?.length || 0,
+    recentPBISCount: recentPBIS?.length || 0,
+    scholarData: !!scholar,
+    studentId: studentData?.id
+  });
 
   // Calculate total points and legendary progress - Fixed calculation
   const academicPts = scholar?.academicPoints || 0;
@@ -867,8 +876,8 @@ function StudentDashboardContent() {
               </Card>
             </StaggerItem>
 
-            {/* Behavioral Reflections */}
-            {reflections.length > 0 && (
+            {/* Behavioral Reflections - Only show for students with pending reflections from negative behavior */}
+            {reflections.length > 0 && reflections.some((r: Reflection) => r.status === 'assigned' || r.status === 'in_review') && (
               <StaggerItem>
                 <Card className={`col-span-1 md:col-span-2 lg:col-span-3 ${themeStyles.cardBg} border-white/20`}>
                 <CardHeader>

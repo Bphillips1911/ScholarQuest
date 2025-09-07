@@ -1414,13 +1414,13 @@ export default function AdminNew() {
                           ))
                         ) : (
                           <div className="col-span-full text-center py-8">
-                            <p style={{color: themeStyles.textSecondary}}>No {selectedBadgeCategory} badges found.</p>
+                            <p style={{color: themeStyles.textSecondary}}>No {selectedBadgeCategory || 'available'} badges found.</p>
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                        );
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 

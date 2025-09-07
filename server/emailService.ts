@@ -492,6 +492,15 @@ export async function sendParentPbisNotification(notificationData: {
 
 function getMustangTraitDefinition(trait: string): string {
   const definitions = {
+    // FIXED: Correct trait format mapping
+    "M - Make Good Choices": "Students demonstrate good decision-making skills and think before acting.",
+    "U - Use Kind Words": "Students speak respectfully and considerately to others.",
+    "S - Show School Pride": "Students demonstrate respect for their school community and traditions.",
+    "T - Tolerant of Others": "Students show acceptance and respect for diversity and differences.",
+    "A - Aim for Excellence": "Students strive to do their best work and continuously improve.",
+    "N - Need to be Responsible": "Students take ownership of their actions and commitments.",
+    "G - Give 100% Everyday": "Students bring their best effort and enthusiasm to all activities.",
+    // Fallback for legacy format
     "Make good choices": "Students demonstrate good decision-making skills and think before acting.",
     "Use kind words": "Students speak respectfully and considerately to others.",
     "Show school pride": "Students demonstrate respect for their school community and traditions.",

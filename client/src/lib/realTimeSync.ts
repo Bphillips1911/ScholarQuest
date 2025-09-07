@@ -115,11 +115,13 @@ class RealTimeSync {
     queryClient.invalidateQueries({ queryKey: ['/api/scholars'] });
   }
 
-  // Invalidate PBIS-related queries
+  // Invalidate PBIS-related queries - FIXED for all student dashboards
   private invalidatePBISQueries(studentId?: string) {
     queryClient.invalidateQueries({ queryKey: ['/api/pbis-photos'] });
     if (studentId) {
+      // Force refresh ALL student PBIS data
       queryClient.invalidateQueries({ queryKey: ['/api/scholars', studentId, 'pbis'] });
+      queryClient.refetchQueries({ queryKey: ['/api/scholars', studentId, 'pbis'] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/sel/lessons'] });
     }

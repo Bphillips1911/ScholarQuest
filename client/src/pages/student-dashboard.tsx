@@ -42,7 +42,6 @@ import { LearningAssistantProvider, useLearningAssistant, useCelebrationTrigger,
 import { AnimatedTutorials, tutorialLibrary } from "@/components/learning-assistant/AnimatedTutorials";
 import { GamifiedHelpSystem } from "@/components/learning-assistant/GamifiedHelpSystem";
 import { LearningAssistantIntegration } from "@/components/learning-assistant/LearningAssistantIntegration";
-import { realTimeSync } from "@/lib/realTimeSync";
 import { 
   InteractiveScale, 
   SlideIn, 
@@ -509,8 +508,7 @@ function StudentDashboardContent() {
 
   // FIXED: Initialize real-time sync and force refresh for MUSTANG Traits Recognition updates
   useEffect(() => {
-    realTimeSync.start();
-    
+    // Real-time sync is automatically initialized via realTimeSync.init() in the module
     // Force immediate refresh of PBIS data when component mounts
     if (studentData?.id) {
       setTimeout(() => {
@@ -518,10 +516,6 @@ function StudentDashboardContent() {
         refetchScholar();
       }, 500);
     }
-    
-    return () => {
-      realTimeSync.stop();
-    };
   }, [studentData?.id, refetchPBIS, refetchScholar]);
 
   const handleLogout = () => {

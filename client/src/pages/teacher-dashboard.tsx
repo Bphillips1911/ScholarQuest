@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain, AlertTriangle, CheckCircle2, UserPlus, Check } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain, AlertTriangle, CheckCircle2, UserPlus, Check, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 // Tabs removed - using parent-portal style navigation
@@ -965,6 +965,33 @@ export default function TeacherDashboard() {
       toast({
         title: "Error",
         description: "Failed to add students to class period",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Remove student from class period mutation
+  const removeStudentFromClassMutation = useMutation({
+    mutationFn: async ({ classId, studentId }: { classId: string; studentId: string }) => {
+      const response = await fetch(`/api/teacher/class-periods/${classId}/students/${studentId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to remove student from class');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Student Removed",
+        description: "Student has been successfully removed from the class period",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/teacher/class-periods'] });
+      refetchClassPeriods();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove student from class period",
         variant: "destructive",
       });
     }
@@ -2187,9 +2214,19 @@ export default function TeacherDashboard() {
                                   <div className="max-h-32 overflow-y-auto">
                                     <div className="space-y-1">
                                       {period.students.map((student: any) => (
-                                        <div key={student.id} className="flex items-center justify-between text-sm">
-                                          <span className="text-gray-700">{student.name}</span>
-                                          <span className="text-gray-500">ID: {student.studentId}</span>
+                                        <div key={student.id} className="flex items-center justify-between text-sm p-2 rounded bg-gray-50 hover:bg-gray-100">
+                                          <div>
+                                            <span className="text-gray-700 font-medium">{student.name}</span>
+                                            <span className="text-gray-500 text-xs ml-2">ID: {student.studentId}</span>
+                                          </div>
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={() => removeStudentFromClass(period.id, student.id, student.name)}
+                                            className="h-6 px-2 text-xs"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
                                         </div>
                                       ))}
                                     </div>

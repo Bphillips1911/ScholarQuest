@@ -176,13 +176,14 @@ export default function AdminNew() {
   });
 
   // Fetch all scholars with cache-busting for deployment
-  const { data: allScholars } = useQuery<Scholar[]>({
-    queryKey: ["/api/scholars", Date.now()], // Cache-busting key
+  const { data: allScholars = [], isLoading: scholarsLoading, error: scholarsError } = useQuery<Scholar[]>({
+    queryKey: ["/api/scholars"], // Remove Date.now() to avoid constant refetching
     queryFn: async () => {
+      console.log("🎓 ADMIN: Fetching all scholars");
       const response = await fetch("/api/scholars", {
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
+          "Pragma": "no-cache", 
           "Expires": "0",
         },
       });
@@ -190,11 +191,15 @@ export default function AdminNew() {
         console.error("Scholars fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch scholars");
       }
-      return response.json();
+      const data = await response.json();
+      console.log("🎓 ADMIN: Scholars data received:", data.length, "students");
+      return data;
     },
     enabled: isAuthenticated,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const { data: pendingTeachers } = useQuery<TeacherAuth[]>({
@@ -203,10 +208,11 @@ export default function AdminNew() {
   });
 
   // Fetch admin messages with cache-busting for deployment
-  const { data: adminMessages = [] } = useQuery({
-    queryKey: ["/api/admin/messages", Date.now()], // Cache-busting key
+  const { data: adminMessages = [], isLoading: messagesLoading, error: messagesError } = useQuery({
+    queryKey: ["/api/admin/messages"], // Remove Date.now() to avoid constant refetching
     queryFn: async () => {
       const token = localStorage.getItem("adminToken");
+      console.log("📧 ADMIN: Fetching messages with token:", token ? "present" : "missing");
       const response = await fetch("/api/admin/messages", {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -220,11 +226,15 @@ export default function AdminNew() {
         console.error("Admin messages fetch failed:", response.status, response.statusText);
         throw new Error("Failed to fetch messages");
       }
-      return response.json();
+      const data = await response.json();
+      console.log("📧 ADMIN: Messages data received:", data, "Length:", data.length);
+      return data;
     },
     enabled: isAuthenticated,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (renamed from cacheTime in v5)
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch gallery photos for admin

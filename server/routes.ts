@@ -236,6 +236,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register emergency seeding API for deployment fixes
   const { registerEmergencySeeding } = await import('./emergency-seed-api');
   registerEmergencySeeding(app);
+  
+  // Register NUCLEAR database reset for deployment emergencies
+  const { registerNuclearReset } = await import('./nuclear-database-reset');
+  registerNuclearReset(app);
 
   // Register SEL routes
   registerSELRoutes(app);

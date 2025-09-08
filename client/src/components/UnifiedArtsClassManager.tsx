@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Users, Star, Send, Eye, Trash2, Edit, Search } from 'lucide-react';
+import { Plus, Users, Star, Send, Eye, Trash2, Edit, Search, X } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -365,6 +365,15 @@ export function UnifiedArtsClassManager({ teacher }: UnifiedArtsClassManagerProp
                                 className="h-6 w-6 p-0"
                               >
                                 <Eye className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRemoveStudent(classPeriod.id, student.id, student.name)}
+                                className="h-6 w-6 p-0"
+                                title={`Remove ${student.name} from class`}
+                              >
+                                <X className="w-3 h-3" />
                               </Button>
                             </div>
                           </div>

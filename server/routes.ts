@@ -240,6 +240,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register NUCLEAR database reset for deployment emergencies
   const { registerNuclearReset } = await import('./nuclear-database-reset');
   registerNuclearReset(app);
+  
+  // Register deployment password fix
+  const { registerPasswordFix } = await import('./deployment-password-fix');
+  registerPasswordFix(app);
 
   // Register SEL routes
   registerSELRoutes(app);

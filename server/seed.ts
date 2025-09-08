@@ -7,6 +7,17 @@ import { seedBadgesAndGames } from "./seed-badges-games";
 
 export async function seedDatabase() {
   try {
+    // DEPLOYMENT FIX: For deployments, use comprehensive seeding
+    const isDeployment = process.env.NODE_ENV === 'production' || 
+                         process.env.REPL_ID || 
+                         process.env.DATABASE_URL?.includes('neon.tech');
+    
+    if (isDeployment) {
+      console.log("🚀 DEPLOYMENT DETECTED: Running comprehensive seeding...");
+      const { seedDeploymentComprehensive } = await import('./deployment-comprehensive-seed');
+      return await seedDeploymentComprehensive();
+    }
+    
     // CRITICAL DEPLOYMENT FIX - Always ensure teachers exist
     console.log("SEED: 🚀 DEPLOYMENT CRITICAL - Starting teacher seeding...");
     console.log(`SEED: Environment: ${process.env.NODE_ENV || 'development'}`);

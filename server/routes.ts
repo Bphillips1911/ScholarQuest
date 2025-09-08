@@ -232,6 +232,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register force deployment API endpoints
   const { registerForceDeploymentAPI } = await import('./deployment-force-api');
   registerForceDeploymentAPI(app);
+  
+  // Register emergency seeding API for deployment fixes
+  const { registerEmergencySeeding } = await import('./emergency-seed-api');
+  registerEmergencySeeding(app);
 
   // Register SEL routes
   registerSELRoutes(app);

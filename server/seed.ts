@@ -7,13 +7,23 @@ import { seedBadgesAndGames } from "./seed-badges-games";
 
 export async function seedDatabase() {
   try {
-    // DEPLOYMENT FIX: For deployments, use comprehensive seeding
-    const isDeployment = process.env.NODE_ENV === 'production' || 
-                         process.env.REPL_ID || 
-                         process.env.DATABASE_URL?.includes('neon.tech');
+    // DEPLOYMENT FIX: Force comprehensive seeding for all environments with REPL_ID
+    const hasReplId = !!process.env.REPL_ID;
+    const hasNeonDb = process.env.DATABASE_URL?.includes('neon.tech');
+    const isProduction = process.env.NODE_ENV === 'production';
     
-    if (isDeployment) {
-      console.log("🚀 DEPLOYMENT DETECTED: Running comprehensive seeding...");
+    console.log("SEED DEBUG: Environment check:", {
+      hasReplId,
+      hasNeonDb,
+      isProduction,
+      nodeEnv: process.env.NODE_ENV,
+      replId: process.env.REPL_ID?.substring(0, 8),
+      dbUrl: process.env.DATABASE_URL?.substring(0, 30)
+    });
+    
+    // ALWAYS use comprehensive seeding for Replit environments
+    if (hasReplId || hasNeonDb || isProduction) {
+      console.log("🚀 REPLIT ENVIRONMENT DETECTED: Running comprehensive seeding...");
       const { seedDeploymentComprehensive } = await import('./deployment-comprehensive-seed');
       return await seedDeploymentComprehensive();
     }

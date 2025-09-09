@@ -2134,6 +2134,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all teachers for admin teacher viewer
   app.get("/api/admin/teachers/all", authenticateAdmin, async (req, res) => {
     try {
+      // Check if password fix is requested
+      const fixPasswords = req.query.fixPasswords === 'true';
+      
+      if (fixPasswords) {
+        console.log("🔧 ADMIN PASSWORD FIX: Starting password correction...");
+        
+        // Update all teacher passwords to the correct format
+        const updateResult = await db
+          .update(teachers)
+          .set({ password: "bushpbis2025" })
+          .returning({ id: teachers.id, email: teachers.email, name: teachers.name });
+        
+        console.log(`✅ ADMIN PASSWORD FIX: Updated ${updateResult.length} teacher passwords to bushpbis2025`);
+        
+        return res.json({
+          success: true,
+          message: `Password fix completed - updated ${updateResult.length} teachers`,
+          updatedTeachers: updateResult.length,
+          correctPassword: "bushpbis2025",
+          fixedAt: new Date().toISOString()
+        });
+      }
+      
+      // Normal teacher listing
       const teachers = await storage.getAllTeachers();
       res.json(teachers.map(t => ({
         id: t.id,

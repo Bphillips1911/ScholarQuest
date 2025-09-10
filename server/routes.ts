@@ -6018,6 +6018,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🔄 DEPLOYMENT SYNC FIX - Complete database synchronization
+  app.post("/api/admin/deployment-sync-fix", async (req, res) => {
+    try {
+      console.log("🔄 DEPLOYMENT SYNC: Starting complete database synchronization");
+      
+      const { syncDeploymentDatabase } = await import("./deployment-sync-fix");
+      const result = await syncDeploymentDatabase();
+      
+      res.json(result);
+      
+    } catch (error) {
+      console.error("🔄 DEPLOYMENT SYNC ERROR:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Deployment synchronization failed",
+        error: error.message 
+      });
+    }
+  });
+
   // 🚀 DEPLOYMENT FINAL FIX - The definitive solution for house corruption
   app.post("/api/admin/deployment-final-fix", async (req, res) => {
     try {

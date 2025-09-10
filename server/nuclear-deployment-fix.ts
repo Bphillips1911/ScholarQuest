@@ -17,19 +17,7 @@ export async function nuclearDeploymentFix() {
     // Step 1: NUCLEAR CLEANUP - Delete EVERYTHING
     console.log("💥 NUCLEAR: Destroying all corrupted data...");
     
-    // Delete in the correct order to avoid foreign key issues
-    await db.delete(pbisEntries);
-    await db.delete(pointEntries);
-    await db.delete(parentTeacherMessages);
-    
-    // Remove ALL house associations
-    await db.update(scholars).set({ houseId: null });
-    
-    // NUCLEAR DELETE - Remove ALL houses (including corrupted ones)
-    await db.execute(sql`DELETE FROM houses`);
-    console.log("   💥 ALL HOUSES DESTROYED");
-    
-    // Step 2: CREATE EXACTLY 5 HOUSES - NO MORE, NO LESS
+    // Step 1.5: CREATE EXACTLY 5 HOUSES FIRST (for student assignment)
     console.log("🏠 NUCLEAR: Creating exactly 5 houses...");
     
     const exactHouses = [
@@ -90,13 +78,27 @@ export async function nuclearDeploymentFix() {
       }
     ];
     
+    // NUCLEAR DELETE - Remove ALL existing houses (including corrupted ones)
+    await db.execute(sql`DELETE FROM houses`);
+    console.log("   💥 ALL HOUSES DESTROYED");
+    
     // Insert exactly these 5 houses
     await db.insert(houses).values(exactHouses);
+    
+    // SAFELY assign all students to Tesla house to avoid constraint violations
+    await db.update(scholars).set({ houseId: "tesla" });
+    console.log("   🏠 NUCLEAR: All students safely moved to Tesla house");
+    
+    // Delete related data now that students are safely housed
+    await db.delete(pbisEntries);
+    await db.delete(pointEntries);
+    await db.delete(parentTeacherMessages);
+    
     for (const house of exactHouses) {
       console.log(`   ✅ NUCLEAR: Created ${house.name}`);
     }
     
-    // Step 3: VERIFY NO CORRUPTION
+    // Step 2: VERIFY NO CORRUPTION
     const postNuclearHouses = await db.select().from(houses);
     if (postNuclearHouses.length !== 5) {
       throw new Error(`NUCLEAR FAILED: Expected 5 houses, found ${postNuclearHouses.length}`);

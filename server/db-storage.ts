@@ -82,19 +82,8 @@ export class DatabaseStorage implements IStorage {
     if (existingHouses.length === 0) {
       const defaultHouses = [
         {
-          id: "franklin",
-          name: "House of Franklin",
-          color: "#1e40af",
-          icon: "🔬",
-          motto: "Innovation Through Discovery",
-          academicPoints: 0,
-          attendancePoints: 0,
-          behaviorPoints: 0,
-          memberCount: 0
-        },
-        {
           id: "tesla",
-          name: "House of Tesla",
+          name: "Tesla",
           color: "#7c3aed",
           icon: "⚡",
           motto: "Electrifying Excellence",
@@ -104,8 +93,8 @@ export class DatabaseStorage implements IStorage {
           memberCount: 0
         },
         {
-          id: "curie",
-          name: "House of Curie",
+          id: "drew",
+          name: "Drew",
           color: "#dc2626",
           icon: "🧪",
           motto: "Pioneering Progress",
@@ -115,8 +104,8 @@ export class DatabaseStorage implements IStorage {
           memberCount: 0
         },
         {
-          id: "nobel",
-          name: "House of Nobel",
+          id: "marshall",
+          name: "Marshall",
           color: "#059669",
           icon: "🎯",
           motto: "Excellence in Achievement",
@@ -126,11 +115,22 @@ export class DatabaseStorage implements IStorage {
           memberCount: 0
         },
         {
-          id: "lovelace",
-          name: "House of Lovelace",
-          color: "#ea580c",
-          icon: "💻",
-          motto: "Coding the Future",
+          id: "johnson",
+          name: "Johnson",
+          color: "#d97706",
+          icon: "🏆",
+          motto: "Champion Mindset",
+          academicPoints: 0,
+          attendancePoints: 0,
+          behaviorPoints: 0,
+          memberCount: 0
+        },
+        {
+          id: "west",
+          name: "West",
+          color: "#0284c7",
+          icon: "🌟",
+          motto: "Rising Excellence",
           academicPoints: 0,
           attendancePoints: 0,
           behaviorPoints: 0,

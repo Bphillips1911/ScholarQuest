@@ -6018,6 +6018,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🚀 DEPLOYMENT FINAL FIX - The definitive solution for house corruption
+  app.post("/api/admin/deployment-final-fix", async (req, res) => {
+    try {
+      console.log("🚀 DEPLOYMENT FINAL FIX: Starting deployment database repair");
+      
+      const { fixDeploymentHouses } = await import("./deployment-final-fix");
+      const result = await fixDeploymentHouses();
+      
+      res.json(result);
+      
+    } catch (error) {
+      console.error("🚀 DEPLOYMENT FINAL FIX ERROR:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Deployment fix failed",
+        error: error.message 
+      });
+    }
+  });
+
   // 🏠 CREATE HOUSE - Simple house creation endpoint
   app.post("/api/admin/create-house", async (req, res) => {
     try {

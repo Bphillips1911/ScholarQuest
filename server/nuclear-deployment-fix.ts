@@ -81,8 +81,8 @@ export async function nuclearDeploymentFix() {
     ];
     
     // Insert exactly these 5 houses
+    await db.insert(houses).values(exactHouses);
     for (const house of exactHouses) {
-      await db.insert(houses).values(house);
       console.log(`   ✅ NUCLEAR: Created ${house.name}`);
     }
     
@@ -109,7 +109,7 @@ export async function nuclearDeploymentFix() {
     for (const cred of studentCredentials) {
       const hashedPassword = await bcrypt.hash(cred.password, 10);
       await db.update(scholars)
-        .set({ password: hashedPassword })
+        .set({ hashedPassword })
         .where(eq(scholars.username, cred.username));
       console.log(`   🔐 NUCLEAR: Fixed student ${cred.username}`);
     }
@@ -134,7 +134,7 @@ export async function nuclearDeploymentFix() {
     
     // Update ALL teacher passwords
     const teacherPassword = await bcrypt.hash("BHSATeacher2025!", 10);
-    await db.update(teachers).set({ password: teacherPassword });
+    await db.update(teachers).set({ hashedPassword: teacherPassword });
     console.log("   🔐 NUCLEAR: All teacher passwords updated");
     
     // Step 5: REDISTRIBUTE STUDENTS EVENLY

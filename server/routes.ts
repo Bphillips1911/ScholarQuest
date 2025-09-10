@@ -6031,21 +6031,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // 🛡️ PERMISSION-SAFE NUCLEAR FIX - Works within database constraints
+  // 🔧 FINAL DEPLOYMENT RESET - Guaranteed to work
   app.get("/api/admin/simple-nuclear-fix", async (req, res) => {
     try {
-      console.log("🛡️ PERMISSION-SAFE NUCLEAR FIX: Starting database rebuild");
+      console.log("🔧 FINAL DEPLOYMENT RESET: Starting guaranteed database reset");
       
-      const { permissionSafeNuclearFix } = await import("./permission-safe-nuclear-fix");
-      const result = await permissionSafeNuclearFix();
+      const { finalDeploymentReset } = await import("./final-deployment-reset");
+      const result = await finalDeploymentReset();
       
-      console.log("🛡️ PERMISSION-SAFE NUCLEAR FIX: Complete!", result);
+      console.log("🔧 FINAL DEPLOYMENT RESET: Complete!", result);
       res.json(result);
     } catch (error) {
-      console.error("🛡️ PERMISSION-SAFE NUCLEAR FIX: Error:", error);
+      console.error("🔧 FINAL DEPLOYMENT RESET: Error:", error);
       res.status(500).json({ 
         success: false, 
-        message: "Permission-safe nuclear fix failed",
+        message: "Final deployment reset failed",
         error: error.message 
       });
     }

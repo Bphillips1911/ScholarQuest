@@ -2160,76 +2160,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (fixHouses) {
-        console.log("🏠 ADMIN HOUSE FIX: Starting house name correction...");
+        console.log("🏠 ADMIN HOUSE FIX: Starting comprehensive house cleanup...");
         
-        // Define correct house mapping
-        const houseMapping = [
-          { oldId: 'house-of-blackwell', newId: 'tesla', newName: 'Tesla', color: '#7c3aed' },
-          { oldId: 'house-of-berruguete', newId: 'drew', newName: 'Drew', color: '#dc2626' },
-          { oldId: 'house-of-franklin', newId: 'marshall', newName: 'Marshall', color: '#059669' },
-          { oldId: 'house-of-courie', newId: 'johnson', newName: 'Johnson', color: '#d97706' },
-          { oldId: 'house-of-west', newId: 'west', newName: 'West', color: '#7c2d12' }
-        ];
-        
-        let updatedHouses = 0;
-        
-        for (const house of houseMapping) {
-          try {
-            // Update the house record
-            const result = await db
-              .update(houses)
-              .set({ 
-                id: house.newId,
-                name: house.newName,
-                color: house.color
-              })
-              .where(sql`id = ${house.oldId} OR name = ${house.oldId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`)
-              .returning();
-            
-            if (result.length > 0) {
-              console.log(`✅ HOUSE FIX: Updated ${house.oldId} → ${house.newName}`);
-              updatedHouses++;
-            }
-          } catch (error) {
-            console.log(`❌ HOUSE FIX: Error updating ${house.oldId}:`, error.message);
-          }
-        }
-        
-        // If no updates, try inserting the correct houses
-        if (updatedHouses === 0) {
-          console.log("🏠 HOUSE FIX: No existing houses updated, inserting correct houses...");
+        try {
+          // Step 1: Delete ALL existing houses to start fresh
+          console.log("🗑️ HOUSE FIX: Removing all existing houses...");
+          await db.delete(houses);
           
-          for (const house of houseMapping) {
+          // Step 2: Insert only the 5 correct houses
+          const correctHouses = [
+            { id: 'tesla', name: 'Tesla', color: '#7c3aed', points: 0 },
+            { id: 'drew', name: 'Drew', color: '#dc2626', points: 0 },
+            { id: 'marshall', name: 'Marshall', color: '#059669', points: 0 },
+            { id: 'johnson', name: 'Johnson', color: '#d97706', points: 0 },
+            { id: 'west', name: 'West', color: '#7c2d12', points: 0 }
+          ];
+          
+          console.log("🏠 HOUSE FIX: Inserting 5 correct houses...");
+          await db.insert(houses).values(correctHouses);
+          
+          console.log("✅ ADMIN HOUSE FIX: Successfully replaced all houses with correct 5!");
+          
+          return res.json({
+            success: true,
+            message: "House fix completed - deleted all old houses and created 5 correct ones",
+            updatedHouses: 5,
+            correctHouses: ['Tesla', 'Drew', 'Marshall', 'Johnson', 'West'],
+            action: 'complete_replacement',
+            fixedAt: new Date().toISOString()
+          });
+          
+        } catch (error: any) {
+          console.log("❌ HOUSE FIX: Error during comprehensive fix:", error.message);
+          
+          // Fallback: Try individual house updates
+          console.log("🔄 HOUSE FIX: Trying fallback individual updates...");
+          
+          const houseUpdates = [
+            { search: 'House of Blackwell', id: 'tesla', name: 'Tesla', color: '#7c3aed' },
+            { search: 'House of Berruguete', id: 'drew', name: 'Drew', color: '#dc2626' },
+            { search: 'House of Franklin', id: 'marshall', name: 'Marshall', color: '#059669' },
+            { search: 'House of Courie', id: 'johnson', name: 'Johnson', color: '#d97706' },
+            { search: 'House of West', id: 'west', name: 'West', color: '#7c2d12' }
+          ];
+          
+          let updatedCount = 0;
+          for (const house of houseUpdates) {
             try {
-              await db.insert(houses).values({
-                id: house.newId,
-                name: house.newName,
-                color: house.color,
-                points: 0
-              }).onConflictDoUpdate({
-                target: houses.id,
-                set: {
-                  name: house.newName,
+              const result = await db
+                .update(houses)
+                .set({ 
+                  id: house.id,
+                  name: house.name,
                   color: house.color
-                }
-              });
-              updatedHouses++;
-              console.log(`✅ HOUSE FIX: Ensured ${house.newName} exists`);
-            } catch (error) {
-              console.log(`❌ HOUSE FIX: Error with ${house.newName}:`, error.message);
+                })
+                .where(sql`name = ${house.search}`)
+                .returning();
+              
+              if (result.length > 0) {
+                console.log(`✅ FALLBACK: Updated ${house.search} → ${house.name}`);
+                updatedCount++;
+              }
+            } catch (updateError: any) {
+              console.log(`❌ FALLBACK: Error updating ${house.search}:`, updateError.message);
             }
           }
+          
+          return res.json({
+            success: updatedCount > 0,
+            message: `Fallback fix completed - updated ${updatedCount} houses`,
+            updatedHouses: updatedCount,
+            correctHouses: ['Tesla', 'Drew', 'Marshall', 'Johnson', 'West'],
+            action: 'fallback_update',
+            error: error.message,
+            fixedAt: new Date().toISOString()
+          });
         }
-        
-        console.log(`✅ ADMIN HOUSE FIX: Updated/ensured ${updatedHouses} houses`);
-        
-        return res.json({
-          success: true,
-          message: `House fix completed - updated ${updatedHouses} houses`,
-          updatedHouses: updatedHouses,
-          correctHouses: ['Tesla', 'Drew', 'Marshall', 'Johnson', 'West'],
-          fixedAt: new Date().toISOString()
-        });
       }
       
       // Normal teacher listing

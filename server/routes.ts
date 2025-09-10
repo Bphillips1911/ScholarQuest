@@ -6018,6 +6018,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🔍 VERIFY DATABASE HOUSES - See what's actually in the database
+  app.get("/api/admin/verify-houses", async (req, res) => {
+    try {
+      console.log("🔍 VERIFYING DATABASE: Checking actual house data");
+      
+      const allHouses = await storage.getAllHouses();
+      const allScholars = await storage.getAllScholars();
+      
+      const houseDetails = allHouses.map(house => ({
+        id: house.id,
+        name: house.name,
+        color: house.color,
+        studentCount: allScholars.filter(s => s.houseId === house.id).length
+      }));
+      
+      console.log("🏠 ACTUAL HOUSES IN DATABASE:", houseDetails);
+      
+      const correctHouseIds = ['tesla', 'drew', 'marshall', 'johnson', 'west'];
+      const incorrectHouses = allHouses.filter(h => !correctHouseIds.includes(h.id));
+      
+      res.json({
+        totalHouses: allHouses.length,
+        houseDetails: houseDetails,
+        correctHouses: allHouses.filter(h => correctHouseIds.includes(h.id)).length,
+        incorrectHouses: incorrectHouses.length,
+        incorrectHouseNames: incorrectHouses.map(h => h.name),
+        isFixed: allHouses.length === 5 && incorrectHouses.length === 0
+      });
+    } catch (error) {
+      console.error("🔍 VERIFY ERROR:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // 🚨 NUCLEAR HOUSE CLEANUP - Complete house system reset
   app.post("/api/admin/nuclear-house-cleanup", async (req, res) => {
     try {
@@ -6050,14 +6084,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         houseNames: allHouses.map(h => h.name)
       });
 
-      // STEP 2: Delete ALL existing houses (this cascades to point entries)
-      console.log("🗑️ STEP 2: Deleting ALL existing houses");
+      // STEP 2: Delete ALL existing houses with FORCE (this cascades to point entries)
+      console.log("🗑️ STEP 2: Force deleting ALL existing houses");
       for (const house of allHouses) {
         try {
+          // Try standard delete first
           await storage.deleteHouse(house.id);
-          console.log(`   ✅ Deleted house: ${house.name}`);
+          console.log(`   ✅ Deleted house: ${house.name} (${house.id})`);
         } catch (error) {
-          console.log(`   ⚠️ Error deleting house ${house.name}:`, error);
+          console.log(`   ⚠️ Standard delete failed for ${house.name}, trying force delete:`, error);
+          // Force delete with raw SQL if needed
+          try {
+            // Delete dependent records first
+            await storage.client.execute({
+              sql: "DELETE FROM point_entries WHERE house_id = ?",
+              args: [house.id]
+            });
+            await storage.client.execute({
+              sql: "UPDATE scholars SET house_id = NULL WHERE house_id = ?", 
+              args: [house.id]
+            });
+            await storage.client.execute({
+              sql: "DELETE FROM houses WHERE id = ?",
+              args: [house.id]
+            });
+            console.log(`   🔨 Force deleted house: ${house.name} (${house.id})`);
+          } catch (forceError) {
+            console.log(`   ❌ Force delete failed for ${house.name}:`, forceError);
+          }
         }
       }
 

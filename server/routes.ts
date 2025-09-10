@@ -6018,6 +6018,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🩺 DEPLOYMENT DIAGNOSTIC - Test if endpoint is reachable
+  app.get("/api/admin/deployment-diagnostic", (req, res) => {
+    console.log("🩺 DEPLOYMENT DIAGNOSTIC: Endpoint reached successfully");
+    res.json({
+      success: true,
+      message: "Deployment endpoint is working!",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      replId: process.env.REPL_ID
+    });
+  });
+
   // 💥 NUCLEAR DEPLOYMENT FIX - The ultimate solution
   app.post("/api/admin/nuclear-deployment-fix", async (req, res) => {
     try {

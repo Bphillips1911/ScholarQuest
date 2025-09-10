@@ -6093,21 +6093,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`   ✅ Deleted house: ${house.name} (${house.id})`);
         } catch (error) {
           console.log(`   ⚠️ Standard delete failed for ${house.name}, trying force delete:`, error);
-          // Force delete with raw SQL if needed
+          // Force delete with direct database access
           try {
+            // Import db for direct access
+            const { db } = await import("./db");
+            const { pointEntries, scholars, houses } = await import("@shared/schema");
+            const { eq } = await import("drizzle-orm");
+            
             // Delete dependent records first
-            await storage.client.execute({
-              sql: "DELETE FROM point_entries WHERE house_id = ?",
-              args: [house.id]
-            });
-            await storage.client.execute({
-              sql: "UPDATE scholars SET house_id = NULL WHERE house_id = ?", 
-              args: [house.id]
-            });
-            await storage.client.execute({
-              sql: "DELETE FROM houses WHERE id = ?",
-              args: [house.id]
-            });
+            await db.delete(pointEntries).where(eq(pointEntries.houseId, house.id));
+            await db.update(scholars).set({ houseId: null }).where(eq(scholars.houseId, house.id));
+            await db.delete(houses).where(eq(houses.id, house.id));
             console.log(`   🔨 Force deleted house: ${house.name} (${house.id})`);
           } catch (forceError) {
             console.log(`   ❌ Force delete failed for ${house.name}:`, forceError);

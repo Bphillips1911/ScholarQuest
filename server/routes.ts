@@ -6018,6 +6018,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🏠 CREATE HOUSE - Simple house creation endpoint
+  app.post("/api/admin/create-house", async (req, res) => {
+    try {
+      console.log("🏠 CREATE HOUSE: Creating new house", req.body);
+      
+      const { id, name, color } = req.body;
+      
+      if (!id || !name || !color) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required fields: id, name, color" 
+        });
+      }
+      
+      // Import required modules
+      const { db } = await import("./db");
+      const { houses } = await import("@shared/schema");
+      
+      // Check if house already exists
+      const existingHouse = await db.select().from(houses).where(eq(houses.id, id));
+      if (existingHouse.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `House with id '${id}' already exists` 
+        });
+      }
+      
+      // Create the house
+      const houseData = {
+        id,
+        name, 
+        color,
+        academicPoints: 0,
+        attendancePoints: 0,
+        behaviorPoints: 0,
+        memberCount: 0
+      };
+      
+      await db.insert(houses).values(houseData);
+      console.log(`🏠 CREATE HOUSE: Successfully created house ${name} (${id})`);
+      
+      res.json({
+        success: true,
+        message: `House '${name}' created successfully`,
+        house: houseData
+      });
+      
+    } catch (error) {
+      console.error("🏠 CREATE HOUSE ERROR:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create house",
+        error: error.message 
+      });
+    }
+  });
+
   // 🗑️ SIMPLE HOUSE DELETE - Direct SQL deletion of incorrect houses
   app.post("/api/admin/simple-house-delete", async (req, res) => {
     try {

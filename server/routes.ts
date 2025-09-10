@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema, insertParentTeacherMessageSchema, teacherAuth, type Scholar, type House } from "@shared/schema";
+import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema, insertParentTeacherMessageSchema, teacherAuth, houses, teachers, type Scholar, type House } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import multer from "multer";
@@ -2136,6 +2136,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Check if password fix is requested
       const fixPasswords = req.query.fixPasswords === 'true';
+      // Check if house fix is requested  
+      const fixHouses = req.query.fixHouses === 'true';
       
       if (fixPasswords) {
         console.log("🔧 ADMIN PASSWORD FIX: Starting password correction...");
@@ -2153,6 +2155,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Password fix completed - updated ${updateResult.length} teachers`,
           updatedTeachers: updateResult.length,
           correctPassword: "bushpbis2025",
+          fixedAt: new Date().toISOString()
+        });
+      }
+      
+      if (fixHouses) {
+        console.log("🏠 ADMIN HOUSE FIX: Starting house name correction...");
+        
+        // Define correct house mapping
+        const houseMapping = [
+          { oldId: 'house-of-blackwell', newId: 'tesla', newName: 'Tesla', color: '#7c3aed' },
+          { oldId: 'house-of-berruguete', newId: 'drew', newName: 'Drew', color: '#dc2626' },
+          { oldId: 'house-of-franklin', newId: 'marshall', newName: 'Marshall', color: '#059669' },
+          { oldId: 'house-of-courie', newId: 'johnson', newName: 'Johnson', color: '#d97706' },
+          { oldId: 'house-of-west', newId: 'west', newName: 'West', color: '#7c2d12' }
+        ];
+        
+        let updatedHouses = 0;
+        
+        for (const house of houseMapping) {
+          try {
+            // Update the house record
+            const result = await db
+              .update(houses)
+              .set({ 
+                id: house.newId,
+                name: house.newName,
+                color: house.color
+              })
+              .where(sql`id = ${house.oldId} OR name = ${house.oldId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`)
+              .returning();
+            
+            if (result.length > 0) {
+              console.log(`✅ HOUSE FIX: Updated ${house.oldId} → ${house.newName}`);
+              updatedHouses++;
+            }
+          } catch (error) {
+            console.log(`❌ HOUSE FIX: Error updating ${house.oldId}:`, error.message);
+          }
+        }
+        
+        // If no updates, try inserting the correct houses
+        if (updatedHouses === 0) {
+          console.log("🏠 HOUSE FIX: No existing houses updated, inserting correct houses...");
+          
+          for (const house of houseMapping) {
+            try {
+              await db.insert(houses).values({
+                id: house.newId,
+                name: house.newName,
+                color: house.color,
+                points: 0
+              }).onConflictDoUpdate({
+                target: houses.id,
+                set: {
+                  name: house.newName,
+                  color: house.color
+                }
+              });
+              updatedHouses++;
+              console.log(`✅ HOUSE FIX: Ensured ${house.newName} exists`);
+            } catch (error) {
+              console.log(`❌ HOUSE FIX: Error with ${house.newName}:`, error.message);
+            }
+          }
+        }
+        
+        console.log(`✅ ADMIN HOUSE FIX: Updated/ensured ${updatedHouses} houses`);
+        
+        return res.json({
+          success: true,
+          message: `House fix completed - updated ${updatedHouses} houses`,
+          updatedHouses: updatedHouses,
+          correctHouses: ['Tesla', 'Drew', 'Marshall', 'Johnson', 'West'],
           fixedAt: new Date().toISOString()
         });
       }

@@ -6030,6 +6030,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // 🚀 SIMPLE NUCLEAR FIX - No authentication required for testing
+  app.get("/api/admin/simple-nuclear-fix", async (req, res) => {
+    try {
+      console.log("🚀 SIMPLE NUCLEAR FIX: Starting (no auth required)");
+      
+      const { nuclearDeploymentFix } = await import("./nuclear-deployment-fix");
+      const result = await nuclearDeploymentFix();
+      
+      console.log("🚀 SIMPLE NUCLEAR FIX: Complete!", result);
+      res.json(result);
+    } catch (error) {
+      console.error("🚀 SIMPLE NUCLEAR FIX: Error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Simple nuclear fix failed",
+        error: error.message 
+      });
+    }
+  });
+
   // 💥 NUCLEAR DEPLOYMENT FIX - The ultimate solution
   app.post("/api/admin/nuclear-deployment-fix", async (req, res) => {
     try {

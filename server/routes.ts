@@ -6018,6 +6018,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🗑️ SIMPLE HOUSE DELETE - Direct SQL deletion of incorrect houses
+  app.post("/api/admin/simple-house-delete", async (req, res) => {
+    try {
+      console.log("🗑️ SIMPLE DELETE: Starting direct house deletion");
+      
+      // Import required modules
+      const { db } = await import("./db");
+      const { houses, scholars, pointEntries } = await import("@shared/schema");
+      const { eq, notInArray } = await import("drizzle-orm");
+      
+      // Correct house IDs
+      const correctHouseIds = ['tesla', 'drew', 'marshall', 'johnson', 'west'];
+      
+      // Get current houses
+      const allHouses = await db.select().from(houses);
+      const incorrectHouses = allHouses.filter(h => !correctHouseIds.includes(h.id));
+      
+      console.log("🔍 BEFORE DELETE:", {
+        totalHouses: allHouses.length,
+        incorrectHouses: incorrectHouses.length,
+        incorrectNames: incorrectHouses.map(h => h.name)
+      });
+      
+      let deletedCount = 0;
+      
+      // Delete each incorrect house
+      for (const house of incorrectHouses) {
+        try {
+          console.log(`🗑️ Deleting house: ${house.name} (${house.id})`);
+          
+          // Delete point entries for this house
+          await db.delete(pointEntries).where(eq(pointEntries.houseId, house.id));
+          
+          // Update scholars to remove house assignment
+          await db.update(scholars)
+            .set({ houseId: null })
+            .where(eq(scholars.houseId, house.id));
+          
+          // Delete the house
+          await db.delete(houses).where(eq(houses.id, house.id));
+          
+          deletedCount++;
+          console.log(`   ✅ Successfully deleted: ${house.name}`);
+        } catch (error) {
+          console.log(`   ❌ Failed to delete ${house.name}:`, error);
+        }
+      }
+      
+      // Verify final state
+      const finalHouses = await db.select().from(houses);
+      
+      console.log("✅ AFTER DELETE:", {
+        finalHouseCount: finalHouses.length,
+        finalHouseNames: finalHouses.map(h => h.name),
+        deletedCount: deletedCount
+      });
+      
+      res.json({
+        success: true,
+        message: "Simple house deletion completed",
+        deletedCount: deletedCount,
+        remainingHouses: finalHouses.length,
+        remainingHouseNames: finalHouses.map(h => h.name),
+        isFixed: finalHouses.length === 5
+      });
+      
+    } catch (error) {
+      console.error("🗑️ SIMPLE DELETE ERROR:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Simple house deletion failed",
+        error: error.message 
+      });
+    }
+  });
+
   // 🔍 VERIFY DATABASE HOUSES - See what's actually in the database
   app.get("/api/admin/verify-houses", async (req, res) => {
     try {

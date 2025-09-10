@@ -6018,6 +6018,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🚨 NUCLEAR HOUSE CLEANUP - Complete house system reset
+  app.post("/api/admin/nuclear-house-cleanup", async (req, res) => {
+    try {
+      console.log("🚨 NUCLEAR HOUSE CLEANUP: Starting complete house system reset");
+      
+      // Only allow in production deployment or emergency
+      const isEmergency = req.query.emergency === "true";
+      const allowCleanup = process.env.NODE_ENV === "production" || isEmergency || process.env.REPL_ID;
+      
+      if (!allowCleanup) {
+        return res.status(403).json({ message: "Nuclear cleanup only allowed in production or emergency mode" });
+      }
+
+      // Define the 5 correct houses ONLY
+      const correctHouses = [
+        { id: "tesla", name: "Tesla", color: "#7c3aed" },
+        { id: "drew", name: "Drew", color: "#dc2626" }, 
+        { id: "marshall", name: "Marshall", color: "#059669" },
+        { id: "johnson", name: "Johnson", color: "#d97706" },
+        { id: "west", name: "West", color: "#0284c7" }
+      ];
+
+      // STEP 1: Get all existing data
+      const allScholars = await storage.getAllScholars();
+      const allHouses = await storage.getAllHouses();
+      
+      console.log("🔍 BEFORE CLEANUP:", {
+        totalScholars: allScholars.length,
+        totalHouses: allHouses.length,
+        houseNames: allHouses.map(h => h.name)
+      });
+
+      // STEP 2: Delete ALL existing houses (this cascades to point entries)
+      console.log("🗑️ STEP 2: Deleting ALL existing houses");
+      for (const house of allHouses) {
+        try {
+          await storage.deleteHouse(house.id);
+          console.log(`   ✅ Deleted house: ${house.name}`);
+        } catch (error) {
+          console.log(`   ⚠️ Error deleting house ${house.name}:`, error);
+        }
+      }
+
+      // STEP 3: Create the 5 correct houses ONLY
+      console.log("🏠 STEP 3: Creating 5 correct houses");
+      for (const house of correctHouses) {
+        try {
+          await storage.createHouse(house);
+          console.log(`   ✅ Created house: ${house.name}`);
+        } catch (error) {
+          console.log(`   ⚠️ Error creating house ${house.name}:`, error);
+        }
+      }
+
+      // STEP 4: Randomly reassign ALL scholars to the 5 correct houses
+      console.log("👥 STEP 4: Reassigning all scholars to correct houses");
+      let reassignedCount = 0;
+      
+      for (const scholar of allScholars) {
+        try {
+          // Random house assignment
+          const randomHouse = correctHouses[Math.floor(Math.random() * correctHouses.length)];
+          await storage.updateScholar(scholar.id, { 
+            houseId: randomHouse.id 
+          });
+          console.log(`   ✅ Scholar ${scholar.firstName} ${scholar.lastName} → ${randomHouse.name}`);
+          reassignedCount++;
+        } catch (error) {
+          console.log(`   ⚠️ Error reassigning scholar ${scholar.firstName}:`, error);
+        }
+      }
+
+      // STEP 5: Verification
+      const finalHouses = await storage.getAllHouses();
+      const finalScholars = await storage.getAllScholars();
+      
+      console.log("✅ AFTER CLEANUP:", {
+        totalHouses: finalHouses.length,
+        houseNames: finalHouses.map(h => h.name),
+        scholarsReassigned: reassignedCount,
+        totalScholars: finalScholars.length
+      });
+
+      // Verify we have exactly 5 houses
+      const hasCorrectHouses = finalHouses.length === 5 && 
+        correctHouses.every(correctHouse => 
+          finalHouses.some(finalHouse => finalHouse.id === correctHouse.id)
+        );
+
+      if (hasCorrectHouses) {
+        console.log("🎯 NUCLEAR CLEANUP SUCCESS: Exactly 5 correct houses exist");
+        res.json({
+          success: true,
+          message: "Nuclear house cleanup completed successfully",
+          action: "complete_reset",
+          housesDeleted: allHouses.length,
+          housesCreated: correctHouses.length,
+          scholarsReassigned: reassignedCount,
+          finalHouses: finalHouses.map(h => ({ id: h.id, name: h.name })),
+          verification: "✅ ONLY 5 CORRECT HOUSES EXIST"
+        });
+      } else {
+        console.log("❌ NUCLEAR CLEANUP FAILED: Incorrect house count");
+        res.status(500).json({
+          success: false,
+          message: "Nuclear cleanup failed - house verification error",
+          finalHouseCount: finalHouses.length,
+          finalHouses: finalHouses.map(h => ({ id: h.id, name: h.name }))
+        });
+      }
+
+    } catch (error) {
+      console.error("🚨 NUCLEAR CLEANUP ERROR:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Nuclear house cleanup failed",
+        error: error.message 
+      });
+    }
+  });
+
 
 
   const httpServer = createServer(app);

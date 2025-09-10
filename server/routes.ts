@@ -6031,21 +6031,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // 🚀 ULTIMATE NUCLEAR FIX - Constraint-proof database rebuild
+  // 🛡️ PERMISSION-SAFE NUCLEAR FIX - Works within database constraints
   app.get("/api/admin/simple-nuclear-fix", async (req, res) => {
     try {
-      console.log("🚀 ULTIMATE NUCLEAR FIX: Starting constraint-proof rebuild");
+      console.log("🛡️ PERMISSION-SAFE NUCLEAR FIX: Starting database rebuild");
       
-      const { ultimateNuclearFix } = await import("./ultimate-nuclear-fix");
-      const result = await ultimateNuclearFix();
+      const { permissionSafeNuclearFix } = await import("./permission-safe-nuclear-fix");
+      const result = await permissionSafeNuclearFix();
       
-      console.log("🚀 ULTIMATE NUCLEAR FIX: Complete!", result);
+      console.log("🛡️ PERMISSION-SAFE NUCLEAR FIX: Complete!", result);
       res.json(result);
     } catch (error) {
-      console.error("🚀 ULTIMATE NUCLEAR FIX: Error:", error);
+      console.error("🛡️ PERMISSION-SAFE NUCLEAR FIX: Error:", error);
       res.status(500).json({ 
         success: false, 
-        message: "Ultimate nuclear fix failed",
+        message: "Permission-safe nuclear fix failed",
         error: error.message 
       });
     }

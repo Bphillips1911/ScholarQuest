@@ -36,7 +36,9 @@ export async function nuclearDeploymentFix() {
       { 
         id: "tesla", 
         name: "Tesla", 
-        color: "#7c3aed", 
+        color: "#7c3aed",
+        icon: "⚡",
+        motto: "Innovation and Discovery",
         academicPoints: 36, 
         attendancePoints: 18, 
         behaviorPoints: 22, 
@@ -45,7 +47,9 @@ export async function nuclearDeploymentFix() {
       { 
         id: "drew", 
         name: "Drew", 
-        color: "#dc2626", 
+        color: "#dc2626",
+        icon: "🏥", 
+        motto: "Healing and Compassion",
         academicPoints: 20, 
         attendancePoints: 44, 
         behaviorPoints: 4, 
@@ -54,7 +58,9 @@ export async function nuclearDeploymentFix() {
       { 
         id: "marshall", 
         name: "Marshall", 
-        color: "#059669", 
+        color: "#059669",
+        icon: "⚖️",
+        motto: "Justice and Equality",
         academicPoints: 0, 
         attendancePoints: 14, 
         behaviorPoints: -4, 
@@ -63,7 +69,9 @@ export async function nuclearDeploymentFix() {
       { 
         id: "johnson", 
         name: "Johnson", 
-        color: "#d97706", 
+        color: "#d97706",
+        icon: "🧮",
+        motto: "Knowledge and Calculation",
         academicPoints: 0, 
         attendancePoints: 0, 
         behaviorPoints: 0, 
@@ -72,7 +80,9 @@ export async function nuclearDeploymentFix() {
       { 
         id: "west", 
         name: "West", 
-        color: "#0284c7", 
+        color: "#0284c7",
+        icon: "🌟",
+        motto: "Leadership and Excellence", 
         academicPoints: 0, 
         attendancePoints: 0, 
         behaviorPoints: 0, 
@@ -109,7 +119,7 @@ export async function nuclearDeploymentFix() {
     for (const cred of studentCredentials) {
       const hashedPassword = await bcrypt.hash(cred.password, 10);
       await db.update(scholars)
-        .set({ hashedPassword })
+        .set({ passwordHash: hashedPassword })
         .where(eq(scholars.username, cred.username));
       console.log(`   🔐 NUCLEAR: Fixed student ${cred.username}`);
     }
@@ -134,7 +144,7 @@ export async function nuclearDeploymentFix() {
     
     // Update ALL teacher passwords
     const teacherPassword = await bcrypt.hash("BHSATeacher2025!", 10);
-    await db.update(teachers).set({ hashedPassword: teacherPassword });
+    await db.update(teachers).set({ password: teacherPassword });
     console.log("   🔐 NUCLEAR: All teacher passwords updated");
     
     // Step 5: REDISTRIBUTE STUDENTS EVENLY

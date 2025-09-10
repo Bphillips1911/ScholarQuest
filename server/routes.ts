@@ -6026,7 +6026,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: "Deployment endpoint is working!",
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
-      replId: process.env.REPL_ID
+      replId: process.env.REPL_ID,
+      note: "You are accessing the PREVIEW environment, not your deployment!"
     });
   });
 

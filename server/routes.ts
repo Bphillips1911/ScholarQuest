@@ -6018,6 +6018,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 💥 NUCLEAR DEPLOYMENT FIX - The ultimate solution
+  app.post("/api/admin/nuclear-deployment-fix", async (req, res) => {
+    try {
+      console.log("💥 NUCLEAR DEPLOYMENT FIX: Starting complete database reset");
+      
+      const { nuclearDeploymentFix } = await import("./nuclear-deployment-fix");
+      const result = await nuclearDeploymentFix();
+      
+      res.json(result);
+      
+    } catch (error) {
+      console.error("💥 NUCLEAR DEPLOYMENT FIX ERROR:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Nuclear deployment fix failed",
+        error: error.message 
+      });
+    }
+  });
+
   // 🔄 DEPLOYMENT SYNC FIX - Complete database synchronization
   app.post("/api/admin/deployment-sync-fix", async (req, res) => {
     try {

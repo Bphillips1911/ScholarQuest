@@ -315,8 +315,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Make broadcastUpdate available globally
   (global as any).broadcastUpdate = broadcastUpdate;
   // Get all houses with standings
-  app.get("/api/houses", async (_req, res) => {
+  app.get("/api/houses", async (req, res) => {
     try {
+      // Check if emergency fix is requested
+      const emergencyFix = req.query.emergencyFix === 'true';
+      
+      if (emergencyFix) {
+        console.log("🚨 EMERGENCY HOUSE FIX: Starting immediate cleanup...");
+        
+        try {
+          // Direct SQL to delete all old houses
+          await db.execute(sql`DELETE FROM houses`);
+          console.log("🗑️ EMERGENCY: Deleted all existing houses");
+          
+          // Insert the 5 correct houses
+          await db.execute(sql`
+            INSERT INTO houses (id, name, color, points) VALUES 
+            ('tesla', 'Tesla', '#7c3aed', 0),
+            ('drew', 'Drew', '#dc2626', 0),
+            ('marshall', 'Marshall', '#059669', 0),
+            ('johnson', 'Johnson', '#d97706', 0),
+            ('west', 'West', '#7c2d12', 0)
+          `);
+          console.log("✅ EMERGENCY: Inserted 5 correct houses");
+          
+          return res.json({
+            success: true,
+            message: "Emergency house fix completed - all old houses removed, 5 correct houses created",
+            action: "emergency_replacement",
+            houses: ["Tesla", "Drew", "Marshall", "Johnson", "West"]
+          });
+          
+        } catch (error: any) {
+          console.log("❌ EMERGENCY: SQL fix failed:", error.message);
+          return res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            message: "Emergency fix failed"
+          });
+        }
+      }
+      
       console.log("HOUSES: Attempting to fetch house standings...");
       const houses = await storage.getHouseStandings();
       console.log("HOUSES: Successfully fetched", houses.length, "houses");

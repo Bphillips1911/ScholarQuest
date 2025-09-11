@@ -6100,7 +6100,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 🚀 COMPREHENSIVE SYSTEM POPULATION - Fix all missing data
+  // 🚨 EMERGENCY CREDENTIAL FIX - Fix all broken logins FIRST
+  app.get("/api/admin/emergency-credential-fix", async (req, res) => {
+    try {
+      console.log("🚨 EMERGENCY CREDENTIAL FIX: Fixing all broken login credentials");
+      
+      const { emergencyCredentialFix } = await import("./emergency-credential-fix");
+      const result = await emergencyCredentialFix();
+      
+      console.log("🚨 EMERGENCY CREDENTIAL FIX: Complete!", result);
+      res.json(result);
+    } catch (error) {
+      console.error("🚨 EMERGENCY CREDENTIAL FIX: Error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Emergency credential fix failed",
+        error: error.message 
+      });
+    }
+  });
+
+  // 🚀 COMPREHENSIVE SYSTEM POPULATION - Fix all missing data  
   app.get("/api/admin/populate-system", async (req, res) => {
     try {
       console.log("🚀 COMPREHENSIVE POPULATION: Starting full system data population");

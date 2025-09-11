@@ -496,7 +496,7 @@ export class MemStorage implements IStorage {
       // Administration and Counselor
       { name: "Dr. Phillips", email: "principal@bhsteam.edu", role: "Administration", subject: "Principal", canSeeGrades: [6, 7, 8] },
       { name: "Dr. Stewart", email: "vp@bhsteam.edu", role: "Administration", subject: "Assistant Principal", canSeeGrades: [6, 7, 8] },
-      { name: "Counselor Kirkland", email: "counselor@bhsteam.edu", role: "Counselor", subject: "School Counselor", canSeeGrades: [6, 7, 8] },
+      { name: "Sharon Blanding-Glass", email: "sharon.blanding@bhsteam.edu", role: "Counselor", subject: "School Counselor", canSeeGrades: [6, 7, 8] },
     ];
 
     for (const teacher of sampleTeachers) {

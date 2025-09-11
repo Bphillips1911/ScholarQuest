@@ -41,9 +41,14 @@ export async function finalDeploymentReset() {
     
     console.log("   💥 ALL TABLES TRUNCATED SAFELY");
     
-    // Step 2: Insert exactly 5 houses using raw SQL for maximum compatibility
-    console.log("🏠 FINAL RESET: Creating exactly 5 houses...");
+    // Step 2: Use UPSERT to handle existing houses safely
+    console.log("🏠 FINAL RESET: Creating exactly 5 houses with UPSERT...");
     
+    // Delete ALL houses first to ensure clean slate
+    await db.execute(sql`DELETE FROM houses`);
+    console.log("   🗑️ All existing houses deleted");
+    
+    // Insert exactly 5 houses
     await db.execute(sql`
       INSERT INTO houses (id, name, color, icon, motto, academic_points, attendance_points, behavior_points, bhsa_mustang_traits_points, member_count) VALUES
       ('tesla', 'Tesla', '#7c3aed', '⚡', 'Innovation and Discovery', 36, 18, 22, 0, 1),
@@ -53,10 +58,14 @@ export async function finalDeploymentReset() {
       ('west', 'West', '#0284c7', '🌟', 'Leadership and Excellence', 0, 0, 0, 0, 1)
     `);
     
-    console.log("   ✅ FINAL RESET: 5 houses created");
+    console.log("   ✅ FINAL RESET: 5 houses created successfully");
     
     // Step 3: Create essential students with working credentials
     console.log("👥 FINAL RESET: Creating essential students...");
+    
+    // Delete all existing students first
+    await db.execute(sql`DELETE FROM scholars`);
+    console.log("   🗑️ All existing students deleted");
     
     const studentPasswordHash = await bcrypt.hash("student123", 10);
     
@@ -69,10 +78,14 @@ export async function finalDeploymentReset() {
       ('sarah-student-005', 'Sarah Grade Six', 'SG005', 'west', 6, 0, 0, 0, 0, true, 'sargra601', ${studentPasswordHash}, true, NOW())
     `);
     
-    console.log("   ✅ FINAL RESET: 5 students created");
+    console.log("   ✅ FINAL RESET: 5 students created successfully");
     
     // Step 4: Create essential parents with working credentials
     console.log("👨‍👩‍👧‍👦 FINAL RESET: Creating essential parents...");
+    
+    // Delete all existing parents first
+    await db.execute(sql`DELETE FROM parents`);
+    console.log("   🗑️ All existing parents deleted");
     
     const parentPasswordHash = await bcrypt.hash("parent123", 10);
     
@@ -83,10 +96,14 @@ export async function finalDeploymentReset() {
       ('demo-parent-003', 'demoparent@yahoo.com', ${parentPasswordHash}, 'Demo', 'Parent', NULL, 'en', ARRAY['michael-student-003'], true, NOW())
     `);
     
-    console.log("   ✅ FINAL RESET: 3 parents created");
+    console.log("   ✅ FINAL RESET: 3 parents created successfully");
     
     // Step 5: Create essential teachers with working credentials
     console.log("👨‍🏫 FINAL RESET: Creating essential teachers...");
+    
+    // Delete all existing teachers first
+    await db.execute(sql`DELETE FROM teachers`);
+    console.log("   🗑️ All existing teachers deleted");
     
     const teacherPasswordHash = await bcrypt.hash("BHSATeacher2025!", 10);
     
@@ -99,10 +116,14 @@ export async function finalDeploymentReset() {
       ('john-teacher-005', 'John Christopher', 'john.christopher@bhsa.edu', ${teacherPasswordHash}, 'Administration', NULL, ARRAY[6,7,8], NOW())
     `);
     
-    console.log("   ✅ FINAL RESET: 5 teachers created");
+    console.log("   ✅ FINAL RESET: 5 teachers created successfully");
     
     // Step 6: Create system administrator
     console.log("👑 FINAL RESET: Creating system administrator...");
+    
+    // Delete all existing administrators first
+    await db.execute(sql`DELETE FROM administrators`);
+    console.log("   🗑️ All existing administrators deleted");
     
     const adminPasswordHash = await bcrypt.hash("BHSAAdmin2025!", 10);
     
@@ -111,7 +132,7 @@ export async function finalDeploymentReset() {
       ('system-admin-001', 'admin@bhsa.edu', ${adminPasswordHash}, 'Principal', 'System Administrator', true, NOW())
     `);
     
-    console.log("   ✅ FINAL RESET: System administrator created");
+    console.log("   ✅ FINAL RESET: System administrator created successfully");
     
     // Step 7: Final verification
     console.log("✅ FINAL RESET: Verifying reset...");

@@ -133,7 +133,7 @@ export default function AdminLogin() {
             <div className="text-sm text-blue-700 space-y-1">
               <p><strong>Principal:</strong> dr.phillips@bhsteam.edu</p>
               <p><strong>Assistant Principal:</strong> dr.stewart@bhsteam.edu</p>
-              <p><strong>Counselor:</strong> counselor.kirkland@bhsteam.edu</p>
+              <p><strong>Counselor:</strong> sharon.blanding@bhsteam.edu</p>
               <p className="text-xs mt-2 text-blue-600">
                 Default password: BHSAAdmin2025! (Change after first login)
               </p>

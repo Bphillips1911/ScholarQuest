@@ -51,7 +51,7 @@ export default function Tutorial() {
               <div className="bg-white p-3 rounded border-l-4 border-purple-500 font-mono text-sm">
                 <strong>Principal:</strong> dr.phillips@bhsteam.edu<br/>
                 <strong>Assistant Principal:</strong> dr.stewart@bhsteam.edu<br/>
-                <strong>Counselor:</strong> counselor.kirkland@bhsteam.edu<br/>
+                <strong>Counselor:</strong> sharon.blanding@bhsteam.edu<br/>
                 <strong>Password:</strong> BHSAAdmin2025!
               </div>
             </div>

@@ -31,7 +31,7 @@ This comprehensive tutorial demonstrates how to use the Bush Hills STEAM Academy
 2. Enter credentials:
    - Principal: dr.phillips@bhsteam.edu
    - Assistant Principal: dr.stewart@bhsteam.edu  
-   - Counselor: counselor.kirkland@bhsteam.edu
+   - Counselor: sharon.blanding@bhsteam.edu
    - Password: BHSAAdmin2025!
 
 **Admin Dashboard Tour:**

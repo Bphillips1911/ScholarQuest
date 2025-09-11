@@ -22,7 +22,7 @@ The application is currently running and accessible through your Replit environm
 #### Administrator Access
 - **Principal**: `dr.phillips@bhsteam.edu`
 - **Assistant Principal**: `dr.stewart@bhsteam.edu`  
-- **Counselor**: `counselor.kirkland@bhsteam.edu`
+- **Counselor**: `sharon.blanding@bhsteam.edu`
 - **Password**: `BHSAAdmin2025!`
 
 ### 📋 Tutorial Demonstration Flow

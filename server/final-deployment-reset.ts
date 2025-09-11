@@ -8,27 +8,36 @@
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { ensureSchema } from "./schema-bootstrap";
 
 export async function finalDeploymentReset() {
   console.log("🔧 FINAL DEPLOYMENT RESET: Starting comprehensive database reset");
   
   try {
-    // Step 1: Use TRUNCATE which resets everything safely
+    // Step 0: Ensure all tables exist first
+    console.log("🔧 FINAL RESET: Ensuring database schema exists...");
+    await ensureSchema(db);
+    console.log("   ✅ Schema ensured, proceeding with reset");
+    
+    // Step 1: Use TRUNCATE which resets everything safely (with safety checks)
     console.log("🗑️ FINAL RESET: Truncating all tables safely...");
     
     // Truncate with CASCADE to handle all foreign key relationships
-    await db.execute(sql`TRUNCATE TABLE pbis_entries CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE point_entries CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE parent_teacher_messages CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE scholar_badges CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE game_sessions CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE game_access CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE reflections CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE scholars CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE houses CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE parents CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE teachers CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE administrators CASCADE`);
+    // Using safety checks for deployment environments that might be partially set up
+    const tablesToTruncate = [
+      'pbis_entries', 'point_entries', 'parent_teacher_messages', 'scholar_badges',
+      'game_sessions', 'game_access', 'reflections', 'scholars', 'houses', 
+      'parents', 'teachers', 'administrators'
+    ];
+    
+    for (const tableName of tablesToTruncate) {
+      try {
+        await db.execute(sql.raw(`TRUNCATE TABLE IF EXISTS ${tableName} CASCADE`));
+        console.log(`   ✅ ${tableName} truncated`);
+      } catch (error) {
+        console.log(`   ⚠️ ${tableName} truncate skipped (table may not exist)`);
+      }
+    }
     
     console.log("   💥 ALL TABLES TRUNCATED SAFELY");
     

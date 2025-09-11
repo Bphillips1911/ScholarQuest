@@ -6031,6 +6031,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // 📊 DATABASE STATUS - Check which tables exist
+  app.get("/api/admin/db-status", async (req, res) => {
+    try {
+      console.log("📊 DATABASE STATUS: Checking database state...");
+      
+      const tableCheck = await storage.db.execute(sql`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        ORDER BY table_name
+      `);
+      
+      const tables = tableCheck.rows.map(row => row.table_name);
+      
+      // Check row counts for existing tables
+      const rowCounts = {};
+      const requiredTables = ['houses', 'scholars', 'parents', 'teachers', 'administrators'];
+      
+      for (const tableName of requiredTables) {
+        try {
+          const countResult = await storage.db.execute(sql.raw(`SELECT COUNT(*) as count FROM ${tableName}`));
+          rowCounts[tableName] = countResult.rows[0].count;
+        } catch (error) {
+          rowCounts[tableName] = 'TABLE_NOT_EXISTS';
+        }
+      }
+      
+      const status = {
+        success: true,
+        tablesFound: tables.length,
+        tableNames: tables,
+        rowCounts: rowCounts,
+        hasRequiredTables: requiredTables.every(table => tables.includes(table)),
+        missingTables: requiredTables.filter(table => !tables.includes(table)),
+        isReady: tables.length >= 13 && requiredTables.every(table => tables.includes(table))
+      };
+      
+      console.log("📊 DATABASE STATUS:", status);
+      res.json(status);
+    } catch (error) {
+      console.error("📊 DATABASE STATUS ERROR:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Database status check failed",
+        error: error.message 
+      });
+    }
+  });
+
   // 🔧 FINAL DEPLOYMENT RESET - Guaranteed to work
   app.get("/api/admin/simple-nuclear-fix", async (req, res) => {
     try {

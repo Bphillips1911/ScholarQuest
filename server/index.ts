@@ -64,6 +64,23 @@ app.use((req, res, next) => {
       
       log("DEPLOYMENT: Database connection established successfully");
       
+      // CRITICAL: Ensure database schema exists before any operations
+      try {
+        log("STARTUP: Ensuring database schema exists...");
+        const { ensureSchema } = await import("./schema-bootstrap");
+        const { db } = await import("./db");
+        await ensureSchema(db);
+        log("STARTUP: Database schema bootstrap completed successfully");
+      } catch (schemaError) {
+        log("STARTUP: Schema bootstrap error:", schemaError.message);
+        
+        if (isProduction) {
+          console.error('DEPLOYMENT: Critical schema error - application cannot start without tables');
+          process.exit(1);
+        }
+        throw new Error(`Schema bootstrap failed: ${schemaError.message}`);
+      }
+      
       // Deployment debugging and data synchronization
       try {
         const { debugDeploymentEnvironment } = await import("./deployment-debug");

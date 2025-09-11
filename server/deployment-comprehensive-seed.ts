@@ -127,7 +127,7 @@ async function seedHouses() {
       memberCount: 0,
     },
     {
-      id: "curie",
+      id: "drew",
       name: "Drew",
       color: "#dc2626", // Red
       icon: "🧪",
@@ -139,7 +139,7 @@ async function seedHouses() {
       memberCount: 0,
     },
     {
-      id: "nobel",
+      id: "marshall",
       name: "Marshall",
       color: "#059669", // Green
       icon: "⚖️",
@@ -151,7 +151,7 @@ async function seedHouses() {
       memberCount: 0,
     },
     {
-      id: "franklin",
+      id: "johnson",
       name: "Johnson",
       color: "#1e40af", // Blue
       icon: "🔬",
@@ -163,7 +163,7 @@ async function seedHouses() {
       memberCount: 6,
     },
     {
-      id: "lovelace",
+      id: "west",
       name: "West",
       color: "#ea580c", // Orange
       icon: "🧭",

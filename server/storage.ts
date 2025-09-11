@@ -1387,9 +1387,9 @@ export class MemStorage implements IStorage {
         permissions: ["view_all", "manage_teachers", "manage_students", "manage_houses", "view_reports"]
       },
       {
-        email: "counselor.kirkland@bhsteam.edu",
-        firstName: "Counselor",
-        lastName: "Kirkland",
+        email: "sharon.blanding@bhsteam.edu",
+        firstName: "Sharon",
+        lastName: "Blanding-Glass",
         title: "Counselor",
         password: defaultPassword,
         permissions: ["view_all", "manage_students", "view_reports"]

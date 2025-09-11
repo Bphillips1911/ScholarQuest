@@ -52,7 +52,7 @@ const gradeTeachers = {
     { name: "Dr. Stewart", subject: "Assistant Principal" },
   ],
   "Counselor": [
-    { name: "Counselor Kirkland", subject: "School Counselor" },
+    { name: "Sharon Blanding-Glass", subject: "School Counselor" },
   ],
 };
 

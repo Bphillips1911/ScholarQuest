@@ -6120,6 +6120,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🔧 COMPREHENSIVE FIX - Fix ALL system issues
+  app.get("/api/admin/comprehensive-fix", async (req, res) => {
+    try {
+      console.log("🔧 COMPREHENSIVE FIX: Starting complete system repair");
+      
+      const { comprehensiveFix } = await import("./comprehensive-fix");
+      const result = await comprehensiveFix();
+      
+      console.log("🔧 COMPREHENSIVE FIX: Complete!", result);
+      res.json(result);
+    } catch (error) {
+      console.error("🔧 COMPREHENSIVE FIX: Error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Comprehensive system fix failed",
+        error: error.message 
+      });
+    }
+  });
+
   // 🚀 COMPREHENSIVE SYSTEM POPULATION - Fix all missing data  
   app.get("/api/admin/populate-system", async (req, res) => {
     try {

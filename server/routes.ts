@@ -6100,6 +6100,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🚀 COMPREHENSIVE SYSTEM POPULATION - Fix all missing data
+  app.get("/api/admin/populate-system", async (req, res) => {
+    try {
+      console.log("🚀 COMPREHENSIVE POPULATION: Starting full system data population");
+      
+      const { comprehensiveSystemPopulation } = await import("./comprehensive-system-population");
+      const result = await comprehensiveSystemPopulation();
+      
+      console.log("🚀 COMPREHENSIVE POPULATION: Complete!", result);
+      res.json(result);
+    } catch (error) {
+      console.error("🚀 COMPREHENSIVE POPULATION: Error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Comprehensive system population failed",
+        error: error.message 
+      });
+    }
+  });
+
   // 💥 NUCLEAR DEPLOYMENT FIX - The ultimate solution
   app.post("/api/admin/nuclear-deployment-fix", async (req, res) => {
     try {

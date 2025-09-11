@@ -337,9 +337,9 @@ export class MemStorage implements IStorage {
   private initializeHouses() {
     const initialHouses: House[] = [
       {
-        id: "franklin",
-        name: "House of Franklin",
-        color: "#DC2626",
+        id: "tesla",
+        name: "Tesla",
+        color: "#7c3aed",
         icon: "mustang",
         motto: "Leadership • Innovation • Integrity",
         academicPoints: 0,
@@ -348,9 +348,9 @@ export class MemStorage implements IStorage {
         memberCount: 0,
       },
       {
-        id: "courie",
-        name: "House of Courie",
-        color: "#7C3AED",
+        id: "drew",
+        name: "Drew",
+        color: "#ef4444",
         icon: "🦅",
         motto: "Courage • Determination • Excellence",
         academicPoints: 0,
@@ -360,8 +360,8 @@ export class MemStorage implements IStorage {
       },
       {
         id: "west",
-        name: "House of West",
-        color: "#059669",
+        name: "West",
+        color: "#f97316",
         icon: "leaf",
         motto: "Growth • Wisdom • Collaboration",
         academicPoints: 0,
@@ -370,9 +370,9 @@ export class MemStorage implements IStorage {
         memberCount: 0,
       },
       {
-        id: "blackwell",
-        name: "House of Blackwell",
-        color: "#1F2937",
+        id: "marshall",
+        name: "Marshall",
+        color: "#10b981",
         icon: "mountain",
         motto: "Strength • Perseverance • Honor",
         academicPoints: 0,
@@ -381,9 +381,9 @@ export class MemStorage implements IStorage {
         memberCount: 0,
       },
       {
-        id: "berruguete",
-        name: "House of Berruguete",
-        color: "#EA580C",
+        id: "johnson",
+        name: "Johnson",
+        color: "#3b82f6",
         icon: "lion",
         motto: "Creativity • Passion • Innovation",
         academicPoints: 0,

@@ -19,34 +19,38 @@ export async function finalDeploymentReset() {
     await ensureSchema(db);
     console.log("   ✅ Schema ensured, proceeding with reset");
     
-    // Step 1: Use TRUNCATE which resets everything safely (with safety checks)
-    console.log("🗑️ FINAL RESET: Truncating all tables safely...");
+    // Step 1: Delete all data in correct order (dependent tables first)
+    console.log("🗑️ FINAL RESET: Deleting all data in correct foreign key order...");
     
-    // Truncate with CASCADE to handle all foreign key relationships
-    // Using safety checks for deployment environments that might be partially set up
-    const tablesToTruncate = [
-      'pbis_entries', 'point_entries', 'parent_teacher_messages', 'scholar_badges',
-      'game_sessions', 'game_access', 'reflections', 'scholars', 'houses', 
-      'parents', 'teachers', 'administrators'
+    // Delete dependent tables first (children before parents)
+    const deleteOrder = [
+      'pbis_entries',
+      'point_entries', 
+      'parent_teacher_messages',
+      'scholar_badges',
+      'game_sessions',
+      'game_access', 
+      'reflections',
+      'scholars',          // Delete scholars before houses (they reference houses)
+      'parents',           // Delete parents (no dependencies on houses)
+      'teachers',          // Delete teachers (no dependencies on houses)
+      'administrators',    // Delete administrators (no dependencies on houses)
+      'houses'             // Delete houses LAST (after all dependent data is gone)
     ];
     
-    for (const tableName of tablesToTruncate) {
+    for (const tableName of deleteOrder) {
       try {
-        await db.execute(sql.raw(`TRUNCATE TABLE IF EXISTS ${tableName} CASCADE`));
-        console.log(`   ✅ ${tableName} truncated`);
+        const result = await db.execute(sql.raw(`DELETE FROM ${tableName}`));
+        console.log(`   🗑️ ${tableName} cleared`);
       } catch (error) {
-        console.log(`   ⚠️ ${tableName} truncate skipped (table may not exist)`);
+        console.log(`   ⚠️ ${tableName} delete skipped: ${error.message}`);
       }
     }
     
-    console.log("   💥 ALL TABLES TRUNCATED SAFELY");
+    console.log("   💥 ALL DATA DELETED IN SAFE ORDER");
     
-    // Step 2: Use UPSERT to handle existing houses safely
-    console.log("🏠 FINAL RESET: Creating exactly 5 houses with UPSERT...");
-    
-    // Delete ALL houses first to ensure clean slate
-    await db.execute(sql`DELETE FROM houses`);
-    console.log("   🗑️ All existing houses deleted");
+    // Step 2: Create exactly 5 houses
+    console.log("🏠 FINAL RESET: Creating exactly 5 houses...");
     
     // Insert exactly 5 houses
     await db.execute(sql`
@@ -62,10 +66,6 @@ export async function finalDeploymentReset() {
     
     // Step 3: Create essential students with working credentials
     console.log("👥 FINAL RESET: Creating essential students...");
-    
-    // Delete all existing students first
-    await db.execute(sql`DELETE FROM scholars`);
-    console.log("   🗑️ All existing students deleted");
     
     const studentPasswordHash = await bcrypt.hash("student123", 10);
     
@@ -83,10 +83,6 @@ export async function finalDeploymentReset() {
     // Step 4: Create essential parents with working credentials
     console.log("👨‍👩‍👧‍👦 FINAL RESET: Creating essential parents...");
     
-    // Delete all existing parents first
-    await db.execute(sql`DELETE FROM parents`);
-    console.log("   🗑️ All existing parents deleted");
-    
     const parentPasswordHash = await bcrypt.hash("parent123", 10);
     
     await db.execute(sql`
@@ -100,10 +96,6 @@ export async function finalDeploymentReset() {
     
     // Step 5: Create essential teachers with working credentials
     console.log("👨‍🏫 FINAL RESET: Creating essential teachers...");
-    
-    // Delete all existing teachers first
-    await db.execute(sql`DELETE FROM teachers`);
-    console.log("   🗑️ All existing teachers deleted");
     
     const teacherPasswordHash = await bcrypt.hash("BHSATeacher2025!", 10);
     
@@ -120,10 +112,6 @@ export async function finalDeploymentReset() {
     
     // Step 6: Create system administrator
     console.log("👑 FINAL RESET: Creating system administrator...");
-    
-    // Delete all existing administrators first
-    await db.execute(sql`DELETE FROM administrators`);
-    console.log("   🗑️ All existing administrators deleted");
     
     const adminPasswordHash = await bcrypt.hash("BHSAAdmin2025!", 10);
     

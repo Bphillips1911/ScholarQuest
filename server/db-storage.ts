@@ -2073,6 +2073,169 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Trend Analytics Methods
+  async getStudentTrends(interval: 'week' | 'month', from: Date, to: Date, teacherId?: string, studentId?: string): Promise<any[]> {
+    try {
+      // Build the base query with proper joins
+      const baseQuery = db
+        .select({
+          period: interval === 'week' 
+            ? sql`date_trunc('week', ${pbisEntries.createdAt})::text`
+            : sql`date_trunc('month', ${pbisEntries.createdAt})::text`,
+          scholarId: pbisEntries.scholarId,
+          scholarName: scholars.name,
+          grade: scholars.grade,
+          houseId: scholars.houseId,
+          points: pbisEntries.points,
+          entryType: pbisEntries.entryType,
+          teacherName: pbisEntries.teacherName,
+          createdAt: pbisEntries.createdAt
+        })
+        .from(pbisEntries)
+        .innerJoin(scholars, eq(pbisEntries.scholarId, scholars.id))
+        .where(sql`${pbisEntries.createdAt} >= ${from} AND ${pbisEntries.createdAt} <= ${to}`)
+        .orderBy(pbisEntries.createdAt);
+
+      // Apply filters
+      let query = baseQuery;
+      if (teacherId) {
+        // Get teacher name to filter by
+        const teacher = await db.select().from(teacherAuth).where(eq(teacherAuth.id, teacherId)).limit(1);
+        if (teacher[0]) {
+          query = query.where(eq(pbisEntries.teacherName, teacher[0].name));
+        }
+      }
+      if (studentId) {
+        query = query.where(eq(pbisEntries.scholarId, studentId));
+      }
+
+      const results = await query;
+
+      // Group and aggregate the results
+      const grouped = new Map<string, any>();
+      
+      for (const row of results) {
+        const key = `${row.period}_${row.scholarId}`;
+        
+        if (!grouped.has(key)) {
+          const periodStart = new Date(row.period);
+          const periodEnd = new Date(periodStart);
+          if (interval === 'week') {
+            periodEnd.setDate(periodStart.getDate() + 6);
+          } else {
+            periodEnd.setMonth(periodStart.getMonth() + 1);
+            periodEnd.setDate(0);
+          }
+
+          grouped.set(key, {
+            period: row.period,
+            start: periodStart,
+            end: periodEnd,
+            studentId: row.scholarId,
+            studentName: row.scholarName,
+            grade: row.grade,
+            houseId: row.houseId,
+            positive: 0,
+            negative: 0,
+            net: 0
+          });
+        }
+        
+        const data = grouped.get(key)!;
+        if (row.entryType === 'positive') {
+          data.positive += row.points;
+        } else {
+          data.negative += row.points;
+        }
+        data.net = data.positive - data.negative;
+      }
+      
+      return Array.from(grouped.values()).sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
+    } catch (error) {
+      console.error('DatabaseStorage.getStudentTrends error:', error);
+      throw error;
+    }
+  }
+
+  async getClassroomTrends(interval: 'week' | 'month', from: Date, to: Date, teacherId?: string): Promise<any[]> {
+    try {
+      // Build the base query 
+      const baseQuery = db
+        .select({
+          period: interval === 'week' 
+            ? sql`date_trunc('week', ${pbisEntries.createdAt})::text`
+            : sql`date_trunc('month', ${pbisEntries.createdAt})::text`,
+          teacherName: pbisEntries.teacherName,
+          teacherRole: pbisEntries.teacherRole,
+          points: pbisEntries.points,
+          entryType: pbisEntries.entryType,
+          createdAt: pbisEntries.createdAt
+        })
+        .from(pbisEntries)
+        .where(sql`${pbisEntries.createdAt} >= ${from} AND ${pbisEntries.createdAt} <= ${to}`)
+        .orderBy(pbisEntries.createdAt);
+
+      // Apply teacher filter if specified
+      let query = baseQuery;
+      if (teacherId) {
+        const teacher = await db.select().from(teacherAuth).where(eq(teacherAuth.id, teacherId)).limit(1);
+        if (teacher[0]) {
+          query = query.where(eq(pbisEntries.teacherName, teacher[0].name));
+        }
+      }
+
+      const results = await query;
+
+      // Group and aggregate by period and teacher
+      const grouped = new Map<string, any>();
+      
+      for (const row of results) {
+        const key = `${row.period}_${row.teacherName}`;
+        
+        if (!grouped.has(key)) {
+          const periodStart = new Date(row.period);
+          const periodEnd = new Date(periodStart);
+          if (interval === 'week') {
+            periodEnd.setDate(periodStart.getDate() + 6);
+          } else {
+            periodEnd.setMonth(periodStart.getMonth() + 1);
+            periodEnd.setDate(0);
+          }
+
+          // Try to find teacher ID by name
+          const teacher = await db.select().from(teacherAuth).where(eq(teacherAuth.name, row.teacherName)).limit(1);
+          const teacherData = teacher[0] || { id: 'unknown', subject: 'General' };
+
+          grouped.set(key, {
+            period: row.period,
+            start: periodStart,
+            end: periodEnd,
+            teacherId: teacherData.id,
+            teacherName: row.teacherName,
+            subject: teacherData.subject || 'General',
+            grade: row.teacherRole || 'All Grades',
+            positive: 0,
+            negative: 0,
+            net: 0
+          });
+        }
+        
+        const data = grouped.get(key)!;
+        if (row.entryType === 'positive') {
+          data.positive += row.points;
+        } else {
+          data.negative += row.points;
+        }
+        data.net = data.positive - data.negative;
+      }
+      
+      return Array.from(grouped.values()).sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
+    } catch (error) {
+      console.error('DatabaseStorage.getClassroomTrends error:', error);
+      throw error;
+    }
+  }
 }
 
 // Force deployment sync - ensure latest fixes are deployed

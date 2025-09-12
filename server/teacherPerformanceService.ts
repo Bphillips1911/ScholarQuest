@@ -9,7 +9,7 @@ import {
   type TeacherPerformanceMetrics,
   type TeacherAuth
 } from '@shared/schema';
-import { eq, and, gte, lte, count, desc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, count, desc, sql, or } from 'drizzle-orm';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
 export class TeacherPerformanceService {
@@ -131,7 +131,7 @@ export class TeacherPerformanceService {
       .where(
         grades.length === 1 
           ? eq(scholars.grade, grades[0])
-          : sql`${scholars.grade} IN (${grades.join(',')})`
+          : or(...grades.map(grade => eq(scholars.grade, grade)))
       );
 
     return result[0].count;

@@ -5833,13 +5833,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authorization token required" });
       }
 
+      // Decode JWT to get admin info
+      const jwtSecret = "bhsa-admin-secret-2025-stable";
+      const decoded: any = jwt.verify(token, jwtSecret);
+      
       const adminSession = await storage.getAdminSession(token);
       
       if (!adminSession) {
         return res.status(401).json({ message: "Invalid token" });
       }
 
-      const admin = await storage.getAdminById(adminSession.adminId);
+      const admin = await storage.getAdministratorByEmail(decoded.email);
       
       // Restrict to Principal and Assistant Principal only
       if (!admin || (admin.title !== 'Principal' && admin.title !== 'Assistant Principal')) {

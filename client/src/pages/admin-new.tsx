@@ -100,6 +100,8 @@ export default function AdminNew() {
   const [showMassAwardModal, setShowMassAwardModal] = useState(false);
   const [qrCodeStudentId, setQrCodeStudentId] = useState("");
   const [selectedBadgeCategory, setSelectedBadgeCategory] = useState<string | null>(null);
+  const [selectedBadge, setSelectedBadge] = useState<any>(null);
+  const [showBadgeDetailsModal, setShowBadgeDetailsModal] = useState(false);
 
   useEffect(() => {
     console.log("AdminNew component mounted");
@@ -1406,7 +1408,15 @@ export default function AdminNew() {
                                 <Badge variant="outline">
                                   {badge.level} Level
                                 </Badge>
-                                <Button size="sm" variant="outline">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedBadge(badge);
+                                    setShowBadgeDetailsModal(true);
+                                  }}
+                                  data-testid={`button-view-details-${badge.id}`}
+                                >
                                   View Details
                                 </Button>
                               </div>
@@ -3164,6 +3174,84 @@ export default function AdminNew() {
           }}
         />
       )}
+
+      {/* Badge Details Modal */}
+      <Dialog open={showBadgeDetailsModal} onOpenChange={setShowBadgeDetailsModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Badge Details</DialogTitle>
+          </DialogHeader>
+          {selectedBadge && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-3 flex items-center justify-center rounded-full" 
+                     style={{backgroundColor: currentTheme === 'dark' ? '#374151' : currentTheme === 'light' ? '#f0fdf4' : '#ffffff', border: '2px solid #e5e7eb'}}>
+                  <Award className="w-8 h-8" style={{color: themeStyles.textPrimary}} />
+                </div>
+                <h3 className="text-lg font-semibold" style={{color: themeStyles.textPrimary}}>
+                  {selectedBadge.name}
+                </h3>
+                <Badge variant="secondary" className="mt-1">
+                  {selectedBadge.category}
+                </Badge>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>Description:</label>
+                  <p className="text-sm mt-1" style={{color: themeStyles.textSecondary}}>
+                    {selectedBadge.description}
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>Level:</label>
+                    <p className="text-sm mt-1" style={{color: themeStyles.textSecondary}}>
+                      Level {selectedBadge.level}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>Points Required:</label>
+                    <p className="text-sm mt-1" style={{color: themeStyles.textSecondary}}>
+                      {selectedBadge.pointsRequired} points
+                    </p>
+                  </div>
+                </div>
+                
+                {selectedBadge.houseId && (
+                  <div>
+                    <label className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>House:</label>
+                    <p className="text-sm mt-1 capitalize" style={{color: themeStyles.textSecondary}}>
+                      {selectedBadge.houseId}
+                    </p>
+                  </div>
+                )}
+                
+                <div>
+                  <label className="text-sm font-medium" style={{color: themeStyles.textPrimary}}>Status:</label>
+                  <p className="text-sm mt-1" style={{color: themeStyles.textSecondary}}>
+                    {selectedBadge.isActive ? 'Active' : 'Inactive'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowBadgeDetailsModal(false);
+                setSelectedBadge(null);
+              }}
+              data-testid="button-close-badge-details"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Notification Panel */}
       <NotificationPanel 

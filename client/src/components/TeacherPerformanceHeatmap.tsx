@@ -56,16 +56,84 @@ export function TeacherPerformanceHeatmap({ className }: TeacherPerformanceHeatm
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Calculate date range based on selection
+  const getDateRange = () => {
+    const endDate = new Date();
+    const startDate = subDays(endDate, parseInt(selectedDateRange));
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    };
+  };
+
   // Get performance heatmap data
-  const { data: heatmapData, isLoading, refetch } = useQuery<HeatmapData>({
-    queryKey: ['/api/admin/performance-heatmap', selectedDateRange, selectedGrade, selectedMetric],
+  const { data: rawHeatmapData, isLoading, refetch } = useQuery<any>({
+    queryKey: ['/api/admin/performance-heatmap', selectedDateRange],
+    queryFn: async () => {
+      const { startDate, endDate } = getDateRange();
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(`/api/admin/performance-heatmap?startDate=${startDate}&endDate=${endDate}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch heatmap data');
+      }
+      
+      return response.json();
+    },
     enabled: true
   });
+
+  // Transform backend data to frontend format
+  const heatmapData: HeatmapData | undefined = rawHeatmapData ? {
+    teachers: rawHeatmapData.teachers
+      ?.filter((teacher: any) => {
+        // Apply grade filter
+        if (selectedGrade !== 'all' && teacher.gradeRole !== selectedGrade) {
+          return false;
+        }
+        return true;
+      })
+      .map((teacher: any) => ({
+        teacherId: teacher.id,
+        teacherName: teacher.name,
+        grade: teacher.gradeRole,
+        effectivenessRating: teacher.avgEffectivenessRating || 0,
+        studentEngagementScore: teacher.avgStudentEngagementScore || 0,
+        pbisPointsAwarded: teacher.totalPositiveInteractions || 0,
+        parentCommunications: teacher.totalParentCommunications || 0,
+        avgResponseTime: teacher.avgResponseTime || 0,
+        totalStudentsManaged: teacher.totalStudentsManaged || 0,
+        trend: 0 // Calculate trend if needed
+      })) || [],
+    summary: rawHeatmapData.summary || {
+      averageEffectiveness: 0,
+      totalPBISPoints: 0,
+      totalCommunications: 0,
+      averageResponseTime: 0
+    }
+  } : undefined;
 
   // Calculate teacher metrics
   const calculateMetricsMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/admin/calculate-teacher-metrics', 'POST');
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch('/api/admin/calculate-teacher-metrics', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to calculate metrics');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       refetch();
@@ -83,11 +151,24 @@ export function TeacherPerformanceHeatmap({ className }: TeacherPerformanceHeatm
     }
   });
 
-  // Get top performers
-  const { data: topPerformers } = useQuery<TeacherPerformanceData[]>({
-    queryKey: ['/api/admin/top-performers', selectedMetric],
-    enabled: !!selectedMetric
-  });
+  // Calculate top performers from current data
+  const topPerformers = useMemo(() => {
+    if (!heatmapData?.teachers) return [];
+    
+    return [...heatmapData.teachers]
+      .sort((a, b) => {
+        const aValue = a[selectedMetric as keyof TeacherPerformanceData] as number || 0;
+        const bValue = b[selectedMetric as keyof TeacherPerformanceData] as number || 0;
+        
+        // For response time, lower is better
+        if (selectedMetric === 'avgResponseTime') {
+          return aValue - bValue;
+        }
+        // For other metrics, higher is better
+        return bValue - aValue;
+      })
+      .slice(0, 10); // Top 10 performers
+  }, [heatmapData?.teachers, selectedMetric]);
 
   // Performance metrics configuration
   const performanceMetrics = [

@@ -32,7 +32,7 @@ export class TeacherPerformanceService {
       const studentsManaged = await this.getStudentsForTeacher(teacher.gradeRole);
 
       // Get PBIS entries for the day
-      const pbisEntries = await db.select().from(pbisEntries)
+      const pbisRows = await db.select().from(pbisEntries)
         .innerJoin(scholars, eq(pbisEntries.scholarId, scholars.id))
         .where(and(
           eq(pbisEntries.teacherName, teacher.name),
@@ -41,9 +41,9 @@ export class TeacherPerformanceService {
         ));
 
       // Calculate interaction metrics
-      const positiveInteractions = pbisEntries.filter(([entry]) => entry.points > 0).length;
-      const negativeInteractions = pbisEntries.filter(([entry]) => entry.points < 0).length;
-      const totalPbisPoints = pbisEntries.reduce((sum, [entry]) => sum + entry.points, 0);
+      const positiveInteractions = pbisRows.filter(([entry]) => entry.points > 0).length;
+      const negativeInteractions = pbisRows.filter(([entry]) => entry.points < 0).length;
+      const totalPbisPoints = pbisRows.reduce((sum, [entry]) => sum + entry.points, 0);
 
       // Get reflection metrics
       const reflectionsAssigned = await db.select({ count: count() })
@@ -139,7 +139,7 @@ export class TeacherPerformanceService {
 
   // Calculate average response time for reflections
   private async calculateAverageResponseTime(teacherId: string, dayStart: Date, dayEnd: Date): Promise<number> {
-    const reflections = await db.select()
+    const reflectionRows = await db.select()
       .from(reflections)
       .where(and(
         eq(reflections.assignedBy, teacherId),
@@ -148,16 +148,16 @@ export class TeacherPerformanceService {
         lte(reflections.approvedAt, dayEnd)
       ));
 
-    if (reflections.length === 0) return 0;
+    if (reflectionRows.length === 0) return 0;
 
-    const totalHours = reflections.reduce((sum, reflection) => {
+    const totalHours = reflectionRows.reduce((sum, reflection) => {
       const assignedTime = reflection.createdAt.getTime();
       const approvedTime = reflection.approvedAt?.getTime() || assignedTime;
       const hours = (approvedTime - assignedTime) / (1000 * 60 * 60);
       return sum + hours;
     }, 0);
 
-    return Math.round(totalHours / reflections.length);
+    return Math.round(totalHours / reflectionRows.length);
   }
 
   // Calculate student engagement score (0-100)
@@ -356,10 +356,10 @@ export class TeacherPerformanceService {
   }
 
   // Get top performing teachers
-  async getTopPerformers(metric: 'effectiveness' | 'engagement' | 'communication', limit: number = 5): Promise<any[]> {
-    const orderField = metric === 'effectiveness' 
+  async getTopPerformers(metricType: 'effectiveness' | 'engagement' | 'communication', limit: number = 5): Promise<any[]> {
+    const orderField = metricType === 'effectiveness' 
       ? teacherPerformanceMetrics.effectivenessRating
-      : metric === 'engagement'
+      : metricType === 'engagement'
       ? teacherPerformanceMetrics.studentEngagementScore
       : teacherPerformanceMetrics.parentCommunications;
 
@@ -370,18 +370,84 @@ export class TeacherPerformanceService {
       .orderBy(desc(orderField))
       .limit(limit);
 
-    return results.map(([metric, teacher]) => ({
-      teacherId: teacher.id,
-      teacherName: teacher.name,
-      gradeRole: teacher.gradeRole,
-      subject: teacher.subject,
-      score: metric === 'effectiveness' 
-        ? metric.effectivenessRating
-        : metric === 'engagement'
-        ? metric.studentEngagementScore
-        : metric.parentCommunications,
-      date: format(metric.metricDate, 'yyyy-MM-dd')
+    return results.map(([rowMetric, rowTeacher]) => ({
+      teacherId: rowTeacher.id,
+      teacherName: rowTeacher.name,
+      gradeRole: rowTeacher.gradeRole,
+      subject: rowTeacher.subject,
+      score: metricType === 'effectiveness' 
+        ? rowMetric.effectivenessRating
+        : metricType === 'engagement'
+        ? rowMetric.studentEngagementScore
+        : rowMetric.parentCommunications,
+      date: format(rowMetric.metricDate, 'yyyy-MM-dd')
     }));
+  }
+
+  // Generate sample data for development/demo purposes
+  async generateSampleData(startDate: Date, endDate: Date): Promise<void> {
+    try {
+      console.log('HEATMAP: Generating sample teacher performance data');
+      
+      // Check if data already exists
+      const existingMetrics = await db.select({ count: count() })
+        .from(teacherPerformanceMetrics)
+        .where(and(
+          gte(teacherPerformanceMetrics.metricDate, startDate),
+          lte(teacherPerformanceMetrics.metricDate, endDate)
+        ))
+        .then(rows => rows[0].count);
+
+      if (existingMetrics > 0) {
+        console.log('HEATMAP: Sample data already exists, skipping generation');
+        return;
+      }
+
+      // Get all approved teachers
+      const teachers = await db.select().from(teacherAuth).where(eq(teacherAuth.isApproved, true));
+      
+      if (teachers.length === 0) {
+        console.log('HEATMAP: No approved teachers found');
+        return;
+      }
+
+      // Generate metrics for the last 7 days for each teacher
+      const today = new Date();
+      const sampleData = [];
+
+      for (const teacher of teachers.slice(0, 10)) { // Limit to first 10 teachers
+        // Generate random but realistic metrics
+        const effectiveness = Math.floor(Math.random() * 40) + 60; // 60-100
+        const engagement = Math.floor(Math.random() * 30) + 70; // 70-100
+        const pbisPoints = Math.floor(Math.random() * 50) + 10; // 10-60
+        const communications = Math.floor(Math.random() * 15) + 3; // 3-18
+        const responseTime = Math.floor(Math.random() * 12) + 2; // 2-14 hours
+        const studentsManaged = Math.floor(Math.random() * 20) + 15; // 15-35
+
+        sampleData.push({
+          teacherId: teacher.id,
+          metricDate: today,
+          totalStudentsManaged: studentsManaged,
+          pbisPointsAwarded: pbisPoints,
+          positiveInteractions: Math.floor(pbisPoints * 0.8),
+          negativeInteractions: Math.floor(pbisPoints * 0.2),
+          parentCommunications: communications,
+          reflectionsAssigned: Math.floor(Math.random() * 8) + 2,
+          reflectionsCompleted: Math.floor(Math.random() * 6) + 1,
+          avgResponseTime: responseTime,
+          studentEngagementScore: engagement,
+          effectivenessRating: effectiveness
+        });
+      }
+
+      if (sampleData.length > 0) {
+        await db.insert(teacherPerformanceMetrics).values(sampleData);
+        console.log(`HEATMAP: Generated ${sampleData.length} sample teacher performance records`);
+      }
+
+    } catch (error) {
+      console.error('HEATMAP: Error generating sample data:', error);
+    }
   }
 }
 

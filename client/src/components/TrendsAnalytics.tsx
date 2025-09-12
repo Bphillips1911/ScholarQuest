@@ -655,8 +655,11 @@ export function ClassroomTrendsComponent() {
                 aria-expanded={isTeacherSearchOpen}
                 className="w-full justify-between"
                 data-testid="button-teacher-search"
+                title={selectedTeacherName || "Search teachers..."}
               >
-                {selectedTeacherName || "Search teachers..."}
+                <span className="truncate pr-2">
+                  {selectedTeacherName || "Search teachers..."}
+                </span>
                 <svg
                   className="ml-2 h-4 w-4 shrink-0 opacity-50"
                   fill="none"
@@ -672,7 +675,7 @@ export function ClassroomTrendsComponent() {
                 </svg>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
               <Command>
                 <CommandInput 
                   placeholder="Search teachers..." 

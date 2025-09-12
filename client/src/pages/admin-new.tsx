@@ -19,6 +19,7 @@ import { ProgressReportGenerator } from "@/components/ProgressReportGenerator";
 import { AchievementPlayground } from "@/components/AchievementPlayground";
 import { TeacherPerformanceHeatmap } from "@/components/TeacherPerformanceHeatmap";
 import { AIRecommendationEngine } from "@/components/AIRecommendationEngine";
+import { StudentTrendsComponent, ClassroomTrendsComponent } from "@/components/TrendsAnalytics";
 import { NotificationBell, NotificationPanel, useNotifications } from "@/components/NotificationSystem";
 import { notificationService } from "@/services/notificationService";
 import { useLocation } from "wouter";
@@ -702,6 +703,17 @@ export default function AdminNew() {
               <TabsTrigger value="ai-recommendations" className="text-xs sm:text-sm px-2 py-2">
                 <Brain className="h-4 w-4 mr-1" />
                 AI Engine
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsList className="grid w-full grid-cols-2 h-auto">
+              <TabsTrigger value="student-trends" className="text-xs sm:text-sm px-2 py-2">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                Student Trends
+              </TabsTrigger>
+              <TabsTrigger value="classroom-trends" className="text-xs sm:text-sm px-2 py-2">
+                <Users className="h-4 w-4 mr-1" />
+                Classroom Trends
               </TabsTrigger>
             </TabsList>
 
@@ -2322,6 +2334,40 @@ export default function AdminNew() {
 
             <TabsContent value="ai-recommendations" className="space-y-6">
               <AIRecommendationEngine />
+            </TabsContent>
+
+            <TabsContent value="student-trends" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}} className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Student Behavior Trends Analytics
+                  </CardTitle>
+                  <CardDescription style={{color: themeStyles.textSecondary}}>
+                    Analyze student behavior patterns and progress over time with comprehensive trend data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StudentTrendsComponent />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="classroom-trends" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}} className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Classroom Behavior Trends Analytics
+                  </CardTitle>
+                  <CardDescription style={{color: themeStyles.textSecondary}}>
+                    Monitor classroom behavior trends by teacher with detailed performance metrics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ClassroomTrendsComponent />
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </Card>

@@ -524,6 +524,33 @@ export type AIRecommendation = typeof aiRecommendations.$inferSelect;
 export type AchievementPlayground = typeof achievementPlayground.$inferSelect;
 export type GamifiedProgress = typeof gamifiedProgress.$inferSelect;
 
+// Trend Analytics Types
+export interface StudentTrendData {
+  period: string; // ISO date string for the period start
+  start: Date;
+  end: Date;
+  studentId: string;
+  studentName: string;
+  grade: number;
+  houseId: string | null;
+  positive: number;
+  negative: number;
+  net: number;
+}
+
+export interface ClassroomTrendData {
+  period: string; // ISO date string for the period start
+  start: Date;
+  end: Date;
+  teacherId: string;
+  teacherName: string;
+  subject: string;
+  grade: string;
+  positive: number;
+  negative: number;
+  net: number;
+}
+
 // Insert schemas for new tables
 export const insertProgressReportSchema = createInsertSchema(progressReports).omit({
   id: true,

@@ -15,6 +15,8 @@ import {
   type MoodEntry,
   type ProgressGoal,
   type DailyReflection,
+  type StudentTrendData,
+  type ClassroomTrendData,
   type InsertHouse, 
   type InsertScholar, 
   type InsertTeacher, 
@@ -212,6 +214,10 @@ export interface IStorage {
   getStudentSession(token: string): Promise<StudentSession | undefined>;
   deleteStudentSession(token: string): Promise<boolean>;
   createPasswordResetRequest(request: InsertPasswordResetRequest): Promise<PasswordResetRequest>;
+
+  // Trend Analytics
+  getStudentTrends(interval: 'week' | 'month', from: Date, to: Date, teacherId?: string, studentId?: string): Promise<StudentTrendData[]>;
+  getClassroomTrends(interval: 'week' | 'month', from: Date, to: Date, teacherId?: string): Promise<ClassroomTrendData[]>;
   getPasswordResetRequests(teacherId: string): Promise<PasswordResetRequest[]>;
   resetStudentPassword(studentId: string, newPassword: string): Promise<boolean>;
   
@@ -1930,6 +1936,179 @@ export class MemStorage implements IStorage {
   async getPhotosByTeacher(teacherId: string): Promise<PBISPhoto[]> {
     return Array.from(this.pbisPhotos.values()).filter(p => p.uploadedBy === teacherId);
   }
+
+  // Trend Analytics Methods
+  async getStudentTrends(interval: 'week' | 'month', from: Date, to: Date, teacherId?: string, studentId?: string): Promise<StudentTrendData[]> {
+    // Simple in-memory implementation - group PBIS entries by period and student
+    const entries = Array.from(this.pbisEntries.values())
+      .filter(entry => entry.createdAt >= from && entry.createdAt <= to);
+    
+    // Filter by teacher if specified (using teacherName field in pbisEntries)
+    const teacherFilteredEntries = teacherId 
+      ? entries.filter(entry => {
+          const teacher = this.teacherAuth.get(teacherId);
+          return teacher && entry.teacherName === teacher.name;
+        })
+      : entries;
+    
+    // Filter by student if specified
+    const filteredEntries = studentId 
+      ? teacherFilteredEntries.filter(entry => entry.scholarId === studentId)
+      : teacherFilteredEntries;
+
+    // Group by period and student
+    const grouped = new Map<string, Map<string, { positive: number; negative: number; student: Scholar }>>();
+    
+    for (const entry of filteredEntries) {
+      const student = this.scholars.get(entry.scholarId);
+      if (!student) continue;
+      
+      // Calculate period start based on interval
+      const entryDate = new Date(entry.createdAt);
+      let periodStart: Date;
+      if (interval === 'week') {
+        const dayOfWeek = entryDate.getDay();
+        periodStart = new Date(entryDate);
+        periodStart.setDate(entryDate.getDate() - dayOfWeek);
+        periodStart.setHours(0, 0, 0, 0);
+      } else {
+        periodStart = new Date(entryDate.getFullYear(), entryDate.getMonth(), 1);
+      }
+      
+      const periodKey = periodStart.toISOString();
+      const studentKey = entry.scholarId;
+      
+      if (!grouped.has(periodKey)) {
+        grouped.set(periodKey, new Map());
+      }
+      
+      const periodData = grouped.get(periodKey)!;
+      if (!periodData.has(studentKey)) {
+        periodData.set(studentKey, { positive: 0, negative: 0, student });
+      }
+      
+      const studentData = periodData.get(studentKey)!;
+      if (entry.entryType === 'positive') {
+        studentData.positive += entry.points;
+      } else {
+        studentData.negative += entry.points;
+      }
+    }
+    
+    // Convert to result format
+    const results: StudentTrendData[] = [];
+    for (const [periodKey, periodData] of grouped) {
+      const periodStart = new Date(periodKey);
+      const periodEnd = new Date(periodStart);
+      if (interval === 'week') {
+        periodEnd.setDate(periodStart.getDate() + 6);
+      } else {
+        periodEnd.setMonth(periodStart.getMonth() + 1);
+        periodEnd.setDate(0); // Last day of month
+      }
+      
+      for (const [studentKey, data] of periodData) {
+        results.push({
+          period: periodKey,
+          start: periodStart,
+          end: periodEnd,
+          studentId: studentKey,
+          studentName: data.student.name,
+          grade: data.student.grade,
+          houseId: data.student.houseId,
+          positive: data.positive,
+          negative: data.negative,
+          net: data.positive - data.negative
+        });
+      }
+    }
+    
+    return results.sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
+  }
+
+  async getClassroomTrends(interval: 'week' | 'month', from: Date, to: Date, teacherId?: string): Promise<ClassroomTrendData[]> {
+    // Simple in-memory implementation - group PBIS entries by period and teacher
+    const entries = Array.from(this.pbisEntries.values())
+      .filter(entry => entry.createdAt >= from && entry.createdAt <= to);
+    
+    // Filter by teacher if specified
+    const filteredEntries = teacherId 
+      ? entries.filter(entry => {
+          const teacher = this.teacherAuth.get(teacherId);
+          return teacher && entry.teacherName === teacher.name;
+        })
+      : entries;
+
+    // Group by period and teacher
+    const grouped = new Map<string, Map<string, { positive: number; negative: number; teacherData: any }>>();
+    
+    for (const entry of filteredEntries) {
+      // Find teacher by name
+      const teacher = Array.from(this.teacherAuth.values()).find(t => t.name === entry.teacherName);
+      if (!teacher) continue;
+      
+      // Calculate period start
+      const entryDate = new Date(entry.createdAt);
+      let periodStart: Date;
+      if (interval === 'week') {
+        const dayOfWeek = entryDate.getDay();
+        periodStart = new Date(entryDate);
+        periodStart.setDate(entryDate.getDate() - dayOfWeek);
+        periodStart.setHours(0, 0, 0, 0);
+      } else {
+        periodStart = new Date(entryDate.getFullYear(), entryDate.getMonth(), 1);
+      }
+      
+      const periodKey = periodStart.toISOString();
+      const teacherKey = teacher.id;
+      
+      if (!grouped.has(periodKey)) {
+        grouped.set(periodKey, new Map());
+      }
+      
+      const periodData = grouped.get(periodKey)!;
+      if (!periodData.has(teacherKey)) {
+        periodData.set(teacherKey, { positive: 0, negative: 0, teacherData: teacher });
+      }
+      
+      const teacherData = periodData.get(teacherKey)!;
+      if (entry.entryType === 'positive') {
+        teacherData.positive += entry.points;
+      } else {
+        teacherData.negative += entry.points;
+      }
+    }
+    
+    // Convert to result format
+    const results: ClassroomTrendData[] = [];
+    for (const [periodKey, periodData] of grouped) {
+      const periodStart = new Date(periodKey);
+      const periodEnd = new Date(periodStart);
+      if (interval === 'week') {
+        periodEnd.setDate(periodStart.getDate() + 6);
+      } else {
+        periodEnd.setMonth(periodStart.getMonth() + 1);
+        periodEnd.setDate(0);
+      }
+      
+      for (const [teacherKey, data] of periodData) {
+        results.push({
+          period: periodKey,
+          start: periodStart,
+          end: periodEnd,
+          teacherId: teacherKey,
+          teacherName: data.teacherData.name,
+          subject: data.teacherData.subject || 'General',
+          grade: data.teacherData.gradeRole || 'All Grades',
+          positive: data.positive,
+          negative: data.negative,
+          net: data.positive - data.negative
+        });
+      }
+    }
+    
+    return results.sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
+  }
 }
 
 export class PersistentDatabaseStorage implements IStorage {
@@ -2191,6 +2370,159 @@ export class PersistentDatabaseStorage implements IStorage {
     // This would get teacher photos from pbisPhotos table
     const photos = await db.select().from(pbisPhotos).where(eq(pbisPhotos.teacherId, teacherId));
     return photos;
+  }
+
+  // Trend Analytics Methods
+  async getStudentTrends(interval: 'week' | 'month', from: Date, to: Date, teacherId?: string, studentId?: string): Promise<StudentTrendData[]> {
+    // Build the base query with proper joins
+    const baseQuery = db
+      .select({
+        period: interval === 'week' 
+          ? sql`date_trunc('week', ${pbisEntries.createdAt})::text`
+          : sql`date_trunc('month', ${pbisEntries.createdAt})::text`,
+        scholarId: pbisEntries.scholarId,
+        scholarName: scholars.name,
+        grade: scholars.grade,
+        houseId: scholars.houseId,
+        points: pbisEntries.points,
+        entryType: pbisEntries.entryType,
+        teacherName: pbisEntries.teacherName,
+        createdAt: pbisEntries.createdAt
+      })
+      .from(pbisEntries)
+      .innerJoin(scholars, eq(pbisEntries.scholarId, scholars.id))
+      .where(sql`${pbisEntries.createdAt} >= ${from} AND ${pbisEntries.createdAt} <= ${to}`)
+      .orderBy(pbisEntries.createdAt);
+
+    // Apply filters
+    let query = baseQuery;
+    if (teacherId) {
+      // Get teacher name to filter by
+      const teacher = await db.select().from(teacherAuth).where(eq(teacherAuth.id, teacherId)).limit(1);
+      if (teacher[0]) {
+        query = query.where(eq(pbisEntries.teacherName, teacher[0].name));
+      }
+    }
+    if (studentId) {
+      query = query.where(eq(pbisEntries.scholarId, studentId));
+    }
+
+    const results = await query;
+
+    // Group and aggregate the results
+    const grouped = new Map<string, StudentTrendData>();
+    
+    for (const row of results) {
+      const key = `${row.period}_${row.scholarId}`;
+      
+      if (!grouped.has(key)) {
+        const periodStart = new Date(row.period);
+        const periodEnd = new Date(periodStart);
+        if (interval === 'week') {
+          periodEnd.setDate(periodStart.getDate() + 6);
+        } else {
+          periodEnd.setMonth(periodStart.getMonth() + 1);
+          periodEnd.setDate(0);
+        }
+
+        grouped.set(key, {
+          period: row.period,
+          start: periodStart,
+          end: periodEnd,
+          studentId: row.scholarId,
+          studentName: row.scholarName,
+          grade: row.grade,
+          houseId: row.houseId,
+          positive: 0,
+          negative: 0,
+          net: 0
+        });
+      }
+      
+      const data = grouped.get(key)!;
+      if (row.entryType === 'positive') {
+        data.positive += row.points;
+      } else {
+        data.negative += row.points;
+      }
+      data.net = data.positive - data.negative;
+    }
+    
+    return Array.from(grouped.values()).sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
+  }
+
+  async getClassroomTrends(interval: 'week' | 'month', from: Date, to: Date, teacherId?: string): Promise<ClassroomTrendData[]> {
+    // Build the base query 
+    const baseQuery = db
+      .select({
+        period: interval === 'week' 
+          ? sql`date_trunc('week', ${pbisEntries.createdAt})::text`
+          : sql`date_trunc('month', ${pbisEntries.createdAt})::text`,
+        teacherName: pbisEntries.teacherName,
+        teacherRole: pbisEntries.teacherRole,
+        points: pbisEntries.points,
+        entryType: pbisEntries.entryType,
+        createdAt: pbisEntries.createdAt
+      })
+      .from(pbisEntries)
+      .where(sql`${pbisEntries.createdAt} >= ${from} AND ${pbisEntries.createdAt} <= ${to}`)
+      .orderBy(pbisEntries.createdAt);
+
+    // Apply teacher filter if specified
+    let query = baseQuery;
+    if (teacherId) {
+      const teacher = await db.select().from(teacherAuth).where(eq(teacherAuth.id, teacherId)).limit(1);
+      if (teacher[0]) {
+        query = query.where(eq(pbisEntries.teacherName, teacher[0].name));
+      }
+    }
+
+    const results = await query;
+
+    // Group and aggregate by period and teacher
+    const grouped = new Map<string, ClassroomTrendData>();
+    
+    for (const row of results) {
+      const key = `${row.period}_${row.teacherName}`;
+      
+      if (!grouped.has(key)) {
+        const periodStart = new Date(row.period);
+        const periodEnd = new Date(periodStart);
+        if (interval === 'week') {
+          periodEnd.setDate(periodStart.getDate() + 6);
+        } else {
+          periodEnd.setMonth(periodStart.getMonth() + 1);
+          periodEnd.setDate(0);
+        }
+
+        // Try to find teacher ID by name
+        const teacher = await db.select().from(teacherAuth).where(eq(teacherAuth.name, row.teacherName)).limit(1);
+        const teacherData = teacher[0] || { id: 'unknown', subject: 'General' };
+
+        grouped.set(key, {
+          period: row.period,
+          start: periodStart,
+          end: periodEnd,
+          teacherId: teacherData.id,
+          teacherName: row.teacherName,
+          subject: teacherData.subject || 'General',
+          grade: row.teacherRole || 'All Grades',
+          positive: 0,
+          negative: 0,
+          net: 0
+        });
+      }
+      
+      const data = grouped.get(key)!;
+      if (row.entryType === 'positive') {
+        data.positive += row.points;
+      } else {
+        data.negative += row.points;
+      }
+      data.net = data.positive - data.negative;
+    }
+    
+    return Array.from(grouped.values()).sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
   }
 }
 

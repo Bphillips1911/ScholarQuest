@@ -6524,7 +6524,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Trend Analytics API Routes
+  app.get("/api/trends/student", authenticateTeacherOrAdmin, async (req: any, res: any) => {
+    try {
+      const { interval, from, to, studentId, format } = req.query;
+      
+      // Validate parameters
+      if (!interval || !['week', 'month'].includes(interval)) {
+        return res.status(400).json({ error: "interval must be 'week' or 'month'" });
+      }
+      
+      if (!from || !to) {
+        return res.status(400).json({ error: "from and to dates are required" });
+      }
 
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
+      
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date format" });
+      }
+
+      // Role-based filtering
+      let teacherId: string | undefined;
+      let filteredStudentId: string | undefined = studentId;
+      
+      if (req.teacher) {
+        // Teachers can only see their assigned students
+        teacherId = req.teacher.id;
+      }
+      // Admins can see all data (no additional filtering needed)
+
+      const trends = await storage.getStudentTrends(interval, fromDate, toDate, teacherId, filteredStudentId);
+
+      // Handle export formats
+      if (format === 'csv') {
+        const csvData = stringify(trends, {
+          header: true,
+          columns: [
+            { key: 'period', header: 'Period' },
+            { key: 'studentName', header: 'Student Name' },
+            { key: 'grade', header: 'Grade' },
+            { key: 'positive', header: 'Positive Points' },
+            { key: 'negative', header: 'Negative Points' },
+            { key: 'net', header: 'Net Points' }
+          ]
+        });
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="student-trends-${interval}-${from}-${to}.csv"`);
+        return res.send(csvData);
+      }
+      
+      if (format === 'xlsx') {
+        const worksheet = XLSX.utils.json_to_sheet(trends.map(trend => ({
+          'Period': trend.period,
+          'Student Name': trend.studentName,
+          'Grade': trend.grade,
+          'House': trend.houseId || 'N/A',
+          'Positive Points': trend.positive,
+          'Negative Points': trend.negative,
+          'Net Points': trend.net
+        })));
+        
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Student Trends');
+        
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="student-trends-${interval}-${from}-${to}.xlsx"`);
+        return res.send(buffer);
+      }
+
+      // Default JSON response
+      res.json(trends);
+    } catch (error) {
+      console.error("Student trends error:", error);
+      res.status(500).json({ error: "Failed to fetch student trends" });
+    }
+  });
+
+  app.get("/api/trends/classroom", authenticateTeacherOrAdmin, async (req: any, res: any) => {
+    try {
+      const { interval, from, to, format } = req.query;
+      
+      // Validate parameters
+      if (!interval || !['week', 'month'].includes(interval)) {
+        return res.status(400).json({ error: "interval must be 'week' or 'month'" });
+      }
+      
+      if (!from || !to) {
+        return res.status(400).json({ error: "from and to dates are required" });
+      }
+
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
+      
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date format" });
+      }
+
+      // Role-based filtering
+      let teacherId: string | undefined;
+      
+      if (req.teacher) {
+        // Teachers can only see their own classroom data
+        teacherId = req.teacher.id;
+      }
+      // Admins can see all classroom data (no additional filtering needed)
+
+      const trends = await storage.getClassroomTrends(interval, fromDate, toDate, teacherId);
+
+      // Handle export formats
+      if (format === 'csv') {
+        const csvData = stringify(trends, {
+          header: true,
+          columns: [
+            { key: 'period', header: 'Period' },
+            { key: 'teacherName', header: 'Teacher Name' },
+            { key: 'subject', header: 'Subject' },
+            { key: 'grade', header: 'Grade' },
+            { key: 'positive', header: 'Positive Points' },
+            { key: 'negative', header: 'Negative Points' },
+            { key: 'net', header: 'Net Points' }
+          ]
+        });
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="classroom-trends-${interval}-${from}-${to}.csv"`);
+        return res.send(csvData);
+      }
+      
+      if (format === 'xlsx') {
+        const worksheet = XLSX.utils.json_to_sheet(trends.map(trend => ({
+          'Period': trend.period,
+          'Teacher Name': trend.teacherName,
+          'Subject': trend.subject,
+          'Grade': trend.grade,
+          'Positive Points': trend.positive,
+          'Negative Points': trend.negative,
+          'Net Points': trend.net
+        })));
+        
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Classroom Trends');
+        
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="classroom-trends-${interval}-${from}-${to}.xlsx"`);
+        return res.send(buffer);
+      }
+
+      // Default JSON response
+      res.json(trends);
+    } catch (error) {
+      console.error("Classroom trends error:", error);
+      res.status(500).json({ error: "Failed to fetch classroom trends" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

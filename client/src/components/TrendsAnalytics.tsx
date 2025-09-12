@@ -47,6 +47,14 @@ interface Scholar {
   studentId: string;
 }
 
+interface Teacher {
+  id: string;
+  name: string;
+  gradeRole: string;
+  subject: string;
+  isApproved: boolean;
+}
+
 interface ClassroomTrendData {
   period: string;
   start: Date;
@@ -462,6 +470,26 @@ export function ClassroomTrendsComponent() {
   const [interval, setInterval] = useState<'week' | 'month'>('week');
   const [fromDate, setFromDate] = useState(format(subWeeks(new Date(), 4), 'yyyy-MM-dd'));
   const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+  const [selectedTeacherName, setSelectedTeacherName] = useState<string>('');
+  const [isTeacherSearchOpen, setIsTeacherSearchOpen] = useState(false);
+  
+  // Fetch all teachers for search functionality
+  const { data: teachers = [] } = useQuery({
+    queryKey: ['/api/admin/teachers/all'],
+    queryFn: async () => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch('/api/admin/teachers/all', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch teachers');
+      const data = await response.json();
+      return data as Teacher[];
+    }
+  });
 
   // Initialize real-time sync for classroom trends
   useEffect(() => {
@@ -492,13 +520,17 @@ export function ClassroomTrendsComponent() {
   }, []);
 
   const { data: trendData, isLoading, error } = useQuery({
-    queryKey: ['/api/trends/classroom', interval, fromDate, toDate],
+    queryKey: ['/api/trends/classroom', interval, fromDate, toDate, selectedTeacher],
     queryFn: async () => {
       const params = new URLSearchParams({
         interval,
         from: fromDate,
         to: toDate
       });
+      
+      if (selectedTeacher) {
+        params.set('teacherId', selectedTeacher);
+      }
 
       const token = localStorage.getItem("adminToken");
       const response = await fetch(`/api/trends/classroom?${params}`, {
@@ -536,6 +568,10 @@ export function ClassroomTrendsComponent() {
       to: toDate,
       format
     });
+    
+    if (selectedTeacher) {
+      params.set('teacherId', selectedTeacher);
+    }
 
     const token = localStorage.getItem("adminToken");
     const response = await fetch(`/api/trends/classroom?${params}`, {
@@ -573,7 +609,7 @@ export function ClassroomTrendsComponent() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <Label htmlFor="interval">Time Interval</Label>
           <Select value={interval} onValueChange={(value: 'week' | 'month') => setInterval(value)}>
@@ -607,6 +643,77 @@ export function ClassroomTrendsComponent() {
             onChange={(e) => setToDate(e.target.value)}
             data-testid="input-classroom-to-date"
           />
+        </div>
+
+        <div>
+          <Label htmlFor="teacher">Filter by Teacher</Label>
+          <Popover open={isTeacherSearchOpen} onOpenChange={setIsTeacherSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={isTeacherSearchOpen}
+                className="w-full justify-between"
+                data-testid="button-teacher-search"
+              >
+                {selectedTeacherName || "Search teachers..."}
+                <svg
+                  className="ml-2 h-4 w-4 shrink-0 opacity-50"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+                  />
+                </svg>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder="Search teachers..." 
+                  data-testid="input-teacher-search"
+                />
+                <CommandList>
+                  <CommandEmpty>No teachers found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => {
+                        setSelectedTeacher('');
+                        setSelectedTeacherName('');
+                        setIsTeacherSearchOpen(false);
+                      }}
+                      data-testid="item-clear-teacher"
+                    >
+                      <span className="text-gray-500">Clear selection (show all teachers)</span>
+                    </CommandItem>
+                    {teachers.filter(teacher => teacher.isApproved).map((teacher) => (
+                      <CommandItem
+                        key={teacher.id}
+                        onSelect={() => {
+                          setSelectedTeacher(teacher.id);
+                          setSelectedTeacherName(`${teacher.name} (${teacher.gradeRole}${teacher.subject ? ` - ${teacher.subject}` : ''})`);
+                          setIsTeacherSearchOpen(false);
+                        }}
+                        data-testid={`item-teacher-${teacher.id}`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{teacher.name}</span>
+                          <span className="text-sm text-gray-500">
+                            {teacher.gradeRole}{teacher.subject ? ` • ${teacher.subject}` : ''}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -698,7 +805,9 @@ export function ClassroomTrendsComponent() {
       <Card>
         <CardHeader>
           <CardTitle>Classroom Behavior Trends</CardTitle>
-          <CardDescription>Performance trends across all teachers and classrooms</CardDescription>
+          <CardDescription>
+            {selectedTeacher ? `Trends for ${selectedTeacherName}` : 'Performance trends across all teachers and classrooms'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading && (

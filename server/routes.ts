@@ -6607,7 +6607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/trends/classroom", authenticateTeacherOrAdmin, async (req: any, res: any) => {
     try {
-      const { interval, from, to, format } = req.query;
+      const { interval, from, to, format, teacherId: queryTeacherId } = req.query;
       
       // Validate parameters
       if (!interval || !['week', 'month'].includes(interval)) {
@@ -6631,8 +6631,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.teacher) {
         // Teachers can only see their own classroom data
         teacherId = req.teacher.id;
+      } else if (req.admin && queryTeacherId) {
+        // Admins can filter by specific teacher if provided
+        teacherId = queryTeacherId;
       }
-      // Admins can see all classroom data (no additional filtering needed)
+      // If no teacher filter, admins see all classroom data
 
       const trends = await storage.getClassroomTrends(interval, fromDate, toDate, teacherId);
 

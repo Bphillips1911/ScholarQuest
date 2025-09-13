@@ -2692,14 +2692,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have permission to deactivate this student" });
       }
 
+      // DEPLOYMENT DEBUG: Add detailed logging for deactivation debugging
+      console.log("DEACTIVATION DEBUG:", {
+        teacherId: teacher.id,
+        teacherRole: teacher.gradeRole,
+        studentId,
+        studentGrade: scholar.grade,
+        reason,
+        allowedGrades
+      });
+
       const success = await storage.deactivateStudent(studentId, teacher.id, reason);
       
+      console.log("DEACTIVATION RESULT:", {
+        success,
+        studentId,
+        teacherId: teacher.id
+      });
+
       if (success) {
         res.json({
           success: true,
           message: "Student deactivated successfully"
         });
       } else {
+        console.error("DEACTIVATION FAILED: storage.deactivateStudent returned false");
         res.status(400).json({ message: "Failed to deactivate student" });
       }
     } catch (error) {

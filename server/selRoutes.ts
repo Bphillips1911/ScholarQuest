@@ -40,8 +40,9 @@ export function registerSELRoutes(app: Express) {
     }
 
     try {
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
-      const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString()) as any;
+      // SECURITY FIX: Use proper JWT verification instead of base64 decode
+      const jwtSecret = "bhsa-student-secret-2025-stable";
+      const decoded = jwt.verify(token, jwtSecret) as any;
       const student = await db.select().from(scholars).where(eq(scholars.id, decoded.studentId)).limit(1);
       
       if (!student || student.length === 0) {

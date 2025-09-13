@@ -2717,8 +2717,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "No token provided" });
       }
 
-      // Use consistent secret for both preview and deployment
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
+      // DEPLOYMENT FIX: Use consistent secret for both preview and deployment
+      const jwtSecret = "bhsa-student-secret-2025-stable";
       const decoded = jwt.verify(token, jwtSecret) as any;
       const student = await storage.getScholar(decoded.studentId);
       
@@ -2746,8 +2746,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Create session token with extended expiry (30 days for cost reduction)
-      const jwtSecret = process.env.JWT_SECRET || "bhsa-student-secret-2025-stable";
+      // DEPLOYMENT FIX: Use consistent secret for both preview and deployment  
+      const jwtSecret = "bhsa-student-secret-2025-stable";
       const token = jwt.sign({ studentId: student.id }, jwtSecret, { expiresIn: "30d" });
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 

@@ -75,7 +75,7 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey, signal }) => {
+  async ({ queryKey }) => {
     const url = queryKey.join("/") as string;
     const headers: HeadersInit = {};
     
@@ -105,7 +105,6 @@ export const getQueryFn: <T>(options: {
     const res = await fetch(url, {
       credentials: "include",
       headers,
-      ...(signal && !signal.aborted ? { signal } : {}),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -144,7 +143,6 @@ export const getQueryFn: <T>(options: {
         },
         credentials: 'include',
         cache: 'reload',
-        ...(signal && !signal.aborted ? { signal } : {}),
       });
       
       if (!freshRes.ok) {

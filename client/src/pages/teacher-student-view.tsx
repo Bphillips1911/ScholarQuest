@@ -86,7 +86,14 @@ export default function TeacherStudentView() {
     if (viewingData) {
       setTeacherViewData(JSON.parse(viewingData));
     }
-  }, []);
+    
+    // If no studentId is provided in the URL, redirect to teacher dashboard
+    if (!params?.studentId) {
+      console.log('No studentId provided, redirecting to teacher dashboard');
+      setLocation('/teacher-dashboard');
+      return;
+    }
+  }, [params?.studentId, setLocation]);
 
   // Fetch comprehensive student data
   const { data: studentData, isLoading } = useQuery({

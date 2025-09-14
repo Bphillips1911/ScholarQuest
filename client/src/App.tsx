@@ -85,6 +85,7 @@ function Router() {
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/teacher-messages" component={TeacherMessages} />
         <Route path="/teacher-student-view/:studentId" component={TeacherStudentView} />
+        <Route path="/teacher-student-view" component={TeacherStudentView} />
         <Route path="/admin" component={AdminNew} />
         <Route path="/admin-full" component={AdminNew} />
         <Route path="/admin-test" component={AdminNew} />

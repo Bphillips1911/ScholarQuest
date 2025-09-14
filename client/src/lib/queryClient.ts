@@ -75,7 +75,7 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+  async ({ queryKey, signal }) => {
     const url = queryKey.join("/") as string;
     const headers: HeadersInit = {};
     
@@ -105,6 +105,7 @@ export const getQueryFn: <T>(options: {
     const res = await fetch(url, {
       credentials: "include",
       headers,
+      signal,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -128,7 +129,30 @@ export const getQueryFn: <T>(options: {
     // Handle 304 Not Modified responses - return cached data
     if (res.status === 304) {
       console.debug(`304 response for ${url}, returning cached data`);
-      return queryClient.getQueryData(queryKey as any);
+      const cachedData = queryClient.getQueryData(queryKey as any);
+      console.debug(`Cached data for ${url}:`, cachedData);
+      if (cachedData) {
+        return cachedData;
+      }
+      
+      // CRITICAL FIX: If no cached data for 304, perform fresh fetch immediately
+      console.warn(`304 response but no cached data for ${url}, performing fresh fetch`);
+      const freshRes = await fetch(url, {
+        headers: {
+          ...headers,
+          'Cache-Control': 'no-cache'
+        },
+        credentials: 'include',
+        cache: 'reload',
+        signal,
+      });
+      
+      if (!freshRes.ok) {
+        const text = (await freshRes.text()) || freshRes.statusText;
+        throw new Error(`${freshRes.status}: ${text}`);
+      }
+      
+      return await freshRes.json();
     }
     
     // Handle 204 No Content responses
@@ -143,9 +167,9 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
-      refetchOnWindowFocus: true, // Refetch when user returns to window
-      staleTime: 0, // Data is always considered stale for real-time updates
+      refetchInterval: false, // Disabled global polling - set per-query where real-time needed
+      refetchOnWindowFocus: false, // Disabled to prevent excessive requests in preview mode
+      staleTime: 60000, // Data stays fresh for 60s to reduce request volume
       retry: false,
     },
     mutations: {

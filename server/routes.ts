@@ -93,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const jwtSecret = "bhsa-teacher-secret-2025-stable";
+      const jwtSecret = process.env.TEACHER_JWT_SECRET || "bhsa-teacher-secret-2025-stable";
       const decoded: any = jwt.verify(token, jwtSecret);
       const teacher = await storage.getTeacherAuthById(decoded.teacherId);
       
@@ -163,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Try teacher authentication first
       try {
-        const jwtSecret = "bhsa-teacher-secret-2025-stable";
+        const jwtSecret = process.env.TEACHER_JWT_SECRET || "bhsa-teacher-secret-2025-stable";
         const decoded: any = jwt.verify(token, jwtSecret);
         const teacher = await storage.getTeacherAuthById(decoded.teacherId);
         
@@ -1588,7 +1588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("🏫 TEACHER LOGIN: Authentication successful, generating token...");
 
       // Generate teacher login token with extended expiry (30 days for cost reduction)
-      const jwtSecret = "bhsa-teacher-secret-2025-stable";
+      const jwtSecret = process.env.TEACHER_JWT_SECRET || "bhsa-teacher-secret-2025-stable";
       const token = jwt.sign(
         { teacherId: teacher.id },
         jwtSecret,
@@ -2465,7 +2465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate session token
       const token = jwt.sign(
         { teacherId: teacher.id, gradeRole: teacher.gradeRole },
-        "bhsa-teacher-secret-2025-stable",
+        process.env.TEACHER_JWT_SECRET || "bhsa-teacher-secret-2025-stable",
         { expiresIn: "30d" }  // Extended to 30 days for deployment stability
       );
 
@@ -3829,7 +3829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           teacherId: teacher.id,
           gradeRole: teacher.gradeRole 
         },
-        "bhsa-teacher-secret-2025-stable",
+        process.env.TEACHER_JWT_SECRET || "bhsa-teacher-secret-2025-stable",
         { expiresIn: '30d' }
       );
       
@@ -3873,7 +3873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "No token provided" });
       }
 
-      const decoded = jwt.verify(token, "bhsa-teacher-secret-2025-stable") as any;
+      const decoded = jwt.verify(token, process.env.TEACHER_JWT_SECRET || "bhsa-teacher-secret-2025-stable") as any;
       
       // DEPLOYMENT CACHE FIX: Always fetch fresh teacher data from database
       const teacher = await storage.getTeacherAuthById(decoded.teacherId);

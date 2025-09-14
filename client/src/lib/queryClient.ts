@@ -1,6 +1,11 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
+  // Allow 304 Not Modified responses to pass through
+  if (res.status === 304) {
+    return;
+  }
+  
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     throw new Error(`${res.status}: ${text}`);
@@ -119,6 +124,18 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
+    
+    // Handle 304 Not Modified responses - return cached data
+    if (res.status === 304) {
+      console.debug(`304 response for ${url}, returning cached data`);
+      return queryClient.getQueryData(queryKey as any);
+    }
+    
+    // Handle 204 No Content responses
+    if (res.status === 204) {
+      return null;
+    }
+    
     return await res.json();
   };
 

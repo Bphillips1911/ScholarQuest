@@ -5431,13 +5431,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { studentId } = req.params;
       const teacherId = (req as any).teacher?.id;
+      const teacherData = (req as any).teacher; // Get teacher data from middleware
       
       console.log(`API: Student dashboard request - Teacher ID: ${teacherId}, Student ID: ${studentId}`);
+      console.log(`AUTH DEBUG: Teacher data from middleware:`, teacherData);
       
-      // Get the teacher data to verify they can see this student
-      const teacher = await storage.getTeacherAuthById(teacherId);
-      if (!teacher) {
-        return res.status(401).json({ error: 'Teacher not found' });
+      // Use teacher data from authentication middleware instead of additional DB lookup
+      const teacher = teacherData;
+      if (!teacher || !teacher.gradeRole) {
+        console.log(`AUTH ERROR: Invalid teacher data from middleware:`, teacher);
+        return res.status(401).json({ error: 'Teacher authentication failed' });
       }
       
       // Get the student data

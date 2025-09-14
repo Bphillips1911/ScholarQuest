@@ -95,7 +95,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const jwtSecret = "bhsa-teacher-secret-2025-stable";
       const decoded: any = jwt.verify(token, jwtSecret);
-      const teacher = await storage.getTeacherAuthById(decoded.teacherId);
+      
+      // Try to get teacher from database, but don't fail if database is temporarily unavailable
+      let teacher;
+      try {
+        teacher = await storage.getTeacherAuthById(decoded.teacherId);
+      } catch (dbError) {
+        console.log(`AUTH WARNING: Database lookup failed for teacher ${decoded.teacherId}, using token data:`, dbError);
+        // If database fails, use the data from JWT token as fallback
+        teacher = {
+          id: decoded.teacherId,
+          name: decoded.name,
+          email: decoded.email,
+          gradeRole: decoded.gradeRole,
+          subject: decoded.subject
+        };
+      }
       
       if (!teacher) {
         return res.status(401).json({ message: "Invalid token" });

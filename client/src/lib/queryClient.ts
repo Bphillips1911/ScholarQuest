@@ -105,7 +105,7 @@ export const getQueryFn: <T>(options: {
     const res = await fetch(url, {
       credentials: "include",
       headers,
-      signal,
+      ...(signal && !signal.aborted ? { signal } : {}),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -144,7 +144,7 @@ export const getQueryFn: <T>(options: {
         },
         credentials: 'include',
         cache: 'reload',
-        signal,
+        ...(signal && !signal.aborted ? { signal } : {}),
       });
       
       if (!freshRes.ok) {

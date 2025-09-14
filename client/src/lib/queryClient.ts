@@ -103,11 +103,18 @@ export const getQueryFn: <T>(options: {
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      // Clear expired tokens on 401 errors
-      localStorage.removeItem("teacherToken");
-      localStorage.removeItem("parentToken");
-      localStorage.removeItem("studentToken");
-      localStorage.removeItem("adminToken");
+      // Clear expired tokens on 401 errors - be specific about which token to clear
+      if (url.includes('/api/teacher/')) {
+        localStorage.removeItem("teacherToken");
+      } else if (url.includes('/api/parent/')) {
+        localStorage.removeItem("parentToken");
+      } else if (url.includes('/api/student/') || url.includes('/api/mood/') || 
+                 url.includes('/api/progress/') || url.includes('/api/reflection/')) {
+        localStorage.removeItem("studentToken");
+        localStorage.removeItem("studentData");
+      } else if (url.includes('/api/admin/')) {
+        localStorage.removeItem("adminToken");
+      }
       return null;
     }
 

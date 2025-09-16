@@ -82,34 +82,72 @@ export default function StudentSkillTree() {
   // Check if this is teacher viewing mode for endpoint selection
   const isTeacherView = window.location.search.includes('teacherView=true');
 
-  // Fetch student data - use teacher endpoint in teacherView mode
+  // Fetch profile data - only for student view, teacher view uses PBIS data directly
   const { data: profile } = useQuery({
-    queryKey: isTeacherView 
-      ? [`/api/teacher/student-dashboard/${studentData?.id}`]
-      : ["/api/student/profile"],
-    enabled: !!studentData,
+    queryKey: ["/api/student/profile"],
+    enabled: !!studentData && !isTeacherView,
   });
 
-  // Fetch PBIS entries - use standard query client without custom headers
+  // For teacher view, get student basic info from URL or sessionStorage
+  const getStudentBasicInfo = () => {
+    if (!isTeacherView) return null;
+    
+    // Get student ID from URL
+    const urlStudentId = new URLSearchParams(window.location.search).get('studentId');
+    if (!urlStudentId) return null;
+    
+    // Create basic student info structure for skill tree calculation
+    return {
+      id: urlStudentId,
+      academicPoints: 0, // Will be calculated from PBIS entries
+      behaviorPoints: 0, // Will be calculated from PBIS entries  
+      attendancePoints: 0 // Will be calculated from PBIS entries
+    };
+  };
+
+  // Fetch PBIS entries - use proper array format for better caching
   const { data: pbisEntries = [] } = useQuery({
-    queryKey: ["/api/pbis-entries", studentData?.id],
+    queryKey: ["/api/scholars", studentData?.id, "pbis"],
     enabled: !!studentData?.id,
   });
 
   // Generate skill tree based on student progress
   const generateSkillTree = (): { nodes: SkillNode[], paths: SkillTreePath[] } => {
+    // For teacher view, calculate points directly from PBIS entries
+    if (isTeacherView) {
+      if (!pbisEntries || pbisEntries.length === 0) {
+        // Show basic structure even with no data
+        const studentInfo = getStudentBasicInfo();
+        if (!studentInfo) return { nodes: [], paths: [] };
+      }
+      
+      // Calculate points from PBIS entries
+      const academicPoints = pbisEntries?.filter((entry: any) => entry.category === 'academic').reduce((sum: number, entry: any) => sum + (entry.points || 0), 0) || 0;
+      const behaviorPoints = pbisEntries?.filter((entry: any) => entry.category === 'behavior').reduce((sum: number, entry: any) => sum + (entry.points || 0), 0) || 0;
+      const attendancePoints = pbisEntries?.filter((entry: any) => entry.category === 'attendance').reduce((sum: number, entry: any) => sum + (entry.points || 0), 0) || 0;
+      
+      // Use these calculated points for skill tree generation
+      const totalPoints = academicPoints + behaviorPoints + attendancePoints;
+      
+      return generateTreeFromPoints(academicPoints, behaviorPoints, attendancePoints, totalPoints);
+    }
+    
+    // Regular student view - use profile data
     if (!profile) return { nodes: [], paths: [] };
-
-    // Handle different profile structures for teacher vs student view
-    const profileData = isTeacherView ? (profile as any)?.scholar : profile;
     
     // Use actual PBIS points from the profile (no bonus points)
-    const academicPoints = Math.max(0, profileData?.academicPoints || 0);
-    const behaviorPoints = Math.max(0, profileData?.behaviorPoints || 0);
-    const attendancePoints = Math.max(0, profileData?.attendancePoints || 0);
+    const academicPoints = Math.max(0, (profile as any)?.academicPoints || 0);
+    const behaviorPoints = Math.max(0, (profile as any)?.behaviorPoints || 0);
+    const attendancePoints = Math.max(0, (profile as any)?.attendancePoints || 0);
     
-    // Calculate total points across all categories for overall progress
+    // Calculate total points across all categories for overall progress  
     const totalPoints = academicPoints + behaviorPoints + attendancePoints;
+    
+    return generateTreeFromPoints(academicPoints, behaviorPoints, attendancePoints, totalPoints);
+  };
+
+  // Helper function to generate skill tree from point values
+  const generateTreeFromPoints = (academicPoints: number, behaviorPoints: number, attendancePoints: number, totalPoints: number) => {
     
     // For PBIS entries calculation, use actual entries data
     const totalPBISPoints = Array.isArray(pbisEntries) ? pbisEntries.reduce((sum: number, entry: any) => sum + entry.points, 0) : 0;
@@ -351,6 +389,20 @@ export default function StudentSkillTree() {
   }
 
   const { nodes, paths } = generateSkillTree();
+
+  // Calculate current totals for progress summary (works for both views)
+  const getProgressTotals = () => {
+    if (isTeacherView) {
+      // Calculate from PBIS entries directly
+      const academicTotal = pbisEntries?.filter((entry: any) => entry.category === 'academic').reduce((sum: number, entry: any) => sum + (entry.points || 0), 0) || 0;
+      const behaviorTotal = pbisEntries?.filter((entry: any) => entry.category === 'behavior').reduce((sum: number, entry: any) => sum + (entry.points || 0), 0) || 0;
+      const attendanceTotal = pbisEntries?.filter((entry: any) => entry.category === 'attendance').reduce((sum: number, entry: any) => sum + (entry.points || 0), 0) || 0;
+      return academicTotal + behaviorTotal + attendanceTotal;
+    } else {
+      // Use profile data for student view
+      return ((profile as any)?.academicPoints || 0) + ((profile as any)?.behaviorPoints || 0) + ((profile as any)?.attendancePoints || 0);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -622,7 +674,7 @@ export default function StudentSkillTree() {
         <div className="space-y-2 text-sm">
           <div>Completed Skills: {nodes.filter(n => n.isCompleted).length}/{nodes.length}</div>
           <div>Current Level: {Math.max(...nodes.filter(n => n.isCompleted).map(n => n.level), 1)}</div>
-          <div>Total Points: {((profile as any)?.academicPoints || 0) + ((profile as any)?.behaviorPoints || 0) + ((profile as any)?.attendancePoints || 0) * 10}</div>
+          <div>Total Points: {getProgressTotals()}</div>
         </div>
       </div>
     </div>

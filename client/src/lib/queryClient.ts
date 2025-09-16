@@ -85,21 +85,18 @@ export const getQueryFn: <T>(options: {
     const parentToken = localStorage.getItem("parentToken");
     const adminToken = localStorage.getItem("adminToken");
     
-    // Debug logging for student token in queries
-    if (url.includes('/api/mood/') || url.includes('/api/progress/') || url.includes('/api/reflection/') || url.includes('/api/student/')) {
-      console.log("Student query request:", { url, hasToken: !!studentToken, tokenLength: studentToken?.length });
-    }
+    // Cache teacherView state for performance (avoid checking window.location on every request)
+    const isTeacherView = globalThis.location?.search?.includes('teacherView=true') ?? false;
     
-    // Check if this is teacher viewing student dashboard
-    const isTeacherView = window.location.search.includes('teacherView=true');
-    
-    // Student routes (including mood tracking, progress, and reflection endpoints)
-    if ((url.includes('/api/student/') || url.includes('/api/mood/') || 
-         url.includes('/api/progress/') || url.includes('/api/reflection/')) && 
-        (studentToken || adminToken || (isTeacherView && teacherToken))) {
-      headers.Authorization = `Bearer ${studentToken || adminToken || (isTeacherView ? teacherToken : null)}`;
-    } else if (url.includes('/api/teacher/') && (teacherToken || adminToken)) {
-      headers.Authorization = `Bearer ${teacherToken || adminToken}`;
+    // Fixed token selection with proper precedence for teacherView
+    if (url.includes('/api/student/') || url.includes('/api/mood/') || 
+        url.includes('/api/progress/') || url.includes('/api/reflection/')) {
+      // In teacherView, prioritize admin/teacher tokens over student token
+      const token = isTeacherView ? (adminToken || teacherToken || studentToken) : (studentToken || adminToken);
+      if (token) headers.Authorization = `Bearer ${token}`;
+    } else if (url.includes('/api/teacher/')) {
+      const token = adminToken || teacherToken;
+      if (token) headers.Authorization = `Bearer ${token}`;
     } else if (url.includes('/api/parent/') && parentToken) {
       headers.Authorization = `Bearer ${parentToken}`;
     } else if (url.includes('/api/admin/') && adminToken) {
@@ -119,9 +116,17 @@ export const getQueryFn: <T>(options: {
         localStorage.removeItem("parentToken");
       } else if (url.includes('/api/student/') || url.includes('/api/mood/') || 
                  url.includes('/api/progress/') || url.includes('/api/reflection/')) {
-        // Clear appropriate token based on context
-        if (isTeacherView && teacherToken) {
-          localStorage.removeItem("teacherToken");
+        // Clear tokens based on precedence used in auth selection
+        if (isTeacherView) {
+          // In teacherView, we prioritize admin/teacher, so clear in that order
+          if (adminToken) {
+            localStorage.removeItem("adminToken");
+          } else if (teacherToken) {
+            localStorage.removeItem("teacherToken");
+          } else {
+            localStorage.removeItem("studentToken");
+            localStorage.removeItem("studentData");
+          }
         } else {
           localStorage.removeItem("studentToken");
           localStorage.removeItem("studentData");

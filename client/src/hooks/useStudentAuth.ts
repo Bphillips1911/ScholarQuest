@@ -21,11 +21,22 @@ interface StudentAuthData {
 export function useStudentAuth(): StudentAuthData {
   const [token, setToken] = useState<string | null>(null);
 
+  // Check if this is teacher viewing student dashboard
+  const isTeacherView = window.location.search.includes('teacherView=true');
+
   // Initialize token from localStorage
   useEffect(() => {
-    const storedToken = localStorage.getItem('studentToken');
-    setToken(storedToken);
-  }, []);
+    if (isTeacherView) {
+      // In teacher view, use teacher token, admin token, or student token
+      const teacherToken = localStorage.getItem('teacherToken');
+      const adminToken = localStorage.getItem('adminToken');
+      const studentToken = localStorage.getItem('studentToken');
+      setToken(teacherToken || adminToken || studentToken);
+    } else {
+      const storedToken = localStorage.getItem('studentToken');
+      setToken(storedToken);
+    }
+  }, [isTeacherView]);
 
   // Query to verify student authentication
   const { data: student, isLoading, refetch } = useQuery({
@@ -37,16 +48,26 @@ export function useStudentAuth(): StudentAuthData {
   });
 
   const refreshAuth = () => {
-    const storedToken = localStorage.getItem('studentToken');
-    setToken(storedToken);
+    if (isTeacherView) {
+      const teacherToken = localStorage.getItem('teacherToken');
+      const adminToken = localStorage.getItem('adminToken');
+      const studentToken = localStorage.getItem('studentToken');
+      setToken(teacherToken || adminToken || studentToken);
+    } else {
+      const storedToken = localStorage.getItem('studentToken');
+      setToken(storedToken);
+    }
     refetch();
   };
 
   const logout = () => {
-    localStorage.removeItem('studentToken');
-    localStorage.removeItem('studentData');
-    setToken(null);
-    window.location.href = '/student-login';
+    if (!isTeacherView) {
+      localStorage.removeItem('studentToken');
+      localStorage.removeItem('studentData');
+      setToken(null);
+      window.location.href = '/student-login';
+    }
+    // In teacher view, don't logout or redirect - just clear student data
   };
 
   // Auto-refresh token if it's close to expiring
@@ -61,7 +82,7 @@ export function useStudentAuth(): StudentAuthData {
         // If token expires in less than 1 day, try to refresh
         if (timeUntilExpiry < 24 * 60 * 60 * 1000 && timeUntilExpiry > 0) {
           console.log('Student token expiring soon, will auto-refresh on next login');
-        } else if (timeUntilExpiry <= 0) {
+        } else if (timeUntilExpiry <= 0 && !isTeacherView) {
           console.log('Student token expired, logging out');
           logout();
         }

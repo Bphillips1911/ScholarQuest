@@ -90,10 +90,14 @@ export const getQueryFn: <T>(options: {
       console.log("Student query request:", { url, hasToken: !!studentToken, tokenLength: studentToken?.length });
     }
     
+    // Check if this is teacher viewing student dashboard
+    const isTeacherView = window.location.search.includes('teacherView=true');
+    
     // Student routes (including mood tracking, progress, and reflection endpoints)
     if ((url.includes('/api/student/') || url.includes('/api/mood/') || 
-         url.includes('/api/progress/') || url.includes('/api/reflection/')) && (studentToken || adminToken)) {
-      headers.Authorization = `Bearer ${studentToken || adminToken}`;
+         url.includes('/api/progress/') || url.includes('/api/reflection/')) && 
+        (studentToken || adminToken || (isTeacherView && teacherToken))) {
+      headers.Authorization = `Bearer ${studentToken || adminToken || (isTeacherView ? teacherToken : null)}`;
     } else if (url.includes('/api/teacher/') && (teacherToken || adminToken)) {
       headers.Authorization = `Bearer ${teacherToken || adminToken}`;
     } else if (url.includes('/api/parent/') && parentToken) {
@@ -115,8 +119,13 @@ export const getQueryFn: <T>(options: {
         localStorage.removeItem("parentToken");
       } else if (url.includes('/api/student/') || url.includes('/api/mood/') || 
                  url.includes('/api/progress/') || url.includes('/api/reflection/')) {
-        localStorage.removeItem("studentToken");
-        localStorage.removeItem("studentData");
+        // Clear appropriate token based on context
+        if (isTeacherView && teacherToken) {
+          localStorage.removeItem("teacherToken");
+        } else {
+          localStorage.removeItem("studentToken");
+          localStorage.removeItem("studentData");
+        }
       } else if (url.includes('/api/admin/')) {
         localStorage.removeItem("adminToken");
       }
@@ -139,10 +148,11 @@ export const getQueryFn: <T>(options: {
       const freshRes = await fetch(url, {
         headers: {
           ...headers,
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         },
         credentials: 'include',
-        cache: 'reload',
+        cache: 'no-store',
       });
       
       if (!freshRes.ok) {

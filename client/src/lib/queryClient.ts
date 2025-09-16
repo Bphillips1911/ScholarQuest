@@ -85,18 +85,16 @@ export const getQueryFn: <T>(options: {
     const parentToken = localStorage.getItem("parentToken");
     const adminToken = localStorage.getItem("adminToken");
     
-    // Cache teacherView state for performance (avoid checking window.location on every request)
-    const isTeacherView = globalThis.location?.search?.includes('teacherView=true') ?? false;
+    // Check if this is teacher viewing student dashboard  
+    const isTeacherView = window.location.search.includes('teacherView=true');
     
-    // Fixed token selection with proper precedence for teacherView
-    if (url.includes('/api/student/') || url.includes('/api/mood/') || 
-        url.includes('/api/progress/') || url.includes('/api/reflection/')) {
-      // In teacherView, prioritize admin/teacher tokens over student token
-      const token = isTeacherView ? (adminToken || teacherToken || studentToken) : (studentToken || adminToken);
-      if (token) headers.Authorization = `Bearer ${token}`;
-    } else if (url.includes('/api/teacher/')) {
-      const token = adminToken || teacherToken;
-      if (token) headers.Authorization = `Bearer ${token}`;
+    // Student routes (including mood tracking, progress, and reflection endpoints)
+    if ((url.includes('/api/student/') || url.includes('/api/mood/') || 
+         url.includes('/api/progress/') || url.includes('/api/reflection/')) && 
+        (studentToken || adminToken || (isTeacherView && teacherToken))) {
+      headers.Authorization = `Bearer ${studentToken || adminToken || (isTeacherView ? teacherToken : null)}`;
+    } else if (url.includes('/api/teacher/') && (teacherToken || adminToken)) {
+      headers.Authorization = `Bearer ${teacherToken || adminToken}`;
     } else if (url.includes('/api/parent/') && parentToken) {
       headers.Authorization = `Bearer ${parentToken}`;
     } else if (url.includes('/api/admin/') && adminToken) {
@@ -116,17 +114,9 @@ export const getQueryFn: <T>(options: {
         localStorage.removeItem("parentToken");
       } else if (url.includes('/api/student/') || url.includes('/api/mood/') || 
                  url.includes('/api/progress/') || url.includes('/api/reflection/')) {
-        // Clear tokens based on precedence used in auth selection
-        if (isTeacherView) {
-          // In teacherView, we prioritize admin/teacher, so clear in that order
-          if (adminToken) {
-            localStorage.removeItem("adminToken");
-          } else if (teacherToken) {
-            localStorage.removeItem("teacherToken");
-          } else {
-            localStorage.removeItem("studentToken");
-            localStorage.removeItem("studentData");
-          }
+        // Clear appropriate token based on context
+        if (isTeacherView && teacherToken) {
+          localStorage.removeItem("teacherToken");
         } else {
           localStorage.removeItem("studentToken");
           localStorage.removeItem("studentData");

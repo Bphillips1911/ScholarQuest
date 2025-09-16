@@ -61,3 +61,13 @@ export function maintainStudentSession(): void {
     refreshStudentToken();
   }
 }
+
+// Unified teacher viewing detection for consistent authentication
+export function isTeacherViewing(): boolean {
+  // Check multiple sources for teacher viewing mode
+  const sessionStorageCheck = sessionStorage.getItem('teacherViewingStudent');
+  const urlCheck = window.location.search.includes('teacherView=true');
+  const pathCheck = window.location.pathname.startsWith('/teacher-student-view');
+  
+  return !!(sessionStorageCheck || urlCheck || pathCheck);
+}

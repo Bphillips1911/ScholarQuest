@@ -65,13 +65,9 @@ export async function apiRequest(
       localStorage.removeItem("parentToken");
     } else if (url.includes('/api/student/') || url.includes('/api/mood/') || 
                url.includes('/api/progress/') || url.includes('/api/reflection/')) {
-      // Clear appropriate token based on context
-      if (isTeacherView && teacherToken) {
-        localStorage.removeItem("teacherToken");
-      } else {
-        localStorage.removeItem("studentToken");
-        localStorage.removeItem("studentData");
-      }
+      // NEVER clear teacherToken on student endpoint 401s - only clear studentToken
+      localStorage.removeItem("studentToken");
+      localStorage.removeItem("studentData");
     } else if (url.includes('/api/admin/')) {
       localStorage.removeItem("adminToken");
     }
@@ -127,13 +123,9 @@ export const getQueryFn: <T>(options: {
         localStorage.removeItem("parentToken");
       } else if (url.includes('/api/student/') || url.includes('/api/mood/') || 
                  url.includes('/api/progress/') || url.includes('/api/reflection/')) {
-        // Clear appropriate token based on context
-        if (isTeacherView && teacherToken) {
-          localStorage.removeItem("teacherToken");
-        } else {
-          localStorage.removeItem("studentToken");
-          localStorage.removeItem("studentData");
-        }
+        // NEVER clear teacherToken on student endpoint 401s - only clear studentToken
+        localStorage.removeItem("studentToken");
+        localStorage.removeItem("studentData");
       } else if (url.includes('/api/admin/')) {
         localStorage.removeItem("adminToken");
       }

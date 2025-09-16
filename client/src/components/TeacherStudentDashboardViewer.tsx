@@ -83,8 +83,8 @@ export function TeacherStudentDashboardViewer({ teacherGrades, themeStyles }: Te
         returnTo: '/teacher-dashboard'
       }));
       
-      // Navigate to the full student dashboard experience
-      window.open(`/teacher-student-view/${selectedStudent}`, '_blank');
+      // Navigate to the full student dashboard experience with teacherView flag
+      window.open(`/teacher-student-view/${selectedStudent}?teacherView=true&studentId=${selectedStudent}`, '_blank');
     }
   };
 

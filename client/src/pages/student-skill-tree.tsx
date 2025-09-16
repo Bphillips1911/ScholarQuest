@@ -14,7 +14,7 @@ import {
   CheckCircle2,
   Sparkles
 } from "lucide-react";
-import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession } from "@/lib/studentAuth";
+import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession, isTeacherViewing } from "@/lib/studentAuth";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -49,48 +49,48 @@ export default function StudentSkillTree() {
 
   // Authentication check - handle both student and teacher viewing modes
   useEffect(() => {
-    // Check if this is teacher viewing student dashboard
-    const isTeacherView = window.location.search.includes('teacherView=true');
+    // Use unified teacher viewing detection
+    const teacherView = isTeacherViewing();
     const urlStudentId = new URLSearchParams(window.location.search).get('studentId');
     
-    if (isTeacherView && urlStudentId) {
+    if (teacherView && urlStudentId) {
       // Teacher viewing mode - create student data from URL params
       setStudentData({ id: urlStudentId });
       return;
     }
     
-    // Regular student authentication flow
-    if (!isStudentAuthenticated()) {
+    // Only redirect if NOT in teacher view and not authenticated
+    if (!teacherView && !isStudentAuthenticated()) {
       clearStudentAuth();
       setLocation("/student-login");
       return;
     }
     
-    maintainStudentSession();
-    
-    const student = localStorage.getItem("studentData");
-    if (student) {
-      try {
-        setStudentData(JSON.parse(student));
-      } catch (error) {
-        clearStudentAuth();
-        setLocation("/student-login");
+    // Regular student authentication flow (only if not teacher view)
+    if (!teacherView) {
+      maintainStudentSession();
+      
+      const student = localStorage.getItem("studentData");
+      if (student) {
+        try {
+          setStudentData(JSON.parse(student));
+        } catch (error) {
+          clearStudentAuth();
+          setLocation("/student-login");
+        }
       }
     }
   }, [setLocation]);
 
-  // Check if this is teacher viewing mode for endpoint selection
-  const isTeacherView = window.location.search.includes('teacherView=true');
-
   // Fetch profile data - only for student view, teacher view uses PBIS data directly
   const { data: profile } = useQuery({
     queryKey: ["/api/student/profile"],
-    enabled: !!studentData && !isTeacherView,
+    enabled: !!studentData && !isTeacherViewing(),
   });
 
   // For teacher view, get student basic info from URL or sessionStorage
   const getStudentBasicInfo = () => {
-    if (!isTeacherView) return null;
+    if (!isTeacherViewing()) return null;
     
     // Get student ID from URL
     const urlStudentId = new URLSearchParams(window.location.search).get('studentId');
@@ -114,7 +114,7 @@ export default function StudentSkillTree() {
   // Generate skill tree based on student progress
   const generateSkillTree = (): { nodes: SkillNode[], paths: SkillTreePath[] } => {
     // For teacher view, calculate points directly from PBIS entries
-    if (isTeacherView) {
+    if (isTeacherViewing()) {
       if (!pbisEntries || pbisEntries.length === 0) {
         // Show basic structure even with no data
         const studentInfo = getStudentBasicInfo();
@@ -392,7 +392,7 @@ export default function StudentSkillTree() {
 
   // Calculate current totals for progress summary (works for both views)
   const getProgressTotals = () => {
-    if (isTeacherView) {
+    if (isTeacherViewing()) {
       // Calculate from PBIS entries directly
       const academicTotal = pbisEntries?.filter((entry: any) => entry.category === 'academic').reduce((sum: number, entry: any) => sum + (entry.points || 0), 0) || 0;
       const behaviorTotal = pbisEntries?.filter((entry: any) => entry.category === 'behavior').reduce((sum: number, entry: any) => sum + (entry.points || 0), 0) || 0;

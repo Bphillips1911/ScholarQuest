@@ -47,8 +47,19 @@ export default function StudentSkillTree() {
   const [animatingNodes, setAnimatingNodes] = useState<Set<string>>(new Set());
   const [newUnlocks, setNewUnlocks] = useState<string[]>([]);
 
-  // Authentication check
+  // Authentication check - handle both student and teacher viewing modes
   useEffect(() => {
+    // Check if this is teacher viewing student dashboard
+    const isTeacherView = window.location.search.includes('teacherView=true');
+    const urlStudentId = new URLSearchParams(window.location.search).get('studentId');
+    
+    if (isTeacherView && urlStudentId) {
+      // Teacher viewing mode - create student data from URL params
+      setStudentData({ id: urlStudentId });
+      return;
+    }
+    
+    // Regular student authentication flow
     if (!isStudentAuthenticated()) {
       clearStudentAuth();
       setLocation("/student-login");
@@ -68,24 +79,20 @@ export default function StudentSkillTree() {
     }
   }, [setLocation]);
 
-  // Fetch student profile data
+  // Check if this is teacher viewing mode for endpoint selection
+  const isTeacherView = window.location.search.includes('teacherView=true');
+
+  // Fetch student data - use teacher endpoint in teacherView mode
   const { data: profile } = useQuery({
-    queryKey: ["/api/student/profile"],
+    queryKey: isTeacherView 
+      ? [`/api/teacher/student-dashboard/${studentData?.id}`]
+      : ["/api/student/profile"],
     enabled: !!studentData,
   });
 
-  // Fetch PBIS entries for skill calculations
+  // Fetch PBIS entries - use standard query client without custom headers
   const { data: pbisEntries = [] } = useQuery({
-    queryKey: ["/api/scholars", studentData?.id, "pbis"],
-    queryFn: async () => {
-      const response = await fetch(`/api/scholars/${studentData?.id}/pbis`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch PBIS entries');
-      return response.json();
-    },
+    queryKey: ["/api/pbis-entries", studentData?.id],
     enabled: !!studentData?.id,
   });
 
@@ -93,10 +100,13 @@ export default function StudentSkillTree() {
   const generateSkillTree = (): { nodes: SkillNode[], paths: SkillTreePath[] } => {
     if (!profile) return { nodes: [], paths: [] };
 
+    // Handle different profile structures for teacher vs student view
+    const profileData = isTeacherView ? (profile as any)?.scholar : profile;
+    
     // Use actual PBIS points from the profile (no bonus points)
-    const academicPoints = Math.max(0, (profile as any).academicPoints || 0);
-    const behaviorPoints = Math.max(0, (profile as any).behaviorPoints || 0);
-    const attendancePoints = Math.max(0, (profile as any).attendancePoints || 0);
+    const academicPoints = Math.max(0, profileData?.academicPoints || 0);
+    const behaviorPoints = Math.max(0, profileData?.behaviorPoints || 0);
+    const attendancePoints = Math.max(0, profileData?.attendancePoints || 0);
     
     // Calculate total points across all categories for overall progress
     const totalPoints = academicPoints + behaviorPoints + attendancePoints;

@@ -101,34 +101,35 @@ export default function TeacherStudentView() {
     enabled: !!params?.studentId,
   });
 
-  // Fetch student achievements
+  // PERFORMANCE OPTIMIZATION: Use lazy loading for tab-specific data
+  // Only fetch achievements when achievements tab is active
   const { data: achievements = [] } = useQuery({
     queryKey: [`/api/achievements/student/${params?.studentId}`],
-    enabled: !!params?.studentId,
+    enabled: !!params?.studentId && activeTab === 'achievements',
   });
 
-  // Fetch student skill tree data
+  // Only fetch skill tree when skill tree tab is active  
   const { data: skillTreeData = [] } = useQuery({
     queryKey: [`/api/student/skill-tree/${params?.studentId}`],
-    enabled: !!params?.studentId,
+    enabled: !!params?.studentId && activeTab === 'skill-tree',
   });
 
-  // Fetch PBIS entries for activity
+  // Only fetch PBIS entries when progress tab is active
   const { data: pbisEntries = [] } = useQuery({
     queryKey: [`/api/pbis-entries`, params?.studentId],
-    enabled: !!params?.studentId,
+    enabled: !!params?.studentId && (activeTab === 'progress' || activeTab === 'overview'),
   });
 
-  // Fetch behavioral reflections for the student
+  // Only fetch reflections when reflections tab is active
   const { data: reflections = [] } = useQuery({
     queryKey: [`/api/student/reflections`, params?.studentId],
-    enabled: !!params?.studentId,
+    enabled: !!params?.studentId && activeTab === 'reflections',
   });
 
-  // Fetch SEL lessons for the student
+  // Only fetch SEL lessons when learning path tab is active
   const { data: selLessons = [] } = useQuery({
     queryKey: [`/api/sel/lessons/${params?.studentId}`],
-    enabled: !!params?.studentId,
+    enabled: !!params?.studentId && activeTab === 'learning-path',
   });
 
   const handleReturnToTeacher = () => {

@@ -25,15 +25,21 @@ export async function apiRequest(
   const parentToken = localStorage.getItem("parentToken");
   const adminToken = localStorage.getItem("adminToken");
   
+  // Check if this is teacher viewing student dashboard (multiple detection methods)
+  const isTeacherView = window.location.search.includes('teacherView=true') || 
+                        window.location.pathname.includes('/teacher-student-view') ||
+                        sessionStorage.getItem('teacherViewingStudent');
+  
   // Debug logging for student token
   if (url.includes('/api/mood/') || url.includes('/api/progress/') || url.includes('/api/reflection/') || url.includes('/api/student/')) {
-    console.log("Student API request:", { url, hasToken: !!studentToken, tokenLength: studentToken?.length });
+    console.log("Student API request:", { url, hasToken: !!studentToken, tokenLength: studentToken?.length, isTeacherView });
   }
   
   // Student routes (including mood tracking, progress, and reflection endpoints)
   if ((url.startsWith('/api/student/') || url.startsWith('/api/mood/') || 
-       url.startsWith('/api/progress/') || url.startsWith('/api/reflection/')) && (studentToken || adminToken)) {
-    headers.Authorization = `Bearer ${studentToken || adminToken}`;
+       url.startsWith('/api/progress/') || url.startsWith('/api/reflection/')) && 
+       (studentToken || adminToken || (isTeacherView && teacherToken))) {
+    headers.Authorization = `Bearer ${studentToken || adminToken || (isTeacherView ? teacherToken : null)}`;
   } else if (url.startsWith('/api/teacher/') && (teacherToken || adminToken)) {
     // Use admin token for teacher routes if admin is logged in
     headers.Authorization = `Bearer ${adminToken || teacherToken}`;
@@ -59,8 +65,13 @@ export async function apiRequest(
       localStorage.removeItem("parentToken");
     } else if (url.includes('/api/student/') || url.includes('/api/mood/') || 
                url.includes('/api/progress/') || url.includes('/api/reflection/')) {
-      localStorage.removeItem("studentToken");
-      localStorage.removeItem("studentData");
+      // Clear appropriate token based on context
+      if (isTeacherView && teacherToken) {
+        localStorage.removeItem("teacherToken");
+      } else {
+        localStorage.removeItem("studentToken");
+        localStorage.removeItem("studentData");
+      }
     } else if (url.includes('/api/admin/')) {
       localStorage.removeItem("adminToken");
     }
@@ -85,8 +96,10 @@ export const getQueryFn: <T>(options: {
     const parentToken = localStorage.getItem("parentToken");
     const adminToken = localStorage.getItem("adminToken");
     
-    // Check if this is teacher viewing student dashboard  
-    const isTeacherView = window.location.search.includes('teacherView=true');
+    // Check if this is teacher viewing student dashboard (multiple detection methods)
+    const isTeacherView = window.location.search.includes('teacherView=true') || 
+                          window.location.pathname.includes('/teacher-student-view') ||
+                          sessionStorage.getItem('teacherViewingStudent');
     
     // Student routes (including mood tracking, progress, and reflection endpoints)
     if ((url.includes('/api/student/') || url.includes('/api/mood/') || 

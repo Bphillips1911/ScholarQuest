@@ -5430,7 +5430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Teacher Student Dashboard Viewer Routes
-  app.get('/api/teacher/student-dashboard/:studentId', authenticateTeacher, async (req, res) => {
+  app.get('/api/teacher/student-dashboard/:studentId', authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const { studentId } = req.params;
       const teacherId = (req as any).teacher?.id;

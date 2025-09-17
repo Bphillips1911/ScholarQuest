@@ -18,7 +18,7 @@ import {
   TrendingUp,
   Gift
 } from 'lucide-react';
-import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession } from '@/lib/studentAuth';
+import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession, isTeacherViewing } from '@/lib/studentAuth';
 
 interface StudentData {
   id: string;
@@ -46,23 +46,40 @@ export default function StudentAchievements() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
-    // Check authentication
-    if (!isStudentAuthenticated()) {
+    // Allow access if student is authenticated OR if teacher is viewing
+    if (!isStudentAuthenticated() && !isTeacherViewing()) {
       clearStudentAuth();
       setLocation("/student-login");
       return;
     }
     
-    maintainStudentSession();
-    
-    const student = localStorage.getItem("studentData");
-    if (student) {
-      try {
-        setStudentData(JSON.parse(student));
-      } catch (error) {
-        console.error("Error parsing student data:", error);
-        clearStudentAuth();
-        setLocation("/student-login");
+    if (isTeacherViewing()) {
+      // For teacher viewing mode, get student data from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const studentId = urlParams.get('studentId');
+      const studentName = urlParams.get('studentName') || 'Student';
+      
+      if (studentId) {
+        setStudentData({
+          id: studentId,
+          name: studentName,
+          username: studentName.toLowerCase().replace(' ', ''),
+          gradeLevel: 7 // Default grade for teacher viewing
+        });
+      }
+    } else {
+      // Normal student authentication flow
+      maintainStudentSession();
+      
+      const student = localStorage.getItem("studentData");
+      if (student) {
+        try {
+          setStudentData(JSON.parse(student));
+        } catch (error) {
+          console.error("Error parsing student data:", error);
+          clearStudentAuth();
+          setLocation("/student-login");
+        }
       }
     }
   }, [setLocation]);

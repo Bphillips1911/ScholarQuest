@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
-import { isStudentAuthenticated, clearStudentAuth } from '@/lib/studentAuth';
+import { isStudentAuthenticated, clearStudentAuth, isTeacherViewing } from '@/lib/studentAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,22 +27,39 @@ export default function GamifiedLearning() {
   const [showStoryModal, setShowStoryModal] = useState(false);
 
   useEffect(() => {
-    if (!isStudentAuthenticated()) {
+    // Allow access if student is authenticated OR if teacher is viewing
+    if (!isStudentAuthenticated() && !isTeacherViewing()) {
       clearStudentAuth();
       setLocation("/student-login");
       return;
     }
     
-    // Get student data from localStorage
-    const student = localStorage.getItem("studentData");
-    if (student) {
-      try {
-        setStudentData(JSON.parse(student));
+    // For teacher viewing mode, get student data from URL or session
+    if (isTeacherViewing()) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const studentId = urlParams.get('studentId');
+      const studentName = urlParams.get('studentName') || 'Student';
+      
+      if (studentId) {
+        setStudentData({
+          id: studentId,
+          name: studentName,
+          username: studentName.toLowerCase().replace(' ', '')
+        });
         setIsAuthenticated(true);
-      } catch (error) {
-        console.error("Error parsing student data:", error);
-        clearStudentAuth();
-        setLocation("/student-login");
+      }
+    } else {
+      // Normal student authentication flow
+      const student = localStorage.getItem("studentData");
+      if (student) {
+        try {
+          setStudentData(JSON.parse(student));
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error("Error parsing student data:", error);
+          clearStudentAuth();
+          setLocation("/student-login");
+        }
       }
     }
   }, [setLocation]);

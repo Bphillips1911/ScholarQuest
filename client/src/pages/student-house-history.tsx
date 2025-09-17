@@ -24,7 +24,7 @@ import {
   Scale,
   Navigation
 } from "lucide-react";
-import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession } from "@/lib/studentAuth";
+import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession, isTeacherViewing } from "@/lib/studentAuth";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -62,25 +62,43 @@ export default function StudentHouseHistory() {
   const [isReading, setIsReading] = useState(false);
   const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
 
-  // Authentication check
+  // Authentication check - allow teacher viewing
   useEffect(() => {
-    if (!isStudentAuthenticated()) {
+    // Allow access if student is authenticated OR if teacher is viewing
+    if (!isStudentAuthenticated() && !isTeacherViewing()) {
       clearStudentAuth();
       setLocation("/student-login");
       return;
     }
     
-    maintainStudentSession();
-    
-    const student = localStorage.getItem("studentData");
-    if (student) {
-      try {
-        const data = JSON.parse(student);
-        setStudentData(data);
-        setSelectedHouse(data.houseName?.toLowerCase() || 'franklin');
-      } catch (error) {
-        clearStudentAuth();
-        setLocation("/student-login");
+    if (isTeacherViewing()) {
+      // For teacher viewing mode, get student data from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const studentId = urlParams.get('studentId');
+      const studentName = urlParams.get('studentName') || 'Student';
+      
+      if (studentId) {
+        setStudentData({
+          id: studentId,
+          name: studentName,
+          houseName: 'franklin', // Default house for teacher viewing
+        });
+        setSelectedHouse('franklin');
+      }
+    } else {
+      // Normal student authentication flow
+      maintainStudentSession();
+      
+      const student = localStorage.getItem("studentData");
+      if (student) {
+        try {
+          const data = JSON.parse(student);
+          setStudentData(data);
+          setSelectedHouse(data.houseName?.toLowerCase() || 'franklin');
+        } catch (error) {
+          clearStudentAuth();
+          setLocation("/student-login");
+        }
       }
     }
   }, [setLocation]);

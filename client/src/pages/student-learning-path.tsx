@@ -25,7 +25,7 @@ import {
   Heart,
   Users
 } from "lucide-react";
-import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession } from "@/lib/studentAuth";
+import { isStudentAuthenticated, clearStudentAuth, maintainStudentSession, isTeacherViewing } from "@/lib/studentAuth";
 import logoPath from "@assets/_BHSA Mustang 1_1754780382943.png";
 
 interface LearningPath {
@@ -95,52 +95,64 @@ export default function StudentLearningPath() {
     alert(`Learning Path: ${path.title}\n\nDescription: ${path.description}\n\nNext Step: ${path.currentStep}\n\nSkills to Develop:\n${path.skills.join(', ')}\n\nNext Milestone: ${path.nextMilestone}`);
   };
 
-  // Authentication check
+  // Authentication check - allow teacher viewing
   useEffect(() => {
-    if (!isStudentAuthenticated()) {
+    // Allow access if student is authenticated OR if teacher is viewing
+    if (!isStudentAuthenticated() && !isTeacherViewing()) {
       clearStudentAuth();
       setLocation("/student-login");
       return;
     }
     
-    maintainStudentSession();
-    
-    const student = localStorage.getItem("studentData");
-    if (student) {
-      try {
-        setStudentData(JSON.parse(student));
-      } catch (error) {
-        clearStudentAuth();
-        setLocation("/student-login");
+    if (isTeacherViewing()) {
+      // For teacher viewing mode, get student data from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const studentId = urlParams.get('studentId');
+      const studentName = urlParams.get('studentName') || 'Student';
+      
+      if (studentId) {
+        setStudentData({
+          id: studentId,
+          name: studentName,
+          username: studentName.toLowerCase().replace(' ', ''),
+        });
+      }
+    } else {
+      // Normal student authentication flow
+      maintainStudentSession();
+      
+      const student = localStorage.getItem("studentData");
+      if (student) {
+        try {
+          setStudentData(JSON.parse(student));
+        } catch (error) {
+          clearStudentAuth();
+          setLocation("/student-login");
+        }
       }
     }
   }, [setLocation]);
 
-  // Fetch student profile and academic data
+  // Fetch student profile and academic data - teacher-view aware
   const { data: profile } = useQuery({
-    queryKey: ["/api/student/profile"],
+    queryKey: isTeacherViewing() && studentData?.id ? 
+      ["/api/teacher/student-dashboard", studentData.id] : 
+      ["/api/student/profile"],
     enabled: !!studentData,
   });
 
-  // Fetch PBIS entries for achievement tracking
+  // Fetch PBIS entries for achievement tracking - teacher-view aware  
   const { data: pbisEntries = [] } = useQuery({
-    queryKey: ["/api/scholars", studentData?.id, "pbis"],
-    queryFn: async () => {
-      const response = await fetch(`/api/scholars/${studentData?.id}/pbis`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('studentToken')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch PBIS entries');
-      return response.json();
-    },
+    queryKey: isTeacherViewing() && studentData?.id ? 
+      ["/api/scholars", studentData.id, "pbis"] : 
+      ["/api/scholars", studentData?.id, "pbis"],
     enabled: !!studentData?.id,
   });
 
-  // Fetch progress goals
+  // Fetch progress goals - disabled for teacher viewing since not available
   const { data: progressGoals = [] } = useQuery({
     queryKey: ["/api/progress/goals/active"],
-    enabled: !!studentData,
+    enabled: !!studentData && !isTeacherViewing(),
   });
 
   // HIGH MILESTONE LEARNING PATHS - Set ambitious goals to motivate scholars

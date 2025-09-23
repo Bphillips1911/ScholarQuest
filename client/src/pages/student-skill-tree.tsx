@@ -413,11 +413,17 @@ export default function StudentSkillTree() {
             <div className="flex items-center space-x-4">
               <Button 
                 variant="ghost" 
-                onClick={() => setLocation("/student-dashboard")}
+                onClick={() => {
+                  if (isTeacherViewing()) {
+                    setLocation("/teacher-dashboard");
+                  } else {
+                    setLocation("/student-dashboard");
+                  }
+                }}
                 className="flex items-center space-x-2 text-white hover:bg-white/20"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span>Back to Dashboard</span>
+                <span>{isTeacherViewing() ? "Return to Teacher Dashboard" : "Back to Dashboard"}</span>
               </Button>
               <img 
                 src={logoPath} 

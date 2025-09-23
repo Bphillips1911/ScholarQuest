@@ -51,13 +51,13 @@ export function TeacherStudentDashboardViewer({ teacherGrades, themeStyles }: Te
   const { toast } = useToast();
 
   // Fetch students for selected grade - using teacher endpoint that includes auth
-  const { data: students = [] } = useQuery({
+  const { data: students = [] } = useQuery<Scholar[]>({
     queryKey: [`/api/teacher/scholars/grade/${selectedGrade}`],
     enabled: !!selectedGrade,
   });
 
   // Fetch student dashboard data
-  const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
+  const { data: dashboardData, isLoading: dashboardLoading } = useQuery<StudentDashboardData>({
     queryKey: [`/api/teacher/student-dashboard/${selectedStudent}`],
     enabled: !!selectedStudent,
   });

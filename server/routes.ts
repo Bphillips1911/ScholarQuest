@@ -203,6 +203,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const jwtSecret = "bhsa-admin-secret-2025-stable";
         const decoded: any = jwt.verify(token, jwtSecret);
         console.log("Admin token decoded:", decoded);
+        
+        // Validate active session
+        const session = await storage.getAdminSession(token);
+        if (!session) {
+          throw new Error("Invalid session");
+        }
+        
         const admin = await storage.getAdministratorByEmail(decoded.email);
         console.log("Admin found:", admin ? admin.email : 'not found');
         
@@ -5381,7 +5388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Teacher endpoint to get scholars by grade with authentication
-  app.get('/api/teacher/scholars/grade/:grade', authenticateTeacher, async (req, res) => {
+  app.get('/api/teacher/scholars/grade/:grade', authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const grade = parseInt(req.params.grade);
       const teacherId = req.teacher?.id;

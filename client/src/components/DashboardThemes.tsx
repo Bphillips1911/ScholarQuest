@@ -125,13 +125,13 @@ export function DashboardThemes({
     if (theme && theme.unlocked) {
       setSelectedTheme(themeId);
       onThemeChange(themeId);
-      localStorage.setItem('studentDashboardTheme', themeId);
+      localStorage.setItem('student-dashboard-theme', themeId);
     }
   };
 
   // Load saved theme on component mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('studentDashboardTheme');
+    const savedTheme = localStorage.getItem('student-dashboard-theme');
     if (savedTheme) {
       setSelectedTheme(savedTheme);
       onThemeChange(savedTheme);

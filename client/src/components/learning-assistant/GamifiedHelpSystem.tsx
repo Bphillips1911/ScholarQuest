@@ -86,7 +86,7 @@ export function GamifiedHelpSystem({
       id: 'skill-tree-champion',
       title: 'Skill Tree Master',
       description: 'Navigate the gamified Skill Tree to unlock achievements and track your growth across all areas.',
-      category: 'achievement',
+      category: 'academic',
       difficulty: 'medium',
       xpReward: 75,
       completed: completedQuests.includes('skill-tree-champion'),

@@ -893,7 +893,7 @@ function StudentDashboardContent() {
             </StaggerItem>
 
             {/* Behavioral Reflections - Only show for students with pending reflections from negative behavior */}
-            {reflections.length > 0 && reflections.some((r: Reflection) => r.status === 'assigned' || r.status === 'in_review') && (
+            {reflections.length > 0 && reflections.some((r: Reflection) => r.status === 'assigned' || r.status === 'submitted') && (
               <StaggerItem>
                 <Card className={`col-span-1 md:col-span-2 lg:col-span-3 ${themeStyles.cardBg} border-white/20`}>
                 <CardHeader>

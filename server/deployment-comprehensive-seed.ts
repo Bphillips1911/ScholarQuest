@@ -190,6 +190,7 @@ async function seedEssentialScholars() {
   console.log("👥 SEEDING: Essential scholars...");
   
   const hashedStudentPassword = await bcrypt.hash("BHSAStudent2025!", 10);
+  const hashedTiffanyPassword = await bcrypt.hash("bhsabh1478", 10);
   
   const essentialScholars = [
     // David Thompson's 7th Grade Students
@@ -230,7 +231,7 @@ async function seedEssentialScholars() {
       sortingNumber: null,
       addedByTeacher: "8991dee3-3b8f-486b-94ff-024a37b56188", // David Thompson
       username: "tifdau78",
-      passwordHash: hashedStudentPassword,
+      passwordHash: hashedTiffanyPassword,
       teacherId: "8991dee3-3b8f-486b-94ff-024a37b56188",
       needsPasswordReset: false,
       isActive: true,
@@ -326,12 +327,13 @@ async function seedEssentialParents() {
   console.log("👨‍👩‍👧‍👦 SEEDING: Essential parents...");
   
   const hashedParentPassword = await bcrypt.hash("BHSAParent2025!", 10);
+  const hashedTiffanyParentPassword = await bcrypt.hash("parent123", 10);
   
   const essentialParents = [
     {
       id: "ae5d429e-314d-4199-8167-342f116406cd", // Tiffany Demo's exact ID
       email: "Tiffanydemo83@gmail.com",
-      password: hashedParentPassword,
+      password: hashedTiffanyParentPassword,
       firstName: "Tiffany",
       lastName: "Demo", 
       phone: "555-1478",

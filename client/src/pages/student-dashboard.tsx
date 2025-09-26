@@ -313,57 +313,78 @@ function StudentDashboardContent() {
   const { triggerCelebration } = useCelebrationTrigger();
   const { triggerAutoTip } = useAutoTips();
 
-  // Theme configurations
+  // Theme configurations - Updated with both CSS values and classes for proper application
   const getThemeStyles = (themeId: string) => {
     const themes = {
       'default': {
-        background: 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900',
-        accent: 'from-blue-600 to-purple-600',
-        cardBg: 'bg-white/90 backdrop-blur-sm',
-        textPrimary: 'text-gray-900',
-        textSecondary: 'text-gray-600'
+        background: 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)',
+        backgroundClass: 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900',
+        accent: 'linear-gradient(to right, #2563eb, #7c3aed)',
+        cardBg: 'rgba(255, 255, 255, 0.95)',
+        cardBgClass: 'bg-white/95 backdrop-blur-sm',
+        textPrimary: '#1f2937',
+        textSecondary: '#6b7280',
+        border: '#e5e7eb'
       },
       'kelly-green': {
-        background: 'bg-gradient-to-br from-green-900 via-emerald-900 to-slate-900',
-        accent: 'from-green-500 to-emerald-500',
-        cardBg: 'bg-white/90 backdrop-blur-sm',
-        textPrimary: 'text-gray-900',
-        textSecondary: 'text-gray-600'
+        background: 'linear-gradient(135deg, #14532d 0%, #047857 50%, #0f172a 100%)',
+        backgroundClass: 'bg-gradient-to-br from-green-900 via-emerald-900 to-slate-900',
+        accent: 'linear-gradient(to right, #10b981, #059669)',
+        cardBg: 'rgba(255, 255, 255, 0.95)',
+        cardBgClass: 'bg-white/95 backdrop-blur-sm',
+        textPrimary: '#1f2937',
+        textSecondary: '#6b7280',
+        border: '#22c55e'
       },
       'gold': {
-        background: 'bg-gradient-to-br from-yellow-900 via-amber-900 to-orange-900',
-        accent: 'from-yellow-400 to-amber-400',
-        cardBg: 'bg-white/90 backdrop-blur-sm',
-        textPrimary: 'text-gray-900',
-        textSecondary: 'text-gray-600'
+        background: 'linear-gradient(135deg, #78350f 0%, #d97706 50%, #ea580c 100%)',
+        backgroundClass: 'bg-gradient-to-br from-yellow-900 via-amber-900 to-orange-900',
+        accent: 'linear-gradient(to right, #facc15, #f59e0b)',
+        cardBg: 'rgba(255, 255, 255, 0.95)',
+        cardBgClass: 'bg-white/95 backdrop-blur-sm',
+        textPrimary: '#1f2937',
+        textSecondary: '#6b7280',
+        border: '#f59e0b'
       },
       'orange': {
-        background: 'bg-gradient-to-br from-orange-900 via-red-900 to-slate-900',
-        accent: 'from-orange-500 to-red-500',
-        cardBg: 'bg-white/90 backdrop-blur-sm',
-        textPrimary: 'text-gray-900',
-        textSecondary: 'text-gray-600'
+        background: 'linear-gradient(135deg, #9a3412 0%, #7f1d1d 50%, #0f172a 100%)',
+        backgroundClass: 'bg-gradient-to-br from-orange-900 via-red-900 to-slate-900',
+        accent: 'linear-gradient(to right, #f97316, #ef4444)',
+        cardBg: 'rgba(255, 255, 255, 0.95)',
+        cardBgClass: 'bg-white/95 backdrop-blur-sm',
+        textPrimary: '#1f2937',
+        textSecondary: '#6b7280',
+        border: '#f97316'
       },
       'dark': {
-        background: 'bg-gradient-to-br from-gray-900 via-slate-900 to-black',
-        accent: 'from-gray-600 to-slate-600',
-        cardBg: 'bg-gray-800/90 backdrop-blur-sm',
-        textPrimary: 'text-white',
-        textSecondary: 'text-gray-300'
+        background: 'linear-gradient(135deg, #111827 0%, #0f172a 50%, #000000 100%)',
+        backgroundClass: 'bg-gradient-to-br from-gray-900 via-slate-900 to-black',
+        accent: 'linear-gradient(to right, #4b5563, #64748b)',
+        cardBg: 'rgba(55, 65, 81, 0.95)',
+        cardBgClass: 'bg-gray-800/95 backdrop-blur-sm',
+        textPrimary: '#f9fafb',
+        textSecondary: '#d1d5db',
+        border: '#4b5563'
       },
       'light': {
-        background: 'bg-gradient-to-br from-yellow-100 via-orange-100 to-pink-100',
-        accent: 'from-yellow-500 to-orange-500',
-        cardBg: 'bg-white/95 backdrop-blur-sm',
-        textPrimary: 'text-gray-900',
-        textSecondary: 'text-gray-700'
+        background: 'linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fce7f3 100%)',
+        backgroundClass: 'bg-gradient-to-br from-yellow-100 via-orange-100 to-pink-100',
+        accent: 'linear-gradient(to right, #eab308, #f97316)',
+        cardBg: 'rgba(255, 255, 255, 0.98)',
+        cardBgClass: 'bg-white/98 backdrop-blur-sm',
+        textPrimary: '#1f2937',
+        textSecondary: '#374151',
+        border: '#f59e0b'
       },
       'champion': {
-        background: 'bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900',
-        accent: 'from-purple-400 to-blue-400',
-        cardBg: 'bg-white/90 backdrop-blur-sm',
-        textPrimary: 'text-gray-900',
-        textSecondary: 'text-gray-600'
+        background: 'linear-gradient(135deg, #581c87 0%, #312e81 50%, #1e3a8a 100%)',
+        backgroundClass: 'bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900',
+        accent: 'linear-gradient(to right, #a855f7, #3b82f6)',
+        cardBg: 'rgba(255, 255, 255, 0.95)',
+        cardBgClass: 'bg-white/95 backdrop-blur-sm',
+        textPrimary: '#1f2937',
+        textSecondary: '#6b7280',
+        border: '#a855f7'
       }
     };
     return themes[themeId as keyof typeof themes] || themes['default'];
@@ -371,18 +392,36 @@ function StudentDashboardContent() {
 
   const themeStyles = getThemeStyles(currentTheme);
 
-  // Load saved theme from localStorage
+  // Load saved theme from localStorage and apply to DOM
   useEffect(() => {
-    const savedTheme = localStorage.getItem('student-dashboard-theme');
-    if (savedTheme) {
-      setCurrentTheme(savedTheme);
-    }
+    const savedTheme = localStorage.getItem('student-dashboard-theme') || 'default';
+    setCurrentTheme(savedTheme);
+    
+    // Apply theme immediately to DOM
+    const themeData = getThemeStyles(savedTheme);
+    document.documentElement.style.setProperty('--theme-background', themeData.background);
+    document.documentElement.style.setProperty('--theme-card-bg', themeData.cardBg);
+    document.documentElement.style.setProperty('--theme-text-primary', themeData.textPrimary);
+    document.documentElement.style.setProperty('--theme-text-secondary', themeData.textSecondary);
+    document.documentElement.style.setProperty('--theme-border', themeData.border);
+    
+    console.log(`🎨 Theme loaded and applied: ${savedTheme}`);
   }, []);
 
-  // Save theme to localStorage when changed
+  // Save theme to localStorage when changed and apply to DOM
   const handleThemeChange = (newTheme: string) => {
     setCurrentTheme(newTheme);
     localStorage.setItem('student-dashboard-theme', newTheme);
+    
+    // Apply theme immediately to the document root for CSS variables
+    const themeData = getThemeStyles(newTheme);
+    document.documentElement.style.setProperty('--theme-background', themeData.background);
+    document.documentElement.style.setProperty('--theme-card-bg', themeData.cardBg);
+    document.documentElement.style.setProperty('--theme-text-primary', themeData.textPrimary);
+    document.documentElement.style.setProperty('--theme-text-secondary', themeData.textSecondary);
+    document.documentElement.style.setProperty('--theme-border', themeData.border);
+    
+    console.log(`🎨 Theme changed to: ${newTheme}`);
   };
   const [, setLocation] = useLocation();
 
@@ -577,7 +616,10 @@ function StudentDashboardContent() {
   };
 
   return (
-    <div className={`min-h-screen ${themeStyles.background}`}>
+    <div 
+      className="min-h-screen transition-all duration-500 ease-in-out"
+      style={{ background: themeStyles.background }}
+    >
       {/* Header */}
       <div className="bg-white shadow-sm border-b relative z-50">
         <div className="container mx-auto px-4 py-4">

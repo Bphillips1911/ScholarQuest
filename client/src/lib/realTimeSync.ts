@@ -63,6 +63,7 @@ class RealTimeSync {
           break;
         case 'PBIS_UPDATE':
           this.invalidatePBISQueries(update.studentId);
+          console.log('📊 Real-time PBIS update received for student:', update.studentId);
           break;
         case 'REFLECTION_UPDATE':
           this.invalidateReflectionQueries(update.studentId);
@@ -76,6 +77,14 @@ class RealTimeSync {
         case 'points_update':
           // Handle legacy points_update messages as PBIS_UPDATE
           this.invalidatePBISQueries(update.studentId);
+          console.log('📊 Real-time points update received for student:', update.studentId);
+          break;
+        case 'HEARTBEAT':
+          // Server heartbeat to keep connection alive - no action needed
+          break;
+        case 'CONNECTED':
+          // Initial connection confirmation - no action needed
+          console.log('✅ Real-time sync connection established');
           break;
         default:
           console.log('Unknown update type:', update.type);

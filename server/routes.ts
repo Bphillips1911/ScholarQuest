@@ -813,13 +813,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Teacher not found" });
       }
 
-      // Create PBIS entry with enhanced data
+      // Create PBIS entry with enhanced data - FIXED subcategory handling
       const pbisData = {
         scholarId,
         teacherName: teacher.name,
         teacherRole: teacher.gradeRole || teacher.role || "Teacher",
         category,
-        subcategory: category === "behavior" ? mustangTrait : category,
+        subcategory: req.body.subcategory || category, // Preserve original subcategory
         mustangTrait: category === "behavior" ? mustangTrait : "General",
         points: Math.abs(points) * (pointType === "negative" ? -1 : 1),
         reason,
@@ -846,7 +846,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             pointType: category,
             houseId: scholar.houseId,
             teacherName: teacher.name,
-            reason: subcategory
+            reason: pbisData.subcategory
           });
           
           // Also broadcast student-specific update

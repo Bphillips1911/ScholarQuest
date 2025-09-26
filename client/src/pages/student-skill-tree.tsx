@@ -49,9 +49,10 @@ export default function StudentSkillTree() {
 
   // Authentication check - handle both student and teacher viewing modes
   useEffect(() => {
-    // Use unified teacher viewing detection
-    const teacherView = isTeacherViewing();
-    const urlStudentId = new URLSearchParams(window.location.search).get('studentId');
+    // Enhanced teacher viewing detection - check URL path pattern for deployed environment
+    const teacherView = isTeacherViewing() || window.location.pathname.includes('teacher-student-view');
+    const urlStudentId = new URLSearchParams(window.location.search).get('studentId') || 
+                        window.location.pathname.split('/').pop(); // Extract ID from URL path
     
     if (teacherView && urlStudentId) {
       // Teacher viewing mode - create student data from URL params
@@ -59,25 +60,26 @@ export default function StudentSkillTree() {
       return;
     }
     
-    // Only redirect if NOT in teacher view and not authenticated
-    if (!teacherView && !isStudentAuthenticated()) {
-      clearStudentAuth();
-      setLocation("/student-login");
-      return;
-    }
-    
-    // Regular student authentication flow (only if not teacher view)
+    // For direct student access, be more lenient with authentication
     if (!teacherView) {
+      // Try to maintain session first
       maintainStudentSession();
       
       const student = localStorage.getItem("studentData");
       if (student) {
         try {
           setStudentData(JSON.parse(student));
+          return;
         } catch (error) {
-          clearStudentAuth();
-          setLocation("/student-login");
+          console.warn("Error parsing student data:", error);
         }
+      }
+      
+      // Only redirect to login if we have no student data AND not authenticated
+      if (!isStudentAuthenticated()) {
+        clearStudentAuth();
+        setLocation("/student-login");
+        return;
       }
     }
   }, [setLocation]);
@@ -414,8 +416,12 @@ export default function StudentSkillTree() {
               <Button 
                 variant="ghost" 
                 onClick={() => {
-                  if (isTeacherViewing()) {
-                    setLocation("/teacher-dashboard");
+                  // Enhanced navigation logic for deployed environment
+                  const teacherView = isTeacherViewing() || window.location.pathname.includes('teacher-student-view');
+                  if (teacherView) {
+                    // Check if we have a return path from teacher viewing
+                    const returnTo = sessionStorage.getItem('teacherReturnPath') || '/teacher-dashboard';
+                    window.location.href = returnTo;
                   } else {
                     setLocation("/student-dashboard");
                   }

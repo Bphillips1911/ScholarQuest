@@ -64,17 +64,13 @@ export default function StudentHouseHistory() {
 
   // Authentication check - allow teacher viewing
   useEffect(() => {
-    // Allow access if student is authenticated OR if teacher is viewing
-    if (!isStudentAuthenticated() && !isTeacherViewing()) {
-      clearStudentAuth();
-      setLocation("/student-login");
-      return;
-    }
+    // Enhanced teacher viewing detection
+    const teacherView = isTeacherViewing() || window.location.pathname.includes('teacher-student-view');
     
-    if (isTeacherViewing()) {
-      // For teacher viewing mode, get student data from URL parameters
+    if (teacherView) {
+      // For teacher viewing mode, get student data from URL parameters or path
       const urlParams = new URLSearchParams(window.location.search);
-      const studentId = urlParams.get('studentId');
+      const studentId = urlParams.get('studentId') || window.location.pathname.split('/').pop();
       const studentName = urlParams.get('studentName') || 'Student';
       
       if (studentId) {
@@ -86,7 +82,7 @@ export default function StudentHouseHistory() {
         setSelectedHouse('franklin');
       }
     } else {
-      // Normal student authentication flow
+      // Normal student authentication flow - be more lenient
       maintainStudentSession();
       
       const student = localStorage.getItem("studentData");
@@ -96,9 +92,15 @@ export default function StudentHouseHistory() {
           setStudentData(data);
           setSelectedHouse(data.houseName?.toLowerCase() || 'franklin');
         } catch (error) {
-          clearStudentAuth();
-          setLocation("/student-login");
+          console.warn("Error parsing student data:", error);
         }
+      }
+      
+      // Only redirect if no student data and not authenticated
+      if (!isStudentAuthenticated() && !studentData) {
+        clearStudentAuth();
+        setLocation("/student-login");
+        return;
       }
     }
   }, [setLocation]);
@@ -388,8 +390,11 @@ export default function StudentHouseHistory() {
               <Button 
                 variant="ghost" 
                 onClick={() => {
-                  if (isTeacherViewing()) {
-                    setLocation("/teacher-dashboard");
+                  // Enhanced navigation logic for deployed environment
+                  const teacherView = isTeacherViewing() || window.location.pathname.includes('teacher-student-view');
+                  if (teacherView) {
+                    const returnTo = sessionStorage.getItem('teacherReturnPath') || '/teacher-dashboard';
+                    window.location.href = returnTo;
                   } else {
                     setLocation("/student-dashboard");
                   }

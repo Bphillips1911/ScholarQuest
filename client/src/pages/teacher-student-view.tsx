@@ -95,10 +95,13 @@ export default function TeacherStudentView() {
     }
   }, [params?.studentId, setLocation]);
 
-  // Fetch comprehensive student data
-  const { data: studentData, isLoading } = useQuery({
+  // Fetch comprehensive student data - REAL-TIME OPTIMIZED  
+  const { data: studentData, isLoading, refetch: refetchStudent } = useQuery({
     queryKey: [`/api/teacher/student-dashboard/${params?.studentId}`],
     enabled: !!params?.studentId,
+    staleTime: 5 * 1000, // REDUCED: Cache for only 5 seconds for instant updates
+    refetchOnWindowFocus: true, // Refetch when window gets focus
+    refetchInterval: 10 * 1000, // REDUCED: Auto-refetch every 10 seconds for real-time updates
   });
 
   // PERFORMANCE OPTIMIZATION: Use lazy loading for tab-specific data
@@ -114,10 +117,13 @@ export default function TeacherStudentView() {
     enabled: !!params?.studentId && activeTab === 'skill-tree',
   });
 
-  // Only fetch PBIS entries when progress tab is active
-  const { data: pbisEntries = [] } = useQuery({
+  // Fetch PBIS entries for real-time MUSTANG traits recognition - OPTIMIZED
+  const { data: pbisEntries = [], refetch: refetchPBIS } = useQuery({
     queryKey: [`/api/pbis-entries`, params?.studentId],
     enabled: !!params?.studentId && (activeTab === 'progress' || activeTab === 'overview'),
+    staleTime: 5 * 1000, // REDUCED: Cache for only 5 seconds for instant updates
+    refetchOnWindowFocus: true, // Refetch when window gets focus
+    refetchInterval: 10 * 1000, // REDUCED: Auto-refetch every 10 seconds for real-time updates
   });
 
   // Only fetch reflections when reflections tab is active
@@ -218,7 +224,7 @@ export default function TeacherStudentView() {
   const { scholar, house, pbisEntries: studentPbisEntries = [] } = studentData as any;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-gray-900">
+    <div className={`min-h-screen bg-gradient-to-br ${themeStyles.bg}`}>
       {/* Exact Student Portal Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-3">

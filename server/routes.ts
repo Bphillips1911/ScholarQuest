@@ -6734,7 +6734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // House Leaders Dashboard endpoint - Get top 4 scholars by category with grade filtering
-  app.get("/api/house-leaders", authenticateTeacher, async (req: any, res) => {
+  app.get("/api/house-leaders", authenticateTeacherOrAdmin, async (req: any, res) => {
     try {
       const isAdmin = !!req.admin;
       const teacher = req.teacher;

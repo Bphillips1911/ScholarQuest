@@ -22,6 +22,7 @@ import { StudentSearchTab } from "@/components/StudentSearchTab";
 import { UnifiedArtsClassManager } from "@/components/UnifiedArtsClassManager";
 import { NotificationHeader } from "@/components/NotificationHeader";
 import { notificationService } from "@/services/notificationService";
+import { HouseLeadersDashboard } from "@/components/HouseLeadersDashboard";
 
 // SEL Lessons List Component
 function SELLessonsList({ teacherName }: { teacherName: string }) {
@@ -1414,6 +1415,19 @@ export default function TeacherDashboard() {
               <span className="hidden sm:inline">Student Search</span>
               <span className="sm:hidden">Search</span>
             </button>
+            <button
+              onClick={() => setActiveTab('house-leaders')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'house-leaders'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-house-leaders"
+            >
+              <Trophy className="h-4 w-4" />
+              <span className="hidden sm:inline">House Leaders</span>
+              <span className="sm:hidden">Leaders</span>
+            </button>
             {teacher?.gradeRole === 'Unified Arts' && (
               <button
                 onClick={() => setActiveTab('class-periods')}
@@ -1981,6 +1995,13 @@ export default function TeacherDashboard() {
                 <StudentSearchTab teacher={teacher} />
               </CardContent>
             </Card>
+            </div>
+          )}
+
+          {/* House Leaders Tab */}
+          {activeTab === 'house-leaders' && (
+            <div className="space-y-6">
+              <HouseLeadersDashboard />
             </div>
           )}
 

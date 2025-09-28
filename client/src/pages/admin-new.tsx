@@ -22,6 +22,7 @@ import { AIRecommendationEngine } from "@/components/AIRecommendationEngine";
 import { StudentTrendsComponent, ClassroomTrendsComponent } from "@/components/TrendsAnalytics";
 import { NotificationBell, NotificationPanel, useNotifications } from "@/components/NotificationSystem";
 import { notificationService } from "@/services/notificationService";
+import { HouseLeadersDashboard } from "@/components/HouseLeadersDashboard";
 import { useLocation } from "wouter";
 import type { House, Scholar, TeacherAuth } from "@shared/schema";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
@@ -687,7 +688,7 @@ export default function AdminNew() {
               <TabsTrigger value="exports" className="text-xs sm:text-sm px-2 py-2">Data Export</TabsTrigger>
             </TabsList>
 
-            <TabsList className="grid w-full grid-cols-4 h-auto">
+            <TabsList className="grid w-full grid-cols-5 h-auto">
               <TabsTrigger value="progress-reports" className="text-xs sm:text-sm px-2 py-2">
                 <FileText className="h-4 w-4 mr-1" />
                 Reports
@@ -695,6 +696,10 @@ export default function AdminNew() {
               <TabsTrigger value="achievement-playground" className="text-xs sm:text-sm px-2 py-2">
                 <Trophy className="h-4 w-4 mr-1" />
                 Achievement
+              </TabsTrigger>
+              <TabsTrigger value="house-leaders" className="text-xs sm:text-sm px-2 py-2">
+                <Trophy className="h-4 w-4 mr-1" />
+                House Leaders
               </TabsTrigger>
               <TabsTrigger value="performance-heatmap" className="text-xs sm:text-sm px-2 py-2">
                 <BarChart3 className="h-4 w-4 mr-1" />
@@ -2326,6 +2331,10 @@ export default function AdminNew() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="house-leaders" className="space-y-6">
+              <HouseLeadersDashboard />
             </TabsContent>
 
             <TabsContent value="performance-heatmap" className="space-y-6">

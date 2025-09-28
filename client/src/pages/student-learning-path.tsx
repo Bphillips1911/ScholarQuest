@@ -360,19 +360,13 @@ export default function StudentLearningPath() {
               <Button 
                 variant="ghost" 
                 onClick={() => {
-                  // Enhanced navigation logic for deployed environment
-                  const teacherView = isTeacherViewing() || window.location.pathname.includes('teacher-student-view');
-                  if (teacherView) {
-                    const returnTo = sessionStorage.getItem('teacherReturnPath') || '/teacher-dashboard';
-                    window.location.href = returnTo;
-                  } else {
-                    setLocation("/student-dashboard");
-                  }
+                  // FIXED: Always return to student dashboard from student pages
+                  setLocation("/student-dashboard");
                 }}
                 className="flex items-center space-x-2"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span>Back to Dashboard</span>
+                <span>Return to Student Dashboard</span>
               </Button>
               <img 
                 src={logoPath} 

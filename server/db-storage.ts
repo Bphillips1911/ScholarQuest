@@ -2236,6 +2236,82 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  async getHouseLeaders(gradeFilter?: number | null): Promise<{
+    behavior: { id: string; name: string; houseId: string; houseName: string; points: number; totalPoints: number; grade: number }[];
+    academic: { id: string; name: string; houseId: string; houseName: string; points: number; totalPoints: number; grade: number }[];
+    attendance: { id: string; name: string; houseId: string; houseName: string; points: number; totalPoints: number; grade: number }[];
+    mustangTraits: { id: string; name: string; houseId: string; houseName: string; points: number; totalPoints: number; grade: number }[];
+  }> {
+    try {
+      // Get all houses for name lookup
+      const allHouses = await this.getHouses();
+      const houseMap = new Map(allHouses.map(h => [h.id, h.name]));
+
+      // Base query for scholars with grade filtering
+      let scholarsQuery = db.select().from(scholars);
+      if (gradeFilter !== null && gradeFilter !== undefined) {
+        scholarsQuery = scholarsQuery.where(eq(scholars.grade, gradeFilter));
+      }
+      const allScholars = await scholarsQuery;
+
+      // Helper function to get top 4 scholars for a category
+      const getTopScholarsForCategory = (category: 'behavior' | 'academic' | 'attendance') => {
+        return allScholars
+          .map(scholar => ({
+            id: scholar.id,
+            name: scholar.name,
+            houseId: scholar.houseId,
+            houseName: houseMap.get(scholar.houseId) || 'Unknown',
+            points: category === 'behavior' ? scholar.behaviorPoints : 
+                    category === 'academic' ? scholar.academicPoints : 
+                    scholar.attendancePoints,
+            totalPoints: scholar.behaviorPoints + scholar.academicPoints + scholar.attendancePoints,
+            grade: scholar.grade
+          }))
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 4);
+      };
+
+      // Get MUSTANG traits points by aggregating PBIS entries
+      const getMustangTraitsLeaders = async () => {
+        // Get PBIS entries for bhsa_mustang_traits category
+        let pbisQuery = db.select({
+          scholarId: pbisEntries.scholarId,
+          points: sql<number>`COALESCE(SUM(${pbisEntries.points}), 0)`.as('total_points')
+        })
+        .from(pbisEntries)
+        .where(eq(pbisEntries.category, 'bhsa_mustang_traits'))
+        .groupBy(pbisEntries.scholarId);
+
+        const mustangPoints = await pbisQuery;
+        const mustangPointsMap = new Map(mustangPoints.map(p => [p.scholarId, p.points]));
+
+        return allScholars
+          .map(scholar => ({
+            id: scholar.id,
+            name: scholar.name,
+            houseId: scholar.houseId,
+            houseName: houseMap.get(scholar.houseId) || 'Unknown',
+            points: mustangPointsMap.get(scholar.id) || 0,
+            totalPoints: scholar.behaviorPoints + scholar.academicPoints + scholar.attendancePoints,
+            grade: scholar.grade
+          }))
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 4);
+      };
+
+      return {
+        behavior: getTopScholarsForCategory('behavior'),
+        academic: getTopScholarsForCategory('academic'),
+        attendance: getTopScholarsForCategory('attendance'),
+        mustangTraits: await getMustangTraitsLeaders()
+      };
+    } catch (error) {
+      console.error('DatabaseStorage.getHouseLeaders error:', error);
+      throw error;
+    }
+  }
 }
 
 // Force deployment sync - ensure latest fixes are deployed

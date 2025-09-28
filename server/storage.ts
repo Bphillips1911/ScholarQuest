@@ -2182,6 +2182,42 @@ export class MemStorage implements IStorage {
     
     return results.sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
   }
+
+  // Missing methods to satisfy IStorage interface
+  async getPBISEntriesForScholar(scholarId: string): Promise<PbisEntry[]> {
+    return this.getPbisEntriesByScholar(scholarId);
+  }
+
+  async assignReflection(scholarId: string, pbisEntryId: string, assignedBy: string, prompt: string, dueDate?: Date): Promise<Reflection> {
+    const reflection = {
+      id: `refl_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      scholarId,
+      pbisEntryId,
+      assignedBy,
+      prompt,
+      response: null,
+      status: 'assigned' as const,
+      teacherFeedback: null,
+      approvedBy: null,
+      sentToParent: false,
+      sentToParentAt: null,
+      dueDate,
+      assignedAt: new Date(),
+      submittedAt: null,
+      approvedAt: null
+    };
+    
+    this.reflections.set(reflection.id, reflection);
+    return reflection;
+  }
+
+  async getReflectionsForStudent(scholarId: string): Promise<Reflection[]> {
+    return Array.from(this.reflections.values()).filter(r => r.scholarId === scholarId);
+  }
+
+  async getReflectionsForTeacher(teacherId: string): Promise<Reflection[]> {
+    return Array.from(this.reflections.values()).filter(r => r.assignedBy === teacherId);
+  }
 }
 
 export class PersistentDatabaseStorage implements IStorage {

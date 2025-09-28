@@ -41,9 +41,36 @@ const houseIcons: Record<string, string> = {
 };
 
 export function HouseLeadersDashboard() {
+  // Authentication helper function
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("teacherToken") || localStorage.getItem("adminToken");
+    if (!token) {
+      throw new Error("Authentication token not found");
+    }
+    
+    return {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0"
+    };
+  };
+
   const { data: leaders, isLoading, error } = useQuery<HouseLeadersData>({
     queryKey: ['/api/house-leaders'],
+    queryFn: async () => {
+      const response = await fetch('/api/house-leaders', {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch house leaders: ${response.status}`);
+      }
+      return response.json();
+    },
     refetchInterval: 30000, // Refresh every 30 seconds for real-time updates
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    refetchOnWindowFocus: false,
   });
 
   // Listen for real-time updates and refresh data

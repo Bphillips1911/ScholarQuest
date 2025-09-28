@@ -343,12 +343,16 @@ export default function TeacherStudentView() {
             
             {/* Return Button - Fixed Position */}
             <Button 
-              onClick={handleReturnToTeacher}
+              onClick={() => {
+                // Navigate to student dashboard instead of teacher dashboard
+                window.location.href = '/student-dashboard';
+              }}
               className="bg-red-600 hover:bg-red-700 text-white ml-4 flex-shrink-0"
               size="sm"
+              data-testid="button-return-student-dashboard"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              {teacherViewData?.adminMode ? 'Return to Admin' : 'Return to Teacher'}
+              Return to Student Dashboard
             </Button>
           </div>
         </div>

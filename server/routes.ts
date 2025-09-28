@@ -6733,6 +6733,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // House Leaders Dashboard endpoint - Get top 4 scholars by category with grade filtering
+  app.get("/api/house-leaders", async (req: any, res) => {
+    try {
+      const isAdmin = !!req.admin;
+      const teacher = req.teacher;
+      
+      if (!isAdmin && !teacher) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      let gradeFilter: number | null = null;
+      
+      // Grade filtering based on role
+      if (!isAdmin && teacher) {
+        // Extract grade from teacher's role
+        if (teacher.gradeRole === "6th Grade") gradeFilter = 6;
+        else if (teacher.gradeRole === "7th Grade") gradeFilter = 7;
+        else if (teacher.gradeRole === "8th Grade") gradeFilter = 8;
+        // Unified Arts teachers and others can see all grades like admins
+      }
+
+      // Get top scholars for each category
+      const leaders = await storage.getHouseLeaders(gradeFilter);
+      
+      res.json(leaders);
+    } catch (error) {
+      console.error("House leaders error:", error);
+      res.status(500).json({ error: "Failed to fetch house leaders" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

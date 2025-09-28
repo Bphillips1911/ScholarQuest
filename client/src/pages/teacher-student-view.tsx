@@ -117,10 +117,10 @@ export default function TeacherStudentView() {
     enabled: !!params?.studentId && activeTab === 'skill-tree',
   });
 
-  // Fetch PBIS entries for real-time MUSTANG traits recognition - OPTIMIZED
+  // Fetch PBIS entries for real-time MUSTANG traits recognition - ALWAYS ENABLED
   const { data: pbisEntries = [], refetch: refetchPBIS } = useQuery({
     queryKey: [`/api/pbis-entries`, params?.studentId],
-    enabled: !!params?.studentId && (activeTab === 'progress' || activeTab === 'overview'),
+    enabled: !!params?.studentId, // FIXED: Always fetch for MUSTANG Traits Recognition card
     staleTime: 5 * 1000, // REDUCED: Cache for only 5 seconds for instant updates
     refetchOnWindowFocus: true, // Refetch when window gets focus
     refetchInterval: 10 * 1000, // REDUCED: Auto-refetch every 10 seconds for real-time updates
@@ -488,7 +488,7 @@ export default function TeacherStudentView() {
                     <h3 className="text-lg font-semibold text-gray-900">MUSTANG Traits Recognition</h3>
                   </div>
                   <Badge variant="secondary" className="bg-gray-900 text-white">
-                    {Array.isArray(pbisEntries) ? pbisEntries.length : 0} PBIS Points
+                    {Array.isArray(pbisEntries) ? pbisEntries.length : 0} MUSTANG Recognitions
                   </Badge>
                 </div>
                 

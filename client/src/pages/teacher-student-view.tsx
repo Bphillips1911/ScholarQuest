@@ -440,7 +440,7 @@ export default function TeacherStudentView() {
                   </div>
                   <div className="text-center">
                     <Award className="h-8 w-8 mx-auto mb-2 text-yellow-600" />
-                    <div className="text-2xl font-bold text-yellow-600">{scholar?.totalPoints || 0}</div>
+                    <div className="text-2xl font-bold text-yellow-600">{(scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0)}</div>
                     <div className="text-xs text-gray-600">Total Points</div>
                   </div>
                 </div>
@@ -452,16 +452,16 @@ export default function TeacherStudentView() {
                     <span className="text-sm font-semibold text-yellow-800">BHSA Legend Progress</span>
                   </div>
                   <div className="text-lg font-bold text-yellow-800 mb-1">
-                    {scholar?.totalPoints || 0} / 1000 points
+                    {(scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0)} / 1000 points
                   </div>
                   <div className="w-full bg-yellow-200 rounded-full h-2 mb-2">
                     <div 
                       className="bg-yellow-600 h-2 rounded-full" 
-                      style={{width: `${Math.min(((scholar?.totalPoints || 0) / 1000) * 100, 100)}%`}}
+                      style={{width: `${Math.min((((scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0)) / 1000) * 100, 100)}%`}}
                     ></div>
                   </div>
                   <p className="text-xs text-yellow-700">
-                    {Math.max(1000 - (scholar?.totalPoints || 0), 0)} more points needed to achieve legendary status!
+                    {Math.max(1000 - ((scholar?.academicPoints || 0) + (scholar?.attendancePoints || 0) + (scholar?.behaviorPoints || 0)), 0)} more points needed to achieve legendary status!
                   </p>
                 </div>
               </CardContent>

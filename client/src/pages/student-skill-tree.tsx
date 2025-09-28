@@ -429,7 +429,7 @@ export default function StudentSkillTree() {
                 className="flex items-center space-x-2 text-white hover:bg-white/20"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span>{isTeacherViewing() ? "Return to Teacher Dashboard" : "Back to Dashboard"}</span>
+                <span>Return to Student Dashboard</span>
               </Button>
               <img 
                 src={logoPath} 

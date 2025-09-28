@@ -460,7 +460,7 @@ function StudentDashboardContent() {
     return () => clearInterval(interval);
   }, [setLocation]);
 
-  // Fetch scholar details with authentication
+  // Fetch scholar details with authentication - REAL-TIME OPTIMIZED
   const { data: scholarData, isLoading: scholarLoading, refetch: refetchScholar } = useQuery<ScholarData>({
     queryKey: ["/api/student/profile"],
     queryFn: async () => {
@@ -477,9 +477,9 @@ function StudentDashboardContent() {
     },
     enabled: !!studentData,
     retry: 1,
-    staleTime: 30 * 1000, // Cache for 30 seconds for real-time updates
+    staleTime: 5 * 1000, // REDUCED: Cache for only 5 seconds for instant total points updates
     refetchOnWindowFocus: true, // Refetch when window gets focus  
-    refetchInterval: 60 * 1000, // Auto-refetch every minute
+    refetchInterval: 10 * 1000, // REDUCED: Auto-refetch every 10 seconds for real-time updates
   });
 
   // Fetch houses data
@@ -498,7 +498,7 @@ function StudentDashboardContent() {
     refetchOnWindowFocus: false,
   });
 
-  // Fetch PBIS entries for this student - Corrected endpoint
+  // Fetch PBIS entries for this student - REAL-TIME OPTIMIZED
   const { data: pbisEntries, refetch: refetchPBIS } = useQuery<PBISEntry[]>({
     queryKey: ["/api/scholars", studentData?.id, "pbis"],
     queryFn: async () => {
@@ -516,9 +516,9 @@ function StudentDashboardContent() {
       return Array.isArray(data) ? data : [];
     },
     enabled: !!studentData?.id,
-    staleTime: 30 * 1000, // Cache for 30 seconds for real-time updates
+    staleTime: 5 * 1000, // REDUCED: Cache for only 5 seconds for instant updates
     refetchOnWindowFocus: true, // Refetch when window gets focus
-    refetchInterval: 60 * 1000, // Auto-refetch every minute
+    refetchInterval: 10 * 1000, // REDUCED: Auto-refetch every 10 seconds for real-time updates
   });
 
   // Check if student has negative behavior points to determine if reflections should be fetched
@@ -586,6 +586,15 @@ function StudentDashboardContent() {
   const attendancePts = scholar?.attendancePoints || 0;
   const behaviorPts = scholar?.behaviorPoints || 0;
   const totalPoints = academicPts + attendancePts + behaviorPts;
+  
+  // Debug logging for total points calculation
+  console.log('Total Points Debug:', {
+    academicPts,
+    attendancePts, 
+    behaviorPts,
+    totalPoints,
+    scholarData: scholar
+  });
   const totalPBISPoints = (pbisEntries && Array.isArray(pbisEntries)) ? pbisEntries.reduce((sum: number, entry: PBISEntry) => sum + entry.points, 0) : 0;
   const legendaryRequirement = 1000;
   const legendaryProgress = Math.min(100, (totalPoints / legendaryRequirement) * 100);

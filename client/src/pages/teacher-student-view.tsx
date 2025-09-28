@@ -134,7 +134,7 @@ export default function TeacherStudentView() {
 
   // Only fetch SEL lessons when learning path tab is active
   const { data: selLessons = [] } = useQuery({
-    queryKey: [`/api/sel/lessons/${params?.studentId}`],
+    queryKey: ['/api/student/sel/lessons', params?.studentId],
     enabled: !!params?.studentId && activeTab === 'learning-path',
   });
 

@@ -725,6 +725,35 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getScholarsWithCredentialsForExport(grade: number): Promise<any[]> {
+    try {
+      console.log(`DATABASE: Getting scholars with credentials for export, grade ${grade}`);
+      const scholars = await db.select()
+        .from(schema.scholars)
+        .where(eq(schema.scholars.grade, grade));
+      
+      // Map to export format with reconstructed passwords
+      const exportData = scholars.map(scholar => ({
+        id: scholar.id,
+        name: scholar.name,
+        studentId: scholar.studentId,
+        username: scholar.username,
+        password: `bhsa${scholar.studentId?.toLowerCase() || ''}`, // Reconstructed password
+        grade: scholar.grade,
+        houseId: scholar.houseId,
+        academicPoints: scholar.academicPoints || 0,
+        attendancePoints: scholar.attendancePoints || 0,
+        behaviorPoints: scholar.behaviorPoints || 0
+      }));
+      
+      console.log(`DATABASE: Prepared ${exportData.length} scholars for export`);
+      return exportData;
+    } catch (error) {
+      console.error('Error getting scholars with credentials for export:', error);
+      return [];
+    }
+  }
+
   // Additional missing methods for IStorage compliance
   async createHouse(house: InsertHouse): Promise<House> {
     const [newHouse] = await db.insert(houses).values(house).returning();

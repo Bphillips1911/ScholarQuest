@@ -1867,6 +1867,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export student credentials (for teachers)
+  app.get("/api/teacher/students/export", authenticateTeacher, async (req: any, res) => {
+    try {
+      const grade = parseInt(req.query.grade);
+      const teacher = req.teacher;
+      
+      if (isNaN(grade)) {
+        return res.status(400).json({ message: "Valid grade parameter is required" });
+      }
+      
+      // Derive grade permissions from teacher's gradeRole
+      const getTeacherGrades = (gradeRole: string): number[] => {
+        switch (gradeRole) {
+          case '6th Grade': return [6];
+          case '7th Grade': return [7];
+          case '8th Grade': return [8];
+          case 'Unified Arts': return [6, 7, 8];
+          case 'Administration': return [6, 7, 8];
+          case 'Counselor': return [6, 7, 8];
+          default: return [];
+        }
+      };
+
+      const allowedGrades = getTeacherGrades(teacher.gradeRole);
+      if (!allowedGrades.includes(grade)) {
+        return res.status(403).json({ message: "You don't have permission to export this grade" });
+      }
+
+      // Get scholars with credentials for export
+      const scholars = await storage.getScholarsWithCredentialsForExport(grade);
+      res.json(scholars);
+    } catch (error) {
+      console.error("Export error:", error);
+      res.status(500).json({ message: "Failed to export student data" });
+    }
+  });
+
   // Create PBIS entry with teacher authentication
 
 

@@ -119,6 +119,7 @@ export interface IStorage {
   // Scholars
   getScholarsByHouse(houseId: string): Promise<Scholar[]>;
   getScholarsByGrade(grade: number): Promise<Scholar[]>;
+  getScholarsWithCredentialsForExport(grade: number): Promise<any[]>;
   getScholar(id: string): Promise<Scholar | undefined>;
   getStudent(id: string): Promise<Scholar | undefined>;
   getScholarByUsername(username: string): Promise<Scholar | undefined>;
@@ -660,6 +661,23 @@ export class MemStorage implements IStorage {
     return Array.from(this.scholars.values()).filter(scholar => 
       scholar.grade === grade && (scholar.isActive !== false)
     );
+  }
+
+  async getScholarsWithCredentialsForExport(grade: number): Promise<any[]> {
+    return Array.from(this.scholars.values())
+      .filter(scholar => scholar.grade === grade && (scholar.isActive !== false))
+      .map(scholar => ({
+        id: scholar.id,
+        name: scholar.name,
+        studentId: scholar.studentId,
+        username: scholar.username,
+        password: 'student123', // Demo password for export
+        grade: scholar.grade,
+        houseId: scholar.houseId,
+        academicPoints: scholar.academicPoints || 0,
+        attendancePoints: scholar.attendancePoints || 0,
+        behaviorPoints: scholar.behaviorPoints || 0
+      }));
   }
 
   async getScholarByUsername(username: string): Promise<Scholar | undefined> {
@@ -2536,6 +2554,22 @@ export class PersistentDatabaseStorage implements IStorage {
     const grade = parseInt(gradeRole.replace(/\D/g, ''));
     const scholars = await db.select().from(scholars).where(eq(scholars.grade, grade));
     return scholars;
+  }
+
+  async getScholarsWithCredentialsForExport(grade: number): Promise<any[]> {
+    const scholarData = await db.select().from(scholars).where(eq(scholars.grade, grade));
+    return scholarData.map(scholar => ({
+      id: scholar.id,
+      name: scholar.name,
+      studentId: scholar.studentId,
+      username: scholar.username,
+      password: `bhsa${scholar.studentId?.toLowerCase() || ''}`, // Reconstructed password
+      grade: scholar.grade,
+      houseId: scholar.houseId,
+      academicPoints: scholar.academicPoints || 0,
+      attendancePoints: scholar.attendancePoints || 0,
+      behaviorPoints: scholar.behaviorPoints || 0
+    }));
   }
 
   async getReflectionsByTeacher(teacherId: string): Promise<any[]> {

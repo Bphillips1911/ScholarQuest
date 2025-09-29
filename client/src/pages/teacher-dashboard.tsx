@@ -1071,6 +1071,101 @@ export default function TeacherDashboard() {
     });
   };
 
+  // Student data export function
+  const exportStudentData = async (format: 'csv' | 'excel') => {
+    if (!scholars || scholars.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "Please select a grade level to view students for export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Fetch student credentials from the server
+      const response = await fetch(`/api/teacher/students/export?grade=${selectedGrade}`, {
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch student data');
+      }
+
+      const studentData = await response.json();
+
+      // Prepare data for export
+      const exportData = studentData.map((student: any) => ({
+        'Student Name': student.name,
+        'Student ID': student.studentId,
+        'Username': student.username || '',
+        'Password': student.password || '',
+        'Grade': student.grade,
+        'House': student.houseId,
+        'Academic Points': student.academicPoints || 0,
+        'Attendance Points': student.attendancePoints || 0,
+        'Behavior Points': student.behaviorPoints || 0
+      }));
+
+      const filename = `students_grade_${selectedGrade}_${new Date().toISOString().split('T')[0]}`;
+
+      if (format === 'csv') {
+        // CSV Export using manual CSV generation (browser-compatible)
+        const headers = Object.keys(exportData[0] || {});
+        const csvRows = [
+          headers.join(','), // Header row
+          ...exportData.map(row => 
+            headers.map(header => {
+              const value = row[header];
+              // Escape quotes and wrap in quotes if contains comma, quote, or newline
+              if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                return `"${value.replace(/"/g, '""')}"`;
+              }
+              return value;
+            }).join(',')
+          )
+        ];
+        
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${filename}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        toast({
+          title: "CSV Export Complete",
+          description: `Successfully exported ${exportData.length} students to CSV`,
+        });
+      } else {
+        // Excel Export using xlsx (this library is browser-compatible)
+        const XLSX = await import('xlsx');
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, `Grade ${selectedGrade} Students`);
+        
+        XLSX.writeFile(workbook, `${filename}.xlsx`);
+        
+        toast({
+          title: "Excel Export Complete",
+          description: `Successfully exported ${exportData.length} students to Excel`,
+        });
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to export student data",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   const handleAddScholar = () => {
     if (!newScholar.name || !newScholar.studentId || !newScholar.houseId || !newScholar.username || !newScholar.password) {
@@ -1537,6 +1632,19 @@ export default function TeacherDashboard() {
             >
               <Brain className="h-4 w-4" />
               <span>SEL</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('student-export')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'student-export'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid="tab-student-export"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Student Export</span>
+              <span className="sm:hidden">Export</span>
             </button>
 
             {/* Theme Toggle Button */}
@@ -2565,6 +2673,128 @@ export default function TeacherDashboard() {
                 </CardContent>
               </Card>
             </div>
+            </div>
+          )}
+
+          {activeTab === 'student-export' && (
+            <div className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border, color: themeStyles.textPrimary}}>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2" style={{color: themeStyles.textPrimary}}>
+                    <Download className="h-5 w-5" />
+                    Student Credentials Export
+                  </CardTitle>
+                  <p className="text-sm" style={{color: themeStyles.textSecondary}}>
+                    Export student username and password information for your grade level students.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Export Options */}
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                        <Download className="h-4 w-4" />
+                        Export Options
+                      </h4>
+                      <div className="flex gap-4">
+                        <Button 
+                          onClick={() => exportStudentData('csv')}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                          data-testid="button-export-csv"
+                        >
+                          <Download className="h-4 w-4" />
+                          Export as CSV
+                        </Button>
+                        <Button 
+                          onClick={() => exportStudentData('excel')}
+                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                          data-testid="button-export-excel"
+                        >
+                          <Download className="h-4 w-4" />
+                          Export as Excel
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <h4 className="font-medium">Included Information</h4>
+                        </div>
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          <li>• Student Name</li>
+                          <li>• Student ID</li>
+                          <li>• Username</li>
+                          <li>• Password</li>
+                          <li>• Grade Level</li>
+                          <li>• House Assignment</li>
+                        </ul>
+                      </div>
+                      
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <h4 className="font-medium">Security Note</h4>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Student passwords are included in the export for classroom setup purposes. 
+                          Please keep this information secure and delete files when no longer needed.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Grade Filter Info */}
+                    {teacher && selectedGrade && (
+                      <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <h4 className="font-medium text-yellow-800 mb-2">Current Filter</h4>
+                        <p className="text-sm text-yellow-700">
+                          Export will include Grade {selectedGrade} students only. 
+                          Change your grade selection above to export different grade levels.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Recent Students Preview */}
+                    <div>
+                      <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Students Available for Export
+                      </h4>
+                      {scholars && scholars.length > 0 ? (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {scholars.slice(0, 10).map((scholar: any) => (
+                            <div key={scholar.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <h5 className="font-medium text-gray-900">{scholar.name}</h5>
+                                  <p className="text-sm text-gray-600">ID: {scholar.studentId} • Grade {scholar.grade}</p>
+                                </div>
+                                <div className="text-right text-sm text-gray-500">
+                                  <p>Username: {scholar.username || 'Not set'}</p>
+                                  <p>House: {scholar.houseId}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          {scholars.length > 10 && (
+                            <p className="text-sm text-gray-500 text-center">
+                              + {scholars.length - 10} more students will be included in export
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200">
+                          <Users className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                          <p className="text-gray-600">No students found for export</p>
+                          <p className="text-sm text-gray-500">Please select a grade level to view students</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
-import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
+import schoolLogoPath from "@assets/PBIS House of Champions Logo #1_1759121067671.png";
 import { GraduationCap, Shield, Users, Trophy, Sparkles, Star, Crown, Zap } from "lucide-react";
 
 interface House {
@@ -174,7 +174,7 @@ export default function MainLanding() {
             <div className="flex items-center justify-center gap-6 mb-6">
               <img 
                 src={schoolLogoPath} 
-                alt="Bush Hills STEAM Academy Mustangs Crest" 
+                alt="PBIS House of Champions Logo" 
                 className="h-24 w-24 object-contain animate-floating animate-glow-pulse"
                 data-testid="main-school-logo"
                 style={{ filter: 'drop-shadow(0 0 20px #fbbf24)' }}

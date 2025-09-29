@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
-import schoolLogoPath from "@assets/PBIS House of Champions Logo #1_1759121067671.png";
+import schoolLogoPath from "@assets/pbis-logo.png";
 import { GraduationCap, Shield, Users, Trophy, Sparkles, Star, Crown, Zap } from "lucide-react";
 
 interface House {

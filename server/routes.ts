@@ -3596,7 +3596,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  // Force approve all administrators (development/troubleshooting endpoint)
+  app.post("/api/admin/force-approve-all", async (req, res) => {
+    try {
+      await db.update(administrators)
+        .set({ 
+          isApproved: true,
+          isActive: true 
+        })
+        .where(sql`1=1`);
+      
+      const allAdmins = await db.select({
+        email: administrators.email,
+        firstName: administrators.firstName,
+        lastName: administrators.lastName,
+        isApproved: administrators.isApproved,
+        isActive: administrators.isActive
+      }).from(administrators);
+      
+      res.json({
+        message: "All administrator accounts approved and activated",
+        count: allAdmins.length,
+        admins: allAdmins
+      });
+    } catch (error) {
+      console.error("Force approve error:", error);
+      res.status(500).json({ message: "Failed to approve accounts" });
+    }
+  });
 
   // Administrator password change route
   app.post("/api/admin/change-password", authenticateAdmin, async (req: any, res) => {

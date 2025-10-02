@@ -146,7 +146,7 @@ export default function AdminNew() {
   const fetchTeacherChampions = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/staff-champions/teachers", {
+      const response = await fetch("/api/admin/teachers", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -165,7 +165,7 @@ export default function AdminNew() {
   const fetchStaffChampions = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/staff-champions/staff-points", {
+      const response = await fetch("/api/admin/staff-champions/staff", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -729,6 +729,23 @@ export default function AdminNew() {
     no_mispunches: 10,
   };
 
+  // Staff-specific point values
+  const staffPointValues: { [key: string]: number } = {
+    perfect_attendance: 5,
+    timely_reports: 5,
+    school_events: 4,
+    school_spirit_weekly: 3,
+    school_spirit_monthly: 8,
+    professional_interactions: 4,
+    prompt_tasks: 3,
+    mustang_principles: 3,
+    safety_cleanliness: 5,
+    positive_feedback: 4,
+    no_mispunches: 10,
+    daily_clock_in: 1,
+    above_beyond: 7,
+  };
+
   const handleAwardTeacherPoints = () => {
     if (!selectedTeacher || !teacherAwardCategory) {
       toast({
@@ -759,7 +776,7 @@ export default function AdminNew() {
     awardStaffPointsMutation.mutate({
       staffId: selectedStaff,
       category: staffAwardCategory,
-      points: teacherPointValues[staffAwardCategory] || 0,
+      points: staffPointValues[staffAwardCategory] || 0,
     });
   };
 
@@ -3782,21 +3799,19 @@ export default function AdminNew() {
                       <SelectValue placeholder="Choose a category..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="attendance">Attendance (5 pts)</SelectItem>
-                      <SelectItem value="lesson_plans">Lesson Plans (5 pts)</SelectItem>
-                      <SelectItem value="school_events">School Events (4 pts)</SelectItem>
-                      <SelectItem value="school_spirit_weekly">School Spirit Weekly (3 pts)</SelectItem>
-                      <SelectItem value="school_spirit_monthly">School Spirit Monthly (8 pts)</SelectItem>
-                      <SelectItem value="parent_contact">Parent Contact (3 pts)</SelectItem>
-                      <SelectItem value="morning_duty_daily">Morning Duty Daily (3 pts)</SelectItem>
-                      <SelectItem value="morning_duty_monthly">Morning Duty Monthly (7 pts)</SelectItem>
-                      <SelectItem value="mustang_principles">Mustang Principles (3 pts)</SelectItem>
-                      <SelectItem value="iready_weekly">iReady Weekly (5 pts)</SelectItem>
-                      <SelectItem value="iready_monthly">iReady Monthly (10 pts)</SelectItem>
-                      <SelectItem value="sel_lessons">SEL Lessons (3 pts)</SelectItem>
-                      <SelectItem value="focus_board">Focus Board (5 pts)</SelectItem>
-                      <SelectItem value="clock_in">Clock In (1 pt)</SelectItem>
-                      <SelectItem value="no_mispunches">No Mispunches (10 pts)</SelectItem>
+                      <SelectItem value="perfect_attendance">Perfect weekly attendance (5 pts)</SelectItem>
+                      <SelectItem value="timely_reports">Timely submission of required reports/logs (5 pts)</SelectItem>
+                      <SelectItem value="school_events">Support for school events (4 pts)</SelectItem>
+                      <SelectItem value="school_spirit_weekly">Show school spirit at least once per week (3 pts)</SelectItem>
+                      <SelectItem value="school_spirit_monthly">Show school spirit for the month (8 pts)</SelectItem>
+                      <SelectItem value="professional_interactions">Professional, welcoming interactions (4 pts)</SelectItem>
+                      <SelectItem value="prompt_tasks">Prompt completion of assigned tasks (3 pts)</SelectItem>
+                      <SelectItem value="mustang_principles">Reinforcing MUSTANG Principles with students/staff (3 pts)</SelectItem>
+                      <SelectItem value="safety_cleanliness">Safety, cleanliness, and order (5 pts)</SelectItem>
+                      <SelectItem value="positive_feedback">Positive parent/student feedback (4 pts)</SelectItem>
+                      <SelectItem value="no_mispunches">No mispunches for the month (10 pts)</SelectItem>
+                      <SelectItem value="daily_clock_in">Daily clock in for work (1 pt)</SelectItem>
+                      <SelectItem value="above_beyond">Going above and beyond (7 pts)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -3804,7 +3819,7 @@ export default function AdminNew() {
                 {staffAwardCategory && (
                   <div className="p-3 bg-green-50 rounded-lg">
                     <p className="text-sm text-green-900">
-                      Points to award: <strong>{teacherPointValues[staffAwardCategory] || 0}</strong>
+                      Points to award: <strong>{staffPointValues[staffAwardCategory] || 0}</strong>
                     </p>
                   </div>
                 )}

@@ -56,7 +56,10 @@ import {
   progressGoals,
   dailyReflections,
   teacherClassPeriods,
-  classPeriodEnrollments
+  classPeriodEnrollments,
+  staffMembers,
+  teacherChampionPoints,
+  staffChampionPoints
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -2338,6 +2341,80 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       console.error('DatabaseStorage.getHouseLeaders error:', error);
+      throw error;
+    }
+  }
+
+  // Staff Champions Awards methods
+  async getAllStaffMembers(): Promise<import("@shared/schema").StaffMember[]> {
+    try {
+      const members = await db.select().from(staffMembers).where(eq(staffMembers.isActive, true));
+      return members;
+    } catch (error) {
+      console.error('DatabaseStorage.getAllStaffMembers error:', error);
+      throw error;
+    }
+  }
+
+  async getTeacherChampionPointsAggregated(): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          teacherId: teacherChampionPoints.teacherId,
+          teacherName: teacherAuth.name,
+          totalPoints: sql<number>`COALESCE(SUM(${teacherChampionPoints.points}), 0)`.as('total_points'),
+          lastAwarded: sql<Date>`MAX(${teacherChampionPoints.awardedAt})`.as('last_awarded')
+        })
+        .from(teacherChampionPoints)
+        .leftJoin(teacherAuth, eq(teacherChampionPoints.teacherId, teacherAuth.id))
+        .groupBy(teacherChampionPoints.teacherId, teacherAuth.name)
+        .orderBy(desc(sql<number>`COALESCE(SUM(${teacherChampionPoints.points}), 0)`));
+      
+      return result;
+    } catch (error) {
+      console.error('DatabaseStorage.getTeacherChampionPointsAggregated error:', error);
+      throw error;
+    }
+  }
+
+  async getStaffChampionPointsAggregated(): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          staffId: staffChampionPoints.staffId,
+          staffName: staffMembers.name,
+          staffRole: staffMembers.role,
+          totalPoints: sql<number>`COALESCE(SUM(${staffChampionPoints.points}), 0)`.as('total_points'),
+          lastAwarded: sql<Date>`MAX(${staffChampionPoints.awardedAt})`.as('last_awarded')
+        })
+        .from(staffChampionPoints)
+        .leftJoin(staffMembers, eq(staffChampionPoints.staffId, staffMembers.id))
+        .groupBy(staffChampionPoints.staffId, staffMembers.name, staffMembers.role)
+        .orderBy(desc(sql<number>`COALESCE(SUM(${staffChampionPoints.points}), 0)`));
+      
+      return result;
+    } catch (error) {
+      console.error('DatabaseStorage.getStaffChampionPointsAggregated error:', error);
+      throw error;
+    }
+  }
+
+  async addTeacherChampionPoints(points: import("@shared/schema").InsertTeacherChampionPoints): Promise<import("@shared/schema").TeacherChampionPoints> {
+    try {
+      const [newPoints] = await db.insert(teacherChampionPoints).values(points).returning();
+      return newPoints;
+    } catch (error) {
+      console.error('DatabaseStorage.addTeacherChampionPoints error:', error);
+      throw error;
+    }
+  }
+
+  async addStaffChampionPoints(points: import("@shared/schema").InsertStaffChampionPoints): Promise<import("@shared/schema").StaffChampionPoints> {
+    try {
+      const [newPoints] = await db.insert(staffChampionPoints).values(points).returning();
+      return newPoints;
+    } catch (error) {
+      console.error('DatabaseStorage.addStaffChampionPoints error:', error);
       throw error;
     }
   }

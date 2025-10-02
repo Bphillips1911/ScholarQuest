@@ -105,6 +105,16 @@ export default function AdminNew() {
   const [selectedBadge, setSelectedBadge] = useState<any>(null);
   const [showBadgeDetailsModal, setShowBadgeDetailsModal] = useState(false);
 
+  // Staff Champions state
+  const [showTeacherChampionsModal, setShowTeacherChampionsModal] = useState(false);
+  const [showStaffChampionsModal, setShowStaffChampionsModal] = useState(false);
+  const [teacherChampionsData, setTeacherChampionsData] = useState<any[]>([]);
+  const [staffChampionsData, setStaffChampionsData] = useState<any[]>([]);
+  const [selectedTeacher, setSelectedTeacher] = useState("");
+  const [selectedStaff, setSelectedStaff] = useState("");
+  const [teacherAwardCategory, setTeacherAwardCategory] = useState("");
+  const [staffAwardCategory, setStaffAwardCategory] = useState("");
+
   useEffect(() => {
     console.log("AdminNew component mounted");
     const token = localStorage.getItem("adminToken");
@@ -131,6 +141,62 @@ export default function AdminNew() {
       setLocation("/admin-login");
     }
   }, [setLocation, addNotification]);
+
+  // Fetch teacher champions data
+  const fetchTeacherChampions = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/staff-champions/teachers", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTeacherChampionsData(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch teacher champions:", error);
+    }
+  };
+
+  // Fetch staff champions data
+  const fetchStaffChampions = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/staff-champions/staff-points", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStaffChampionsData(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch staff champions:", error);
+    }
+  };
+
+  // Auto-refresh teacher champions every 30 seconds
+  useEffect(() => {
+    if (isAuthenticated && showTeacherChampionsModal) {
+      fetchTeacherChampions();
+      const interval = setInterval(fetchTeacherChampions, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, showTeacherChampionsModal]);
+
+  // Auto-refresh staff champions every 30 seconds
+  useEffect(() => {
+    if (isAuthenticated && showStaffChampionsModal) {
+      fetchStaffChampions();
+      const interval = setInterval(fetchStaffChampions, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, showStaffChampionsModal]);
 
   // Theme toggle function
   const toggleTheme = () => {
@@ -578,6 +644,125 @@ export default function AdminNew() {
     });
   };
 
+  // Award teacher points mutation
+  const awardTeacherPointsMutation = useMutation({
+    mutationFn: async (data: { teacherId: string; category: string; points: number }) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/staff-champions/teachers/add", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to award teacher points");
+      return response.json();
+    },
+    onSuccess: () => {
+      fetchTeacherChampions();
+      toast({
+        title: "Points Awarded",
+        description: "Teacher points awarded successfully.",
+      });
+      setSelectedTeacher("");
+      setTeacherAwardCategory("");
+    },
+    onError: () => {
+      toast({
+        title: "Award Failed",
+        description: "Failed to award teacher points. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Award staff points mutation
+  const awardStaffPointsMutation = useMutation({
+    mutationFn: async (data: { staffId: string; category: string; points: number }) => {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/staff-champions/staff/add", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to award staff points");
+      return response.json();
+    },
+    onSuccess: () => {
+      fetchStaffChampions();
+      toast({
+        title: "Points Awarded",
+        description: "Staff points awarded successfully.",
+      });
+      setSelectedStaff("");
+      setStaffAwardCategory("");
+    },
+    onError: () => {
+      toast({
+        title: "Award Failed",
+        description: "Failed to award staff points. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Point values for categories
+  const teacherPointValues: { [key: string]: number } = {
+    attendance: 5,
+    lesson_plans: 5,
+    school_events: 4,
+    school_spirit_weekly: 3,
+    school_spirit_monthly: 8,
+    parent_contact: 3,
+    morning_duty_daily: 3,
+    morning_duty_monthly: 7,
+    mustang_principles: 3,
+    iready_weekly: 5,
+    iready_monthly: 10,
+    sel_lessons: 3,
+    focus_board: 5,
+    clock_in: 1,
+    no_mispunches: 10,
+  };
+
+  const handleAwardTeacherPoints = () => {
+    if (!selectedTeacher || !teacherAwardCategory) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a teacher and category.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    awardTeacherPointsMutation.mutate({
+      teacherId: selectedTeacher,
+      category: teacherAwardCategory,
+      points: teacherPointValues[teacherAwardCategory] || 0,
+    });
+  };
+
+  const handleAwardStaffPoints = () => {
+    if (!selectedStaff || !staffAwardCategory) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a staff member and category.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    awardStaffPointsMutation.mutate({
+      staffId: selectedStaff,
+      category: staffAwardCategory,
+      points: teacherPointValues[staffAwardCategory] || 0,
+    });
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -711,11 +896,28 @@ export default function AdminNew() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsList className={`grid w-full h-auto ${
+              adminData?.email?.toLowerCase().includes('phillips') || 
+              adminData?.email?.toLowerCase().includes('tiffani') || 
+              adminData?.lastName === 'Phillips' || 
+              adminData?.firstName === 'Tiffani' ||
+              (adminData?.firstName === 'Dr. Tiffani' && adminData?.lastName === 'Rocker-Stewart')
+              ? 'grid-cols-3' : 'grid-cols-2'
+            }`}>
               <TabsTrigger value="student-trends" className="text-xs sm:text-sm px-2 py-2">
                 <TrendingUp className="h-4 w-4 mr-1" />
                 Student Trends
               </TabsTrigger>
+              {(adminData?.email?.toLowerCase().includes('phillips') || 
+                adminData?.email?.toLowerCase().includes('tiffani') || 
+                adminData?.lastName === 'Phillips' || 
+                adminData?.firstName === 'Tiffani' ||
+                (adminData?.firstName === 'Dr. Tiffani' && adminData?.lastName === 'Rocker-Stewart')) && (
+                <TabsTrigger value="staff-champions" className="text-xs sm:text-sm px-2 py-2">
+                  <Award className="h-4 w-4 mr-1" />
+                  Staff Champions
+                </TabsTrigger>
+              )}
               <TabsTrigger value="classroom-trends" className="text-xs sm:text-sm px-2 py-2">
                 <Users className="h-4 w-4 mr-1" />
                 Classroom Trends
@@ -2378,6 +2580,62 @@ export default function AdminNew() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="staff-champions" className="space-y-6">
+              <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+                <CardHeader>
+                  <CardTitle style={{color: themeStyles.textPrimary}} className="flex items-center gap-2">
+                    <Award className="w-5 h-5" />
+                    Staff Champions Awards Program
+                  </CardTitle>
+                  <CardDescription style={{color: themeStyles.textSecondary}}>
+                    Recognize and reward staff excellence with the Champions Awards system
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button
+                      onClick={() => setShowTeacherChampionsModal(true)}
+                      className="h-24 flex flex-col items-center justify-center gap-2"
+                      data-testid="button-teacher-champions"
+                      style={{
+                        backgroundColor: '#3b82f6',
+                        color: '#ffffff'
+                      }}
+                    >
+                      <GraduationCap className="w-8 h-8" />
+                      <span className="text-lg font-semibold">Teacher Champions</span>
+                      <span className="text-xs opacity-90">Award teacher recognition points</span>
+                    </Button>
+
+                    <Button
+                      onClick={() => setShowStaffChampionsModal(true)}
+                      className="h-24 flex flex-col items-center justify-center gap-2"
+                      data-testid="button-staff-champions"
+                      style={{
+                        backgroundColor: '#10b981',
+                        color: '#ffffff'
+                      }}
+                    >
+                      <Users className="w-8 h-8" />
+                      <span className="text-lg font-semibold">Staff Champions</span>
+                      <span className="text-xs opacity-90">Award staff recognition points</span>
+                    </Button>
+                  </div>
+
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                    <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-100">
+                      About Staff Champions
+                    </h4>
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      The Staff Champions program recognizes outstanding contributions from teachers and staff members. 
+                      Points are awarded for various categories including attendance, lesson planning, school events, and more. 
+                      Data auto-refreshes every 30 seconds to show real-time standings.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </Card>
         </div>
@@ -3303,6 +3561,286 @@ export default function AdminNew() {
               data-testid="button-close-badge-details"
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Teacher Champions Modal */}
+      <Dialog open={showTeacherChampionsModal} onOpenChange={setShowTeacherChampionsModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="modal-teacher-champions">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GraduationCap className="w-6 h-6 text-blue-600" />
+              Teacher Champions - Recognition Program
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-900">
+                <RefreshCw className="w-4 h-4 inline mr-1" />
+                Auto-refreshes every 30 seconds
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Current Standings</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {teacherChampionsData.length > 0 ? (
+                  teacherChampionsData.map((teacher: any, index: number) => (
+                    <Card key={teacher.id || index} className="p-4" data-testid={`teacher-card-${index}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold" data-testid={`teacher-name-${index}`}>
+                            {teacher.name || `${teacher.firstName} ${teacher.lastName}`}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Total Points: <span className="font-bold text-blue-600" data-testid={`teacher-points-${index}`}>
+                              {teacher.totalPoints || 0}
+                            </span>
+                          </p>
+                        </div>
+                        <Award className="w-8 h-8 text-yellow-500" />
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <p className="text-gray-500 col-span-full text-center py-8">
+                    No teacher data available yet.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-lg mb-4">Award Points</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label>Select Teacher</Label>
+                  <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
+                    <SelectTrigger data-testid="select-teacher">
+                      <SelectValue placeholder="Choose a teacher..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teacherChampionsData.map((teacher: any, index: number) => (
+                        <SelectItem 
+                          key={teacher.id || index} 
+                          value={teacher.id || teacher.email || String(index)}
+                        >
+                          {teacher.name || `${teacher.firstName} ${teacher.lastName}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Award Category</Label>
+                  <Select value={teacherAwardCategory} onValueChange={setTeacherAwardCategory}>
+                    <SelectTrigger data-testid="select-teacher-category">
+                      <SelectValue placeholder="Choose a category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="attendance">Attendance (5 pts)</SelectItem>
+                      <SelectItem value="lesson_plans">Lesson Plans (5 pts)</SelectItem>
+                      <SelectItem value="school_events">School Events (4 pts)</SelectItem>
+                      <SelectItem value="school_spirit_weekly">School Spirit Weekly (3 pts)</SelectItem>
+                      <SelectItem value="school_spirit_monthly">School Spirit Monthly (8 pts)</SelectItem>
+                      <SelectItem value="parent_contact">Parent Contact (3 pts)</SelectItem>
+                      <SelectItem value="morning_duty_daily">Morning Duty Daily (3 pts)</SelectItem>
+                      <SelectItem value="morning_duty_monthly">Morning Duty Monthly (7 pts)</SelectItem>
+                      <SelectItem value="mustang_principles">Mustang Principles (3 pts)</SelectItem>
+                      <SelectItem value="iready_weekly">iReady Weekly (5 pts)</SelectItem>
+                      <SelectItem value="iready_monthly">iReady Monthly (10 pts)</SelectItem>
+                      <SelectItem value="sel_lessons">SEL Lessons (3 pts)</SelectItem>
+                      <SelectItem value="focus_board">Focus Board (5 pts)</SelectItem>
+                      <SelectItem value="clock_in">Clock In (1 pt)</SelectItem>
+                      <SelectItem value="no_mispunches">No Mispunches (10 pts)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {teacherAwardCategory && (
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-900">
+                      Points to award: <strong>{teacherPointValues[teacherAwardCategory] || 0}</strong>
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowTeacherChampionsModal(false);
+                setSelectedTeacher("");
+                setTeacherAwardCategory("");
+              }}
+              data-testid="button-cancel-teacher"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAwardTeacherPoints}
+              disabled={!selectedTeacher || !teacherAwardCategory || awardTeacherPointsMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="button-award-teacher-points"
+            >
+              {awardTeacherPointsMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Awarding...
+                </div>
+              ) : (
+                <>
+                  <Award className="w-4 h-4 mr-2" />
+                  Award Points
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Staff Champions Modal */}
+      <Dialog open={showStaffChampionsModal} onOpenChange={setShowStaffChampionsModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="modal-staff-champions">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-6 h-6 text-green-600" />
+              Staff Champions - Recognition Program
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="p-3 bg-green-50 rounded-lg">
+              <p className="text-sm text-green-900">
+                <RefreshCw className="w-4 h-4 inline mr-1" />
+                Auto-refreshes every 30 seconds
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Current Standings</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {staffChampionsData.length > 0 ? (
+                  staffChampionsData.map((staff: any, index: number) => (
+                    <Card key={staff.id || index} className="p-4" data-testid={`staff-card-${index}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold" data-testid={`staff-name-${index}`}>
+                            {staff.name || `${staff.firstName} ${staff.lastName}`}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Total Points: <span className="font-bold text-green-600" data-testid={`staff-points-${index}`}>
+                              {staff.totalPoints || 0}
+                            </span>
+                          </p>
+                        </div>
+                        <Award className="w-8 h-8 text-yellow-500" />
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <p className="text-gray-500 col-span-full text-center py-8">
+                    No staff data available yet.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-lg mb-4">Award Points</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label>Select Staff Member</Label>
+                  <Select value={selectedStaff} onValueChange={setSelectedStaff}>
+                    <SelectTrigger data-testid="select-staff">
+                      <SelectValue placeholder="Choose a staff member..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staffChampionsData.map((staff: any, index: number) => (
+                        <SelectItem 
+                          key={staff.id || index} 
+                          value={staff.id || staff.email || String(index)}
+                        >
+                          {staff.name || `${staff.firstName} ${staff.lastName}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Award Category</Label>
+                  <Select value={staffAwardCategory} onValueChange={setStaffAwardCategory}>
+                    <SelectTrigger data-testid="select-staff-category">
+                      <SelectValue placeholder="Choose a category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="attendance">Attendance (5 pts)</SelectItem>
+                      <SelectItem value="lesson_plans">Lesson Plans (5 pts)</SelectItem>
+                      <SelectItem value="school_events">School Events (4 pts)</SelectItem>
+                      <SelectItem value="school_spirit_weekly">School Spirit Weekly (3 pts)</SelectItem>
+                      <SelectItem value="school_spirit_monthly">School Spirit Monthly (8 pts)</SelectItem>
+                      <SelectItem value="parent_contact">Parent Contact (3 pts)</SelectItem>
+                      <SelectItem value="morning_duty_daily">Morning Duty Daily (3 pts)</SelectItem>
+                      <SelectItem value="morning_duty_monthly">Morning Duty Monthly (7 pts)</SelectItem>
+                      <SelectItem value="mustang_principles">Mustang Principles (3 pts)</SelectItem>
+                      <SelectItem value="iready_weekly">iReady Weekly (5 pts)</SelectItem>
+                      <SelectItem value="iready_monthly">iReady Monthly (10 pts)</SelectItem>
+                      <SelectItem value="sel_lessons">SEL Lessons (3 pts)</SelectItem>
+                      <SelectItem value="focus_board">Focus Board (5 pts)</SelectItem>
+                      <SelectItem value="clock_in">Clock In (1 pt)</SelectItem>
+                      <SelectItem value="no_mispunches">No Mispunches (10 pts)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {staffAwardCategory && (
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-900">
+                      Points to award: <strong>{teacherPointValues[staffAwardCategory] || 0}</strong>
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowStaffChampionsModal(false);
+                setSelectedStaff("");
+                setStaffAwardCategory("");
+              }}
+              data-testid="button-cancel-staff"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAwardStaffPoints}
+              disabled={!selectedStaff || !staffAwardCategory || awardStaffPointsMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+              data-testid="button-award-staff-points"
+            >
+              {awardStaffPointsMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Awarding...
+                </div>
+              ) : (
+                <>
+                  <Award className="w-4 h-4 mr-2" />
+                  Award Points
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

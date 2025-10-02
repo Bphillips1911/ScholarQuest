@@ -955,4 +955,74 @@ export type InsertSelQuizResult = z.infer<typeof insertSelQuizResultSchema>;
 export type InsertSelNotification = z.infer<typeof insertSelNotificationSchema>;
 export type InsertSelBehaviorDefinition = z.infer<typeof insertSelBehaviorDefinitionSchema>;
 
+// Staff Champions Awards System
+export const staffMembers = pgTable("staff_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  role: text("role").notNull(), // 'secretary', 'school_nurse', 'bookkeeper', 'cnp_manager', 'cnp_team', 'iss_facilitator', 'custodian', 'head_custodian', 'sro'
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const teacherChampionPoints = pgTable("teacher_champion_points", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
+  category: text("category").notNull(), // 'attendance', 'lesson_plans', 'school_events', 'school_spirit_weekly', 'school_spirit_monthly', 'parent_contact', 'morning_duty_daily', 'morning_duty_monthly', 'mustang_principles', 'iready_weekly', 'iready_monthly', 'sel_lessons', 'focus_board', 'clock_in', 'no_mispunches'
+  points: integer("points").notNull(),
+  reason: text("reason").notNull(),
+  awardedBy: varchar("awarded_by").notNull().references(() => administrators.id),
+  awardedAt: timestamp("awarded_at").defaultNow(),
+});
+
+export const staffChampionPoints = pgTable("staff_champion_points", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  staffId: varchar("staff_id").notNull().references(() => staffMembers.id),
+  category: text("category").notNull(), // Custom categories for staff
+  points: integer("points").notNull(),
+  reason: text("reason").notNull(),
+  awardedBy: varchar("awarded_by").notNull().references(() => administrators.id),
+  awardedAt: timestamp("awarded_at").defaultNow(),
+});
+
+// Staff Champions Insert Schemas
+export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1),
+  role: z.string().min(1),
+  isActive: z.boolean().default(true),
+});
+
+export const insertTeacherChampionPointsSchema = createInsertSchema(teacherChampionPoints).omit({
+  id: true,
+  awardedAt: true,
+}).extend({
+  teacherId: z.string().min(1),
+  category: z.string().min(1),
+  points: z.number().min(1),
+  reason: z.string().min(1),
+  awardedBy: z.string().min(1),
+});
+
+export const insertStaffChampionPointsSchema = createInsertSchema(staffChampionPoints).omit({
+  id: true,
+  awardedAt: true,
+}).extend({
+  staffId: z.string().min(1),
+  category: z.string().min(1),
+  points: z.number().min(1),
+  reason: z.string().min(1),
+  awardedBy: z.string().min(1),
+});
+
+// Staff Champions Type Exports
+export type StaffMember = typeof staffMembers.$inferSelect;
+export type TeacherChampionPoints = typeof teacherChampionPoints.$inferSelect;
+export type StaffChampionPoints = typeof staffChampionPoints.$inferSelect;
+
+export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
+export type InsertTeacherChampionPoints = z.infer<typeof insertTeacherChampionPointsSchema>;
+export type InsertStaffChampionPoints = z.infer<typeof insertStaffChampionPointsSchema>;
+
 

@@ -17,6 +17,9 @@ import {
   type DailyReflection,
   type StudentTrendData,
   type ClassroomTrendData,
+  type StaffMember,
+  type TeacherChampionPoints,
+  type StaffChampionPoints,
   type InsertHouse, 
   type InsertScholar, 
   type InsertTeacher, 
@@ -33,6 +36,9 @@ import {
   type InsertMoodEntry,
   type InsertProgressGoal,
   type InsertDailyReflection,
+  type InsertStaffMember,
+  type InsertTeacherChampionPoints,
+  type InsertStaffChampionPoints,
   type SelLesson,
   type SelQuizQuestion,
   type SelQuizResponse,
@@ -62,6 +68,9 @@ import {
   moodEntries,
   progressGoals,
   dailyReflections,
+  staffMembers,
+  teacherChampionPoints,
+  staffChampionPoints,
   selLessons,
   selQuizQuestions,
   selQuizResponses,
@@ -288,6 +297,13 @@ export interface IStorage {
   
   // Reflections for Scholar
   getReflectionsForScholar(scholarId: string): Promise<any[]>;
+  
+  // Staff Champions Awards
+  getAllStaffMembers(): Promise<StaffMember[]>;
+  getTeacherChampionPointsAggregated(): Promise<any[]>;
+  getStaffChampionPointsAggregated(): Promise<any[]>;
+  addTeacherChampionPoints(points: InsertTeacherChampionPoints): Promise<TeacherChampionPoints>;
+  addStaffChampionPoints(points: InsertStaffChampionPoints): Promise<StaffChampionPoints>;
 }
 
 export class MemStorage implements IStorage {

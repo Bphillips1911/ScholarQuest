@@ -6801,6 +6801,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== STAFF CHAMPIONS AWARDS ROUTES =====
+
+  // Get all staff members
+  app.get("/api/admin/staff-champions/staff", authenticateAdmin, async (req, res) => {
+    try {
+      const staffMembers = await storage.getAllStaffMembers();
+      res.json(staffMembers);
+    } catch (error) {
+      console.error("Get staff members error:", error);
+      res.status(500).json({ error: "Failed to fetch staff members" });
+    }
+  });
+
+  // Get teacher champion points aggregated
+  app.get("/api/admin/staff-champions/teachers", authenticateAdmin, async (req, res) => {
+    try {
+      const teacherPoints = await storage.getTeacherChampionPointsAggregated();
+      res.json(teacherPoints);
+    } catch (error) {
+      console.error("Get teacher champion points error:", error);
+      res.status(500).json({ error: "Failed to fetch teacher champion points" });
+    }
+  });
+
+  // Get staff champion points aggregated
+  app.get("/api/admin/staff-champions/staff-points", authenticateAdmin, async (req, res) => {
+    try {
+      const staffPoints = await storage.getStaffChampionPointsAggregated();
+      res.json(staffPoints);
+    } catch (error) {
+      console.error("Get staff champion points error:", error);
+      res.status(500).json({ error: "Failed to fetch staff champion points" });
+    }
+  });
+
+  // Add teacher champion points
+  app.post("/api/admin/staff-champions/teachers/add", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { teacherId, category, points, reason } = req.body;
+      const adminId = req.admin?.id;
+
+      if (!adminId) {
+        return res.status(401).json({ error: "Admin authentication required" });
+      }
+
+      if (!teacherId || !category || !points || !reason) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      const newPoints = await storage.addTeacherChampionPoints({
+        teacherId,
+        category,
+        points: parseInt(points),
+        reason,
+        awardedBy: adminId
+      });
+
+      res.json(newPoints);
+    } catch (error) {
+      console.error("Add teacher champion points error:", error);
+      res.status(500).json({ error: "Failed to add teacher champion points" });
+    }
+  });
+
+  // Add staff champion points
+  app.post("/api/admin/staff-champions/staff/add", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { staffId, category, points, reason } = req.body;
+      const adminId = req.admin?.id;
+
+      if (!adminId) {
+        return res.status(401).json({ error: "Admin authentication required" });
+      }
+
+      if (!staffId || !category || !points || !reason) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      const newPoints = await storage.addStaffChampionPoints({
+        staffId,
+        category,
+        points: parseInt(points),
+        reason,
+        awardedBy: adminId
+      });
+
+      res.json(newPoints);
+    } catch (error) {
+      console.error("Add staff champion points error:", error);
+      res.status(500).json({ error: "Failed to add staff champion points" });
+    }
+  });
+
+  // ===== END STAFF CHAMPIONS AWARDS ROUTES =====
+
   const httpServer = createServer(app);
   return httpServer;
 }

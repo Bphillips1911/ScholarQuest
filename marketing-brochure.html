@@ -324,6 +324,18 @@
             box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
         }
         
+        .new-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ffd700);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 700;
+            margin-left: 10px;
+            text-transform: uppercase;
+        }
+        
         @media print {
             .download-btn { display: none; }
             body { background: white; padding: 0; }
@@ -394,6 +406,18 @@
                 </div>
 
                 <div class="feature-card">
+                    <div class="feature-icon">⭐</div>
+                    <h3>Staff Champions Awards <span class="new-badge">NEW</span></h3>
+                    <p>Revolutionary recognition program for teachers and staff with separate point categories and real-time tracking.</p>
+                    <ul class="feature-list">
+                        <li>15 teacher recognition categories with custom point values</li>
+                        <li>12 staff-specific award categories for all team members</li>
+                        <li>Auto-refresh standings every 30 seconds</li>
+                        <li>Role-based access for principals only</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
                     <div class="feature-icon">🤖</div>
                     <h3>AI-Powered Analytics Engine</h3>
                     <p>Machine learning algorithms provide personalized insights and recommendations for student success.</p>
@@ -452,6 +476,18 @@
                         <li>Real-time data synchronization</li>
                     </ul>
                 </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>One-Click Progress Reports <span class="new-badge">2025</span></h3>
+                    <p>AI-powered comprehensive student reports with customizable date ranges and detailed analytics.</p>
+                    <ul class="feature-list">
+                        <li>Automated report generation with one click</li>
+                        <li>Customizable date ranges and filters</li>
+                        <li>Detailed behavioral and academic insights</li>
+                        <li>Professional PDF export for parent meetings</li>
+                    </ul>
+                </div>
             </div>
         </div>
 
@@ -480,6 +516,18 @@
                         <li>Student response and teacher approval system</li>
                         <li>Comprehensive rejection system with predefined reasons</li>
                         <li>Parent notification upon completion</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎮</div>
+                    <h3>Interactive Achievement Playground</h3>
+                    <p>Gamified progress tracking with animated badges and unlockable achievements.</p>
+                    <ul class="feature-list">
+                        <li>Animated badges with experience points</li>
+                        <li>Category filtering and progress visualization</li>
+                        <li>Student dashboard integration</li>
+                        <li>Admin monitoring capabilities</li>
                     </ul>
                 </div>
             </div>
@@ -564,6 +612,12 @@
                             <td><span class="check-mark">✓</span> OpenAI integration & analytics</td>
                             <td><span class="x-mark">✗</span> Basic reporting only</td>
                             <td><span class="x-mark">✗</span> No data analysis</td>
+                        </tr>
+                        <tr>
+                            <td>Staff Recognition System</td>
+                            <td><span class="check-mark">✓</span> Teacher & staff champions awards</td>
+                            <td><span class="x-mark">✗</span> No staff recognition</td>
+                            <td><span class="x-mark">✗</span> Manual awards only</td>
                         </tr>
                         <tr>
                             <td>Automated SEL Curriculum</td>
@@ -701,6 +755,7 @@
         <div class="footer">
             <p>&copy; 2025 Bush Hills STEAM Academy | PBIS House of Champions</p>
             <p>Empowering Educational Excellence Through Innovation</p>
+            <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">Version 2.0 | October 2025 Edition</p>
         </div>
     </div>
 
@@ -710,9 +765,7 @@
     </a>
 
     <script>
-        // Add print styles and functionality
         window.addEventListener('load', function() {
-            // Animate elements on scroll
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {

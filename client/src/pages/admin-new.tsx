@@ -110,6 +110,8 @@ export default function AdminNew() {
   const [showStaffChampionsModal, setShowStaffChampionsModal] = useState(false);
   const [teacherChampionsData, setTeacherChampionsData] = useState<any[]>([]);
   const [staffChampionsData, setStaffChampionsData] = useState<any[]>([]);
+  const [teacherStandingsData, setTeacherStandingsData] = useState<any[]>([]);
+  const [staffStandingsData, setStaffStandingsData] = useState<any[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [selectedStaff, setSelectedStaff] = useState("");
   const [teacherAwardCategory, setTeacherAwardCategory] = useState("");
@@ -180,11 +182,53 @@ export default function AdminNew() {
     }
   };
 
+  // Fetch teacher standings (aggregated points)
+  const fetchTeacherStandings = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/staff-champions/teachers", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTeacherStandingsData(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch teacher standings:", error);
+    }
+  };
+
+  // Fetch staff standings (aggregated points)
+  const fetchStaffStandings = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/admin/staff-champions/staff-points", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStaffStandingsData(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch staff standings:", error);
+    }
+  };
+
   // Auto-refresh teacher champions every 30 seconds
   useEffect(() => {
     if (isAuthenticated && showTeacherChampionsModal) {
       fetchTeacherChampions();
-      const interval = setInterval(fetchTeacherChampions, 30000);
+      fetchTeacherStandings();
+      const interval = setInterval(() => {
+        fetchTeacherChampions();
+        fetchTeacherStandings();
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, showTeacherChampionsModal]);
@@ -193,7 +237,11 @@ export default function AdminNew() {
   useEffect(() => {
     if (isAuthenticated && showStaffChampionsModal) {
       fetchStaffChampions();
-      const interval = setInterval(fetchStaffChampions, 30000);
+      fetchStaffStandings();
+      const interval = setInterval(() => {
+        fetchStaffChampions();
+        fetchStaffStandings();
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, showStaffChampionsModal]);
@@ -646,7 +694,7 @@ export default function AdminNew() {
 
   // Award teacher points mutation
   const awardTeacherPointsMutation = useMutation({
-    mutationFn: async (data: { teacherId: string; category: string; points: number }) => {
+    mutationFn: async (data: { teacherId: string; category: string; points: number; reason: string }) => {
       const token = localStorage.getItem("adminToken");
       const response = await fetch("/api/admin/staff-champions/teachers/add", {
         method: "POST",
@@ -661,6 +709,7 @@ export default function AdminNew() {
     },
     onSuccess: () => {
       fetchTeacherChampions();
+      fetchTeacherStandings();
       toast({
         title: "Points Awarded",
         description: "Teacher points awarded successfully.",
@@ -679,7 +728,7 @@ export default function AdminNew() {
 
   // Award staff points mutation
   const awardStaffPointsMutation = useMutation({
-    mutationFn: async (data: { staffId: string; category: string; points: number }) => {
+    mutationFn: async (data: { staffId: string; category: string; points: number; reason: string }) => {
       const token = localStorage.getItem("adminToken");
       const response = await fetch("/api/admin/staff-champions/staff/add", {
         method: "POST",
@@ -694,6 +743,7 @@ export default function AdminNew() {
     },
     onSuccess: () => {
       fetchStaffChampions();
+      fetchStaffStandings();
       toast({
         title: "Points Awarded",
         description: "Staff points awarded successfully.",
@@ -760,6 +810,7 @@ export default function AdminNew() {
       teacherId: selectedTeacher,
       category: teacherAwardCategory,
       points: teacherPointValues[teacherAwardCategory] || 0,
+      reason: teacherAwardCategory.replace(/_/g, ' '),
     });
   };
 
@@ -777,6 +828,7 @@ export default function AdminNew() {
       staffId: selectedStaff,
       category: staffAwardCategory,
       points: staffPointValues[staffAwardCategory] || 0,
+      reason: staffAwardCategory.replace(/_/g, ' '),
     });
   };
 
@@ -3604,13 +3656,13 @@ export default function AdminNew() {
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Current Standings</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {teacherChampionsData.length > 0 ? (
-                  teacherChampionsData.map((teacher: any, index: number) => (
-                    <Card key={teacher.id || index} className="p-4" data-testid={`teacher-card-${index}`}>
+                {teacherStandingsData.length > 0 ? (
+                  teacherStandingsData.map((teacher: any, index: number) => (
+                    <Card key={teacher.teacherId || index} className="p-4" data-testid={`teacher-card-${index}`}>
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold" data-testid={`teacher-name-${index}`}>
-                            {teacher.name || `${teacher.firstName} ${teacher.lastName}`}
+                            {teacher.teacherName || 'Unknown Teacher'}
                           </p>
                           <p className="text-sm text-gray-600">
                             Total Points: <span className="font-bold text-blue-600" data-testid={`teacher-points-${index}`}>
@@ -3744,13 +3796,13 @@ export default function AdminNew() {
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Current Standings</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {staffChampionsData.length > 0 ? (
-                  staffChampionsData.map((staff: any, index: number) => (
-                    <Card key={staff.id || index} className="p-4" data-testid={`staff-card-${index}`}>
+                {staffStandingsData.length > 0 ? (
+                  staffStandingsData.map((staff: any, index: number) => (
+                    <Card key={staff.staffId || index} className="p-4" data-testid={`staff-card-${index}`}>
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold" data-testid={`staff-name-${index}`}>
-                            {staff.name || `${staff.firstName} ${staff.lastName}`}
+                            {staff.staffName || 'Unknown Staff'}
                           </p>
                           <p className="text-sm text-gray-600">
                             Total Points: <span className="font-bold text-green-600" data-testid={`staff-points-${index}`}>

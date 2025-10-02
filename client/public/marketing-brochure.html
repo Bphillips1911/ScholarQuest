@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBIS House of Champions - Revolutionary Educational Platform</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .brochure-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.05); opacity: 0.3; }
+        }
+        
+        .header h1 {
+            font-size: 3.5em;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ffd700, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header .subtitle {
+            font-size: 1.4em;
+            font-weight: 300;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header .tagline {
+            font-size: 1.1em;
+            font-weight: 400;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .section {
+            padding: 50px 40px;
+        }
+        
+        .section:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .section h2 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #2d3748;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #ffd700);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        
+        .feature-card p {
+            color: #4a5568;
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 5px 0;
+            position: relative;
+            padding-left: 25px;
+            color: #4a5568;
+        }
+        
+        .feature-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #48bb78;
+            font-weight: bold;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ffd700, #fff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 1.1em;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        
+        .competitive-advantage {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            margin: 0 -40px;
+            padding: 60px 40px;
+        }
+        
+        .competitive-advantage h2 {
+            color: white;
+            -webkit-text-fill-color: white;
+        }
+        
+        .comparison-table {
+            margin-top: 40px;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .comparison-table td {
+            color: #4a5568;
+        }
+        
+        .check-mark {
+            color: #48bb78;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .x-mark {
+            color: #f56565;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .cta-section {
+            background: linear-gradient(135deg, #ffd700 0%, #ff6b6b 100%);
+            color: #1a1a1a;
+            text-align: center;
+            margin: 0 -40px;
+            padding: 60px 40px;
+        }
+        
+        .cta-section h2 {
+            color: #1a1a1a;
+            -webkit-text-fill-color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: #1a1a2e;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.2em;
+            margin: 20px 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(26, 26, 46, 0.3);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(26, 26, 46, 0.4);
+        }
+        
+        .footer {
+            background: #1a1a2e;
+            color: white;
+            text-align: center;
+            padding: 40px;
+            margin: 0 -40px;
+        }
+        
+        .download-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
+        }
+        
+        .new-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ffd700);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 700;
+            margin-left: 10px;
+            text-transform: uppercase;
+        }
+        
+        @media print {
+            .download-btn { display: none; }
+            body { background: white; padding: 0; }
+            .brochure-container { box-shadow: none; }
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2.5em; }
+            .section { padding: 30px 20px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .download-btn { bottom: 20px; right: 20px; padding: 12px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="brochure-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>PBIS House of Champions</h1>
+            <div class="subtitle">Revolutionary Educational Management System</div>
+            <div class="tagline">Transforming School Culture Through Innovation & Engagement</div>
+        </div>
+
+        <!-- Introduction -->
+        <div class="section">
+            <h2>The Future of Educational Excellence</h2>
+            <p style="font-size: 1.2em; text-align: center; max-width: 800px; margin: 0 auto; color: #4a5568;">
+                PBIS House of Champions isn't just another school management system—it's a comprehensive educational ecosystem 
+                that revolutionizes how schools manage behavior, engage students, and foster positive learning environments. 
+                Built specifically for Bush Hills STEAM Academy, our platform combines cutting-edge technology with proven 
+                educational methodologies.
+            </p>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Real-Time Notifications</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">AI</div>
+                    <div class="stat-label">Powered Insights</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">System Availability</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">Scalability</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Core Features -->
+        <div class="section">
+            <h2>Core Platform Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🏆</div>
+                    <h3>Advanced PBIS Management</h3>
+                    <p>Comprehensive Positive Behavioral Interventions and Supports system with real-time tracking, automated workflows, and detailed analytics.</p>
+                    <ul class="feature-list">
+                        <li>Individual teacher dashboards for MUSTANG trait recognition</li>
+                        <li>Automated point calculation and house assignment</li>
+                        <li>Behavioral reflection system with approval workflows</li>
+                        <li>Real-time parent notifications via SMS and email</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⭐</div>
+                    <h3>Staff Champions Awards <span class="new-badge">NEW</span></h3>
+                    <p>Revolutionary recognition program for teachers and staff with separate point categories and real-time tracking.</p>
+                    <ul class="feature-list">
+                        <li>15 teacher recognition categories with custom point values</li>
+                        <li>12 staff-specific award categories for all team members</li>
+                        <li>Auto-refresh standings every 30 seconds</li>
+                        <li>Role-based access for principals only</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered Analytics Engine</h3>
+                    <p>Machine learning algorithms provide personalized insights and recommendations for student success.</p>
+                    <ul class="feature-list">
+                        <li>Adaptive recommendation engine for personalized learning</li>
+                        <li>Predictive analytics for behavioral interventions</li>
+                        <li>Automated lesson generation for SEL curriculum</li>
+                        <li>Performance trend analysis and forecasting</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔔</div>
+                    <h3>Real-Time Communication System</h3>
+                    <p>Instant notifications ensure all stakeholders stay connected and informed about student progress.</p>
+                    <ul class="feature-list">
+                        <li>WebSocket-based real-time notifications</li>
+                        <li>Bi-directional parent-teacher messaging</li>
+                        <li>Automatic reflection assignment notifications</li>
+                        <li>Admin broadcast messaging capabilities</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Gamified Learning Experience</h3>
+                    <p>Engaging gamification elements motivate students and create a positive learning atmosphere.</p>
+                    <ul class="feature-list">
+                        <li>Interactive house system with diverse STEAM pioneers</li>
+                        <li>Achievement badges and experience points</li>
+                        <li>Skill tree progression visualization</li>
+                        <li>Competitive leaderboards and celebrations</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h3>Comprehensive User Management</h3>
+                    <p>Role-based permissions ensure secure access while maintaining flexibility for different user types.</p>
+                    <ul class="feature-list">
+                        <li>Multi-tier authentication (Students, Teachers, Parents, Admins)</li>
+                        <li>Automatic username/password generation</li>
+                        <li>Role-specific dashboard customization</li>
+                        <li>Grade-level permission restrictions</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Advanced Analytics Dashboard</h3>
+                    <p>Comprehensive reporting and data visualization tools provide actionable insights for administrators.</p>
+                    <ul class="feature-list">
+                        <li>Teacher performance heatmaps with trend analysis</li>
+                        <li>Student progress tracking with AI insights</li>
+                        <li>CSV/Excel export capabilities</li>
+                        <li>Real-time data synchronization</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>One-Click Progress Reports <span class="new-badge">2025</span></h3>
+                    <p>AI-powered comprehensive student reports with customizable date ranges and detailed analytics.</p>
+                    <ul class="feature-list">
+                        <li>Automated report generation with one click</li>
+                        <li>Customizable date ranges and filters</li>
+                        <li>Detailed behavioral and academic insights</li>
+                        <li>Professional PDF export for parent meetings</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEL Integration -->
+        <div class="section">
+            <h2>Social Emotional Learning (SEL) Integration</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>AI-Powered SEL Curriculum</h3>
+                    <p>Automatically generates personalized social-emotional learning lessons when students receive negative PBIS points.</p>
+                    <ul class="feature-list">
+                        <li>OpenAI integration for dynamic lesson creation</li>
+                        <li>Customizable intervention strategies</li>
+                        <li>Progress tracking with measurable outcomes</li>
+                        <li>Multi-stakeholder notification system</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Behavioral Reflection System</h3>
+                    <p>Structured reflection assignments help students process their actions and develop better decision-making skills.</p>
+                    <ul class="feature-list">
+                        <li>Teacher-to-parent workflow integration</li>
+                        <li>Student response and teacher approval system</li>
+                        <li>Comprehensive rejection system with predefined reasons</li>
+                        <li>Parent notification upon completion</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎮</div>
+                    <h3>Interactive Achievement Playground</h3>
+                    <p>Gamified progress tracking with animated badges and unlockable achievements.</p>
+                    <ul class="feature-list">
+                        <li>Animated badges with experience points</li>
+                        <li>Category filtering and progress visualization</li>
+                        <li>Student dashboard integration</li>
+                        <li>Admin monitoring capabilities</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Excellence -->
+        <div class="section">
+            <h2>Technical Excellence & Innovation</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Modern Technology Stack</h3>
+                    <p>Built with cutting-edge technologies for performance, scalability, and user experience.</p>
+                    <ul class="feature-list">
+                        <li>React 18 with TypeScript for robust frontend</li>
+                        <li>Express.js backend with PostgreSQL database</li>
+                        <li>Neon Database for serverless scalability</li>
+                        <li>TanStack React Query for efficient state management</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Premium User Experience</h3>
+                    <p>Meticulously designed interface with glassmorphism effects and advanced animations.</p>
+                    <ul class="feature-list">
+                        <li>Mobile-first responsive design</li>
+                        <li>Three-theme system (Normal, Light, Dark)</li>
+                        <li>Accessibility features including high contrast mode</li>
+                        <li>Micro-interactions and contextual feedback</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Enterprise-Grade Security</h3>
+                    <p>Robust security measures protect sensitive educational data and ensure compliance.</p>
+                    <ul class="feature-list">
+                        <li>JWT-based session management</li>
+                        <li>Role-based access control (RBAC)</li>
+                        <li>Encrypted data transmission</li>
+                        <li>Comprehensive audit trails</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Performance & Scalability</h3>
+                    <p>Optimized for speed and built to scale with your institution's growth.</p>
+                    <ul class="feature-list">
+                        <li>Real-time WebSocket connections</li>
+                        <li>Efficient database queries with Drizzle ORM</li>
+                        <li>Automatic rollback capabilities</li>
+                        <li>Cloud-native architecture</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Competitive Advantages -->
+        <div class="competitive-advantage">
+            <h2>Why Choose PBIS House of Champions?</h2>
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>PBIS House of Champions</th>
+                            <th>Generic School Systems</th>
+                            <th>Traditional Methods</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Real-Time Notifications</td>
+                            <td><span class="check-mark">✓</span> WebSocket-based instant alerts</td>
+                            <td><span class="x-mark">✗</span> Email-only delays</td>
+                            <td><span class="x-mark">✗</span> Manual communication</td>
+                        </tr>
+                        <tr>
+                            <td>AI-Powered Insights</td>
+                            <td><span class="check-mark">✓</span> OpenAI integration & analytics</td>
+                            <td><span class="x-mark">✗</span> Basic reporting only</td>
+                            <td><span class="x-mark">✗</span> No data analysis</td>
+                        </tr>
+                        <tr>
+                            <td>Staff Recognition System</td>
+                            <td><span class="check-mark">✓</span> Teacher & staff champions awards</td>
+                            <td><span class="x-mark">✗</span> No staff recognition</td>
+                            <td><span class="x-mark">✗</span> Manual awards only</td>
+                        </tr>
+                        <tr>
+                            <td>Automated SEL Curriculum</td>
+                            <td><span class="check-mark">✓</span> Dynamic lesson generation</td>
+                            <td><span class="x-mark">✗</span> Static resources</td>
+                            <td><span class="x-mark">✗</span> No SEL integration</td>
+                        </tr>
+                        <tr>
+                            <td>Gamification System</td>
+                            <td><span class="check-mark">✓</span> Full gaming experience</td>
+                            <td><span class="x-mark">✗</span> Basic point systems</td>
+                            <td><span class="x-mark">✗</span> No engagement tools</td>
+                        </tr>
+                        <tr>
+                            <td>Performance Analytics</td>
+                            <td><span class="check-mark">✓</span> Interactive heatmaps & trends</td>
+                            <td><span class="x-mark">✗</span> Static reports</td>
+                            <td><span class="x-mark">✗</span> Manual tracking</td>
+                        </tr>
+                        <tr>
+                            <td>Parent Engagement</td>
+                            <td><span class="check-mark">✓</span> Bi-directional messaging + SMS</td>
+                            <td><span class="x-mark">✗</span> One-way notifications</td>
+                            <td><span class="x-mark">✗</span> Phone calls only</td>
+                        </tr>
+                        <tr>
+                            <td>Mobile Experience</td>
+                            <td><span class="check-mark">✓</span> Native mobile-first design</td>
+                            <td><span class="x-mark">✗</span> Desktop-focused</td>
+                            <td><span class="x-mark">✗</span> No mobile access</td>
+                        </tr>
+                        <tr>
+                            <td>Custom Branding</td>
+                            <td><span class="check-mark">✓</span> Full BHSA integration</td>
+                            <td><span class="x-mark">✗</span> Generic templates</td>
+                            <td><span class="x-mark">✗</span> No customization</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Unique Value Propositions -->
+        <div class="section">
+            <h2>Unique Value Propositions</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎓</div>
+                    <h3>Purpose-Built for STEAM Education</h3>
+                    <p>Unlike generic solutions, our platform is specifically designed for STEAM academies with features that celebrate scientific pioneers and innovation.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🏠</div>
+                    <h3>Revolutionary House System</h3>
+                    <p>Our house system honors diverse STEAM pioneers (Johnson, Marshall, West, Drew, Tesla) with immersive storytelling and audio narration.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Complete Workflow Automation</h3>
+                    <p>From PBIS point assignment to parent notification and SEL lesson generation—everything happens automatically with zero manual intervention.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>True Mobile-First Design</h3>
+                    <p>Every feature works seamlessly on mobile devices with touch-optimized interfaces and native app-like performance.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎵</div>
+                    <h3>Multi-Sensory Experience</h3>
+                    <p>Audio narration, competitive music, celebratory animations, and immersive visual effects create an engaging learning environment.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Zero-Configuration Setup</h3>
+                    <p>Pre-configured with Bush Hills STEAM Academy branding, policies, and workflows—ready to deploy immediately.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROI & Benefits -->
+        <div class="section">
+            <h2>Return on Investment & Benefits</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <h3>Cost Savings</h3>
+                    <ul class="feature-list">
+                        <li>Eliminate multiple software subscriptions</li>
+                        <li>Reduce administrative overhead by 60%</li>
+                        <li>Minimize training costs with intuitive design</li>
+                        <li>Lower IT maintenance requirements</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⏰</div>
+                    <h3>Time Efficiency</h3>
+                    <ul class="feature-list">
+                        <li>Automated workflows save 15+ hours per week</li>
+                        <li>Real-time notifications eliminate delays</li>
+                        <li>One-click reporting and data export</li>
+                        <li>Streamlined communication channels</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <h3>Measurable Outcomes</h3>
+                    <ul class="feature-list">
+                        <li>Improved student behavior tracking</li>
+                        <li>Enhanced parent engagement rates</li>
+                        <li>Better teacher performance insights</li>
+                        <li>Data-driven decision making</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="cta-section">
+            <h2>Transform Your School Today</h2>
+            <p style="font-size: 1.2em; margin-bottom: 30px;">
+                Join the educational revolution and give your students, teachers, and parents the platform they deserve.
+            </p>
+            <a href="mailto:admin@bhsteam.edu?subject=PBIS House of Champions Demo Request" class="cta-button">Request Demo</a>
+            <a href="tel:+1-555-BHSA-EDU" class="cta-button">Schedule Call</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; 2025 Bush Hills STEAM Academy | PBIS House of Champions</p>
+            <p>Empowering Educational Excellence Through Innovation</p>
+            <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">Version 2.0 | October 2025 Edition</p>
+        </div>
+    </div>
+
+    <!-- Download Button -->
+    <a href="#" onclick="window.print(); return false;" class="download-btn">
+        📥 Download PDF
+    </a>
+
+    <script>
+        window.addEventListener('load', function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.feature-card').forEach((card) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.6s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>

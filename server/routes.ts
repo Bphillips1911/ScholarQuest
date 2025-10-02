@@ -6896,6 +6896,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== END STAFF CHAMPIONS AWARDS ROUTES =====
 
+  // ===== MARKETING MATERIALS ROUTES =====
+  
+  // Serve marketing brochure
+  app.get("/marketing-brochure", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "client", "public", "marketing-brochure.html"));
+  });
+
+  // Serve app valuation report
+  app.get("/app-valuation", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "client", "public", "app-valuation-report.html"));
+  });
+
+  // ===== END MARKETING MATERIALS ROUTES =====
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -1,1 +1,3 @@
 Kill 1
+curl -X POST https://pbishouseofchampions.com/api/admin/force-approve-all
+curl -X POST https://pbishouseofchampions.com/api/admin/seed-staff-members

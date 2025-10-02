@@ -3648,7 +3648,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Force approve all administrators (development/troubleshooting endpoint)
+  // Force approve all administrators (GET version for browser access)
+  app.get("/api/admin/force-approve-all", async (req, res) => {
+    try {
+      await db.update(administrators)
+        .set({ 
+          isApproved: true,
+          isActive: true 
+        })
+        .where(sql`1=1`);
+      
+      const allAdmins = await db.select({
+        email: administrators.email,
+        firstName: administrators.firstName,
+        lastName: administrators.lastName,
+        isApproved: administrators.isApproved,
+        isActive: administrators.isActive
+      }).from(administrators);
+      
+      res.json({
+        message: "All administrator accounts approved and activated",
+        count: allAdmins.length,
+        admins: allAdmins
+      });
+    } catch (error) {
+      console.error("Force approve error:", error);
+      res.status(500).json({ message: "Failed to approve accounts" });
+    }
+  });
+
+  // POST version for programmatic access
   app.post("/api/admin/force-approve-all", async (req, res) => {
     try {
       await db.update(administrators)
@@ -3677,7 +3706,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Seed staff members (development/production setup endpoint)
+  // Seed staff members (development/production setup endpoint - GET version for browser)
+  app.get("/api/admin/seed-staff-members", async (req, res) => {
+    try {
+      const staffList = [
+        { name: "Mrs. April White", role: "secretary" },
+        { name: "Nurse Q", role: "school_nurse" },
+        { name: "Mrs. Luster", role: "bookkeeper" },
+        { name: "Mrs. Oats", role: "cnp_manager" },
+        { name: "Mrs. Smith", role: "cnp_team" },
+        { name: "Mrs. Daniels", role: "cnp_team" },
+        { name: "Coach Drake", role: "iss_facilitator" },
+        { name: "Ms. Heggler", role: "custodian" },
+        { name: "Ms. Ciers", role: "custodian" },
+        { name: "Mr. Cobb", role: "head_custodian" },
+        { name: "Mrs. Evans", role: "sro" },
+      ];
+
+      // Check if staff members already exist
+      const existing = await db.select().from(staffMembers);
+      
+      if (existing.length > 0) {
+        return res.json({
+          message: "Staff members already seeded",
+          count: existing.length,
+          staff: existing
+        });
+      }
+
+      // Insert staff members
+      const inserted = await db.insert(staffMembers).values(
+        staffList.map(staff => ({
+          name: staff.name,
+          role: staff.role,
+          totalPoints: 0
+        }))
+      ).returning();
+
+      res.json({
+        message: "Staff members seeded successfully",
+        count: inserted.length,
+        staff: inserted
+      });
+    } catch (error) {
+      console.error("Seed staff error:", error);
+      res.status(500).json({ message: "Failed to seed staff members" });
+    }
+  });
+
+  // POST version for programmatic access
   app.post("/api/admin/seed-staff-members", async (req, res) => {
     try {
       const staffList = [

@@ -591,6 +591,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update scholar information (teachers and admins can edit names, etc.)
+  app.put("/api/admin/scholars/:id", authenticateTeacherOrAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      // Prevent updating sensitive fields
+      delete updateData.passwordHash;
+      delete updateData.id;
+      
+      const updatedScholar = await storage.updateScholar(id, updateData);
+      
+      if (!updatedScholar) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+      
+      res.json({
+        message: "Student information updated successfully",
+        scholar: updatedScholar
+      });
+    } catch (error) {
+      console.error("Update scholar error:", error);
+      res.status(500).json({ message: "Failed to update student information" });
+    }
+  });
+
+  // Hard delete scholar account (admins only, real-time deletion)
+  app.delete("/api/admin/scholars/:id", authenticateAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteScholar(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+      
+      res.json({
+        message: "Student account permanently deleted",
+        deletedId: id
+      });
+    } catch (error) {
+      console.error("Delete scholar error:", error);
+      res.status(500).json({ message: "Failed to delete student account" });
+    }
+  });
+
   // Add points
   app.post("/api/points", async (req, res) => {
     try {
@@ -3629,18 +3675,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/seed-staff-members", async (req, res) => {
     try {
       const staffList = [
-        { name: "Ms. Robinson", role: "secretary" },
-        { name: "Ms. Washington", role: "secretary" },
-        { name: "Nurse Thompson", role: "school_nurse" },
-        { name: "Ms. Anderson", role: "bookkeeper" },
-        { name: "Chef Martinez", role: "cnp_manager" },
-        { name: "Kitchen Staff A", role: "cnp_team" },
-        { name: "Kitchen Staff B", role: "cnp_team" },
-        { name: "Mr. Jackson", role: "iss_facilitator" },
-        { name: "Mr. Davis", role: "custodian" },
-        { name: "Ms. Wilson", role: "custodian" },
-        { name: "Mr. Brown (Head)", role: "head_custodian" },
-        { name: "Officer Johnson", role: "sro" },
+        { name: "Mrs. April White", role: "secretary" },
+        { name: "Nurse Q", role: "school_nurse" },
+        { name: "Mrs. Luster", role: "bookkeeper" },
+        { name: "Mrs. Oats", role: "cnp_manager" },
+        { name: "Mrs. Smith", role: "cnp_team" },
+        { name: "Mrs. Daniels", role: "cnp_team" },
+        { name: "Coach Drake", role: "iss_facilitator" },
+        { name: "Ms. Heggler", role: "custodian" },
+        { name: "Ms. Ciers", role: "custodian" },
+        { name: "Mr. Cobb", role: "head_custodian" },
+        { name: "Mrs. Evans", role: "sro" },
       ];
 
       // Check if staff members already exist

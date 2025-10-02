@@ -3625,6 +3625,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Seed staff members (development/production setup endpoint)
+  app.post("/api/admin/seed-staff-members", async (req, res) => {
+    try {
+      const staffList = [
+        { name: "Ms. Robinson", role: "secretary" },
+        { name: "Ms. Washington", role: "secretary" },
+        { name: "Nurse Thompson", role: "school_nurse" },
+        { name: "Ms. Anderson", role: "bookkeeper" },
+        { name: "Chef Martinez", role: "cnp_manager" },
+        { name: "Kitchen Staff A", role: "cnp_team" },
+        { name: "Kitchen Staff B", role: "cnp_team" },
+        { name: "Mr. Jackson", role: "iss_facilitator" },
+        { name: "Mr. Davis", role: "custodian" },
+        { name: "Ms. Wilson", role: "custodian" },
+        { name: "Mr. Brown (Head)", role: "head_custodian" },
+        { name: "Officer Johnson", role: "sro" },
+      ];
+
+      // Check if staff members already exist
+      const existing = await db.select().from(staffMembers);
+      
+      if (existing.length > 0) {
+        return res.json({
+          message: "Staff members already seeded",
+          count: existing.length,
+          staff: existing
+        });
+      }
+
+      // Insert staff members
+      const inserted = await db.insert(staffMembers).values(
+        staffList.map(staff => ({
+          name: staff.name,
+          role: staff.role,
+          isActive: true
+        }))
+      ).returning();
+
+      res.json({
+        message: "Staff members seeded successfully",
+        count: inserted.length,
+        staff: inserted
+      });
+    } catch (error) {
+      console.error("Seed staff members error:", error);
+      res.status(500).json({ message: "Failed to seed staff members" });
+    }
+  });
+
   // Administrator password change route
   app.post("/api/admin/change-password", authenticateAdmin, async (req: any, res) => {
     try {

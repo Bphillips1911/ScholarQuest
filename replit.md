@@ -54,6 +54,7 @@ Preferred communication style: Simple, everyday language.
   - Interactive Teacher Performance Heatmap (Admin-Only): Advanced analytics dashboard with color-coded performance metrics, trend analysis, and CSV export
   - AI-Powered Adaptive Recommendation Engine: Personalized learning insights with implementation tracking and success metrics
 - **Student Achievement System**: Full gamification with experience points, achievement levels, category filtering, progress visualization, and integration with student dashboard navigation.
+- **Staff Champions Awards**: Recognition program for teachers and staff with role-based admin access (Dr. Phillips and Dr. Tiffani only). Features separate point categories for teachers (15 categories) and staff (12 categories), auto-refresh functionality, and comprehensive tracking. Staff members include secretaries, nurses, bookkeeper, CNP staff, ISS facilitator, custodians, and SRO with dedicated recognition categories.
 
 # External Dependencies
 

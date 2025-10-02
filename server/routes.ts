@@ -595,13 +595,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/scholars/:id", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const { updateScholarSchema } = await import("../shared/schema");
       
-      // Prevent updating sensitive fields
-      delete updateData.passwordHash;
-      delete updateData.id;
+      // Validate only allowed fields (name, grade)
+      const validationResult = updateScholarSchema.safeParse(req.body);
       
-      const updatedScholar = await storage.updateScholar(id, updateData);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid update data",
+          errors: validationResult.error.issues
+        });
+      }
+      
+      const updatedScholar = await storage.updateScholar(id, validationResult.data);
       
       if (!updatedScholar) {
         return res.status(404).json({ message: "Student not found" });

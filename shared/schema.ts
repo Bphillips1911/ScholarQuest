@@ -447,6 +447,11 @@ export const insertScholarSchema = createInsertSchema(scholars).omit({
   studentId: z.string().min(1),
 });
 
+export const updateScholarSchema = z.object({
+  name: z.string().min(1).optional(),
+  grade: z.number().min(6).max(8).optional(),
+});
+
 export const insertTeacherSchema = createInsertSchema(teachers).omit({
   id: true,
   createdAt: true,

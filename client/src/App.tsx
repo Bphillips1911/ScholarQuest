@@ -25,9 +25,12 @@ import DeploymentTest from "@/pages/deployment-test";
 import TeacherLogin from "@/pages/teacher-login";
 import TeacherSignup from "@/pages/teacher-signup";
 import TeacherForgotPassword from "@/pages/teacher-forgot-password";
+import TeacherResetPassword from "@/pages/teacher-reset-password";
 import TeacherQRAccess from "@/pages/teacher-qr-access";
 import AdminLogin from "@/pages/admin-login";
 import AdminSignup from "@/pages/admin-signup";
+import AdminForgotPassword from "@/pages/admin-forgot-password";
+import AdminResetPassword from "@/pages/admin-reset-password";
 import StudentLogin from "@/pages/student-login";
 import StudentSignup from "@/pages/student-signup";
 import StudentDashboard from "@/pages/student-dashboard";
@@ -70,9 +73,12 @@ function Router() {
         <Route path="/teacher-login" component={TeacherLogin} />
         <Route path="/teacher-signup" component={TeacherSignup} />
         <Route path="/teacher-forgot-password" component={TeacherForgotPassword} />
+        <Route path="/teacher-reset-password" component={TeacherResetPassword} />
         <Route path="/teacher-qr-access" component={TeacherQRAccess} />
         <Route path="/admin-login" component={AdminLogin} />
         <Route path="/admin-signup" component={AdminSignup} />
+        <Route path="/admin-forgot-password" component={AdminForgotPassword} />
+        <Route path="/admin-reset-password" component={AdminResetPassword} />
         <Route path="/student-login" component={StudentLogin} />
         <Route path="/student-signup" component={StudentSignup} />
         <Route path="/student-dashboard" component={StudentDashboard} />

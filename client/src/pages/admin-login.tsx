@@ -128,6 +128,13 @@ export default function AdminLogin() {
             </Button>
           </form>
           
+          <div className="text-center pt-4">
+            <Link href="/admin-forgot-password">
+              <Button variant="link" className="text-sm text-blue-600 p-0" data-testid="link-forgot-password">
+                Forgot your password?
+              </Button>
+            </Link>
+          </div>
 
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">

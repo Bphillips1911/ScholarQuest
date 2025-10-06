@@ -11,6 +11,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
 import * as XLSX from 'xlsx';
+import crypto from "crypto";
 import { stringify } from 'csv-stringify/sync';
 import { 
   sendEmail,
@@ -3645,6 +3646,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin signup error:", error);
       res.status(400).json({ message: "Invalid registration data" });
+    }
+  });
+
+  // Admin Password Reset - Request
+  app.post("/api/admin/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email address is required" });
+      }
+
+      const admin = await storage.getAdministratorByEmail(email);
+      
+      if (admin) {
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        await storage.createAdminPasswordReset({
+          adminId: admin.id,
+          token: resetToken,
+          expiresAt,
+        });
+
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/admin-reset-password?token=${resetToken}`;
+
+        try {
+          await sendEmail({
+            to: admin.email,
+            from: process.env.FROM_EMAIL || 'noreply@bhsteam.edu',
+            subject: 'Administrator Password Reset Request',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1f2937;">Bush Hills STEAM Academy - Administrator Password Reset</h2>
+                
+                <p>Hello ${admin.firstName} ${admin.lastName},</p>
+                
+                <p>You requested to reset your administrator password. Click the link below to create a new password:</p>
+                
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                  <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset Password</a>
+                </div>
+                
+                <p><strong>This link will expire in 1 hour.</strong></p>
+                
+                <p>If you did not request this password reset, please ignore this email and your password will remain unchanged.</p>
+                
+                <p style="color: #666; font-size: 12px; margin-top: 40px;">
+                  Bush Hills STEAM Academy<br>
+                  Administrator Portal Security<br>
+                  ${new Date().toLocaleDateString()}
+                </p>
+              </div>
+            `,
+            text: `Password reset requested for ${admin.email}. Visit ${resetUrl} to reset your password. This link expires in 1 hour.`
+          });
+        } catch (emailError) {
+          console.error("Failed to send admin password reset email:", emailError);
+        }
+      }
+
+      res.json({ 
+        message: "If your email address is registered, you will receive password reset instructions shortly." 
+      });
+    } catch (error) {
+      console.error("Admin password reset error:", error);
+      res.status(500).json({ message: "Unable to process password reset request" });
+    }
+  });
+
+  // Admin Password Reset - Complete
+  app.post("/api/admin/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+
+      const resetRecord = await storage.getAdminPasswordResetByToken(token);
+      
+      if (!resetRecord) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      if (resetRecord.used) {
+        return res.status(400).json({ message: "This reset link has already been used" });
+      }
+
+      if (new Date() > new Date(resetRecord.expiresAt)) {
+        return res.status(400).json({ message: "This reset link has expired" });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateAdministratorPassword(resetRecord.adminId, hashedPassword);
+      await storage.markAdminPasswordResetAsUsed(token);
+
+      res.json({ message: "Password successfully reset" });
+    } catch (error) {
+      console.error("Admin password reset completion error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // Teacher Password Reset - Request (Self-Service)
+  app.post("/api/teacher/forgot-password-selfservice", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email address is required" });
+      }
+
+      const teacher = await storage.getTeacherAuthByEmail(email);
+      
+      if (teacher && teacher.isApproved) {
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        await storage.createTeacherPasswordReset({
+          teacherId: teacher.id,
+          token: resetToken,
+          expiresAt,
+        });
+
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/teacher-reset-password?token=${resetToken}`;
+
+        try {
+          await sendEmail({
+            to: teacher.email,
+            from: process.env.FROM_EMAIL || 'noreply@bhsteam.edu',
+            subject: 'Teacher Password Reset Request',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1f2937;">Bush Hills STEAM Academy - Teacher Password Reset</h2>
+                
+                <p>Hello ${teacher.name},</p>
+                
+                <p>You requested to reset your teacher portal password. Click the link below to create a new password:</p>
+                
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                  <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset Password</a>
+                </div>
+                
+                <p><strong>This link will expire in 1 hour.</strong></p>
+                
+                <p>If you did not request this password reset, please ignore this email and your password will remain unchanged.</p>
+                
+                <p style="color: #666; font-size: 12px; margin-top: 40px;">
+                  Bush Hills STEAM Academy<br>
+                  Teacher Portal Security<br>
+                  ${new Date().toLocaleDateString()}
+                </p>
+              </div>
+            `,
+            text: `Password reset requested for ${teacher.email}. Visit ${resetUrl} to reset your password. This link expires in 1 hour.`
+          });
+        } catch (emailError) {
+          console.error("Failed to send teacher password reset email:", emailError);
+        }
+      }
+
+      res.json({ 
+        message: "If your email address is registered, you will receive password reset instructions shortly." 
+      });
+    } catch (error) {
+      console.error("Teacher password reset error:", error);
+      res.status(500).json({ message: "Unable to process password reset request" });
+    }
+  });
+
+  // Teacher Password Reset - Complete
+  app.post("/api/teacher/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+
+      const resetRecord = await storage.getTeacherPasswordResetByToken(token);
+      
+      if (!resetRecord) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      if (resetRecord.used) {
+        return res.status(400).json({ message: "This reset link has already been used" });
+      }
+
+      if (new Date() > new Date(resetRecord.expiresAt)) {
+        return res.status(400).json({ message: "This reset link has expired" });
+      }
+
+      await storage.updateTeacherPassword(resetRecord.teacherId, newPassword);
+      await storage.markTeacherPasswordResetAsUsed(token);
+
+      res.json({ message: "Password successfully reset" });
+    } catch (error) {
+      console.error("Teacher password reset completion error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 

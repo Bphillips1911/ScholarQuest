@@ -615,6 +615,10 @@ export type InsertStudentSession = typeof studentSessions.$inferInsert;
 export type InsertPasswordResetRequest = typeof passwordResetRequests.$inferInsert;
 export type InsertAdministrator = typeof administrators.$inferInsert;
 export type InsertAdminSession = typeof adminSessions.$inferInsert;
+export type InsertTeacherPasswordReset = typeof teacherPasswordResets.$inferInsert;
+export type InsertAdminPasswordReset = typeof adminPasswordResets.$inferInsert;
+export type TeacherPasswordReset = typeof teacherPasswordResets.$inferSelect;
+export type AdminPasswordReset = typeof adminPasswordResets.$inferSelect;
 export type InsertStorySubmission = typeof storySubmissions.$inferInsert;
 
 export const insertPbisPhotoSchema = createInsertSchema(pbisPhotos).omit({

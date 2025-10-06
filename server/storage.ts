@@ -33,6 +33,10 @@ import {
   type InsertPasswordResetRequest,
   type InsertAdministrator,
   type InsertAdminSession,
+  type InsertTeacherPasswordReset,
+  type InsertAdminPasswordReset,
+  type TeacherPasswordReset,
+  type AdminPasswordReset,
   type InsertMoodEntry,
   type InsertProgressGoal,
   type InsertDailyReflection,
@@ -65,6 +69,8 @@ import {
   passwordResetRequests,
   administrators,
   adminSessions,
+  teacherPasswordResets,
+  adminPasswordResets,
   moodEntries,
   progressGoals,
   dailyReflections,
@@ -247,6 +253,15 @@ export interface IStorage {
   deleteAdminSession(token: string): Promise<boolean>;
   getAllAdministrators(): Promise<Administrator[]>;
   
+  // Password Reset for Teachers and Admins
+  createTeacherPasswordReset(reset: InsertTeacherPasswordReset): Promise<TeacherPasswordReset>;
+  getTeacherPasswordResetByToken(token: string): Promise<TeacherPasswordReset | undefined>;
+  markTeacherPasswordResetAsUsed(token: string): Promise<boolean>;
+  updateTeacherPassword(teacherId: string, newPassword: string): Promise<boolean>;
+  createAdminPasswordReset(reset: InsertAdminPasswordReset): Promise<AdminPasswordReset>;
+  getAdminPasswordResetByToken(token: string): Promise<AdminPasswordReset | undefined>;
+  markAdminPasswordResetAsUsed(token: string): Promise<boolean>;
+  
   // House Sorting
   getUnsortedStudents(): Promise<Scholar[]>;
   addUnsortedStudent(student: InsertScholar): Promise<Scholar>;
@@ -320,6 +335,8 @@ export class MemStorage implements IStorage {
   private passwordResetRequests: Map<string, PasswordResetRequest>;
   private administrators: Map<string, Administrator>;
   private adminSessions: Map<string, AdminSession>;
+  private teacherPasswordResets: Map<string, TeacherPasswordReset>;
+  private adminPasswordResets: Map<string, AdminPasswordReset>;
   private reflections: Map<string, Reflection>;
   private parentScholars: Map<string, string[]>; // parentId -> scholarIds
   private parentTeacherMessages: Map<string, any>;
@@ -340,6 +357,8 @@ export class MemStorage implements IStorage {
     this.passwordResetRequests = new Map();
     this.administrators = new Map();
     this.adminSessions = new Map();
+    this.teacherPasswordResets = new Map();
+    this.adminPasswordResets = new Map();
     this.reflections = new Map();
     this.parentScholars = new Map();
     this.parentTeacherMessages = new Map();
@@ -1533,6 +1552,61 @@ export class MemStorage implements IStorage {
 
   async getAllAdministrators(): Promise<Administrator[]> {
     return Array.from(this.administrators.values());
+  }
+
+  async createTeacherPasswordReset(resetData: InsertTeacherPasswordReset): Promise<TeacherPasswordReset> {
+    const reset: TeacherPasswordReset = {
+      id: randomUUID(),
+      ...resetData,
+      createdAt: new Date(),
+      used: false,
+    };
+    this.teacherPasswordResets.set(reset.token, reset);
+    return reset;
+  }
+
+  async getTeacherPasswordResetByToken(token: string): Promise<TeacherPasswordReset | undefined> {
+    return this.teacherPasswordResets.get(token);
+  }
+
+  async markTeacherPasswordResetAsUsed(token: string): Promise<boolean> {
+    const reset = this.teacherPasswordResets.get(token);
+    if (!reset) return false;
+    reset.used = true;
+    this.teacherPasswordResets.set(token, reset);
+    return true;
+  }
+
+  async updateTeacherPassword(teacherId: string, newPassword: string): Promise<boolean> {
+    const teacher = this.teacherAuth.get(teacherId);
+    if (!teacher) return false;
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    teacher.passwordHash = hashedPassword;
+    this.teacherAuth.set(teacherId, teacher);
+    return true;
+  }
+
+  async createAdminPasswordReset(resetData: InsertAdminPasswordReset): Promise<AdminPasswordReset> {
+    const reset: AdminPasswordReset = {
+      id: randomUUID(),
+      ...resetData,
+      createdAt: new Date(),
+      used: false,
+    };
+    this.adminPasswordResets.set(reset.token, reset);
+    return reset;
+  }
+
+  async getAdminPasswordResetByToken(token: string): Promise<AdminPasswordReset | undefined> {
+    return this.adminPasswordResets.get(token);
+  }
+
+  async markAdminPasswordResetAsUsed(token: string): Promise<boolean> {
+    const reset = this.adminPasswordResets.get(token);
+    if (!reset) return false;
+    reset.used = true;
+    this.adminPasswordResets.set(token, reset);
+    return true;
   }
 
   async getUnsortedStudents(): Promise<Scholar[]> {
@@ -2968,6 +3042,87 @@ class PersistentMemStorage extends MemStorage {
       console.error("Failed to sync admin to database:", error);
     }
     return admin;
+  }
+
+  async createTeacherPasswordReset(resetData: InsertTeacherPasswordReset): Promise<TeacherPasswordReset> {
+    const reset = await super.createTeacherPasswordReset(resetData);
+    try {
+      await db.insert(teacherPasswordResets).values({
+        id: reset.id,
+        teacherId: reset.teacherId,
+        token: reset.token,
+        expiresAt: reset.expiresAt,
+        used: reset.used,
+        createdAt: reset.createdAt,
+      });
+    } catch (error) {
+      console.error("Failed to sync teacher password reset to database:", error);
+    }
+    return reset;
+  }
+
+  async getTeacherPasswordResetByToken(token: string): Promise<TeacherPasswordReset | undefined> {
+    const [reset] = await db.select().from(teacherPasswordResets).where(eq(teacherPasswordResets.token, token));
+    return reset;
+  }
+
+  async markTeacherPasswordResetAsUsed(token: string): Promise<boolean> {
+    try {
+      await db.update(teacherPasswordResets)
+        .set({ used: true })
+        .where(eq(teacherPasswordResets.token, token));
+      return true;
+    } catch (error) {
+      console.error("Failed to mark teacher password reset as used:", error);
+      return false;
+    }
+  }
+
+  async updateTeacherPassword(teacherId: string, newPassword: string): Promise<boolean> {
+    try {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await db.update(teacherAuth)
+        .set({ passwordHash: hashedPassword })
+        .where(eq(teacherAuth.id, teacherId));
+      return true;
+    } catch (error) {
+      console.error("Failed to update teacher password:", error);
+      return false;
+    }
+  }
+
+  async createAdminPasswordReset(resetData: InsertAdminPasswordReset): Promise<AdminPasswordReset> {
+    const reset = await super.createAdminPasswordReset(resetData);
+    try {
+      await db.insert(adminPasswordResets).values({
+        id: reset.id,
+        adminId: reset.adminId,
+        token: reset.token,
+        expiresAt: reset.expiresAt,
+        used: reset.used,
+        createdAt: reset.createdAt,
+      });
+    } catch (error) {
+      console.error("Failed to sync admin password reset to database:", error);
+    }
+    return reset;
+  }
+
+  async getAdminPasswordResetByToken(token: string): Promise<AdminPasswordReset | undefined> {
+    const [reset] = await db.select().from(adminPasswordResets).where(eq(adminPasswordResets.token, token));
+    return reset;
+  }
+
+  async markAdminPasswordResetAsUsed(token: string): Promise<boolean> {
+    try {
+      await db.update(adminPasswordResets)
+        .set({ used: true })
+        .where(eq(adminPasswordResets.token, token));
+      return true;
+    } catch (error) {
+      console.error("Failed to mark admin password reset as used:", error);
+      return false;
+    }
   }
 
   async createScholar(scholar: InsertScholar): Promise<Scholar> {

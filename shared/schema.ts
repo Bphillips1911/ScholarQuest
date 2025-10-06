@@ -312,6 +312,26 @@ export const adminSessions = pgTable("admin_sessions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Password reset tokens for teachers
+export const teacherPasswordResets = pgTable("teacher_password_resets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull().references(() => teacherAuth.id),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Password reset tokens for administrators
+export const adminPasswordResets = pgTable("admin_password_resets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  adminId: varchar("admin_id").notNull().references(() => administrators.id),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Story submissions table for teacher review of AI feedback
 export const storySubmissions = pgTable("story_submissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

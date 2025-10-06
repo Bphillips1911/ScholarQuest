@@ -128,17 +128,6 @@ export default function AdminLogin() {
             </Button>
           </form>
           
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-800 mb-2">Administrator Access</h4>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p><strong>Principal:</strong> dr.phillips@bhsteam.edu</p>
-              <p><strong>Assistant Principal:</strong> dr.stewart@bhsteam.edu</p>
-              <p><strong>Counselor:</strong> sharon.blanding@bhsteam.edu</p>
-              <p className="text-xs mt-2 text-blue-600">
-                Default password: BHSAAdmin2025! (Change after first login)
-              </p>
-            </div>
-          </div>
 
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">

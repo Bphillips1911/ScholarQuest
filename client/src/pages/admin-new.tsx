@@ -105,7 +105,7 @@ export default function AdminNew() {
   const [selectedBadge, setSelectedBadge] = useState<any>(null);
   const [showBadgeDetailsModal, setShowBadgeDetailsModal] = useState(false);
 
-  // Classified Champions state
+  // Staff Champions state
   const [showTeacherChampionsModal, setShowTeacherChampionsModal] = useState(false);
   const [showStaffChampionsModal, setShowStaffChampionsModal] = useState(false);
   const [teacherChampionsData, setTeacherChampionsData] = useState<any[]>([]);
@@ -984,7 +984,7 @@ export default function AdminNew() {
                 (adminData?.firstName === 'Dr. Tiffani' && adminData?.lastName === 'Rocker-Stewart')) && (
                 <TabsTrigger value="staff-champions" className="text-xs sm:text-sm px-2 py-2">
                   <Award className="h-4 w-4 mr-1" />
-                  Classified Champions
+                  Staff Champions
                 </TabsTrigger>
               )}
               <TabsTrigger value="classroom-trends" className="text-xs sm:text-sm px-2 py-2">
@@ -2655,7 +2655,7 @@ export default function AdminNew() {
                 <CardHeader>
                   <CardTitle style={{color: themeStyles.textPrimary}} className="flex items-center gap-2">
                     <Award className="w-5 h-5" />
-                    Classified Champions Awards Program
+                    Staff Champions Awards Program
                   </CardTitle>
                   <CardDescription style={{color: themeStyles.textSecondary}}>
                     Recognize and reward staff excellence with the Champions Awards system
@@ -2694,10 +2694,10 @@ export default function AdminNew() {
 
                   <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
                     <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-100">
-                      About Classified Champions
+                      About Staff Champions
                     </h4>
                     <p className="text-sm text-blue-800 dark:text-blue-200">
-                      The Classified Champions program recognizes outstanding contributions from teachers and staff members. 
+                      The Staff Champions program recognizes outstanding contributions from teachers and staff members. 
                       Points are awarded for various categories including attendance, lesson planning, school events, and more. 
                       Data auto-refreshes every 30 seconds to show real-time standings.
                     </p>
@@ -3775,13 +3775,13 @@ export default function AdminNew() {
         </DialogContent>
       </Dialog>
 
-      {/* Classified Champions Modal */}
+      {/* Staff Champions Modal */}
       <Dialog open={showStaffChampionsModal} onOpenChange={setShowStaffChampionsModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="modal-staff-champions">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="w-6 h-6 text-green-600" />
-              Classified Champions - Recognition Program
+              Staff Champions - Recognition Program
             </DialogTitle>
           </DialogHeader>
           

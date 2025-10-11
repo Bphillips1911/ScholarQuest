@@ -377,8 +377,21 @@ export default function MainLanding() {
             </div>
           </div>
 
+          {/* Our Commitment to Privacy */}
+          <div className="mt-16 bg-purple-50 rounded-lg p-12 text-center">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl font-bold text-purple-900 mb-4">
+                🔐 Our Commitment to Privacy
+              </h2>
+              <p className="text-lg text-purple-800 leading-relaxed">
+                We never sell or share student data. All usage complies with{" "}
+                <strong>COPPA</strong>, <strong>FERPA</strong>, and state privacy standards.
+              </p>
+            </div>
+          </div>
+
           {/* PBIS House of Champions Legal Center Footer */}
-          <div className="mt-16 bg-[#1c0b3a] rounded-lg border-2 border-purple-600 p-8 text-center">
+          <div className="mt-8 bg-[#1c0b3a] rounded-lg border-2 border-purple-600 p-8 text-center">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <FileText className="h-8 w-8 text-purple-400" />
@@ -414,6 +427,13 @@ export default function MainLanding() {
                 </a>
               </p>
             </div>
+          </div>
+
+          {/* Copyright Footer */}
+          <div className="mt-8 bg-[#1c0b3a] rounded-lg p-5 text-center">
+            <p className="text-purple-300 text-sm m-0">
+              © 2025 PBIS House of Champions. All rights reserved.
+            </p>
           </div>
         </div>
       </div>

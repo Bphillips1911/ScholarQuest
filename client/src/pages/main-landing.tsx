@@ -4,7 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import schoolLogoPath from "@assets/pbis-logo.png";
-import { GraduationCap, Shield, Users, Trophy, Sparkles, Star, Crown, Zap } from "lucide-react";
+import legalCenterPdfPath from "@assets/PBIS House of Champions Legal Center_1760153580133.pdf";
+import { GraduationCap, Shield, Users, Trophy, Sparkles, Star, Crown, Zap, FileText } from "lucide-react";
 
 interface House {
   id: string;
@@ -373,6 +374,45 @@ export default function MainLanding() {
                   <div className="text-white font-bold text-sm">{house.name.replace('House of ', '')}</div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* PBIS House of Champions Legal Center Footer */}
+          <div className="mt-16 bg-[#1c0b3a] rounded-lg border-2 border-purple-600 p-8 text-center">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <FileText className="h-8 w-8 text-purple-400" />
+                <h3 className="text-3xl font-bold text-white">PBIS House of Champions Legal Center</h3>
+              </div>
+              <p className="text-gray-200 text-lg leading-relaxed mb-6">
+                Learn more about how PBIS House of Champions protects your privacy and data.  
+                We are committed to ensuring full compliance with COPPA, FERPA, and other privacy laws.
+              </p>
+              <a 
+                href={legalCenterPdfPath} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block"
+                data-testid="link-legal-center"
+              >
+                <Button 
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg transform hover:scale-105 transition-all duration-300"
+                  data-testid="button-view-legal-center"
+                >
+                  <FileText className="h-5 w-5 mr-2 inline" />
+                  View Legal Center
+                </Button>
+              </a>
+              <p className="text-gray-300 text-base mt-6">
+                Questions or concerns? Contact us at{" "}
+                <a 
+                  href="mailto:pbishouseofchampions@gmail.com" 
+                  className="text-purple-300 hover:text-purple-200 underline transition-colors duration-200"
+                  data-testid="link-legal-email"
+                >
+                  pbishouseofchampions@gmail.com
+                </a>
+              </p>
             </div>
           </div>
         </div>

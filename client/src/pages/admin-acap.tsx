@@ -28,29 +28,22 @@ export default function AdminAcap() {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const verifyAdmin = async () => {
+    const token = localStorage.getItem("adminToken");
+    const data = localStorage.getItem("adminData");
+    if (token && data) {
       try {
-        const token = localStorage.getItem("adminToken");
-        if (!token) { setLocation("/admin-login"); return; }
-        const res = await fetch("/api/admin-auth/verify", {
-          headers: { Authorization: `Bearer ${token}` },
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAdminData(data);
-          setIsAuthenticated(true);
-        } else {
-          localStorage.removeItem("adminToken");
-          setLocation("/admin-login");
-        }
+        const parsedData = JSON.parse(data);
+        setAdminData(parsedData);
+        setIsAuthenticated(true);
       } catch {
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminData");
         setLocation("/admin-login");
-      } finally {
-        setAuthLoading(false);
       }
-    };
-    verifyAdmin();
+    } else {
+      setLocation("/admin-login");
+    }
+    setAuthLoading(false);
   }, [setLocation]);
 
   if (authLoading) {

@@ -9,15 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
 import {
   ArrowLeft, BookOpen, Target, BarChart3, Shield, Settings, Brain,
   Plus, Loader2, CheckCircle, Clock, AlertTriangle, Eye,
   Database, FileText, History, Check, X, Sparkles, Users,
-  GraduationCap, Zap, Activity, TrendingUp, Layers, PlayCircle
+  GraduationCap, Zap, Activity, TrendingUp, Layers, PlayCircle,
+  ClipboardList, Send, Award, Filter, Download, PieChart
 } from "lucide-react";
 
-type Tab = "overview" | "blueprints-standards" | "question-bank" | "ai-settings" | "reports" | "bootcamp";
+type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp";
 
 export default function AdminAcap() {
   const [, setLocation] = useLocation();
@@ -63,6 +65,8 @@ export default function AdminAcap() {
     { id: "overview", label: "Overview", icon: Activity },
     { id: "blueprints-standards", label: "Blueprints & Standards", icon: Layers },
     { id: "question-bank", label: "Question Bank", icon: BookOpen },
+    { id: "assessments", label: "Assessments", icon: ClipboardList },
+    { id: "assessment-completion", label: "Completion", icon: CheckCircle },
     { id: "ai-settings", label: "AI Settings", icon: Brain },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "bootcamp", label: "Boot Camp", icon: GraduationCap },
@@ -109,6 +113,8 @@ export default function AdminAcap() {
         {activeTab === "overview" && <OverviewTab />}
         {activeTab === "blueprints-standards" && <BlueprintsStandardsTab />}
         {activeTab === "question-bank" && <QuestionBankTab />}
+        {activeTab === "assessments" && <AssessmentsTab />}
+        {activeTab === "assessment-completion" && <AssessmentCompletionTab />}
         {activeTab === "ai-settings" && <AISettingsTab />}
         {activeTab === "reports" && <ReportsTab />}
         {activeTab === "bootcamp" && <BootCampTab />}
@@ -159,19 +165,14 @@ function OverviewTab() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Standards by Grade Level</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-lg">Standards by Grade Level</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[{ grade: 6, count: grade6 }, { grade: 7, count: grade7 }, { grade: 8, count: grade8 }].map((g) => (
               <div key={g.grade} className="flex items-center gap-3">
                 <span className="text-sm font-medium w-16">Grade {g.grade}</span>
                 <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
-                  <div
-                    className="bg-indigo-500 h-full rounded-full flex items-center justify-end pr-2 transition-all"
-                    style={{ width: `${Math.max((g.count / maxGrade) * 100, 5)}%` }}
-                  >
+                  <div className="bg-indigo-500 h-full rounded-full flex items-center justify-end pr-2 transition-all" style={{ width: `${Math.max((g.count / maxGrade) * 100, 5)}%` }}>
                     <span className="text-xs text-white font-medium">{g.count}</span>
                   </div>
                 </div>
@@ -182,10 +183,7 @@ function OverviewTab() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Activity</CardTitle>
-          <CardDescription>Last 10 audit log entries</CardDescription>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-lg">Recent Activity</CardTitle><CardDescription>Last 10 audit log entries</CardDescription></CardHeader>
         <CardContent>
           {recentActivity.length > 0 ? (
             <div className="space-y-2">
@@ -194,13 +192,9 @@ function OverviewTab() {
                   <History className="h-4 w-4 text-gray-400 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{entry.action.replace(/_/g, " ")}</p>
-                    <p className="text-xs text-gray-400">
-                      {entry.entityType} #{entry.entityId} • {entry.userRole || "system"}
-                    </p>
+                    <p className="text-xs text-gray-400">{entry.entityType} #{entry.entityId} • {entry.userRole || "system"}</p>
                   </div>
-                  <span className="text-xs text-gray-400 shrink-0">
-                    {new Date(entry.createdAt).toLocaleDateString()}
-                  </span>
+                  <span className="text-xs text-gray-400 shrink-0">{new Date(entry.createdAt).toLocaleDateString()}</span>
                 </div>
               ))}
             </div>
@@ -373,12 +367,9 @@ function BlueprintsStandardsTab() {
                         </div>
                       )}
                       <Badge variant="outline" className="text-xs">G{s.gradeLevel}</Badge>
-                      <Button
-                        size="sm"
-                        variant={s.isActive ? "default" : "outline"}
+                      <Button size="sm" variant={s.isActive ? "default" : "outline"}
                         className={`text-xs h-7 ${s.isActive ? "bg-green-600 hover:bg-green-700" : "text-red-500 border-red-200"}`}
-                        onClick={() => toggleActiveMutation.mutate({ id: s.id, isActive: s.isActive })}
-                      >
+                        onClick={() => toggleActiveMutation.mutate({ id: s.id, isActive: s.isActive })}>
                         {s.isActive ? "Active" : "Inactive"}
                       </Button>
                     </div>
@@ -550,24 +541,13 @@ function QuestionBankTab() {
       ) : (items || []).length > 0 ? (
         <div className="space-y-3">
           {items!.map((item: any) => (
-            <Card key={item.id} className={
-              item.reviewStatus === "pending" ? "border-amber-200" :
-              item.reviewStatus === "rejected" ? "border-red-200" : ""
-            }>
+            <Card key={item.id} className={item.reviewStatus === "pending" ? "border-amber-200" : item.reviewStatus === "rejected" ? "border-red-200" : ""}>
               <CardContent className="pt-4 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className="font-mono text-xs">DOK {item.dokLevel}</Badge>
                   <Badge variant="secondary" className="text-xs">{(item.itemType || "").replace(/_/g, " ")}</Badge>
-                  {item.aiGenerated && (
-                    <Badge className="bg-purple-100 text-purple-700 text-xs">
-                      <Sparkles className="h-3 w-3 mr-1" /> AI Generated
-                    </Badge>
-                  )}
-                  <Badge className={`text-xs ml-auto ${
-                    item.reviewStatus === "approved" ? "bg-green-100 text-green-700" :
-                    item.reviewStatus === "rejected" ? "bg-red-100 text-red-700" :
-                    "bg-amber-100 text-amber-700"
-                  }`}>
+                  {item.aiGenerated && <Badge className="bg-purple-100 text-purple-700 text-xs"><Sparkles className="h-3 w-3 mr-1" /> AI Generated</Badge>}
+                  <Badge className={`text-xs ml-auto ${item.reviewStatus === "approved" ? "bg-green-100 text-green-700" : item.reviewStatus === "rejected" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
                     {item.reviewStatus}
                   </Badge>
                 </div>
@@ -600,9 +580,529 @@ function QuestionBankTab() {
         <Card className="border-green-200 bg-green-50">
           <CardContent className="text-center py-8">
             <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-            <p className="text-green-700 font-medium">
-              {statusFilter === "pending" ? "All items reviewed!" : "No items found matching filters."}
-            </p>
+            <p className="text-green-700 font-medium">{statusFilter === "pending" ? "All items reviewed!" : "No items found matching filters."}</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function AssessmentsTab() {
+  const { toast } = useToast();
+  const [showCreate, setShowCreate] = useState(false);
+  const [title, setTitle] = useState("");
+  const [assessmentType, setAssessmentType] = useState("formative");
+  const [gradeLevel, setGradeLevel] = useState("6");
+  const [subject, setSubject] = useState("ELA");
+  const [timeLimit, setTimeLimit] = useState("60");
+  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignAssessmentId, setAssignAssessmentId] = useState<number | null>(null);
+  const [assignTargetType, setAssignTargetType] = useState("grade");
+  const [assignTargetGrade, setAssignTargetGrade] = useState("6");
+  const [assignTeacherId, setAssignTeacherId] = useState("");
+  const [assignDueDate, setAssignDueDate] = useState("");
+  const [selectedScholarIds, setSelectedScholarIds] = useState<string[]>([]);
+  const [viewAssessment, setViewAssessment] = useState<any>(null);
+  const [itemFilter, setItemFilter] = useState("approved");
+
+  const { data: assessments, isLoading: loadingAssessments } = useQuery<any[]>({ queryKey: ["/api/acap/assessments"] });
+  const { data: items } = useQuery<any[]>({ queryKey: ["/api/acap/items"] });
+  const { data: teachers } = useQuery<any[]>({ queryKey: ["/api/acap/teachers"] });
+  const scholarUrl = `/api/acap/scholars?gradeLevel=${assignTargetGrade}`;
+  const { data: scholars } = useQuery<any[]>({
+    queryKey: ["/api/acap/scholars", assignTargetGrade],
+    queryFn: () => fetch(scholarUrl).then((r) => r.json()),
+    enabled: showAssignModal,
+  });
+  const { data: assignments } = useQuery<any[]>({ queryKey: ["/api/acap/admin/all-assignments"] });
+
+  const availableItems = (items || []).filter((i: any) => {
+    if (itemFilter === "approved") return i.reviewStatus === "approved";
+    return true;
+  });
+
+  const createAssessmentMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/acap/assessments", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/assessments"] });
+      toast({ title: "Assessment created successfully!" });
+      setShowCreate(false);
+      setTitle(""); setSelectedItemIds([]);
+    },
+    onError: () => toast({ title: "Failed to create assessment", variant: "destructive" }),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/acap/assignments", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/admin/all-assignments"] });
+      toast({ title: "Assessment assigned successfully!" });
+      setShowAssignModal(false);
+      setAssignAssessmentId(null);
+      setSelectedScholarIds([]);
+    },
+    onError: () => toast({ title: "Failed to assign assessment", variant: "destructive" }),
+  });
+
+  const toggleItem = (id: number) => {
+    setSelectedItemIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+  };
+
+  const toggleScholar = (id: string) => {
+    setSelectedScholarIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+  };
+
+  const openAssign = (assessmentId: number) => {
+    setAssignAssessmentId(assessmentId);
+    setShowAssignModal(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-800">Assessment Management</h2>
+        <Button onClick={() => setShowCreate(!showCreate)} className="bg-indigo-700 hover:bg-indigo-800">
+          <Plus className="h-4 w-4 mr-1" /> Create Assessment
+        </Button>
+      </div>
+
+      {showCreate && (
+        <Card className="border-indigo-200 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-indigo-600" /> Create New Assessment</CardTitle>
+            <CardDescription>Build an assessment from approved questions in the bank</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="col-span-2">
+                <Label>Assessment Title</Label>
+                <Input placeholder="e.g., Grade 6 ELA Midterm Assessment" value={title} onChange={(e) => setTitle(e.target.value)} />
+              </div>
+              <div>
+                <Label>Type</Label>
+                <Select value={assessmentType} onValueChange={setAssessmentType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="formative">Formative</SelectItem>
+                    <SelectItem value="summative">Summative</SelectItem>
+                    <SelectItem value="diagnostic">Diagnostic</SelectItem>
+                    <SelectItem value="benchmark">Benchmark</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Grade Level</Label>
+                <Select value={gradeLevel} onValueChange={setGradeLevel}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">Grade 6</SelectItem>
+                    <SelectItem value="7">Grade 7</SelectItem>
+                    <SelectItem value="8">Grade 8</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Subject</Label>
+                <Select value={subject} onValueChange={setSubject}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ELA">ELA</SelectItem>
+                    <SelectItem value="Math">Math</SelectItem>
+                    <SelectItem value="Science">Science</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Time Limit (min)</Label>
+                <Input type="number" value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-base font-semibold">Select Questions from Bank ({selectedItemIds.length} selected)</Label>
+                <Select value={itemFilter} onValueChange={setItemFilter}>
+                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="approved">Approved Only</SelectItem>
+                    <SelectItem value="all">All Items</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="max-h-72 overflow-y-auto border rounded-lg divide-y">
+                {availableItems.length > 0 ? availableItems.map((item: any) => (
+                  <div key={item.id} className={`flex items-start gap-3 p-3 hover:bg-gray-50 cursor-pointer ${selectedItemIds.includes(item.id) ? "bg-indigo-50 border-l-4 border-l-indigo-500" : ""}`}
+                    onClick={() => toggleItem(item.id)}>
+                    <Checkbox checked={selectedItemIds.includes(item.id)} className="mt-1" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{item.stem}</p>
+                      <div className="flex gap-2 mt-1">
+                        <Badge variant="outline" className="text-[10px]">DOK {item.dokLevel}</Badge>
+                        <Badge variant="secondary" className="text-[10px]">{(item.itemType || "").replace(/_/g, " ")}</Badge>
+                        <Badge className={`text-[10px] ${item.reviewStatus === "approved" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>{item.reviewStatus}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-6 text-gray-500 text-sm">No questions available. Generate items in AI Settings first.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2 border-t">
+              <Button
+                onClick={() => createAssessmentMutation.mutate({
+                  title, assessmentType, gradeLevel: parseInt(gradeLevel), subject,
+                  itemIds: selectedItemIds, timeLimitMinutes: parseInt(timeLimit),
+                  isAdaptive: false, settings: {}, createdBy: "admin", isActive: true,
+                })}
+                disabled={!title || selectedItemIds.length === 0 || createAssessmentMutation.isPending}
+                className="bg-indigo-700 hover:bg-indigo-800"
+              >
+                {createAssessmentMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ClipboardList className="h-4 w-4 mr-2" />}
+                Create Assessment ({selectedItemIds.length} questions)
+              </Button>
+              <Button variant="outline" onClick={() => { setShowCreate(false); setSelectedItemIds([]); }}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {loadingAssessments ? (
+        <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+      ) : (assessments || []).length > 0 ? (
+        <div className="space-y-4">
+          {(assessments || []).map((a: any) => (
+            <Card key={a.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800 text-lg">{a.title || `Assessment #${a.id}`}</h3>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant="outline">{a.subject}</Badge>
+                      <Badge variant="secondary">Grade {a.gradeLevel}</Badge>
+                      <Badge className="bg-blue-100 text-blue-700">{a.assessmentType}</Badge>
+                      <Badge className="bg-purple-100 text-purple-700">{(a.itemIds as number[])?.length || 0} questions</Badge>
+                      <Badge className="bg-green-100 text-green-700">{a.timeLimitMinutes || 60} min</Badge>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">Created: {new Date(a.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setViewAssessment(viewAssessment?.id === a.id ? null : a)}>
+                      <Eye className="h-4 w-4 mr-1" /> View
+                    </Button>
+                    <Button size="sm" onClick={() => openAssign(a.id)} className="bg-indigo-700 hover:bg-indigo-800">
+                      <Send className="h-4 w-4 mr-1" /> Assign
+                    </Button>
+                  </div>
+                </div>
+
+                {viewAssessment?.id === a.id && (
+                  <div className="mt-4 pt-4 border-t">
+                    <h4 className="font-medium mb-2">Questions ({(a.itemIds as number[])?.length || 0})</h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {(items || []).filter((i: any) => (a.itemIds as number[])?.includes(i.id)).map((item: any, idx: number) => (
+                        <div key={item.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded text-sm">
+                          <span className="text-indigo-600 font-mono font-medium shrink-0">{idx + 1}.</span>
+                          <div className="flex-1">
+                            <p className="text-gray-700">{item.stem}</p>
+                            <div className="flex gap-1 mt-1">
+                              <Badge variant="outline" className="text-[10px]">DOK {item.dokLevel}</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{(item.itemType || "").replace(/_/g, " ")}</Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="text-center py-12">
+            <ClipboardList className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No assessments created yet</p>
+            <p className="text-gray-400 text-sm mt-1">Click "Create Assessment" to build your first assessment from the question bank</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {(assignments || []).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5 text-indigo-600" /> Active Assignments</CardTitle>
+            <CardDescription>Assessments currently assigned to teachers and scholars</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {(assignments || []).map((assign: any) => (
+                <div key={assign.id} className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{assign.assessmentTitle || `Assessment #${assign.assessmentId}`}</p>
+                    <p className="text-xs text-gray-400">
+                      {assign.subject} • Grade {assign.gradeLevel} • Assigned to: {assign.targetType === "all" ? "All Students" : `${(assign.targetIds as string[])?.length || 0} scholars`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={assign.status === "active" ? "default" : "secondary"}>{assign.status}</Badge>
+                    {assign.dueDate && <span className="text-xs text-gray-400">Due: {new Date(assign.dueDate).toLocaleDateString()}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5 text-indigo-600" /> Assign Assessment</CardTitle>
+              <CardDescription>Assign this assessment to teachers or scholars</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Assign To</Label>
+                <Select value={assignTargetType} onValueChange={setAssignTargetType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="grade">Entire Grade Level</SelectItem>
+                    <SelectItem value="individual">Individual Scholars</SelectItem>
+                    <SelectItem value="all">All Students</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {assignTargetType !== "all" && (
+                <div>
+                  <Label>Grade Level</Label>
+                  <Select value={assignTargetGrade} onValueChange={setAssignTargetGrade}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="6">Grade 6</SelectItem>
+                      <SelectItem value="7">Grade 7</SelectItem>
+                      <SelectItem value="8">Grade 8</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label>Assigning Teacher</Label>
+                <Select value={assignTeacherId} onValueChange={setAssignTeacherId}>
+                  <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
+                  <SelectContent>
+                    {(teachers || []).map((t: any) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name} — {t.gradeRole || t.subject}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {assignTargetType === "individual" && (
+                <div>
+                  <Label className="mb-2 block">Select Scholars ({selectedScholarIds.length} selected)</Label>
+                  <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
+                    {(scholars || []).map((s: any) => (
+                      <div key={s.id} className={`flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer ${selectedScholarIds.includes(s.id) ? "bg-indigo-50" : ""}`}
+                        onClick={() => toggleScholar(s.id)}>
+                        <Checkbox checked={selectedScholarIds.includes(s.id)} />
+                        <span className="text-sm">{s.name} — Grade {s.grade}</span>
+                      </div>
+                    ))}
+                    {(!scholars || scholars.length === 0) && <p className="text-center text-gray-400 py-4 text-sm">No scholars in this grade</p>}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label>Due Date (optional)</Label>
+                <Input type="date" value={assignDueDate} onChange={(e) => setAssignDueDate(e.target.value)} />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={() => {
+                    let targetIds: string[] = [];
+                    if (assignTargetType === "individual") targetIds = selectedScholarIds;
+                    else if (assignTargetType === "grade") targetIds = (scholars || []).map((s: any) => s.id);
+
+                    assignMutation.mutate({
+                      assessmentId: assignAssessmentId,
+                      teacherId: assignTeacherId || "admin",
+                      targetType: assignTargetType,
+                      targetIds,
+                      dueDate: assignDueDate ? new Date(assignDueDate).toISOString() : null,
+                      status: "active",
+                    });
+                  }}
+                  disabled={!assignTeacherId || assignMutation.isPending || (assignTargetType === "individual" && selectedScholarIds.length === 0)}
+                  className="bg-indigo-700 hover:bg-indigo-800 flex-1"
+                >
+                  {assignMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                  Assign Assessment
+                </Button>
+                <Button variant="outline" onClick={() => { setShowAssignModal(false); setSelectedScholarIds([]); }}>Cancel</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AssessmentCompletionTab() {
+  const { data: attempts, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/acap/admin/all-attempts"],
+  });
+  const { data: assessments } = useQuery<any[]>({ queryKey: ["/api/acap/assessments"] });
+  const { data: scholars } = useQuery<any[]>({
+    queryKey: ["/api/acap/scholars"],
+  });
+
+  const [gradeFilter, setGradeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("completed");
+
+  const completedAttempts = (attempts || []).filter((a: any) => {
+    if (statusFilter !== "all" && a.status !== statusFilter) return false;
+    if (gradeFilter !== "all" && a.gradeLevel !== parseInt(gradeFilter)) return false;
+    return true;
+  });
+
+  const scholarMap: Record<string, string> = {};
+  (scholars || []).forEach((s: any) => { scholarMap[s.id] = s.name; });
+
+  const totalCompleted = completedAttempts.filter((a: any) => a.status === "completed").length;
+  const avgScore = totalCompleted > 0
+    ? completedAttempts.filter((a: any) => a.status === "completed").reduce((s: number, a: any) => s + (a.percentCorrect || 0), 0) / totalCompleted
+    : 0;
+
+  const proficient = completedAttempts.filter((a: any) => a.status === "completed" && (a.percentCorrect || 0) >= 70).length;
+  const needsSupport = completedAttempts.filter((a: any) => a.status === "completed" && (a.percentCorrect || 0) < 40).length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-800">Assessment Completion Details</h2>
+        <div className="flex gap-2">
+          <Select value={gradeFilter} onValueChange={setGradeFilter}>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Grades</SelectItem>
+              <SelectItem value="6">Grade 6</SelectItem>
+              <SelectItem value="7">Grade 7</SelectItem>
+              <SelectItem value="8">Grade 8</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-blue-50">
+          <CardContent className="pt-5 text-center">
+            <FileText className="h-7 w-7 text-blue-500 mx-auto mb-1" />
+            <p className="text-2xl font-bold text-blue-600">{completedAttempts.length}</p>
+            <p className="text-xs text-gray-500">Total Attempts</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-50">
+          <CardContent className="pt-5 text-center">
+            <CheckCircle className="h-7 w-7 text-green-500 mx-auto mb-1" />
+            <p className="text-2xl font-bold text-green-600">{totalCompleted}</p>
+            <p className="text-xs text-gray-500">Completed</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-indigo-50">
+          <CardContent className="pt-5 text-center">
+            <TrendingUp className="h-7 w-7 text-indigo-500 mx-auto mb-1" />
+            <p className="text-2xl font-bold text-indigo-600">{Math.round(avgScore)}%</p>
+            <p className="text-xs text-gray-500">Average Score</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-amber-50">
+          <CardContent className="pt-5 text-center">
+            <Award className="h-7 w-7 text-amber-500 mx-auto mb-1" />
+            <p className="text-2xl font-bold text-amber-600">{proficient}</p>
+            <p className="text-xs text-gray-500">Proficient (70%+)</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {needsSupport > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <p className="text-sm text-red-700"><strong>{needsSupport} scholar{needsSupport !== 1 ? "s" : ""}</strong> scored below 40% and may need Boot Camp intervention.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+      ) : completedAttempts.length > 0 ? (
+        <Card>
+          <CardHeader><CardTitle>Attempt Results</CardTitle></CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left p-3 font-medium">Scholar</th>
+                    <th className="text-left p-3 font-medium">Assessment</th>
+                    <th className="text-left p-3 font-medium">Subject</th>
+                    <th className="text-left p-3 font-medium">Grade</th>
+                    <th className="text-left p-3 font-medium">Score</th>
+                    <th className="text-left p-3 font-medium">Status</th>
+                    <th className="text-left p-3 font-medium">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completedAttempts.slice(0, 50).map((a: any) => (
+                    <tr key={a.id} className="border-b hover:bg-gray-50">
+                      <td className="p-3 font-medium">{scholarMap[a.scholarId] || a.scholarId}</td>
+                      <td className="p-3">{a.assessmentTitle || `#${a.assessmentId}`}</td>
+                      <td className="p-3"><Badge variant="outline">{a.subject}</Badge></td>
+                      <td className="p-3">Grade {a.gradeLevel}</td>
+                      <td className="p-3">
+                        {a.status === "completed" ? (
+                          <span className={`font-bold ${(a.percentCorrect || 0) >= 70 ? "text-green-600" : (a.percentCorrect || 0) >= 40 ? "text-amber-600" : "text-red-600"}`}>
+                            {Math.round(a.percentCorrect || 0)}%
+                          </span>
+                        ) : "—"}
+                      </td>
+                      <td className="p-3">
+                        <Badge className={a.status === "completed" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}>{a.status}</Badge>
+                      </td>
+                      <td className="p-3 text-gray-500">{a.completedAt ? new Date(a.completedAt).toLocaleDateString() : a.startedAt ? new Date(a.startedAt).toLocaleDateString() : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {completedAttempts.length > 50 && <p className="text-xs text-gray-400 text-center mt-3">Showing first 50 of {completedAttempts.length} attempts</p>}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="text-center py-12">
+            <CheckCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No assessment attempts yet</p>
+            <p className="text-gray-400 text-sm mt-1">Results will appear here once scholars begin taking assigned assessments</p>
           </CardContent>
         </Card>
       )}
@@ -706,21 +1206,11 @@ function AISettingsTab() {
             </div>
           )}
           <Button
-            onClick={() => generateMutation.mutate({
-              standardId: parseInt(selectedStandard),
-              dokLevel: parseInt(dokLevel),
-              itemType,
-              count: parseInt(count),
-              subject: autoSubject,
-            })}
+            onClick={() => generateMutation.mutate({ standardId: parseInt(selectedStandard), dokLevel: parseInt(dokLevel), itemType, count: parseInt(count), subject: autoSubject })}
             disabled={!selectedStandard || generateMutation.isPending}
             className="bg-purple-700 hover:bg-purple-800 w-full"
           >
-            {generateMutation.isPending ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating Items...</>
-            ) : (
-              <><Sparkles className="h-4 w-4 mr-2" /> Generate {count} Items</>
-            )}
+            {generateMutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating Items...</> : <><Sparkles className="h-4 w-4 mr-2" /> Generate {count} Items</>}
           </Button>
         </CardContent>
       </Card>
@@ -729,13 +1219,17 @@ function AISettingsTab() {
 }
 
 function ReportsTab() {
+  const { data: schoolReport, isLoading } = useQuery<any>({
+    queryKey: ["/api/acap/admin/school-report"],
+    queryFn: () => fetch("/api/acap/admin/school-report").then((r) => r.json()),
+  });
   const { data: standards } = useQuery<any[]>({ queryKey: ["/api/acap/standards"] });
   const { data: items } = useQuery<any[]>({ queryKey: ["/api/acap/items"] });
-  const { data: assessments } = useQuery<any[]>({ queryKey: ["/api/acap/assessments"] });
-  const { data: blueprints } = useQuery<any[]>({ queryKey: ["/api/acap/blueprints"] });
+  const { data: teachers } = useQuery<any[]>({ queryKey: ["/api/acap/teachers"] });
 
   const allItems = items || [];
   const allStandards = standards || [];
+  const allTeachers = teachers || [];
 
   const standardsWithItems = new Set(allItems.map((i) => i.standardId));
   const coveragePercent = allStandards.length > 0 ? Math.round((standardsWithItems.size / allStandards.length) * 100) : 0;
@@ -748,135 +1242,297 @@ function ReportsTab() {
     itemsByDok[i.dokLevel] = (itemsByDok[i.dokLevel] || 0) + 1;
   });
 
+  const summary = schoolReport?.summary || {};
+  const gradeReport = schoolReport?.gradeReport || [];
+  const subjectReport = schoolReport?.subjectReport || [];
+  const teacherReport = schoolReport?.teacherReport || [];
+  const masteryByLevel = schoolReport?.masteryByLevel || {};
+  const profDist = schoolReport?.proficiencyDist || {};
+
+  const teacherMap: Record<string, string> = {};
+  allTeachers.forEach((t: any) => { teacherMap[t.id] = t.name; });
+
+  const maxGradeScore = Math.max(...gradeReport.map((g: any) => g.avgScore), 1);
+
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">System Reports</h2>
+      <h2 className="text-xl font-bold text-gray-800">School-Wide ACAP Reports</h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardContent className="pt-5 text-center">
-          <Target className="h-7 w-7 text-indigo-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-indigo-600">{allStandards.length}</p>
-          <p className="text-xs text-gray-500">Standards</p>
-        </CardContent></Card>
-        <Card><CardContent className="pt-5 text-center">
-          <BookOpen className="h-7 w-7 text-purple-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-purple-600">{allItems.length}</p>
-          <p className="text-xs text-gray-500">Total Items</p>
-        </CardContent></Card>
-        <Card><CardContent className="pt-5 text-center">
-          <FileText className="h-7 w-7 text-blue-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-blue-600">{assessments?.length || 0}</p>
-          <p className="text-xs text-gray-500">Assessments</p>
-        </CardContent></Card>
-        <Card><CardContent className="pt-5 text-center">
-          <Database className="h-7 w-7 text-green-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-green-600">{blueprints?.length || 0}</p>
-          <p className="text-xs text-gray-500">Blueprints</p>
-        </CardContent></Card>
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle>Standards Coverage</CardTitle><CardDescription>How many standards have at least one item</CardDescription></CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 bg-gray-100 rounded-full h-8 overflow-hidden">
-              <div className="bg-indigo-500 h-full rounded-full flex items-center justify-center transition-all" style={{ width: `${Math.max(coveragePercent, 3)}%` }}>
-                <span className="text-xs text-white font-medium">{coveragePercent}%</span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 shrink-0">{standardsWithItems.size} / {allStandards.length}</p>
+      {isLoading ? (
+        <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card><CardContent className="pt-5 text-center">
+              <Target className="h-7 w-7 text-indigo-500 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-indigo-600">{summary.totalStandards || allStandards.length}</p>
+              <p className="text-xs text-gray-500">Standards</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-5 text-center">
+              <BookOpen className="h-7 w-7 text-purple-500 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-purple-600">{summary.totalItems || allItems.length}</p>
+              <p className="text-xs text-gray-500">Total Items</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-5 text-center">
+              <FileText className="h-7 w-7 text-blue-500 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-blue-600">{summary.totalAssessments || 0}</p>
+              <p className="text-xs text-gray-500">Assessments</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-5 text-center">
+              <Users className="h-7 w-7 text-green-500 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-green-600">{summary.uniqueScholars || 0}</p>
+              <p className="text-xs text-gray-500">Active Scholars</p>
+            </CardContent></Card>
           </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader><CardTitle>Item Distribution by Type</CardTitle></CardHeader>
-          <CardContent>
-            {Object.keys(itemsByType).length > 0 ? (
-              <div className="space-y-3">
-                {Object.entries(itemsByType).map(([type, cnt]) => (
-                  <div key={type} className="flex items-center justify-between">
-                    <span className="text-sm capitalize">{type}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-gray-100 rounded-full h-3">
-                        <div className="bg-purple-500 h-full rounded-full" style={{ width: `${(cnt / allItems.length) * 100}%` }} />
-                      </div>
-                      <span className="text-sm font-medium w-8 text-right">{cnt}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400 text-center py-4">No items yet</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Item Distribution by DOK Level</CardTitle></CardHeader>
-          <CardContent>
-            {Object.keys(itemsByDok).length > 0 ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4].filter((d) => itemsByDok[d]).map((d) => (
-                  <div key={d} className="flex items-center justify-between">
-                    <span className="text-sm">DOK {d}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-gray-100 rounded-full h-3">
-                        <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${(itemsByDok[d] / allItems.length) * 100}%` }} />
-                      </div>
-                      <span className="text-sm font-medium w-8 text-right">{itemsByDok[d]}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400 text-center py-4">No items yet</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle>Item Review Status</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="bg-amber-50 p-4 rounded-lg">
-              <p className="text-2xl font-bold text-amber-600">{allItems.filter((i) => i.reviewStatus === "pending").length}</p>
-              <p className="text-sm text-gray-500">Pending</p>
+          {summary.completedAttempts > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card><CardContent className="pt-5 text-center">
+                <TrendingUp className="h-7 w-7 text-indigo-500 mx-auto mb-1" />
+                <p className="text-3xl font-bold text-indigo-600">{summary.averageScore || 0}%</p>
+                <p className="text-xs text-gray-500">School-Wide Avg Score</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5 text-center">
+                <CheckCircle className="h-7 w-7 text-green-500 mx-auto mb-1" />
+                <p className="text-3xl font-bold text-green-600">{summary.completedAttempts || 0}</p>
+                <p className="text-xs text-gray-500">Completed Attempts</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5 text-center">
+                <Send className="h-7 w-7 text-blue-500 mx-auto mb-1" />
+                <p className="text-3xl font-bold text-blue-600">{summary.totalAssignments || 0}</p>
+                <p className="text-xs text-gray-500">Total Assignments</p>
+              </CardContent></Card>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">{allItems.filter((i) => i.reviewStatus === "approved").length}</p>
-              <p className="text-sm text-gray-500">Approved</p>
-            </div>
-            <div className="bg-red-50 p-4 rounded-lg">
-              <p className="text-2xl font-bold text-red-600">{allItems.filter((i) => i.reviewStatus === "rejected").length}</p>
-              <p className="text-sm text-gray-500">Rejected</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Assessment Completion</CardTitle></CardHeader>
-        <CardContent>
-          {(assessments || []).length > 0 ? (
-            <div className="space-y-2">
-              {(assessments || []).map((a: any) => (
-                <div key={a.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{a.title || `Assessment #${a.id}`}</p>
-                    <p className="text-xs text-gray-400">{a.subject} • Grade {a.gradeLevel} • {a.assessmentType}</p>
-                  </div>
-                  <Badge variant={a.status === "published" ? "default" : "secondary"}>{a.status || "draft"}</Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 text-center py-4">No assessments created yet</p>
           )}
-        </CardContent>
-      </Card>
+
+          {gradeReport.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-indigo-600" /> Performance by Grade Level</CardTitle>
+                <CardDescription>Compare average scores across grade levels</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {gradeReport.map((g: any) => (
+                    <div key={g.grade} className="flex items-center gap-4">
+                      <span className="text-sm font-bold w-20">Grade {g.grade}</span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-8 overflow-hidden relative">
+                        <div className={`h-full rounded-full flex items-center justify-end pr-3 transition-all ${g.avgScore >= 70 ? "bg-green-500" : g.avgScore >= 40 ? "bg-amber-500" : "bg-red-500"}`}
+                          style={{ width: `${Math.max((g.avgScore / 100) * 100, 5)}%` }}>
+                          <span className="text-xs text-white font-bold">{g.avgScore}%</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 w-32">
+                        <p className="text-xs text-gray-500">{g.completedAttempts} completed</p>
+                        <p className="text-xs text-gray-400">{g.uniqueScholars} scholars</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {subjectReport.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><PieChart className="h-5 w-5 text-purple-600" /> Performance by Subject</CardTitle>
+                <CardDescription>Compare and contrast results across content areas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {subjectReport.map((s: any) => (
+                    <div key={s.subject} className={`p-5 rounded-lg border-2 text-center ${s.avgScore >= 70 ? "border-green-200 bg-green-50" : s.avgScore >= 40 ? "border-amber-200 bg-amber-50" : "border-red-200 bg-red-50"}`}>
+                      <h3 className="text-lg font-bold text-gray-800">{s.subject}</h3>
+                      <p className={`text-4xl font-bold mt-2 ${s.avgScore >= 70 ? "text-green-600" : s.avgScore >= 40 ? "text-amber-600" : "text-red-600"}`}>{s.avgScore}%</p>
+                      <p className="text-xs text-gray-500 mt-2">{s.completedAttempts} completed / {s.totalAttempts} total</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {teacherReport.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-blue-600" /> Teacher Performance Overview</CardTitle>
+                <CardDescription>Assessment usage and student performance by teacher</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-gray-50">
+                        <th className="text-left p-3 font-medium">Teacher</th>
+                        <th className="text-center p-3 font-medium">Assignments</th>
+                        <th className="text-center p-3 font-medium">Attempts</th>
+                        <th className="text-center p-3 font-medium">Completed</th>
+                        <th className="text-center p-3 font-medium">Avg Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teacherReport.map((t: any) => (
+                        <tr key={t.teacherId} className="border-b hover:bg-gray-50">
+                          <td className="p-3 font-medium">{teacherMap[t.teacherId] || t.teacherId}</td>
+                          <td className="p-3 text-center">{t.assignments}</td>
+                          <td className="p-3 text-center">{t.totalAttempts}</td>
+                          <td className="p-3 text-center">{t.completedAttempts}</td>
+                          <td className="p-3 text-center">
+                            <span className={`font-bold ${t.avgScore >= 70 ? "text-green-600" : t.avgScore >= 40 ? "text-amber-600" : t.avgScore > 0 ? "text-red-600" : "text-gray-400"}`}>
+                              {t.avgScore > 0 ? `${t.avgScore}%` : "—"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {Object.values(profDist).some((v: any) => v > 0) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Proficiency Distribution</CardTitle>
+                <CardDescription>Score distribution across all completed assessments</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <p className="text-2xl font-bold text-red-600">{profDist.below40 || 0}</p>
+                    <p className="text-xs text-gray-500">Below 40%</p>
+                    <p className="text-[10px] text-red-400">Needs Support</p>
+                  </div>
+                  <div className="bg-amber-50 p-4 rounded-lg">
+                    <p className="text-2xl font-bold text-amber-600">{profDist["40to59"] || 0}</p>
+                    <p className="text-xs text-gray-500">40-59%</p>
+                    <p className="text-[10px] text-amber-400">Developing</p>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-2xl font-bold text-blue-600">{profDist["60to79"] || 0}</p>
+                    <p className="text-xs text-gray-500">60-79%</p>
+                    <p className="text-[10px] text-blue-400">Proficient</p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <p className="text-2xl font-bold text-green-600">{profDist["80to100"] || 0}</p>
+                    <p className="text-xs text-gray-500">80-100%</p>
+                    <p className="text-[10px] text-green-400">Mastered</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {Object.values(masteryByLevel).some((v: any) => v > 0) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Standards Mastery Levels</CardTitle>
+                <CardDescription>Distribution of scholar mastery across all standards</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-5 gap-3 text-center">
+                  {[
+                    { key: "mastered", label: "Mastered", color: "text-green-600", bg: "bg-green-50" },
+                    { key: "proficient", label: "Proficient", color: "text-blue-600", bg: "bg-blue-50" },
+                    { key: "developing", label: "Developing", color: "text-amber-600", bg: "bg-amber-50" },
+                    { key: "beginning", label: "Beginning", color: "text-red-600", bg: "bg-red-50" },
+                    { key: "not_started", label: "Not Started", color: "text-gray-600", bg: "bg-gray-50" },
+                  ].map((level) => (
+                    <div key={level.key} className={`${level.bg} p-3 rounded-lg`}>
+                      <p className={`text-2xl font-bold ${level.color}`}>{masteryByLevel[level.key] || 0}</p>
+                      <p className="text-xs text-gray-500">{level.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader><CardTitle>Standards Coverage</CardTitle><CardDescription>How many standards have at least one item</CardDescription></CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 bg-gray-100 rounded-full h-8 overflow-hidden">
+                  <div className="bg-indigo-500 h-full rounded-full flex items-center justify-center transition-all" style={{ width: `${Math.max(coveragePercent, 3)}%` }}>
+                    <span className="text-xs text-white font-medium">{coveragePercent}%</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 shrink-0">{standardsWithItems.size} / {allStandards.length}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader><CardTitle>Item Distribution by Type</CardTitle></CardHeader>
+              <CardContent>
+                {Object.keys(itemsByType).length > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(itemsByType).map(([type, cnt]) => (
+                      <div key={type} className="flex items-center justify-between">
+                        <span className="text-sm capitalize">{type}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-gray-100 rounded-full h-3">
+                            <div className="bg-purple-500 h-full rounded-full" style={{ width: `${(cnt / allItems.length) * 100}%` }} />
+                          </div>
+                          <span className="text-sm font-medium w-8 text-right">{cnt}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 text-center py-4">No items yet</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Item Distribution by DOK Level</CardTitle></CardHeader>
+              <CardContent>
+                {Object.keys(itemsByDok).length > 0 ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4].filter((d) => itemsByDok[d]).map((d) => (
+                      <div key={d} className="flex items-center justify-between">
+                        <span className="text-sm">DOK {d}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-gray-100 rounded-full h-3">
+                            <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${(itemsByDok[d] / allItems.length) * 100}%` }} />
+                          </div>
+                          <span className="text-sm font-medium w-8 text-right">{itemsByDok[d]}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 text-center py-4">No items yet</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader><CardTitle>Item Review Status</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="bg-amber-50 p-4 rounded-lg">
+                  <p className="text-2xl font-bold text-amber-600">{allItems.filter((i) => i.reviewStatus === "pending").length}</p>
+                  <p className="text-sm text-gray-500">Pending</p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600">{allItems.filter((i) => i.reviewStatus === "approved").length}</p>
+                  <p className="text-sm text-gray-500">Approved</p>
+                </div>
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <p className="text-2xl font-bold text-red-600">{allItems.filter((i) => i.reviewStatus === "rejected").length}</p>
+                  <p className="text-sm text-gray-500">Rejected</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

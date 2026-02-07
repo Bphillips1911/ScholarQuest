@@ -526,6 +526,195 @@ export function registerAcapRoutes(app: Express): void {
     }
   });
 
+  // ===== ADMIN ASSESSMENT MANAGEMENT =====
+  app.patch("/api/acap/assessments/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await acapStorage.updateAssessment(id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update assessment" });
+    }
+  });
+
+  // ===== ADMIN SCHOOL-WIDE REPORTS =====
+  app.get("/api/acap/admin/school-report", async (req: Request, res: Response) => {
+    try {
+      const allAttempts = await acapStorage.getAllAttempts();
+      const allAssessments = await acapStorage.getAssessments();
+      const allAssignments = await acapStorage.getAssignments();
+      const allStandards = await acapStorage.getStandards();
+      const allItems = await acapStorage.getItems();
+      const allMastery = await acapStorage.getAllMastery();
+
+      const completedAttempts = allAttempts.filter((a) => a.status === "completed");
+      const avgScore = completedAttempts.length > 0
+        ? completedAttempts.reduce((s, a) => s + (a.percentCorrect || 0), 0) / completedAttempts.length
+        : 0;
+
+      const byGrade: Record<number, { attempts: number; completed: number; totalScore: number; scholars: Set<string> }> = {};
+      const bySubject: Record<string, { attempts: number; completed: number; totalScore: number }> = {};
+      const byTeacher: Record<string, { name: string; assignments: number; attempts: number; completed: number; totalScore: number }> = {};
+
+      for (const attempt of allAttempts) {
+        const assessment = allAssessments.find((a) => a.id === attempt.assessmentId);
+        if (!assessment) continue;
+        const grade = assessment.gradeLevel;
+        const subject = assessment.subject;
+
+        if (!byGrade[grade]) byGrade[grade] = { attempts: 0, completed: 0, totalScore: 0, scholars: new Set() };
+        byGrade[grade].attempts++;
+        byGrade[grade].scholars.add(attempt.scholarId);
+        if (attempt.status === "completed") {
+          byGrade[grade].completed++;
+          byGrade[grade].totalScore += attempt.percentCorrect || 0;
+        }
+
+        if (!bySubject[subject]) bySubject[subject] = { attempts: 0, completed: 0, totalScore: 0 };
+        bySubject[subject].attempts++;
+        if (attempt.status === "completed") {
+          bySubject[subject].completed++;
+          bySubject[subject].totalScore += attempt.percentCorrect || 0;
+        }
+      }
+
+      for (const assignment of allAssignments) {
+        const teacherId = assignment.teacherId;
+        if (!byTeacher[teacherId]) byTeacher[teacherId] = { name: teacherId, assignments: 0, attempts: 0, completed: 0, totalScore: 0 };
+        byTeacher[teacherId].assignments++;
+      }
+
+      for (const attempt of allAttempts) {
+        const assignment = allAssignments.find((a) => a.assessmentId === attempt.assessmentId);
+        if (assignment && byTeacher[assignment.teacherId]) {
+          byTeacher[assignment.teacherId].attempts++;
+          if (attempt.status === "completed") {
+            byTeacher[assignment.teacherId].completed++;
+            byTeacher[assignment.teacherId].totalScore += attempt.percentCorrect || 0;
+          }
+        }
+      }
+
+      const gradeReport = Object.entries(byGrade).map(([grade, data]) => ({
+        grade: parseInt(grade),
+        totalAttempts: data.attempts,
+        completedAttempts: data.completed,
+        avgScore: data.completed > 0 ? Math.round((data.totalScore / data.completed) * 10) / 10 : 0,
+        uniqueScholars: data.scholars.size,
+      }));
+
+      const subjectReport = Object.entries(bySubject).map(([subject, data]) => ({
+        subject,
+        totalAttempts: data.attempts,
+        completedAttempts: data.completed,
+        avgScore: data.completed > 0 ? Math.round((data.totalScore / data.completed) * 10) / 10 : 0,
+      }));
+
+      const teacherReport = Object.entries(byTeacher).map(([id, data]) => ({
+        teacherId: id,
+        assignments: data.assignments,
+        totalAttempts: data.attempts,
+        completedAttempts: data.completed,
+        avgScore: data.completed > 0 ? Math.round((data.totalScore / data.completed) * 10) / 10 : 0,
+      }));
+
+      const masteryByLevel: Record<string, number> = { mastered: 0, proficient: 0, developing: 0, beginning: 0, not_started: 0 };
+      allMastery.forEach((m) => { masteryByLevel[m.masteryLevel] = (masteryByLevel[m.masteryLevel] || 0) + 1; });
+
+      const proficiencyDist = {
+        below40: completedAttempts.filter((a) => (a.percentCorrect || 0) < 40).length,
+        "40to59": completedAttempts.filter((a) => (a.percentCorrect || 0) >= 40 && (a.percentCorrect || 0) < 60).length,
+        "60to79": completedAttempts.filter((a) => (a.percentCorrect || 0) >= 60 && (a.percentCorrect || 0) < 80).length,
+        "80to100": completedAttempts.filter((a) => (a.percentCorrect || 0) >= 80).length,
+      };
+
+      res.json({
+        summary: {
+          totalAssessments: allAssessments.length,
+          totalAssignments: allAssignments.length,
+          totalAttempts: allAttempts.length,
+          completedAttempts: completedAttempts.length,
+          averageScore: Math.round(avgScore * 10) / 10,
+          totalStandards: allStandards.length,
+          totalItems: allItems.length,
+          uniqueScholars: new Set(allAttempts.map((a) => a.scholarId)).size,
+        },
+        gradeReport,
+        subjectReport,
+        teacherReport,
+        masteryByLevel,
+        proficiencyDist,
+      });
+    } catch (error) {
+      console.error("Error generating school report:", error);
+      res.status(500).json({ error: "Failed to generate school report" });
+    }
+  });
+
+  app.get("/api/acap/admin/all-attempts", async (req: Request, res: Response) => {
+    try {
+      const attempts = await acapStorage.getAllAttempts();
+      const assessments = await acapStorage.getAssessments();
+      const enriched = attempts.map((a) => {
+        const assessment = assessments.find((as) => as.id === a.assessmentId);
+        return { ...a, assessmentTitle: assessment?.title, subject: assessment?.subject, gradeLevel: assessment?.gradeLevel };
+      });
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all attempts" });
+    }
+  });
+
+  app.get("/api/acap/admin/all-assignments", async (req: Request, res: Response) => {
+    try {
+      const assignments = await acapStorage.getAssignments();
+      const assessments = await acapStorage.getAssessments();
+      const enriched = assignments.map((a) => {
+        const assessment = assessments.find((as) => as.id === a.assessmentId);
+        return { ...a, assessmentTitle: assessment?.title, subject: assessment?.subject, gradeLevel: assessment?.gradeLevel };
+      });
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all assignments" });
+    }
+  });
+
+  app.get("/api/acap/teachers", async (req: Request, res: Response) => {
+    try {
+      const schema = await import("@shared/schema");
+      const { db: database } = await import("./db");
+      const { eq: eqOp } = await import("drizzle-orm");
+      const allTeachers = await database.select({
+        id: schema.teacherAuth.id,
+        name: schema.teacherAuth.name,
+        gradeRole: schema.teacherAuth.gradeRole,
+        subject: schema.teacherAuth.subject,
+        email: schema.teacherAuth.email,
+      }).from(schema.teacherAuth).where(eqOp(schema.teacherAuth.isApproved, true));
+      res.json(allTeachers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch teachers" });
+    }
+  });
+
+  app.get("/api/acap/scholars", async (req: Request, res: Response) => {
+    try {
+      const schema = await import("@shared/schema");
+      const { db: database } = await import("./db");
+      const { eq: eqOp } = await import("drizzle-orm");
+      const gradeLevel = req.query.gradeLevel ? parseInt(req.query.gradeLevel as string) : undefined;
+      if (gradeLevel) {
+        const results = await database.select({ id: schema.scholars.id, name: schema.scholars.name, grade: schema.scholars.grade, houseId: schema.scholars.houseId, isActive: schema.scholars.isActive }).from(schema.scholars).where(eqOp(schema.scholars.grade, gradeLevel));
+        res.json(results.filter((s: any) => s.isActive));
+      } else {
+        const results = await database.select({ id: schema.scholars.id, name: schema.scholars.name, grade: schema.scholars.grade, houseId: schema.scholars.houseId, isActive: schema.scholars.isActive }).from(schema.scholars);
+        res.json(results.filter((s: any) => s.isActive));
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch scholars" });
+    }
+  });
+
   // ===== AUDIT LOG =====
   app.get("/api/acap/audit-log", async (req: Request, res: Response) => {
     try {

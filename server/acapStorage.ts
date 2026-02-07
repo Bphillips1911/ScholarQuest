@@ -264,6 +264,14 @@ export const acapStorage = {
     };
   },
 
+  async getAllAttempts(): Promise<AcapAttempt[]> {
+    return db.select().from(acapAttempts).orderBy(desc(acapAttempts.startedAt));
+  },
+
+  async getAllMastery(): Promise<AcapMasteryTracking[]> {
+    return db.select().from(acapMasteryTracking);
+  },
+
   async getScholarDashboardStats(scholarId: string) {
     const mastery = await this.getMastery(scholarId);
     const attempts = await this.getAttempts(scholarId);

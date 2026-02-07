@@ -4,6 +4,7 @@ import { generateItems, generatePassage, autoGradeResponse, bootcampTutor } from
 import {
   insertAcapStandardSchema, insertAcapBlueprintSchema, insertAcapPassageSchema,
   insertAcapItemSchema, insertAcapAssessmentSchema, insertAcapAssignmentSchema,
+  insertAcapProjectionRunSchema, insertAcapSchoolwideAssessmentSchema,
 } from "@shared/schema";
 
 export function registerAcapRoutes(app: Express): void {
@@ -723,6 +724,327 @@ export function registerAcapRoutes(app: Express): void {
       res.json(log);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch audit log" });
+    }
+  });
+
+  // ===== PROJECTION RUNS =====
+  app.get("/api/acap/projections", async (req: Request, res: Response) => {
+    try {
+      const runs = await acapStorage.getProjectionRuns();
+      res.json(runs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projection runs" });
+    }
+  });
+
+  app.get("/api/acap/projections/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const run = await acapStorage.getProjectionRun(id);
+      if (!run) return res.status(404).json({ error: "Projection run not found" });
+      res.json(run);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projection run" });
+    }
+  });
+
+  app.post("/api/acap/projections", async (req: Request, res: Response) => {
+    try {
+      const { gradeLevel, subject, assessmentPhase, attendancePoints, elPoints, thresholds } = req.body;
+      const allAttempts = await acapStorage.getAllAttempts();
+      const allMastery = await acapStorage.getAllMastery();
+      const allAssessments = await acapStorage.getAssessments();
+
+      const assessmentMap = new Map(allAssessments.map((a) => [a.id, a]));
+      const matchingAssessmentIds = new Set(
+        allAssessments
+          .filter((a) => {
+            if (gradeLevel && a.gradeLevel !== gradeLevel) return false;
+            if (subject && a.subject !== subject) return false;
+            return true;
+          })
+          .map((a) => a.id)
+      );
+
+      const completedAttempts = allAttempts.filter((a) => {
+        if (a.status !== "completed") return false;
+        if (matchingAssessmentIds.size > 0 && !matchingAssessmentIds.has(a.assessmentId)) return false;
+        return true;
+      });
+
+      const totalTested = new Set(completedAttempts.map((a) => a.scholarId)).size;
+
+      const scores = completedAttempts.map((a) => a.percentCorrect || 0);
+      const avgScore = scores.length > 0 ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
+
+      const level1 = scores.filter((s) => s < 40).length;
+      const level2 = scores.filter((s) => s >= 40 && s < 60).length;
+      const level3 = scores.filter((s) => s >= 60 && s < 80).length;
+      const level4 = scores.filter((s) => s >= 80).length;
+      const totalScores = scores.length || 1;
+
+      const proficiencyIndex = ((level3 + level4) / totalScores) * 40;
+
+      const growthIndex = Math.min(avgScore * 0.3, 25);
+
+      const writingIndex = Math.min(avgScore * 0.1, 10);
+
+      const attPts = Math.min(Math.max(attendancePoints || 0, 0), 15);
+      const elPts = Math.min(Math.max(elPoints || 0, 0), 10);
+
+      const projectedScore = Math.min(Math.round((proficiencyIndex + growthIndex + writingIndex + attPts + elPts) * 10) / 10, 100);
+
+      const t = thresholds || { A: 90, B: 80, C: 70, D: 60, F: 0 };
+      let letterGrade = "F";
+      if (projectedScore >= t.A) letterGrade = "A";
+      else if (projectedScore >= t.B) letterGrade = "B";
+      else if (projectedScore >= t.C) letterGrade = "C";
+      else if (projectedScore >= t.D) letterGrade = "D";
+
+      const dokBreakdown: Record<string, number> = {};
+      completedAttempts.forEach((a) => {
+        const db = a.dokBreakdown as Record<string, any> || {};
+        Object.entries(db).forEach(([k, v]) => {
+          dokBreakdown[k] = (dokBreakdown[k] || 0) + (typeof v === "number" ? v : 0);
+        });
+      });
+
+      const domainBreakdown: Record<string, number> = {};
+      completedAttempts.forEach((a) => {
+        const sb = a.standardBreakdown as Record<string, any> || {};
+        Object.entries(sb).forEach(([k, v]) => {
+          domainBreakdown[k] = (domainBreakdown[k] || 0) + (typeof v === "number" ? v : 0);
+        });
+      });
+
+      const masteryLevels = { mastered: 0, proficient: 0, developing: 0, beginning: 0, not_started: 0 };
+      allMastery.forEach((m) => {
+        const level = m.masteryLevel as keyof typeof masteryLevels;
+        if (masteryLevels[level] !== undefined) masteryLevels[level]++;
+      });
+
+      const recommendations: string[] = [];
+      if (level1 > totalScores * 0.3) recommendations.push("Focus intervention on Level 1 students — more than 30% are below basic proficiency.");
+      if (avgScore < 60) recommendations.push("Average scores below 60% — consider targeted tutoring and Boot Camp sessions.");
+      if (attPts < 10) recommendations.push("Attendance points are low — improving attendance could significantly boost the projected score.");
+      if (level4 < totalScores * 0.1) recommendations.push("Less than 10% of students at Level 4 — consider enrichment programs for advanced learners.");
+      if (recommendations.length === 0) recommendations.push("Strong performance across metrics. Continue current strategies and monitor growth trends.");
+
+      const run = await acapStorage.createProjectionRun({
+        gradeLevel: gradeLevel || null,
+        subject: subject || null,
+        assessmentPhase: assessmentPhase || "baseline",
+        proficiencyIndex,
+        growthIndex,
+        writingIndex,
+        attendancePoints: attPts,
+        elPoints: elPts,
+        projectedScore,
+        letterGrade,
+        thresholds: t,
+        proficiencyDistribution: { level1: Math.round((level1 / totalScores) * 100), level2: Math.round((level2 / totalScores) * 100), level3: Math.round((level3 / totalScores) * 100), level4: Math.round((level4 / totalScores) * 100) },
+        dokBreakdown,
+        domainBreakdown,
+        growthProjection: { baseline: avgScore, projected: projectedScore, growth: projectedScore - avgScore },
+        coachingRecommendations: recommendations,
+        totalStudentsTested: totalTested,
+        levelCounts: { level1, level2, level3, level4 },
+        createdBy: req.body.createdBy || "admin",
+      });
+
+      res.status(201).json(run);
+    } catch (error: any) {
+      console.error("Error creating projection:", error);
+      res.status(500).json({ error: error.message || "Failed to create projection" });
+    }
+  });
+
+  // ===== PROJECTION SNAPSHOTS =====
+  app.get("/api/acap/projections/:id/snapshots", async (req: Request, res: Response) => {
+    try {
+      const runId = parseInt(req.params.id);
+      const snapshots = await acapStorage.getProjectionSnapshots(runId);
+      res.json(snapshots);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch snapshots" });
+    }
+  });
+
+  app.post("/api/acap/projections/:id/snapshots", async (req: Request, res: Response) => {
+    try {
+      const runId = parseInt(req.params.id);
+      const run = await acapStorage.getProjectionRun(runId);
+      if (!run) return res.status(404).json({ error: "Projection run not found" });
+
+      const { scenarioName, levelShifts, attendanceWhatIf } = req.body;
+      const levels = run.levelCounts as Record<string, number> || { level1: 0, level2: 0, level3: 0, level4: 0 };
+      const total = (levels.level1 || 0) + (levels.level2 || 0) + (levels.level3 || 0) + (levels.level4 || 0) || 1;
+
+      let adjL1 = levels.level1 || 0;
+      let adjL2 = levels.level2 || 0;
+      let adjL3 = levels.level3 || 0;
+      let adjL4 = levels.level4 || 0;
+
+      if (levelShifts) {
+        const shiftToL2 = Math.round((adjL1 * (levelShifts.toLevel2 || 0)) / 100);
+        const shiftToL3 = Math.round((adjL1 * (levelShifts.toLevel3 || 0)) / 100);
+        const shiftToL4 = Math.round((adjL1 * (levelShifts.toLevel4 || 0)) / 100);
+        adjL1 = Math.max(0, adjL1 - shiftToL2 - shiftToL3 - shiftToL4);
+        adjL2 += shiftToL2;
+        adjL3 += shiftToL3;
+        adjL4 += shiftToL4;
+      }
+
+      const adjProfIndex = ((adjL3 + adjL4) / total) * 40;
+      let adjAttendance = run.attendancePoints || 0;
+      if (attendanceWhatIf?.newAttendance !== undefined) {
+        adjAttendance = Math.min(Math.max(attendanceWhatIf.newAttendance, 0), 15);
+      }
+
+      const adjustedScore = Math.min(Math.round((adjProfIndex + (run.growthIndex || 0) + (run.writingIndex || 0) + adjAttendance + (run.elPoints || 0)) * 10) / 10, 100);
+
+      const t = run.thresholds as Record<string, number> || { A: 90, B: 80, C: 70, D: 60, F: 0 };
+      let adjustedGrade = "F";
+      if (adjustedScore >= t.A) adjustedGrade = "A";
+      else if (adjustedScore >= t.B) adjustedGrade = "B";
+      else if (adjustedScore >= t.C) adjustedGrade = "C";
+      else if (adjustedScore >= t.D) adjustedGrade = "D";
+
+      let studentsNeeded = 0;
+      const currentGradeThresholds = [t.A, t.B, t.C, t.D].sort((a, b) => a - b);
+      const nextThreshold = currentGradeThresholds.find((th) => th > adjustedScore);
+      if (nextThreshold) {
+        const gap = nextThreshold - adjustedScore;
+        studentsNeeded = Math.ceil((gap * total) / 40);
+      }
+
+      const snapshot = await acapStorage.createProjectionSnapshot({
+        projectionRunId: runId,
+        scenarioName: scenarioName || `What-If Scenario`,
+        levelShifts: levelShifts || {},
+        attendanceWhatIf: attendanceWhatIf || {},
+        adjustedScore,
+        adjustedLetterGrade: adjustedGrade,
+        studentsNeededForNextGrade: studentsNeeded,
+      });
+
+      res.status(201).json(snapshot);
+    } catch (error: any) {
+      console.error("Error creating snapshot:", error);
+      res.status(500).json({ error: error.message || "Failed to create snapshot" });
+    }
+  });
+
+  // ===== SCHOOLWIDE ASSESSMENTS =====
+  app.get("/api/acap/schoolwide-assessments", async (req: Request, res: Response) => {
+    try {
+      const assessments = await acapStorage.getSchoolwideAssessments();
+      res.json(assessments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch schoolwide assessments" });
+    }
+  });
+
+  app.post("/api/acap/schoolwide-assessments", async (req: Request, res: Response) => {
+    try {
+      const { title, gradeLevels, subject, itemCount, dokMix, domainWeights, writingTypes, blueprintId, settings, createdBy } = req.body;
+      const assessment = await acapStorage.createSchoolwideAssessment({
+        title: title || `Schoolwide ${subject} Assessment`,
+        gradeLevels: gradeLevels || [],
+        subject: subject || "ELA",
+        itemCount: Math.min(Math.max(itemCount || 50, 25), 100),
+        dokMix: dokMix || { dok2: 30, dok3: 50, dok4: 20 },
+        domainWeights: domainWeights || {},
+        writingTypes: writingTypes || [],
+        blueprintId: blueprintId || null,
+        settings: settings || {},
+        status: "draft",
+        createdBy: createdBy || "admin",
+      });
+      res.status(201).json(assessment);
+    } catch (error: any) {
+      console.error("Error creating schoolwide assessment:", error);
+      res.status(500).json({ error: error.message || "Failed to create schoolwide assessment" });
+    }
+  });
+
+  app.get("/api/acap/schoolwide-assessments/:id/results", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const results = await acapStorage.getSchoolwideResults(id);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch results" });
+    }
+  });
+
+  app.post("/api/acap/schoolwide-assessments/:id/run", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const assessment = await acapStorage.getSchoolwideAssessment(id);
+      if (!assessment) return res.status(404).json({ error: "Assessment not found" });
+
+      const allAttempts = await acapStorage.getAllAttempts();
+      const completed = allAttempts.filter((a) => a.status === "completed");
+      const scores = completed.map((a) => a.percentCorrect || 0);
+      const totalStudents = new Set(completed.map((a) => a.scholarId)).size;
+      const avgScore = scores.length > 0 ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
+
+      const level1 = scores.filter((s) => s < 40).length;
+      const level2 = scores.filter((s) => s >= 40 && s < 60).length;
+      const level3 = scores.filter((s) => s >= 60 && s < 80).length;
+      const level4 = scores.filter((s) => s >= 80).length;
+      const total = scores.length || 1;
+
+      const profDist = { level1: Math.round((level1 / total) * 100), level2: Math.round((level2 / total) * 100), level3: Math.round((level3 / total) * 100), level4: Math.round((level4 / total) * 100) };
+
+      const dokBd: Record<string, number> = {};
+      completed.forEach((a) => {
+        const db = a.dokBreakdown as Record<string, any> || {};
+        Object.entries(db).forEach(([k, v]) => { dokBd[k] = (dokBd[k] || 0) + (typeof v === "number" ? v : 0); });
+      });
+
+      const domainBd: Record<string, number> = {};
+      completed.forEach((a) => {
+        const sb = a.standardBreakdown as Record<string, any> || {};
+        Object.entries(sb).forEach(([k, v]) => { domainBd[k] = (domainBd[k] || 0) + (typeof v === "number" ? v : 0); });
+      });
+
+      const projectedScore = Math.min(Math.round(avgScore * 10) / 10, 100);
+      let letterGrade = "F";
+      if (projectedScore >= 90) letterGrade = "A";
+      else if (projectedScore >= 80) letterGrade = "B";
+      else if (projectedScore >= 70) letterGrade = "C";
+      else if (projectedScore >= 60) letterGrade = "D";
+
+      const diagnostics: Record<string, any> = {
+        strengths: [],
+        weaknesses: [],
+        recommendations: [],
+      };
+      if (level4 > total * 0.2) diagnostics.strengths.push("Strong Level 4 performance (>20% advanced)");
+      if (level1 > total * 0.3) diagnostics.weaknesses.push("High Level 1 population (>30% below basic)");
+      if (avgScore < 60) diagnostics.recommendations.push("Implement targeted intervention for struggling students");
+      if (avgScore >= 70) diagnostics.recommendations.push("Continue enrichment activities for high performers");
+
+      const result = await acapStorage.createSchoolwideResult({
+        assessmentId: id,
+        proficiencyDistribution: profDist,
+        domainBreakdown: domainBd,
+        dokBreakdown: dokBd,
+        growthProjection: { baseline: avgScore, projected: projectedScore },
+        diagnostics,
+        projectedScore,
+        letterGrade,
+        totalStudents,
+      });
+
+      await acapStorage.updateSchoolwideAssessment(id, { status: "completed" });
+
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error("Error running schoolwide assessment:", error);
+      res.status(500).json({ error: error.message || "Failed to run assessment" });
     }
   });
 }

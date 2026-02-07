@@ -4,12 +4,15 @@ import {
   acapStandards, acapBlueprints, acapPassages, acapItems,
   acapAssessments, acapAssignments, acapAttempts, acapItemResponses,
   acapMasteryTracking, acapGrowthSnapshots, acapBootcampSessions, acapAuditLog,
+  acapProjectionRuns, acapProjectionSnapshots, acapSchoolwideAssessments, acapSchoolwideResults,
   type AcapStandard, type AcapBlueprint, type AcapPassage, type AcapItem,
   type AcapAssessment, type AcapAssignment, type AcapAttempt, type AcapItemResponse,
   type AcapMasteryTracking, type AcapGrowthSnapshot, type AcapBootcampSession, type AcapAuditLog,
+  type AcapProjectionRun, type AcapProjectionSnapshot, type AcapSchoolwideAssessment, type AcapSchoolwideResult,
   type InsertAcapStandard, type InsertAcapBlueprint, type InsertAcapPassage, type InsertAcapItem,
   type InsertAcapAssessment, type InsertAcapAssignment, type InsertAcapAttempt, type InsertAcapItemResponse,
   type InsertAcapMasteryTracking, type InsertAcapGrowthSnapshot, type InsertAcapBootcampSession, type InsertAcapAuditLog,
+  type InsertAcapProjectionRun, type InsertAcapProjectionSnapshot, type InsertAcapSchoolwideAssessment, type InsertAcapSchoolwideResult,
 } from "@shared/schema";
 
 export const acapStorage = {
@@ -288,5 +291,57 @@ export const acapStorage = {
       bootcampSessions: sessions.length,
       masteryLevels: mastery,
     };
+  },
+
+  // Projection Runs
+  async getProjectionRuns(): Promise<AcapProjectionRun[]> {
+    return db.select().from(acapProjectionRuns).orderBy(desc(acapProjectionRuns.createdAt));
+  },
+  async getProjectionRun(id: number): Promise<AcapProjectionRun | undefined> {
+    const [r] = await db.select().from(acapProjectionRuns).where(eq(acapProjectionRuns.id, id));
+    return r;
+  },
+  async createProjectionRun(data: InsertAcapProjectionRun): Promise<AcapProjectionRun> {
+    const [r] = await db.insert(acapProjectionRuns).values(data).returning();
+    return r;
+  },
+  async updateProjectionRun(id: number, data: Partial<InsertAcapProjectionRun>): Promise<AcapProjectionRun> {
+    const [r] = await db.update(acapProjectionRuns).set(data).where(eq(acapProjectionRuns.id, id)).returning();
+    return r;
+  },
+
+  // Projection Snapshots
+  async getProjectionSnapshots(runId: number): Promise<AcapProjectionSnapshot[]> {
+    return db.select().from(acapProjectionSnapshots).where(eq(acapProjectionSnapshots.projectionRunId, runId)).orderBy(desc(acapProjectionSnapshots.createdAt));
+  },
+  async createProjectionSnapshot(data: InsertAcapProjectionSnapshot): Promise<AcapProjectionSnapshot> {
+    const [s] = await db.insert(acapProjectionSnapshots).values(data).returning();
+    return s;
+  },
+
+  // Schoolwide Assessments
+  async getSchoolwideAssessments(): Promise<AcapSchoolwideAssessment[]> {
+    return db.select().from(acapSchoolwideAssessments).orderBy(desc(acapSchoolwideAssessments.createdAt));
+  },
+  async getSchoolwideAssessment(id: number): Promise<AcapSchoolwideAssessment | undefined> {
+    const [a] = await db.select().from(acapSchoolwideAssessments).where(eq(acapSchoolwideAssessments.id, id));
+    return a;
+  },
+  async createSchoolwideAssessment(data: InsertAcapSchoolwideAssessment): Promise<AcapSchoolwideAssessment> {
+    const [a] = await db.insert(acapSchoolwideAssessments).values(data).returning();
+    return a;
+  },
+  async updateSchoolwideAssessment(id: number, data: Partial<InsertAcapSchoolwideAssessment>): Promise<AcapSchoolwideAssessment> {
+    const [a] = await db.update(acapSchoolwideAssessments).set(data).where(eq(acapSchoolwideAssessments.id, id)).returning();
+    return a;
+  },
+
+  // Schoolwide Results
+  async getSchoolwideResults(assessmentId: number): Promise<AcapSchoolwideResult[]> {
+    return db.select().from(acapSchoolwideResults).where(eq(acapSchoolwideResults.assessmentId, assessmentId)).orderBy(desc(acapSchoolwideResults.createdAt));
+  },
+  async createSchoolwideResult(data: InsertAcapSchoolwideResult): Promise<AcapSchoolwideResult> {
+    const [r] = await db.insert(acapSchoolwideResults).values(data).returning();
+    return r;
   },
 };

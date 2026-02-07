@@ -18,8 +18,9 @@ import {
   GraduationCap, Zap, Activity, TrendingUp, Layers, PlayCircle,
   ClipboardList, Send, Award, Filter, Download, PieChart
 } from "lucide-react";
+import ProjectedAcapScoreTab from "@/components/admin/ProjectedAcapScoreTab";
 
-type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp";
+type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp" | "projected-score";
 
 export default function AdminAcap() {
   const [, setLocation] = useLocation();
@@ -70,6 +71,7 @@ export default function AdminAcap() {
     { id: "ai-settings", label: "AI Settings", icon: Brain },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "bootcamp", label: "Boot Camp", icon: GraduationCap },
+    { id: "projected-score", label: "Projected Score", icon: TrendingUp },
   ];
 
   return (
@@ -118,6 +120,7 @@ export default function AdminAcap() {
         {activeTab === "ai-settings" && <AISettingsTab />}
         {activeTab === "reports" && <ReportsTab />}
         {activeTab === "bootcamp" && <BootCampTab />}
+        {activeTab === "projected-score" && <ProjectedAcapScoreTab />}
       </div>
     </div>
   );

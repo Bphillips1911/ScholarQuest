@@ -1223,6 +1223,73 @@ export const acapAuditLog = pgTable("acap_audit_log", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Projected ACAP Score Tables
+export const acapProjectionRuns = pgTable("acap_projection_runs", {
+  id: serial("id").primaryKey(),
+  gradeLevel: integer("grade_level"),
+  subject: varchar("subject", { length: 50 }),
+  assessmentPhase: varchar("assessment_phase", { length: 30 }).notNull().default("baseline"),
+  proficiencyIndex: real("proficiency_index").default(0),
+  growthIndex: real("growth_index").default(0),
+  writingIndex: real("writing_index").default(0),
+  attendancePoints: real("attendance_points").default(0),
+  elPoints: real("el_points").default(0),
+  projectedScore: real("projected_score").default(0),
+  letterGrade: varchar("letter_grade", { length: 5 }).default("F"),
+  thresholds: jsonb("thresholds").$type<Record<string, number>>().default({ A: 90, B: 80, C: 70, D: 60, F: 0 }),
+  proficiencyDistribution: jsonb("proficiency_distribution").$type<Record<string, number>>().default({}),
+  dokBreakdown: jsonb("dok_breakdown").$type<Record<string, number>>().default({}),
+  domainBreakdown: jsonb("domain_breakdown").$type<Record<string, number>>().default({}),
+  growthProjection: jsonb("growth_projection").$type<Record<string, any>>().default({}),
+  coachingRecommendations: jsonb("coaching_recommendations").$type<string[]>().default([]),
+  totalStudentsTested: integer("total_students_tested").default(0),
+  levelCounts: jsonb("level_counts").$type<Record<string, number>>().default({ level1: 0, level2: 0, level3: 0, level4: 0 }),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapProjectionSnapshots = pgTable("acap_projection_snapshots", {
+  id: serial("id").primaryKey(),
+  projectionRunId: integer("projection_run_id").references(() => acapProjectionRuns.id).notNull(),
+  scenarioName: varchar("scenario_name", { length: 200 }).notNull(),
+  levelShifts: jsonb("level_shifts").$type<Record<string, number>>().default({}),
+  attendanceWhatIf: jsonb("attendance_what_if").$type<Record<string, any>>().default({}),
+  adjustedScore: real("adjusted_score").default(0),
+  adjustedLetterGrade: varchar("adjusted_letter_grade", { length: 5 }).default("F"),
+  studentsNeededForNextGrade: integer("students_needed_for_next_grade").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapSchoolwideAssessments = pgTable("acap_schoolwide_assessments", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 300 }).notNull(),
+  gradeLevels: jsonb("grade_levels").$type<number[]>().notNull().default([]),
+  subject: varchar("subject", { length: 50 }).notNull(),
+  itemCount: integer("item_count").notNull().default(50),
+  dokMix: jsonb("dok_mix").$type<Record<string, number>>().default({ dok2: 30, dok3: 50, dok4: 20 }),
+  domainWeights: jsonb("domain_weights").$type<Record<string, number>>().default({}),
+  writingTypes: jsonb("writing_types").$type<string[]>().default([]),
+  blueprintId: integer("blueprint_id").references(() => acapBlueprints.id),
+  settings: jsonb("settings").$type<Record<string, any>>().default({}),
+  status: varchar("status", { length: 20 }).notNull().default("draft"),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapSchoolwideResults = pgTable("acap_schoolwide_results", {
+  id: serial("id").primaryKey(),
+  assessmentId: integer("assessment_id").references(() => acapSchoolwideAssessments.id).notNull(),
+  proficiencyDistribution: jsonb("proficiency_distribution").$type<Record<string, number>>().default({}),
+  domainBreakdown: jsonb("domain_breakdown").$type<Record<string, number>>().default({}),
+  dokBreakdown: jsonb("dok_breakdown").$type<Record<string, number>>().default({}),
+  growthProjection: jsonb("growth_projection").$type<Record<string, any>>().default({}),
+  diagnostics: jsonb("diagnostics").$type<Record<string, any>>().default({}),
+  projectedScore: real("projected_score").default(0),
+  letterGrade: varchar("letter_grade", { length: 5 }).default("F"),
+  totalStudents: integer("total_students").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // ACAP Insert Schemas
 export const insertAcapStandardSchema = createInsertSchema(acapStandards).omit({ id: true });
 export const insertAcapBlueprintSchema = createInsertSchema(acapBlueprints).omit({ id: true });
@@ -1236,6 +1303,10 @@ export const insertAcapMasterySchema = createInsertSchema(acapMasteryTracking).o
 export const insertAcapGrowthSnapshotSchema = createInsertSchema(acapGrowthSnapshots).omit({ id: true, createdAt: true });
 export const insertAcapBootcampSessionSchema = createInsertSchema(acapBootcampSessions).omit({ id: true, startedAt: true });
 export const insertAcapAuditLogSchema = createInsertSchema(acapAuditLog).omit({ id: true, createdAt: true });
+export const insertAcapProjectionRunSchema = createInsertSchema(acapProjectionRuns).omit({ id: true, createdAt: true });
+export const insertAcapProjectionSnapshotSchema = createInsertSchema(acapProjectionSnapshots).omit({ id: true, createdAt: true });
+export const insertAcapSchoolwideAssessmentSchema = createInsertSchema(acapSchoolwideAssessments).omit({ id: true, createdAt: true });
+export const insertAcapSchoolwideResultSchema = createInsertSchema(acapSchoolwideResults).omit({ id: true, createdAt: true });
 
 // ACAP Type Exports
 export type AcapStandard = typeof acapStandards.$inferSelect;
@@ -1250,6 +1321,10 @@ export type AcapMasteryTracking = typeof acapMasteryTracking.$inferSelect;
 export type AcapGrowthSnapshot = typeof acapGrowthSnapshots.$inferSelect;
 export type AcapBootcampSession = typeof acapBootcampSessions.$inferSelect;
 export type AcapAuditLog = typeof acapAuditLog.$inferSelect;
+export type AcapProjectionRun = typeof acapProjectionRuns.$inferSelect;
+export type AcapProjectionSnapshot = typeof acapProjectionSnapshots.$inferSelect;
+export type AcapSchoolwideAssessment = typeof acapSchoolwideAssessments.$inferSelect;
+export type AcapSchoolwideResult = typeof acapSchoolwideResults.$inferSelect;
 
 export type InsertAcapStandard = z.infer<typeof insertAcapStandardSchema>;
 export type InsertAcapBlueprint = z.infer<typeof insertAcapBlueprintSchema>;
@@ -1263,6 +1338,10 @@ export type InsertAcapMasteryTracking = z.infer<typeof insertAcapMasterySchema>;
 export type InsertAcapGrowthSnapshot = z.infer<typeof insertAcapGrowthSnapshotSchema>;
 export type InsertAcapBootcampSession = z.infer<typeof insertAcapBootcampSessionSchema>;
 export type InsertAcapAuditLog = z.infer<typeof insertAcapAuditLogSchema>;
+export type InsertAcapProjectionRun = z.infer<typeof insertAcapProjectionRunSchema>;
+export type InsertAcapProjectionSnapshot = z.infer<typeof insertAcapProjectionSnapshotSchema>;
+export type InsertAcapSchoolwideAssessment = z.infer<typeof insertAcapSchoolwideAssessmentSchema>;
+export type InsertAcapSchoolwideResult = z.infer<typeof insertAcapSchoolwideResultSchema>;
 
 // Re-export chat models for integration
 export { conversations, messages } from "./models/chat";

@@ -64,8 +64,9 @@ Preferred communication style: Simple, everyday language.
   - Teacher portal: assignment creation, question bank management, AI generation, class reports
   - Student portal: mastery map visualization, assessment taking, boot camp sessions, growth tracking
   - Admin portal: standards/blueprint management, question bank governance, comprehensive audit logs
-  - Schema: 12 tables (acap_standards, acap_blueprints, acap_items, acap_passages, acap_assessments, acap_assignments, acap_attempts, acap_item_responses, acap_mastery_tracking, acap_growth_snapshots, acap_bootcamp_sessions, acap_audit_log)
-  - Files: server/acapRoutes.ts, server/acapStorage.ts, server/services/acapAiService.ts, client/src/pages/teacher-acap.tsx, student-acap.tsx, admin-acap.tsx
+  - Projected ACAP Report Score module: Proprietary projection model (ProficiencyIndex + GrowthIndex + WritingIndex + AttendancePoints + ELPoints => ProjectedScore 0-100 with letter grade), What-If Scenario Lab with sliders for Level 1 redistribution, Schoolwide Assessment Builder with DOK mix/domain weights/writing types, CSV/PDF export, snapshot storage
+  - Schema: 16 tables (acap_standards, acap_blueprints, acap_items, acap_passages, acap_assessments, acap_assignments, acap_attempts, acap_item_responses, acap_mastery_tracking, acap_growth_snapshots, acap_bootcamp_sessions, acap_audit_log, acap_projection_runs, acap_projection_snapshots, acap_schoolwide_assessments, acap_schoolwide_results)
+  - Files: server/acapRoutes.ts, server/acapStorage.ts, server/services/acapAiService.ts, client/src/pages/teacher-acap.tsx, student-acap.tsx, admin-acap.tsx, client/src/components/admin/ProjectedAcapScoreTab.tsx
 
 # External Dependencies
 

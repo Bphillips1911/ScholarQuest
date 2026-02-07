@@ -70,19 +70,24 @@ ITEM TYPE FORMATS:
 - "evidence_based": Two-part: select answer then justify with evidence
 - "drag_drop": Items to match or order
 
-Return a JSON array of items. Each item must have:
+You MUST return a JSON object with an "items" key containing an array of exactly ${params.count} items.
+
+Each item must follow this exact structure:
 {
   "itemType": "${params.itemType}",
   "dokLevel": ${params.dokLevel},
   "stem": "The question text",
-  "options": [{"key": "A", "text": "Option text"}, ...],
-  "correctAnswer": "A" or ["A","C"] or {"text": "sample response"} depending on type,
-  "rubric": null or {"points": 4, "criteria": [{"level": 4, "description": "..."}]} for constructed_response,
-  "explanation": "Why the correct answer is correct",
+  "options": ${params.itemType === "constructed_response" ? "[]" : '[{"key": "A", "text": "Option text"}, {"key": "B", "text": "..."}, {"key": "C", "text": "..."}, {"key": "D", "text": "..."}]'},
+  "correctAnswer": ${params.itemType === "multiple_choice" ? '"A"' : params.itemType === "multi_select" ? '["A","C"]' : params.itemType === "constructed_response" ? '{"text": "A complete sample response that would earn full marks"}' : '{"part1": "A", "part2": "Text evidence from the passage supporting the answer"}'},
+  "rubric": ${params.itemType === "constructed_response" ? '{"points": 4, "criteria": [{"level": 4, "description": "Exemplary response"}, {"level": 3, "description": "Proficient"}, {"level": 2, "description": "Developing"}, {"level": 1, "description": "Beginning"}]}' : "null"},
+  "explanation": "Why the correct answer is correct and common misconceptions",
   "difficulty": 0.5
 }
 
-Generate exactly ${params.count} items as a JSON array. Return ONLY valid JSON.`;
+${params.itemType === "constructed_response" ? "IMPORTANT: For constructed_response items, options must be an empty array [], correctAnswer must be an object with a 'text' key, and rubric must include point criteria." : ""}
+${params.itemType === "evidence_based" ? "IMPORTANT: For evidence_based items, create a two-part question. Part 1 selects an answer, Part 2 requires text evidence." : ""}
+
+Return format: {"items": [item1, item2, ...]}`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -171,7 +176,7 @@ export async function autoGradeResponse(params: {
     const student = Array.isArray(params.studentResponse) ? params.studentResponse : [params.studentResponse];
     const correctSet = new Set(correct);
     const studentSet = new Set(student);
-    const intersection = [...studentSet].filter((x) => correctSet.has(x));
+    const intersection = Array.from(studentSet).filter((x) => correctSet.has(x));
     const score = intersection.length / correct.length;
     return {
       isCorrect: score === 1,

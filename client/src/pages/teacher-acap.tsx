@@ -115,6 +115,7 @@ const domainFilters = [
   { label: "Reading", value: "reading", icon: BookOpen },
   { label: "Writing", value: "writing", icon: PenTool },
   { label: "Math", value: "math", icon: Calculator },
+  { label: "Science", value: "science", icon: Brain },
 ];
 
 function filterByDomain(standards: any[], domain: string): any[] {
@@ -123,7 +124,8 @@ function filterByDomain(standards: any[], domain: string): any[] {
     const d = (s.domain || "").toLowerCase();
     if (domain === "reading") return d.includes("reading") || d.includes("literature") || d.includes("informational");
     if (domain === "writing") return d.includes("writing");
-    if (domain === "math") return d.includes("math") || d.includes("number") || d.includes("ratio") || d.includes("expression") || d.includes("geometry") || d.includes("algebra") || d.includes("statistics");
+    if (domain === "math") return d.includes("math") || d.includes("number") || d.includes("ratio") || d.includes("expression") || d.includes("geometry") || d.includes("algebra") || d.includes("statistics") || d.includes("proportional");
+    if (domain === "science") return d.includes("science") || d.includes("physical") || d.includes("earth") || d.includes("life") || d.includes("engineering");
     return true;
   });
 }
@@ -665,6 +667,7 @@ function QuestionBankTab({ teacherId, gradeNumber }: { teacherId: string; gradeN
                   <SelectContent>
                     <SelectItem value="ELA">ELA (Reading/Writing)</SelectItem>
                     <SelectItem value="Math">Mathematics</SelectItem>
+                    <SelectItem value="Science">Science</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -14,54 +14,6 @@ run = ["npm", "run", "start"]
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 36671
-externalPort = 5000
-
-[[ports]]
-localPort = 38377
-externalPort = 8008
-
-[[ports]]
-localPort = 39621
-externalPort = 3003
-
-[[ports]]
-localPort = 40931
-externalPort = 6800
-
-[[ports]]
-localPort = 40991
-externalPort = 8000
-
-[[ports]]
-localPort = 44563
-externalPort = 3002
-
-[[ports]]
-localPort = 44921
-externalPort = 5173
-
-[[ports]]
-localPort = 45373
-externalPort = 3001
-
-[[ports]]
-localPort = 45509
-externalPort = 3000
-
-[[ports]]
-localPort = 45539
-externalPort = 8080
-
-[[ports]]
-localPort = 46651
-externalPort = 4200
-
-[[ports]]
-localPort = 46735
-externalPort = 6000
-
 [env]
 PORT = "5000"
 
@@ -87,4 +39,4 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
-integrations = ["javascript_websocket==1.0.0"]
+integrations = ["javascript_websocket:1.0.0"]

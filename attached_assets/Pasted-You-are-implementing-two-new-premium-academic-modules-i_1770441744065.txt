@@ -1,0 +1,45 @@
+You are implementing two new premium academic modules inside the existing PBIS House of Champions web app: (1) ACAP Adaptive Skills and (2) ACAP Boot Camp. Use the current app’s styling, routing, auth, and role gating. Do not break existing tabs.
+
+NAV PLACEMENT (MUST DO):
+1) Teacher Dashboard: add a new tab/link labeled “ACAP Adaptive Skills” placed immediately next to “Student Export”. Route: /teacher/acap
+2) Student Dashboard: add a new tab/link labeled “ACAP Adaptive Skills” placed immediately next to “SEL”. Route: /student/acap
+3) Admin Portal top bar: add “ACAP Adaptive Skills” placed next to “Normal”. Route: /admin/acap
+
+MODULE 1: ACAP Adaptive Skills
+- Baseline adaptive assessment automatically assigned to new scholars (per grade/subject).
+- Daily Adaptive Skills Activity: personalized playlist from not-mastered standards with time-on-task monitoring (active vs idle seconds).
+- Quarterly teacher-assigned Midpoint and Final assessments (measure growth + proficiency).
+- Mastery levels: Level 1 Red, Level 2 Yellow, Level 3 Green, Level 4 Dark Green.
+- Teacher dashboard tools: assign assessments, view mastery maps by student/class, print parent report PDF.
+- Question Bank: teachers can filter by grade/subject/domain/DOK(2-4)/standard and can ask AI to generate items aligned to blueprint domains and standards. Store AI-generated items in DB for reuse with approval controls.
+- Auto-grading for MCQ and constructed responses (rubric-based) and update mastery probabilities per standard.
+- Generate passages (informational, scientific/technical, poems) that are original and grade-appropriate. Attach TDQs and answer keys.
+
+MODULE 2: ACAP Boot Camp (AI Guided Tutoring Placement Program)
+- Teachers can enroll scholars into Boot Camp for: 2, 4, 6, 8 weeks, quarter, semester.
+- Boot Camp is adaptive: placement modes FOUNDATION, ACCELERATION, CHALLENGE. Moves students based on performance.
+- Students interact with a guided tutor AI in mission loop: quick check, mini-lesson, guided practice, independent practice, reflection, exit ticket.
+- Tutor asks ACAP-aligned questions and provides realtime feedback + rationale + justification prompts.
+- Track progress: readiness score (0-100), mastery moves, time-on-task, misconception heatmap.
+- End of program: system generates an adaptive test-out assessment; student must meet test-out criteria. If not, system re-places student and generates a new sequence (no repeats).
+- Teacher controls: pause/resume, extend duration, lock domains, view transcripts.
+
+TECH REQUIREMENTS:
+- Add DB tables: acap_standards, acap_blueprint_domains, acap_items, acap_passages, acap_assessments, acap_assessment_forms, acap_assignments, acap_attempts, acap_mastery, acap_growth_snapshots, acap_sessions, plus bootcamp enrollment/session tables.
+- Implement API endpoints listed in the spec: standards/blueprints, assessment generation/assignment/submission, daily activity start/next/submit/end, AI item generation, report pdf generation, bootcamp enroll/pause/resume/session start/message/end/testout.
+- Implement React pages/components:
+  Teacher: /teacher/acap (Overview, Assignments, Question Bank, Reports, Boot Camp) and student profile view
+  Student: /student/acap (Mastery Map, Daily Activity, Assessments, Boot Camp, Reports)
+  Admin: /admin/acap (Blueprint/standards mgmt, item governance, AI settings, reporting templates, audit logs)
+- Use shadcn/ui components and match existing layout patterns. Keep it fast and clean.
+- Add role guards for teacher/student/admin.
+- Add analytics logging for sessions and attempts.
+
+AI PROMPTS:
+- Implement 4 AI roles with strict JSON outputs: Item Generator, Passage Generator, Auto-Grader, Boot Camp Tutor. Use the JSON schemas provided in spec. The server should validate outputs with Zod and reject invalid responses.
+- Never output copyrighted passages; generate original text only.
+
+DELIVERABLES:
+- Create migrations, server endpoints, frontend pages, and integration in navigation.
+- Provide seed scripts for sample standards/domains and a small initial item bank.
+- Ensure no existing PBIS features are affected.

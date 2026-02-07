@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Search, X, UserX, Upload, TrendingUp, BookOpen } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Search, X, UserX, Upload, TrendingUp, BookOpen, Target, Sparkles, AlertTriangle, XCircle, ClipboardList, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { PBISCategorySelector } from "@/components/PBISCategorySelector";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
@@ -990,6 +991,10 @@ export default function AdminNew() {
               <TabsTrigger value="classroom-trends" className="text-xs sm:text-sm px-2 py-2">
                 <Users className="h-4 w-4 mr-1" />
                 Classroom Trends
+              </TabsTrigger>
+              <TabsTrigger value="acap-admin" className="text-xs sm:text-sm px-2 py-2">
+                <BookOpen className="h-4 w-4 mr-1" />
+                ACAP Adaptive Skills
               </TabsTrigger>
             </TabsList>
 
@@ -2718,6 +2723,10 @@ export default function AdminNew() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="acap-admin" className="space-y-6">
+              <AdminAcapPanel themeStyles={themeStyles} />
+            </TabsContent>
           </Tabs>
         </Card>
         </div>
@@ -3931,6 +3940,359 @@ export default function AdminNew() {
         isOpen={showNotificationPanel}
         onClose={() => setShowNotificationPanel(false)}
       />
+    </div>
+  );
+}
+
+function AdminAcapPanel({ themeStyles }: { themeStyles: any }) {
+  const { toast } = useToast();
+  const [acapSubTab, setAcapSubTab] = useState("standards");
+  const [selectedGrade, setSelectedGrade] = useState(6);
+  const [showAddStandard, setShowAddStandard] = useState(false);
+  const [newStandard, setNewStandard] = useState({ code: "", domain: "", subdomain: "", gradeLevel: 6, description: "", dokLevels: [2, 3] });
+
+  const { data: standards, isLoading: loadingStandards } = useQuery({
+    queryKey: ["/api/acap/standards", { gradeLevel: selectedGrade }],
+    queryFn: () => fetch(`/api/acap/standards?gradeLevel=${selectedGrade}`).then((r) => r.json()),
+  });
+
+  const { data: allItems, isLoading: loadingItems } = useQuery({
+    queryKey: ["/api/acap/items"],
+  });
+
+  const { data: assessments } = useQuery({ queryKey: ["/api/acap/assessments"] });
+  const { data: auditLog } = useQuery({
+    queryKey: ["/api/acap/audit-log"],
+    queryFn: () => fetch("/api/acap/audit-log").then((r) => r.json()),
+  });
+
+  const createStandardMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/acap/standards", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/standards"] });
+      toast({ title: "Standard created successfully!" });
+      setShowAddStandard(false);
+      setNewStandard({ code: "", domain: "", subdomain: "", gradeLevel: selectedGrade, description: "", dokLevels: [2, 3] });
+    },
+    onError: () => toast({ title: "Failed to create standard", variant: "destructive" }),
+  });
+
+  const reviewItemMutation = useMutation({
+    mutationFn: ({ itemId, status }: { itemId: number; status: string }) =>
+      apiRequest("PATCH", `/api/acap/items/${itemId}`, { reviewStatus: status, reviewedBy: "admin" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/items"] });
+      toast({ title: "Item review updated!" });
+    },
+    onError: () => toast({ title: "Failed to update item", variant: "destructive" }),
+  });
+
+  const toggleStandardMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
+      apiRequest("PATCH", `/api/acap/standards/${id}`, { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/standards"] });
+      toast({ title: "Standard updated!" });
+    },
+  });
+
+  const subTabs = [
+    { id: "standards", label: "Standards", icon: Target },
+    { id: "question-bank", label: "Question Bank", icon: BookOpen },
+    { id: "assessments", label: "Assessments", icon: ClipboardList },
+    { id: "reports", label: "Reports", icon: BarChart3 },
+    { id: "audit-log", label: "Audit Log", icon: Eye },
+  ];
+
+  const pendingItems = (allItems as any[])?.filter((i: any) => i.reviewStatus === "pending") || [];
+  const approvedItems = (allItems as any[])?.filter((i: any) => i.reviewStatus === "approved") || [];
+
+  return (
+    <div className="space-y-4">
+      <Card style={{backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border}}>
+        <CardHeader>
+          <CardTitle style={{color: themeStyles.textPrimary}} className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-500" />
+            ACAP Adaptive Skills Administration
+          </CardTitle>
+          <CardDescription style={{color: themeStyles.textSecondary}}>
+            Manage standards, blueprints, question banks, and assessment data for the ACAP system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-3 mb-6">
+            <div className="bg-indigo-50 p-3 rounded-lg text-center">
+              <p className="text-2xl font-bold text-indigo-700">{(standards as any[])?.length || 0}</p>
+              <p className="text-xs text-gray-500">Standards (Grade {selectedGrade})</p>
+            </div>
+            <div className="bg-amber-50 p-3 rounded-lg text-center">
+              <p className="text-2xl font-bold text-amber-700">{pendingItems.length}</p>
+              <p className="text-xs text-gray-500">Pending Review</p>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg text-center">
+              <p className="text-2xl font-bold text-green-700">{approvedItems.length}</p>
+              <p className="text-xs text-gray-500">Approved Items</p>
+            </div>
+            <div className="bg-purple-50 p-3 rounded-lg text-center">
+              <p className="text-2xl font-bold text-purple-700">{(assessments as any[])?.length || 0}</p>
+              <p className="text-xs text-gray-500">Assessments</p>
+            </div>
+          </div>
+
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4">
+            {subTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setAcapSubTab(tab.id)}
+                className={`flex items-center gap-1 px-3 py-2 rounded text-xs font-medium transition-all ${
+                  acapSubTab === tab.id ? "bg-indigo-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <tab.icon className="h-3 w-3" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {acapSubTab === "standards" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex gap-1">
+                  {[6, 7, 8].map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setSelectedGrade(g)}
+                      className={`px-3 py-1.5 rounded text-xs font-medium ${
+                        selectedGrade === g ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      Grade {g}
+                    </button>
+                  ))}
+                </div>
+                <Button size="sm" onClick={() => setShowAddStandard(!showAddStandard)} className="bg-indigo-600 hover:bg-indigo-700">
+                  <Plus className="h-3 w-3 mr-1" /> Add Standard
+                </Button>
+              </div>
+
+              {showAddStandard && (
+                <Card className="border-indigo-200 bg-indigo-50/50">
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs">Code</Label>
+                        <Input value={newStandard.code} onChange={(e) => setNewStandard({...newStandard, code: e.target.value})} placeholder="e.g. RL.6.4" className="h-8 text-sm" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Domain</Label>
+                        <Select value={newStandard.domain} onValueChange={(v) => setNewStandard({...newStandard, domain: v})}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select..." /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Reading Literature">Reading Literature</SelectItem>
+                            <SelectItem value="Reading Informational">Reading Informational</SelectItem>
+                            <SelectItem value="Writing">Writing</SelectItem>
+                            <SelectItem value="Math - Number System">Math - Number System</SelectItem>
+                            <SelectItem value="Math - Ratios">Math - Ratios</SelectItem>
+                            <SelectItem value="Math - Expressions">Math - Expressions</SelectItem>
+                            <SelectItem value="Math - Geometry">Math - Geometry</SelectItem>
+                            <SelectItem value="Math - Statistics">Math - Statistics</SelectItem>
+                            <SelectItem value="Science">Science</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Subdomain</Label>
+                        <Input value={newStandard.subdomain} onChange={(e) => setNewStandard({...newStandard, subdomain: e.target.value})} placeholder="e.g. Key Ideas" className="h-8 text-sm" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Description</Label>
+                      <Textarea value={newStandard.description} onChange={(e) => setNewStandard({...newStandard, description: e.target.value})} placeholder="Full standard description..." className="text-sm" rows={2} />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <Label className="text-xs">Grade:</Label>
+                      <Select value={String(newStandard.gradeLevel)} onValueChange={(v) => setNewStandard({...newStandard, gradeLevel: parseInt(v)})}>
+                        <SelectTrigger className="h-8 text-sm w-24"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="6">Grade 6</SelectItem>
+                          <SelectItem value="7">Grade 7</SelectItem>
+                          <SelectItem value="8">Grade 8</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm" onClick={() => createStandardMutation.mutate(newStandard)} disabled={!newStandard.code || !newStandard.domain || createStandardMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">
+                        {createStandardMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                        Save Standard
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {loadingStandards ? (
+                <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-indigo-500" /></div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {(standards as any[])?.map((s: any) => (
+                    <div key={s.id} className="flex items-center justify-between p-3 bg-white rounded-lg border hover:shadow-sm transition-shadow">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-semibold text-indigo-600">{s.code}</span>
+                          <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Grade {s.gradeLevel || s.grade_level}</span>
+                          {s.dokLevels && (
+                            <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                              DOK {Array.isArray(s.dokLevels) ? s.dokLevels.join(",") : s.dok_levels}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">{s.domain} - {s.subdomain}</p>
+                        <p className="text-xs text-gray-600 mt-0.5">{s.description?.substring(0, 120)}...</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={`h-7 text-xs ${s.isActive || s.is_active ? "text-green-600 border-green-200" : "text-red-600 border-red-200"}`}
+                        onClick={() => toggleStandardMutation.mutate({ id: s.id, isActive: !(s.isActive || s.is_active) })}
+                      >
+                        {(s.isActive || s.is_active) ? "Active" : "Inactive"}
+                      </Button>
+                    </div>
+                  ))}
+                  {!(standards as any[])?.length && (
+                    <p className="text-center py-6 text-gray-500">No standards for Grade {selectedGrade}. Add standards above.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {acapSubTab === "question-bank" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-700">Question Bank Governance</h3>
+                <div className="flex gap-2 text-xs">
+                  <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded">{pendingItems.length} Pending</span>
+                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded">{approvedItems.length} Approved</span>
+                  <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">{(allItems as any[])?.length || 0} Total</span>
+                </div>
+              </div>
+
+              {loadingItems ? (
+                <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin" /></div>
+              ) : pendingItems.length > 0 ? (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1"><Clock className="h-4 w-4" /> Items Pending Review</h4>
+                  {pendingItems.map((item: any) => (
+                    <div key={item.id} className="p-3 bg-white rounded-lg border border-amber-200 hover:shadow-sm">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-mono bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">DOK {item.dokLevel}</span>
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{(item.itemType || "").replace("_", " ")}</span>
+                            {item.aiGenerated && <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded"><Sparkles className="h-3 w-3 inline mr-1" />AI</span>}
+                          </div>
+                          <p className="text-sm text-gray-800">{item.stem?.substring(0, 150)}...</p>
+                        </div>
+                        <div className="flex gap-1 ml-2">
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-green-600 hover:bg-green-50 border-green-200"
+                            onClick={() => reviewItemMutation.mutate({ itemId: item.id, status: "approved" })}
+                            disabled={reviewItemMutation.isPending}>
+                            <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-red-600 hover:bg-red-50 border-red-200"
+                            onClick={() => reviewItemMutation.mutate({ itemId: item.id, status: "rejected" })}
+                            disabled={reviewItemMutation.isPending}>
+                            <XCircle className="h-3 w-3 mr-1" /> Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-6 text-gray-500">No items pending review. All items have been reviewed.</p>
+              )}
+            </div>
+          )}
+
+          {acapSubTab === "assessments" && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-700">All Assessments</h3>
+              {(assessments as any[])?.length > 0 ? (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {(assessments as any[]).map((a: any) => (
+                    <div key={a.id} className="p-3 bg-white rounded-lg border hover:shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-gray-800">{a.title}</p>
+                          <p className="text-xs text-gray-500">Type: {a.assessmentType} | Grade {a.gradeLevel} | {a.subject}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded ${a.isActive || a.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                          {(a.isActive || a.is_active) ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-6 text-gray-500">No assessments created yet. Teachers can create assessments from the Teacher ACAP portal.</p>
+              )}
+            </div>
+          )}
+
+          {acapSubTab === "reports" && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-700">ACAP System Overview</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-blue-50 p-4 rounded-lg text-center">
+                  <BookOpen className="h-6 w-6 text-blue-500 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-blue-700">{(standards as any[])?.length || 0}</p>
+                  <p className="text-xs text-gray-500">Standards (G{selectedGrade})</p>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg text-center">
+                  <Sparkles className="h-6 w-6 text-purple-500 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-purple-700">{(allItems as any[])?.filter((i: any) => i.aiGenerated).length || 0}</p>
+                  <p className="text-xs text-gray-500">AI Generated Items</p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg text-center">
+                  <CheckCircle className="h-6 w-6 text-green-500 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-green-700">{approvedItems.length}</p>
+                  <p className="text-xs text-gray-500">Approved Items</p>
+                </div>
+                <div className="bg-red-50 p-4 rounded-lg text-center">
+                  <AlertTriangle className="h-6 w-6 text-red-500 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-red-700">{(allItems as any[])?.filter((i: any) => i.reviewStatus === "rejected").length || 0}</p>
+                  <p className="text-xs text-gray-500">Rejected Items</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {acapSubTab === "audit-log" && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-700">Audit Log</h3>
+              {(auditLog as any[])?.length > 0 ? (
+                <div className="space-y-1 max-h-96 overflow-y-auto">
+                  {(auditLog as any[]).map((entry: any) => (
+                    <div key={entry.id} className="flex items-center gap-3 p-2 bg-white rounded border text-xs">
+                      <span className="text-gray-400 font-mono w-32">{new Date(entry.createdAt || entry.created_at).toLocaleString()}</span>
+                      <span className={`px-2 py-0.5 rounded font-medium ${
+                        entry.action.includes("create") ? "bg-green-100 text-green-700" :
+                        entry.action.includes("review") ? "bg-blue-100 text-blue-700" :
+                        entry.action.includes("generate") ? "bg-purple-100 text-purple-700" :
+                        "bg-gray-100 text-gray-700"
+                      }`}>{entry.action}</span>
+                      <span className="text-gray-600">{entry.entityType} #{entry.entityId}</span>
+                      <span className="text-gray-400">by {entry.userRole || "system"}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-6 text-gray-500">No audit log entries yet. Actions will be recorded as teachers and admins use the ACAP system.</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

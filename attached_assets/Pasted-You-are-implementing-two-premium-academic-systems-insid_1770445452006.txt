@@ -1,0 +1,285 @@
+You are implementing two premium academic systems inside an existing PBIS House of Champions platform:
+
+1) ACAP Adaptive Skills
+2) ACAP Boot Camp (AI Guided Tutoring Placement Program)
+
+These systems must feel like a legitimate state-aligned assessment platform while also providing daily adaptive learning.
+
+You MUST follow this entire specification.
+
+================================
+NAVIGATION PLACEMENT (REQUIRED)
+================================
+
+Teacher Dashboard:
+Add tab “ACAP Adaptive Skills” immediately next to “Student Export”.
+Route: /teacher/acap
+
+Student Dashboard:
+Add tab “ACAP Adaptive Skills” immediately next to “SEL”.
+Route: /student/acap
+
+Admin Portal:
+Add “ACAP Adaptive Skills” to top bar immediately next to “Normal”.
+Route: /admin/acap
+
+Inside ACAP, include secondary tabs:
+Overview | Assignments | Daily Skills | Question Bank | Reports | Boot Camp
+
+================================
+ACADEMIC FRAMEWORK (CORE LOGIC)
+================================
+
+Mastery Levels by Standard:
+
+Level 1 RED: mastery_prob < 0.40  
+Level 2 YELLOW: 0.40–0.69  
+Level 3 GREEN: 0.70–0.84  
+Level 4 DARK GREEN: ≥0.85  
+
+Evidence Weighting:
+DOK2 correct +0.03  
+DOK3 correct +0.06  
+DOK4 correct +0.08  
+Incorrect −0.04  
+Retention check after 7 days +0.05  
+
+All mastery tracked per STANDARD.
+
+================================
+ASSESSMENT FLOW
+================================
+
+Baseline Adaptive Assessment:
+Assigned automatically on scholar onboarding.
+
+Flow:
+1) Blueprint balanced screening
+2) Domain probes
+3) Confirmation items
+
+Daily Adaptive Skills:
+Personalized playlist:
+70% non-mastered
+20% near mastery
+10% spiral review
+
+Track:
+active seconds
+idle seconds
+accuracy
+standard movement
+
+Midpoint + Final:
+Teacher assigned quarterly.
+
+Must calculate:
+
+Proficiency Level (1–4)
+Growth Index (1–99)
+Growth Category:
+1: 1–20
+2: 21–40
+3: 41–60
+4: 61–99
+
+================================
+QUESTION BANK + AI GENERATION
+================================
+
+Teachers can filter by:
+Grade
+Subject
+Blueprint Domain
+Standard
+DOK 2–4
+
+AI Generated items MUST contain:
+
+- Standard codes
+- Blueprint domain
+- DOK
+- Correct answer
+- Distractor reasoning
+- Misconception tags
+- Accessibility notes
+
+================================
+PASSAGE GENERATION
+================================
+
+Genres:
+Informational
+Scientific/Technical
+Poems
+
+Each passage must return:
+TDQs DOK2–4
+Answer keys
+Evidence lines
+Vocabulary
+
+Original content only.
+
+================================
+PARENT REPORT PDF
+================================
+
+Must include:
+
+Student proficiency
+Growth index + category
+Standards mastered vs not mastered
+Priority next steps
+At-home strategies
+Teacher notes
+
+================================
+ACAP BOOT CAMP
+================================
+
+Teacher assigns duration:
+2 weeks
+4 weeks
+6 weeks
+8 weeks
+Quarter
+Semester
+
+Placement Modes:
+FOUNDATION
+ACCELERATION
+CHALLENGE
+
+Boot Camp Loop:
+Quick Check
+Mini Lesson
+Guided Practice
+Independent Practice
+Reflection
+Exit Ticket
+
+Track:
+
+Readiness Score (0–100)
+Mastery movement
+Time on task
+Misconception heatmap
+
+Teacher controls:
+Enroll
+Pause
+Resume
+Extend
+Lock domains
+
+End with adaptive Test-Out.
+
+Test-out requirements:
+Readiness ≥75
+70% DOK3–4
+No critical prereq remains Level 1
+
+If failed:
+Re-place student and regenerate program (no repeated content).
+
+================================
+DATABASE TABLES
+================================
+
+acap_standards
+acap_blueprint_domains
+acap_items
+acap_passages
+acap_assessments
+acap_assessment_forms
+acap_assignments
+acap_attempts
+acap_mastery
+acap_growth_snapshots
+acap_sessions
+acap_bootcamp_enrollments
+acap_bootcamp_sessions
+
+================================
+FRONTEND ROUTES
+================================
+
+Teacher:
+ /teacher/acap
+ /teacher/acap/student/:id
+
+Student:
+ /student/acap
+ /student/acap/assessment/:id
+ /student/acap/bootcamp/session/:id
+
+Admin:
+ /admin/acap
+
+================================
+BACKEND ROUTES
+================================
+
+/api/acap/standards
+/api/acap/blueprints
+/api/acap/assessments/generate
+/api/acap/assessments/assign
+/api/acap/attempts
+/api/acap/daily/start
+/api/acap/daily/next
+/api/acap/daily/submit
+/api/acap/items/ai-generate
+/api/acap/reports/student/:id/pdf
+
+Boot Camp:
+/api/acap/bootcamp/enroll
+/api/acap/bootcamp/pause
+/api/acap/bootcamp/session/start
+/api/acap/bootcamp/session/message
+/api/acap/bootcamp/testout
+
+================================
+REACT COMPONENTS
+================================
+
+ACAPTabs
+MasteryMap
+AssessmentPlayer
+DailyPlaylist
+BootCampPortal
+TutorChatPanel
+ProgressRing
+TeacherOverview
+QuestionBank
+StudentProfile
+AdminBlueprintManager
+
+================================
+AI PROMPT ROLES (STRICT JSON)
+================================
+
+Item Generator
+Passage Generator
+Auto Grader
+Boot Camp Tutor
+
+Boot Camp Tutor must operate Mission Loop and return state every turn.
+
+================================
+DELIVERABLES
+================================
+
+- Add navigation
+- Create DB migrations
+- Create API routes
+- Build React pages
+- Implement adaptive mastery
+- Implement AI tutoring
+- Parent report PDF
+- Seed sample standards + items
+- Ensure no existing PBIS features break
+
+Use existing styling and auth.
+
+This is a premium academic SaaS module. Build cleanly, professionally, and fully.

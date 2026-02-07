@@ -992,9 +992,9 @@ export default function AdminNew() {
                 <Users className="h-4 w-4 mr-1" />
                 Classroom Trends
               </TabsTrigger>
-              <TabsTrigger value="acap-admin" className="text-xs sm:text-sm px-2 py-2">
+              <TabsTrigger value="acap-admin" className="text-xs sm:text-sm px-2 py-2" onClick={() => window.location.href = '/admin-acap'}>
                 <BookOpen className="h-4 w-4 mr-1" />
-                ACAP Adaptive Skills
+                ACAP Portal
               </TabsTrigger>
             </TabsList>
 

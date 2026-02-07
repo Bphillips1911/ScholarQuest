@@ -427,13 +427,13 @@ export default function ProjectedAcapScoreTab() {
               <CardContent>
                 <div className="space-y-2">
                   <div className="text-xs text-gray-500 font-semibold uppercase mb-2">Subject Performance</div>
-                  {["ELA", "Math", "Science", "Social Studies", "Writing"].map((subject, i) => {
+                  {["ELA", "Math", "Science", "Writing"].map((subject, i) => {
                     const val = Math.max(10, Math.round(Math.random() * 30 + (projScore > 0 ? projScore / 2 : 20)));
                     return (
                       <div key={subject} className="flex items-center gap-2">
                         <span className="text-xs text-gray-600 w-20">{subject}</span>
                         <div className="flex-1 h-5 bg-gray-100 rounded overflow-hidden">
-                          <div className={`h-full ${["bg-blue-500", "bg-emerald-500", "bg-purple-500", "bg-amber-500", "bg-pink-500"][i]} rounded transition-all`} style={{ width: `${val}%` }} />
+                          <div className={`h-full ${["bg-blue-500", "bg-emerald-500", "bg-purple-500", "bg-pink-500"][i]} rounded transition-all`} style={{ width: `${val}%` }} />
                         </div>
                         <span className="text-xs font-semibold text-gray-700 w-8">{val}%</span>
                       </div>
@@ -636,6 +636,7 @@ export default function ProjectedAcapScoreTab() {
                 </div>
               </div>
 
+              {builderSubject === "ELA" && (
               <div>
                 <Label className="text-sm font-semibold text-gray-700">Writing Task Type</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
@@ -647,6 +648,7 @@ export default function ProjectedAcapScoreTab() {
                   ))}
                 </div>
               </div>
+              )}
 
               <Button
                 onClick={() => {

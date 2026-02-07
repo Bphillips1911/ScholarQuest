@@ -1126,7 +1126,7 @@ export const acapAssessments = pgTable("acap_assessments", {
   timeLimitMinutes: integer("time_limit_minutes").default(60),
   isAdaptive: boolean("is_adaptive").notNull().default(false),
   settings: jsonb("settings").$type<Record<string, any>>().default({}),
-  createdBy: varchar("created_by").references(() => teacherAuth.id),
+  createdBy: varchar("created_by"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -1290,6 +1290,82 @@ export const acapSchoolwideResults = pgTable("acap_schoolwide_results", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ===== ACAP IMPACT SIMULATOR TABLES =====
+export const acapImpactRuns = pgTable("acap_impact_runs", {
+  id: serial("id").primaryKey(),
+  scopeType: varchar("scope_type", { length: 20 }).notNull().default("SCHOOL"),
+  subject: varchar("subject", { length: 20 }),
+  gradeLevel: integer("grade_level"),
+  classId: varchar("class_id", { length: 50 }),
+  dateRange: varchar("date_range", { length: 20 }).default("qtr"),
+  currentProjectedScore: real("current_projected_score").default(0),
+  currentLetter: varchar("current_letter", { length: 2 }),
+  projectedPointGain: real("projected_point_gain").default(0),
+  targetLetter: varchar("target_letter", { length: 2 }),
+  attendancePoints: real("attendance_points").default(10.5),
+  elPoints: real("el_points").default(0),
+  inputs: jsonb("inputs").$type<Record<string, any>>().default({}),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapImpactLevers = pgTable("acap_impact_levers", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").references(() => acapImpactRuns.id),
+  name: varchar("name", { length: 200 }).notNull(),
+  leverType: varchar("lever_type", { length: 50 }).notNull(),
+  estimatedPointGain: real("estimated_point_gain").notNull().default(0),
+  weeksToImpact: integer("weeks_to_impact").default(6),
+  studentsAffected: integer("students_affected").default(0),
+  confidence: real("confidence").default(0.5),
+  summary: text("summary"),
+  actionType: varchar("action_type", { length: 50 }),
+  actionPayload: jsonb("action_payload").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ===== ACAP STUDENT READINESS GENOME TABLES =====
+export const acapGenomeTraits = pgTable("acap_genome_traits", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  subject: varchar("subject", { length: 20 }).notNull(),
+  gradeLevel: integer("grade_level").notNull(),
+  traitKey: varchar("trait_key", { length: 50 }).notNull(),
+  label: varchar("label", { length: 100 }).notNull(),
+  score: real("score").notNull().default(0),
+  level: integer("level").notNull().default(1),
+  description: text("description"),
+  readinessScore: real("readiness_score").default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const acapGenomeEvents = pgTable("acap_genome_events", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  eventType: varchar("event_type", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 20 }),
+  gradeLevel: integer("grade_level"),
+  sourceId: integer("source_id"),
+  sourceType: varchar("source_type", { length: 30 }),
+  data: jsonb("data").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapGenomeRecommendations = pgTable("acap_genome_recommendations", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  subject: varchar("subject", { length: 20 }).notNull(),
+  gradeLevel: integer("grade_level").notNull(),
+  priority: integer("priority").notNull().default(1),
+  category: varchar("category", { length: 30 }).notNull(),
+  recommendation: text("recommendation").notNull(),
+  actionType: varchar("action_type", { length: 50 }).notNull(),
+  actionPayload: jsonb("action_payload").$type<Record<string, any>>().default({}),
+  tutorAdaptations: jsonb("tutor_adaptations").$type<Record<string, any>>().default({}),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // ACAP Insert Schemas
 export const insertAcapStandardSchema = createInsertSchema(acapStandards).omit({ id: true });
 export const insertAcapBlueprintSchema = createInsertSchema(acapBlueprints).omit({ id: true });
@@ -1307,6 +1383,11 @@ export const insertAcapProjectionRunSchema = createInsertSchema(acapProjectionRu
 export const insertAcapProjectionSnapshotSchema = createInsertSchema(acapProjectionSnapshots).omit({ id: true, createdAt: true });
 export const insertAcapSchoolwideAssessmentSchema = createInsertSchema(acapSchoolwideAssessments).omit({ id: true, createdAt: true });
 export const insertAcapSchoolwideResultSchema = createInsertSchema(acapSchoolwideResults).omit({ id: true, createdAt: true });
+export const insertAcapImpactRunSchema = createInsertSchema(acapImpactRuns).omit({ id: true, createdAt: true });
+export const insertAcapImpactLeverSchema = createInsertSchema(acapImpactLevers).omit({ id: true, createdAt: true });
+export const insertAcapGenomeTraitSchema = createInsertSchema(acapGenomeTraits).omit({ id: true, updatedAt: true });
+export const insertAcapGenomeEventSchema = createInsertSchema(acapGenomeEvents).omit({ id: true, createdAt: true });
+export const insertAcapGenomeRecommendationSchema = createInsertSchema(acapGenomeRecommendations).omit({ id: true, createdAt: true });
 
 // ACAP Type Exports
 export type AcapStandard = typeof acapStandards.$inferSelect;
@@ -1342,6 +1423,17 @@ export type InsertAcapProjectionRun = z.infer<typeof insertAcapProjectionRunSche
 export type InsertAcapProjectionSnapshot = z.infer<typeof insertAcapProjectionSnapshotSchema>;
 export type InsertAcapSchoolwideAssessment = z.infer<typeof insertAcapSchoolwideAssessmentSchema>;
 export type InsertAcapSchoolwideResult = z.infer<typeof insertAcapSchoolwideResultSchema>;
+
+export type AcapImpactRun = typeof acapImpactRuns.$inferSelect;
+export type AcapImpactLever = typeof acapImpactLevers.$inferSelect;
+export type AcapGenomeTrait = typeof acapGenomeTraits.$inferSelect;
+export type AcapGenomeEvent = typeof acapGenomeEvents.$inferSelect;
+export type AcapGenomeRecommendation = typeof acapGenomeRecommendations.$inferSelect;
+export type InsertAcapImpactRun = z.infer<typeof insertAcapImpactRunSchema>;
+export type InsertAcapImpactLever = z.infer<typeof insertAcapImpactLeverSchema>;
+export type InsertAcapGenomeTrait = z.infer<typeof insertAcapGenomeTraitSchema>;
+export type InsertAcapGenomeEvent = z.infer<typeof insertAcapGenomeEventSchema>;
+export type InsertAcapGenomeRecommendation = z.infer<typeof insertAcapGenomeRecommendationSchema>;
 
 // Re-export chat models for integration
 export { conversations, messages } from "./models/chat";

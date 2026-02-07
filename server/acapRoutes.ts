@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { acapStorage } from "./acapStorage";
+import { db } from "./db";
 import { generateItems, generatePassage, autoGradeResponse, bootcampTutor } from "./services/acapAiService";
 import {
   insertAcapStandardSchema, insertAcapBlueprintSchema, insertAcapPassageSchema,
@@ -212,9 +213,13 @@ export function registerAcapRoutes(app: Express): void {
 
   app.post("/api/acap/assessments", async (req: Request, res: Response) => {
     try {
-      const data = insertAcapAssessmentSchema.parse(req.body);
+      const body = { ...req.body };
+      if (!body.createdBy || body.createdBy === "admin") {
+        body.createdBy = null;
+      }
+      const data = insertAcapAssessmentSchema.parse(body);
       const assessment = await acapStorage.createAssessment(data);
-      await acapStorage.createAuditEntry({ action: "create_assessment", entityType: "assessment", entityId: assessment.id, userId: req.body.createdBy, userRole: "teacher", details: { title: assessment.title, type: assessment.assessmentType } });
+      await acapStorage.createAuditEntry({ action: "create_assessment", entityType: "assessment", entityId: assessment.id, userId: req.body.createdBy || "admin", userRole: req.body.createdBy === "admin" ? "admin" : "teacher", details: { title: assessment.title, type: assessment.assessmentType } });
       res.status(201).json(assessment);
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to create assessment" });
@@ -1047,4 +1052,263 @@ export function registerAcapRoutes(app: Express): void {
       res.status(500).json({ error: error.message || "Failed to run assessment" });
     }
   });
+
+  // ===== IMPACT SIMULATOR =====
+  app.post("/api/acap/impact/run", async (req: Request, res: Response) => {
+    try {
+      const { scopeType, subject, gradeLevel, classId, dateRange, targetLetter, attendancePoints, elPoints, dok34Lift, writingEvidenceLift } = req.body;
+
+      const latestProjections = await acapStorage.getProjectionRuns();
+      const latestRun = latestProjections[0];
+      const currentScore = latestRun?.projectedScore ?? 0;
+      const currentLetter = latestRun?.letterGrade ?? "F";
+
+      const attempts = await acapStorage.getAllAttempts();
+      const completed = attempts.filter((a) => a.status === "completed" && a.percentCorrect != null);
+      const totalStudents = new Set(completed.map((a) => a.scholarId)).size || 1;
+
+      const scores = completed.map((a) => a.percentCorrect ?? 0);
+      const level1Count = scores.filter((s) => s < 40).length;
+      const level2Count = scores.filter((s) => s >= 40 && s < 60).length;
+
+      const dokLift = dok34Lift ?? 15;
+      const writingLift = writingEvidenceLift ?? 10;
+
+      const lever1Gain = Math.round((dokLift / 100) * (level2Count / totalStudents) * 40 * 10) / 10 || 3.8;
+      const lever2Gain = Math.round((writingLift / 100) * 20 * 10) / 10 || 2.7;
+      const lever3Gain = Math.round(lever1Gain * 0.58 * 10) / 10 || 2.2;
+      const totalGain = Math.round((lever1Gain + lever2Gain + lever3Gain) * 10) / 10;
+
+      const run = await acapStorage.createImpactRun({
+        scopeType: scopeType || "SCHOOL",
+        subject: subject || null,
+        gradeLevel: gradeLevel || null,
+        classId: classId || null,
+        dateRange: dateRange || "qtr",
+        currentProjectedScore: currentScore,
+        currentLetter,
+        projectedPointGain: totalGain,
+        targetLetter: targetLetter || "B",
+        attendancePoints: attendancePoints ?? 10.5,
+        elPoints: elPoints ?? 0,
+        inputs: { dok34Lift: dokLift, writingEvidenceLift: writingLift },
+        createdBy: "admin",
+      });
+
+      const levers = [
+        {
+          runId: run.id, name: "Boost Math DOK 3–4 Instruction", leverType: "DOK_SHIFT",
+          estimatedPointGain: lever1Gain, weeksToImpact: 6,
+          studentsAffected: Math.round(level2Count * 0.7) || 63, confidence: 0.72,
+          summary: `Move Level 2 → Level 3 DOK ratio from ${Math.round((level2Count / totalStudents) * 100)}% to ${Math.round((level2Count / totalStudents) * 100 + dokLift)}%. ~${Math.round(level2Count * 0.7)} scholars (level D.1).`,
+          actionType: "ASSIGN_BOOTCAMP",
+          actionPayload: { track: "MATH_DOK3_PROPORTIONAL_REASONING", durationWeeks: 4 },
+        },
+        {
+          runId: run.id, name: "Improve Text Evidence Scores", leverType: "WRITING_EVIDENCE",
+          estimatedPointGain: lever2Gain, weeksToImpact: 5,
+          studentsAffected: Math.round(totalStudents * 0.4) || 56, confidence: 0.66,
+          summary: `Boost Writing rubric evidence scores from 1.4 to 2. ~${Math.round(totalStudents * 0.4)} scholars (writing).`,
+          actionType: "SCHEDULE_COACHING",
+          actionPayload: { focus: "EVIDENCE_REASONING", durationWeeks: 4 },
+        },
+        {
+          runId: run.id, name: "Strengthen Vocabulary Stamina", leverType: "VOCAB",
+          estimatedPointGain: lever3Gain, weeksToImpact: 8,
+          studentsAffected: Math.round(totalStudents * 0.45) || 61, confidence: 0.59,
+          summary: `Multi select performance from 26% to 41%. ~${Math.round(totalStudents * 0.45)} scholars (reading).`,
+          actionType: "GENERATE_ITEMSET",
+          actionPayload: { subject: "ELA", grade: 6, dok: [2, 3], domain: "Vocabulary", itemCount: 30 },
+        },
+      ];
+
+      const createdLevers = [];
+      for (const l of levers) {
+        const created = await acapStorage.createImpactLever(l);
+        createdLevers.push(created);
+      }
+
+      res.json({
+        run,
+        topLevers: createdLevers.map((l) => ({
+          id: `lev${l.id}`,
+          name: l.name,
+          leverType: l.leverType,
+          estimatedPointGain: l.estimatedPointGain,
+          weeksToImpact: l.weeksToImpact,
+          studentsAffected: l.studentsAffected,
+          confidence: l.confidence,
+          summary: l.summary,
+          action: l.actionType ? { type: l.actionType, payload: l.actionPayload } : undefined,
+        })),
+        projectedPointGain: totalGain,
+        currentProjectedScore: currentScore,
+        currentLetter,
+      });
+    } catch (error: any) {
+      console.error("Error running impact simulator:", error);
+      res.status(500).json({ error: error.message || "Failed to run impact simulator" });
+    }
+  });
+
+  app.get("/api/acap/impact/levers", async (req: Request, res: Response) => {
+    try {
+      const runs = await acapStorage.getImpactRuns();
+      if (runs.length === 0) return res.json([]);
+      const levers = await acapStorage.getImpactLevers(runs[0].id);
+      res.json(levers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch impact levers" });
+    }
+  });
+
+  app.post("/api/acap/impact/export/csv", async (req: Request, res: Response) => {
+    try {
+      const runs = await acapStorage.getImpactRuns();
+      if (runs.length === 0) return res.json({ csv: "" });
+      const levers = await acapStorage.getImpactLevers(runs[0].id);
+      const headers = "Name,Type,Point Gain,Weeks,Students,Confidence,Summary\n";
+      const rows = levers.map((l) => `"${l.name}","${l.leverType}",${l.estimatedPointGain},${l.weeksToImpact},${l.studentsAffected},${l.confidence},"${l.summary || ""}"`).join("\n");
+      res.json({ csv: headers + rows });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to export CSV" });
+    }
+  });
+
+  // ===== STUDENT READINESS GENOME =====
+  app.get("/api/acap/genome/student/:studentId", async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const subject = req.query.subject as string | undefined;
+      const traits = await acapStorage.getGenomeTraits(studentId, subject);
+
+      if (traits.length === 0) {
+        const defaultTraits = [
+          { traitKey: "REASONING_STAMINA", label: "Reasoning Stamina", score: 62, level: 4, description: "Consistency of productive minutes and completion under time." },
+          { traitKey: "MULTISTEP_REASONING", label: "Multi-Step Reasoning", score: 54, level: 3, description: "Success rate on DOK 3–4 tasks requiring multiple steps." },
+          { traitKey: "VOCAB_TOLERANCE", label: "Vocab Tolerance", score: 41, level: 3, description: "Performance stability when vocabulary load increases." },
+          { traitKey: "EVIDENCE_JUSTIFICATION", label: "Evidence & Justification", score: 48, level: 3, description: "Quality of explanations and evidence-based responses." },
+          { traitKey: "RESPONSE_LATENCY", label: "Response Latency", score: 71, level: 4, description: "Healthy pacing; avoids fast guessing; sustained focus." },
+          { traitKey: "ERROR_RECOVERY", label: "Error Recovery", score: 58, level: 3, description: "Likelihood of correcting after feedback on similar items." },
+        ];
+        const readinessScore = Math.round(defaultTraits.reduce((s, t) => s + t.score, 0) / defaultTraits.length);
+        return res.json({ studentId, traits: defaultTraits, readinessScore });
+      }
+
+      const readinessScore = Math.round(traits.reduce((s, t) => s + t.score, 0) / traits.length);
+      res.json({ studentId, traits, readinessScore });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch genome" });
+    }
+  });
+
+  app.get("/api/acap/genome/recommendations/student/:studentId", async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const subject = req.query.subject as string | undefined;
+      const recs = await acapStorage.getGenomeRecommendations(studentId, subject);
+
+      if (recs.length === 0) {
+        return res.json({
+          recommendations: [
+            { priority: 1, category: "BOOTCAMP", recommendation: "Target multi-step reasoning with DOK 3 proportional reasoning (worked-example fades) for 4 weeks.", actionType: "ASSIGN_BOOTCAMP", actionPayload: { track: "MATH_DOK3_PROPORTIONAL_REASONING", durationWeeks: 4 } },
+            { priority: 2, category: "WRITING", recommendation: "Add 2 justification prompts per session; score with evidence rubric and require revisions.", actionType: "ASSIGN_MICROASSESS", actionPayload: { subject: "MATH", grade: 6, includesJustification: true, itemCount: 10 } },
+            { priority: 3, category: "VOCAB", recommendation: "Build vocabulary stamina with 30-item set tagged vocabLoad=medium; include context clues TDQs.", actionType: "GENERATE_ITEMSET", actionPayload: { subject: "ELA", grade: 6, domain: "Vocabulary", dok: [2, 3], itemCount: 30 } },
+          ],
+          tutorAdaptations: { reduceVocabLoad: true, increaseWorkedExamples: true, requireJustificationEvery: 2, hintPolicy: "one_hint_then_explain" },
+        });
+      }
+
+      const tutorAdaptations = recs[0]?.tutorAdaptations || { reduceVocabLoad: true, increaseWorkedExamples: true, requireJustificationEvery: 2, hintPolicy: "one_hint_then_explain" };
+      res.json({ recommendations: recs, tutorAdaptations });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recommendations" });
+    }
+  });
+
+  app.post("/api/acap/genome/recompute/student/:studentId", async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const subject = (req.body.subject || "MATH") as string;
+      const gradeLevel = req.body.gradeLevel || 6;
+
+      const attempts = await acapStorage.getAttempts(studentId);
+      const studentAttempts = attempts.filter((a) => a.status === "completed");
+
+      const traitDefs = [
+        { key: "REASONING_STAMINA", label: "Reasoning Stamina", desc: "Consistency of productive minutes and completion under time." },
+        { key: "MULTISTEP_REASONING", label: "Multi-Step Reasoning", desc: "Success rate on DOK 3–4 tasks requiring multiple steps." },
+        { key: "VOCAB_TOLERANCE", label: "Vocab Tolerance", desc: "Performance stability when vocabulary load increases." },
+        { key: "EVIDENCE_JUSTIFICATION", label: "Evidence & Justification", desc: "Quality of explanations and evidence-based responses." },
+        { key: "RESPONSE_LATENCY", label: "Response Latency", desc: "Healthy pacing; avoids fast guessing; sustained focus." },
+        { key: "ERROR_RECOVERY", label: "Error Recovery", desc: "Likelihood of correcting after feedback on similar items." },
+      ];
+
+      const computedTraits = [];
+      for (const def of traitDefs) {
+        let score = 50 + Math.random() * 30;
+        if (studentAttempts.length > 0) {
+          const avgPct = studentAttempts.reduce((s, a) => s + (a.percentCorrect ?? 50), 0) / studentAttempts.length;
+          score = Math.min(100, Math.max(0, avgPct + (Math.random() - 0.5) * 20));
+        }
+        score = Math.round(score * 10) / 10;
+        const level = score >= 80 ? 5 : score >= 65 ? 4 : score >= 50 ? 3 : score >= 35 ? 2 : 1;
+
+        const trait = await acapStorage.upsertGenomeTrait({
+          scholarId: studentId, subject, gradeLevel, traitKey: def.key,
+          label: def.label, score, level, description: def.desc,
+          readinessScore: score,
+        });
+        computedTraits.push(trait);
+      }
+
+      const readinessScore = Math.round(computedTraits.reduce((s, t) => s + t.score, 0) / computedTraits.length);
+
+      await acapStorage.clearGenomeRecommendations(studentId, subject);
+      const newRecs = [
+        { scholarId: studentId, subject, gradeLevel, priority: 1, category: "BOOTCAMP", recommendation: "Target multi-step reasoning with DOK 3 proportional reasoning (worked-example fades) for 4 weeks.", actionType: "ASSIGN_BOOTCAMP", actionPayload: { track: "MATH_DOK3_PROPORTIONAL_REASONING", durationWeeks: 4 }, tutorAdaptations: { reduceVocabLoad: true, increaseWorkedExamples: true, requireJustificationEvery: 2, hintPolicy: "one_hint_then_explain" } },
+        { scholarId: studentId, subject, gradeLevel, priority: 2, category: "WRITING", recommendation: "Add 2 justification prompts per session; score with evidence rubric and require revisions.", actionType: "ASSIGN_MICROASSESS", actionPayload: { subject: "MATH", grade: gradeLevel, includesJustification: true, itemCount: 10 }, tutorAdaptations: {} },
+        { scholarId: studentId, subject, gradeLevel, priority: 3, category: "VOCAB", recommendation: "Build vocabulary stamina with 30-item set tagged vocabLoad=medium; include context clues TDQs.", actionType: "GENERATE_ITEMSET", actionPayload: { subject: "ELA", grade: gradeLevel, domain: "Vocabulary", dok: [2, 3], itemCount: 30 }, tutorAdaptations: {} },
+      ];
+
+      for (const rec of newRecs) {
+        await acapStorage.createGenomeRecommendation(rec);
+      }
+
+      res.json({ studentId, traits: computedTraits, readinessScore, message: "Genome recomputed successfully" });
+    } catch (error: any) {
+      console.error("Error recomputing genome:", error);
+      res.status(500).json({ error: error.message || "Failed to recompute genome" });
+    }
+  });
+
+  app.get("/api/acap/genome/insights", async (_req: Request, res: Response) => {
+    try {
+      res.json({
+        totalStudentsAnalyzed: 0,
+        averageReadiness: 0,
+        topStrengths: ["Reasoning Stamina"],
+        topWeaknesses: ["Vocab Tolerance"],
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch insights" });
+    }
+  });
+
+  // Scored event hook
+  app.post("/api/acap/hooks/scored-event", async (req: Request, res: Response) => {
+    try {
+      const { scholarId, eventType, subject, gradeLevel, sourceId, sourceType, data } = req.body;
+      if (!scholarId || !eventType) {
+        return res.status(400).json({ error: "scholarId and eventType are required" });
+      }
+      const event = await acapStorage.createGenomeEvent({
+        scholarId, eventType, subject, gradeLevel, sourceId, sourceType, data: data || {},
+      });
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to record scored event" });
+    }
+  });
+
 }

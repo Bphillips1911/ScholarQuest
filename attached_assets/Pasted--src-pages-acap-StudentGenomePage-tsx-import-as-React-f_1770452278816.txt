@@ -1,0 +1,553 @@
+// src/pages/acap/StudentGenomePage.tsx
+import * as React from "react";
+import { useParams } from "wouter"; // if you use wouter; swap to react-router if needed
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dna,
+  TrendingUp,
+  Clock,
+  Brain,
+  BookOpen,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  Wand2,
+  ArrowRight,
+} from "lucide-react";
+
+/**
+ * WIRING NOTES (Agent will implement):
+ * - Fetch genome: GET /api/acap/genome/student/:studentId?subject=&grade=
+ * - Fetch recommendations: GET /api/acap/genome/recommendations/student/:studentId
+ * - Recompute: POST /api/acap/genome/recompute/student/:studentId
+ */
+
+type Subject = "ELA" | "MATH" | "SCI";
+
+type TraitKey =
+  | "REASONING_STAMINA"
+  | "MULTISTEP_REASONING"
+  | "VOCAB_TOLERANCE"
+  | "EVIDENCE_JUSTIFICATION"
+  | "RESPONSE_LATENCY"
+  | "ERROR_RECOVERY";
+
+type Trait = {
+  key: TraitKey;
+  label: string;
+  score: number; // 0-100
+  level: 1 | 2 | 3 | 4 | 5;
+  description: string;
+};
+
+type Recommendation = {
+  priority: number;
+  category: "INSTRUCTION" | "PRACTICE" | "BOOTCAMP" | "WRITING" | "VOCAB";
+  recommendation: string;
+  actionType: "ASSIGN_BOOTCAMP" | "GENERATE_ITEMSET" | "ASSIGN_MICROASSESS" | "COACHING_FOCUS";
+  actionPayload: Record<string, any>;
+};
+
+type TutorAdaptations = {
+  reduceVocabLoad: boolean;
+  increaseWorkedExamples: boolean;
+  requireJustificationEvery: number;
+  hintPolicy: string;
+};
+
+export default function StudentGenomePage() {
+  const params = useParams<{ studentId: string }>();
+  const studentId = params?.studentId ?? "demo";
+
+  // Filters
+  const [subject, setSubject] = React.useState<Subject>("MATH");
+  const [grade, setGrade] = React.useState<string>("6");
+
+  // Data placeholders (Agent wires to API)
+  const [studentName] = React.useState("Dante Adams");
+  const [schoolName] = React.useState("Bush Hills STEAM Academy");
+
+  const [readinessScore, setReadinessScore] = React.useState<number>(68);
+  const [traits, setTraits] = React.useState<Trait[]>([
+    {
+      key: "REASONING_STAMINA",
+      label: "Reasoning Stamina",
+      score: 62,
+      level: 4,
+      description: "Consistency of productive minutes and completion under time.",
+    },
+    {
+      key: "MULTISTEP_REASONING",
+      label: "Multi-Step Reasoning",
+      score: 54,
+      level: 3,
+      description: "Success rate on DOK 3–4 tasks requiring multiple steps.",
+    },
+    {
+      key: "VOCAB_TOLERANCE",
+      label: "Vocab Tolerance",
+      score: 41,
+      level: 3,
+      description: "Performance stability when vocabulary load increases.",
+    },
+    {
+      key: "EVIDENCE_JUSTIFICATION",
+      label: "Evidence & Justification",
+      score: 48,
+      level: 3,
+      description: "Quality of explanations and evidence-based responses.",
+    },
+    {
+      key: "RESPONSE_LATENCY",
+      label: "Response Latency",
+      score: 71,
+      level: 4,
+      description: "Healthy pacing; avoids fast guessing; sustained focus.",
+    },
+    {
+      key: "ERROR_RECOVERY",
+      label: "Error Recovery",
+      score: 58,
+      level: 3,
+      description: "Likelihood of correcting after feedback on similar items.",
+    },
+  ]);
+
+  const [recs, setRecs] = React.useState<Recommendation[]>([
+    {
+      priority: 1,
+      category: "BOOTCAMP",
+      recommendation:
+        "Target multi-step reasoning with DOK 3 proportional reasoning (worked-example fades) for 4 weeks.",
+      actionType: "ASSIGN_BOOTCAMP",
+      actionPayload: { track: "MATH_DOK3_PROPORTIONAL_REASONING", durationWeeks: 4 },
+    },
+    {
+      priority: 2,
+      category: "WRITING",
+      recommendation: "Add 2 justification prompts per session; score with evidence rubric and require revisions.",
+      actionType: "ASSIGN_MICROASSESS",
+      actionPayload: { subject: "MATH", grade: 6, includesJustification: true, itemCount: 10 },
+    },
+    {
+      priority: 3,
+      category: "VOCAB",
+      recommendation: "Build vocabulary stamina with 30-item set tagged vocabLoad=medium; include context clues TDQs.",
+      actionType: "GENERATE_ITEMSET",
+      actionPayload: { subject: "ELA", grade: 6, domain: "Vocabulary", dok: [2, 3], itemCount: 30 },
+    },
+  ]);
+
+  const [tutor, setTutor] = React.useState<TutorAdaptations>({
+    reduceVocabLoad: true,
+    increaseWorkedExamples: true,
+    requireJustificationEvery: 2,
+    hintPolicy: "one_hint_then_explain",
+  });
+
+  const [openActions, setOpenActions] = React.useState(false);
+  const [selectedRec, setSelectedRec] = React.useState<Recommendation | null>(null);
+  const [showAdvanced, setShowAdvanced] = React.useState(false);
+
+  async function recomputeGenome() {
+    // TODO Agent wiring:
+    // await fetch(`/api/acap/genome/recompute/student/${studentId}`, { method: "POST" })
+    // refetch traits/recs
+    await new Promise((r) => setTimeout(r, 500));
+    setReadinessScore((s) => Math.min(100, s + 2));
+  }
+
+  function onDoAction(rec: Recommendation) {
+    setSelectedRec(rec);
+    setOpenActions(true);
+  }
+
+  return (
+    <TooltipProvider>
+      <div className="min-h-screen bg-slate-50">
+        {/* Header */}
+        <div className="border-b bg-white">
+          <div className="mx-auto max-w-7xl px-4 py-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
+                  <Dna className="h-5 w-5" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-semibold tracking-tight">Student Readiness Genome™</h1>
+                  <p className="text-sm text-muted-foreground">
+                    {schoolName} • Student diagnostics that power tutoring, coaching, and growth.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Select value={subject} onValueChange={(v) => setSubject(v as Subject)}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ELA">ELA</SelectItem>
+                    <SelectItem value="MATH">Math</SelectItem>
+                    <SelectItem value="SCI">Science</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={grade} onValueChange={setGrade}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["6", "7", "8"].map((g) => (
+                      <SelectItem key={g} value={g}>
+                        Grade {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button variant="outline" onClick={recomputeGenome} className="gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Refresh Genome
+                </Button>
+
+                <div className="ml-2 flex items-center gap-2 rounded-lg border bg-white px-3 py-2">
+                  <span className="text-xs text-muted-foreground">Advanced</span>
+                  <Switch checked={showAdvanced} onCheckedChange={setShowAdvanced} />
+                </div>
+              </div>
+            </div>
+
+            {/* Student identity strip */}
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12">
+              <Card className="md:col-span-8">
+                <CardContent className="flex items-center gap-4 p-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src="" alt={studentName} />
+                    <AvatarFallback>{studentName.split(" ").map((s) => s[0]).join("")}</AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-lg font-semibold">{studentName}</div>
+                      <Badge variant="secondary">Grade {grade} {subject}</Badge>
+                      <Badge variant="outline">Student ID: {studentId}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Genome combines accuracy, DOK trends, time-on-task, writing evidence, and misconception patterns.
+                    </p>
+                  </div>
+
+                  <div className="w-[220px]">
+                    <div className="mb-1 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Readiness Score</span>
+                      <span className="font-semibold">{readinessScore}/100</span>
+                    </div>
+                    <Progress value={readinessScore} />
+                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <TrendingUp className="h-3.5 w-3.5" /> Trend
+                      </span>
+                      <span>Last 30 days</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="md:col-span-4">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Tutor Adaptations</CardTitle>
+                  <CardDescription className="text-xs">Boot Camp tutor automatically adapts based on traits.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <AdaptationRow label="Reduce vocab load" value={tutor.reduceVocabLoad} />
+                  <AdaptationRow label="More worked examples" value={tutor.increaseWorkedExamples} />
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">Require justification every</span>
+                    <Badge variant="secondary">{tutor.requireJustificationEvery} items</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">Hint policy</span>
+                    <Badge variant="outline">{tutor.hintPolicy}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="mx-auto max-w-7xl px-4 py-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Core Skill tiles + trait rings */}
+            <Card className="lg:col-span-8">
+              <CardHeader>
+                <CardTitle>Core Skill Levels</CardTitle>
+                <CardDescription>Trait-level diagnostics that explain why mastery moves (or stalls).</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {traits.slice(0, 4).map((t) => (
+                    <TraitTile key={t.key} trait={t} />
+                  ))}
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  {traits.slice(4).map((t) => (
+                    <TraitTile key={t.key} trait={t} compact />
+                  ))}
+                </div>
+
+                {showAdvanced && (
+                  <>
+                    <Separator />
+                    <AdvancedGenomePanel />
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Coaching dashboard */}
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Coaching Dashboard</CardTitle>
+                <CardDescription>High-priority actions to accelerate growth.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <ScrollArea className="h-[420px] pr-2">
+                  <div className="space-y-3">
+                    {recs
+                      .sort((a, b) => a.priority - b.priority)
+                      .map((r) => (
+                        <RecommendationCard key={`${r.priority}-${r.category}`} rec={r} onAction={() => onDoAction(r)} />
+                      ))}
+                  </div>
+                </ScrollArea>
+
+                <Separator />
+
+                <Button className="w-full gap-2" variant="outline" onClick={recomputeGenome}>
+                  <Wand2 className="h-4 w-4" />
+                  Regenerate Recommendations
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Action Dialog */}
+        <Dialog open={openActions} onOpenChange={setOpenActions}>
+          <DialogContent className="sm:max-w-[560px]">
+            <DialogHeader>
+              <DialogTitle>Apply Recommendation</DialogTitle>
+              <DialogDescription>
+                Agent will wire this to your existing assignment / Boot Camp / assessment builder flows.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              {selectedRec ? (
+                <Card>
+                  <CardContent className="p-4 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">Priority {selectedRec.priority}</Badge>
+                          <Badge variant="outline">{selectedRec.category}</Badge>
+                        </div>
+                        <p className="mt-2 font-medium">{selectedRec.recommendation}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Action: <span className="font-medium">{selectedRec.actionType}</span>
+                        </p>
+                      </div>
+                      <ArrowRight className="mt-1 h-5 w-5 text-muted-foreground" />
+                    </div>
+
+                    <Separator className="my-3" />
+
+                    <div className="rounded-lg border bg-white p-3 text-xs">
+                      <div className="text-muted-foreground">Action payload (debug)</div>
+                      <pre className="mt-2 overflow-auto whitespace-pre-wrap">
+                        {JSON.stringify(selectedRec.actionPayload, null, 2)}
+                      </pre>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="text-sm text-muted-foreground">No recommendation selected.</div>
+              )}
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setOpenActions(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  // TODO Agent wiring: call correct endpoint or open correct modal based on actionType
+                  setOpenActions(false);
+                }}
+                className="gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Apply Now
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
+  );
+}
+
+function TraitTile({ trait, compact }: { trait: Trait; compact?: boolean }) {
+  const icon = traitIcon(trait.key);
+  const levelLabel = `Level ${trait.level}`;
+  const score = Math.round(trait.score);
+
+  return (
+    <Card className="border-slate-200">
+      <CardContent className={compact ? "p-4" : "p-5"}>
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
+              {icon}
+            </div>
+            <div>
+              <div className="text-sm font-semibold">{trait.label}</div>
+              <p className="mt-1 text-xs text-muted-foreground">{trait.description}</p>
+            </div>
+          </div>
+          <Badge variant="secondary">{levelLabel}</Badge>
+        </div>
+
+        <div className="mt-4">
+          <div className="mb-1 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Score</span>
+            <span className="font-semibold">{score}/100</span>
+          </div>
+          <Progress value={score} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RecommendationCard({ rec, onAction }: { rec: Recommendation; onAction: () => void }) {
+  const icon =
+    rec.category === "BOOTCAMP" ? (
+      <Brain className="h-4 w-4" />
+    ) : rec.category === "WRITING" ? (
+      <BookOpen className="h-4 w-4" />
+    ) : rec.category === "VOCAB" ? (
+      <BookOpen className="h-4 w-4" />
+    ) : rec.category === "INSTRUCTION" ? (
+      <Sparkles className="h-4 w-4" />
+    ) : (
+      <Clock className="h-4 w-4" />
+    );
+
+  return (
+    <Card className="border-slate-200">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-900">
+              {icon}
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">Priority {rec.priority}</Badge>
+                <Badge variant="outline">{rec.category}</Badge>
+              </div>
+              <p className="mt-2 text-sm font-medium">{rec.recommendation}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Action: {rec.actionType}</p>
+            </div>
+          </div>
+          <Button onClick={onAction} className="gap-2">
+            Apply
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AdaptationRow({ label, value }: { label: string; value: boolean }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      {value ? (
+        <Badge className="gap-1" variant="secondary">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          On
+        </Badge>
+      ) : (
+        <Badge className="gap-1" variant="outline">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          Off
+        </Badge>
+      )}
+    </div>
+  );
+}
+
+function AdvancedGenomePanel() {
+  return (
+    <Card className="border-slate-200">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">Advanced Genome Signals (Developer View)</CardTitle>
+        <CardDescription className="text-xs">
+          Agent will wire this to acap_genome_events and show misconception clusters + DOK breakdown trends.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <MiniStat title="DOK 3–4 Accuracy" value="54%" />
+        <MiniStat title="Idle Minutes / Session" value="2.1" />
+        <MiniStat title="Top Misconception" value="Rate vs Ratio" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniStat({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-white p-3">
+      <div className="text-xs text-muted-foreground">{title}</div>
+      <div className="mt-1 text-lg font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function traitIcon(key: TraitKey) {
+  switch (key) {
+    case "REASONING_STAMINA":
+      return <Clock className="h-5 w-5" />;
+    case "MULTISTEP_REASONING":
+      return <Brain className="h-5 w-5" />;
+    case "VOCAB_TOLERANCE":
+      return <BookOpen className="h-5 w-5" />;
+    case "EVIDENCE_JUSTIFICATION":
+      return <Sparkles className="h-5 w-5" />;
+    case "RESPONSE_LATENCY":
+      return <TrendingUp className="h-5 w-5" />;
+    case "ERROR_RECOVERY":
+      return <CheckCircle2 className="h-5 w-5" />;
+    default:
+      return <Dna className="h-5 w-5" />;
+  }
+}

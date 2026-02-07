@@ -1,0 +1,85 @@
+Implement two new premium features inside PBIS House of Champions ACAP module:
+(1) Instructional Impact Simulator™ and (2) Student Readiness Genome™.
+
+GOALS:
+- Impact Simulator shows the top 3 instructional levers that maximize projected report score gains, with point gain, weeks to impact, and actions to assign interventions.
+- Student Readiness Genome builds a student learning-traits profile (stamina, multistep reasoning, vocab tolerance, justification quality, response latency, error recovery) and generates actionable recommendations and tutor adaptations.
+
+ROUTES:
+Teacher:
+- /teacher/acap/impact
+- /teacher/acap/student/:studentId/genome
+Admin:
+- /admin/acap/impact
+- /admin/acap/genome
+
+UI:
+Match the provided mock: Impact Simulator has a big “Projected Point Gain” tile, top 3 lever cards with point gains, assign/launch buttons, and export buttons.
+Genome page has Core Skill tiles, trait icon row, trend chart, coaching dashboard, and tutor adaptations panel.
+
+DB TABLES (Postgres):
+Create:
+- acap_genome_traits
+- acap_genome_events
+- acap_genome_recommendations
+- acap_impact_levers
+- acap_impact_runs
+Integrate with existing ACAP attempt/session tables.
+
+API:
+Genome:
+- GET /api/acap/genome/student/:studentId
+- POST /api/acap/genome/recompute/student/:studentId
+- GET /api/acap/genome/insights
+- GET /api/acap/genome/recommendations/student/:studentId
+Impact:
+- POST /api/acap/impact/run
+- GET /api/acap/impact/levers
+- POST /api/acap/impact/export/pdf
+- POST /api/acap/impact/export/csv
+Hook:
+- POST /api/acap/hooks/scored-event (called after any assessment/daily/bootcamp scoring)
+
+COMPUTATION:
+Genome Trait scores (0–100) computed from events:
+- REASONING_STAMINA: active time consistency, idle penalties
+- MULTISTEP_REASONING: DOK3–4 correctness weighted
+- VOCAB_TOLERANCE: correctness on items tagged vocabLoad medium/high
+- EVIDENCE_JUSTIFICATION: writing + constructed response rubric subscores
+- RESPONSE_LATENCY: median seconds per item and fast-guess penalties
+- ERROR_RECOVERY: probability of correct after wrong on similar skill
+Convert to 1–5 levels.
+Generate recommendations + tutor adaptations and store.
+
+Impact Simulator:
+Use current Projected Score model already in Admin ACAP.
+Compute Point Gain = ProjectedScore(new) – ProjectedScore(current).
+Simulate levers:
+- DOK shift (increase DOK3–4 accuracy)
+- Domain mastery shift (move N students L2→L3)
+- Writing evidence improvement
+- Boot Camp track effect (expected distribution change)
+Return top 3 levers with actions to create item sets, assign boot camp, create micro-assessments.
+Include “students needed” calculations for next letter grade thresholds.
+
+AI PROMPTS:
+Add strict JSON-only prompt roles:
+- Genome Recommender
+- Impact Levers Generator
+Validate outputs with Zod.
+
+EXPORTS:
+Implement PDF/CSV export for levers and action plan.
+
+INTEGRATION:
+After any scoring event, call the scored-event hook to write genome events and update traits.
+Cache impact levers nightly and on-demand.
+
+DELIVER:
+- DB migrations
+- backend endpoints
+- React pages/components
+- role guarding
+- export
+- seed sample trait definitions and a demo lever set
+Do not break existing PBIS or ACAP functionality.

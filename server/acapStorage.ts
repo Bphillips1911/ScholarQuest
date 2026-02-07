@@ -5,14 +5,17 @@ import {
   acapAssessments, acapAssignments, acapAttempts, acapItemResponses,
   acapMasteryTracking, acapGrowthSnapshots, acapBootcampSessions, acapAuditLog,
   acapProjectionRuns, acapProjectionSnapshots, acapSchoolwideAssessments, acapSchoolwideResults,
+  acapImpactRuns, acapImpactLevers, acapGenomeTraits, acapGenomeEvents, acapGenomeRecommendations,
   type AcapStandard, type AcapBlueprint, type AcapPassage, type AcapItem,
   type AcapAssessment, type AcapAssignment, type AcapAttempt, type AcapItemResponse,
   type AcapMasteryTracking, type AcapGrowthSnapshot, type AcapBootcampSession, type AcapAuditLog,
   type AcapProjectionRun, type AcapProjectionSnapshot, type AcapSchoolwideAssessment, type AcapSchoolwideResult,
+  type AcapImpactRun, type AcapImpactLever, type AcapGenomeTrait, type AcapGenomeEvent, type AcapGenomeRecommendation,
   type InsertAcapStandard, type InsertAcapBlueprint, type InsertAcapPassage, type InsertAcapItem,
   type InsertAcapAssessment, type InsertAcapAssignment, type InsertAcapAttempt, type InsertAcapItemResponse,
   type InsertAcapMasteryTracking, type InsertAcapGrowthSnapshot, type InsertAcapBootcampSession, type InsertAcapAuditLog,
   type InsertAcapProjectionRun, type InsertAcapProjectionSnapshot, type InsertAcapSchoolwideAssessment, type InsertAcapSchoolwideResult,
+  type InsertAcapImpactRun, type InsertAcapImpactLever, type InsertAcapGenomeTrait, type InsertAcapGenomeEvent, type InsertAcapGenomeRecommendation,
 } from "@shared/schema";
 
 export const acapStorage = {
@@ -155,6 +158,9 @@ export const acapStorage = {
   },
 
   // Attempts
+  async getAllAttempts(): Promise<AcapAttempt[]> {
+    return db.select().from(acapAttempts).orderBy(desc(acapAttempts.startedAt));
+  },
   async getAttempts(scholarId: string, assessmentId?: number): Promise<AcapAttempt[]> {
     const conditions: any[] = [eq(acapAttempts.scholarId, scholarId)];
     if (assessmentId) conditions.push(eq(acapAttempts.assessmentId, assessmentId));
@@ -267,10 +273,6 @@ export const acapStorage = {
     };
   },
 
-  async getAllAttempts(): Promise<AcapAttempt[]> {
-    return db.select().from(acapAttempts).orderBy(desc(acapAttempts.startedAt));
-  },
-
   async getAllMastery(): Promise<AcapMasteryTracking[]> {
     return db.select().from(acapMasteryTracking);
   },
@@ -343,5 +345,80 @@ export const acapStorage = {
   async createSchoolwideResult(data: InsertAcapSchoolwideResult): Promise<AcapSchoolwideResult> {
     const [r] = await db.insert(acapSchoolwideResults).values(data).returning();
     return r;
+  },
+
+  // Impact Simulator
+  async getImpactRuns(): Promise<AcapImpactRun[]> {
+    return db.select().from(acapImpactRuns).orderBy(desc(acapImpactRuns.createdAt));
+  },
+  async getImpactRun(id: number): Promise<AcapImpactRun | undefined> {
+    const [r] = await db.select().from(acapImpactRuns).where(eq(acapImpactRuns.id, id));
+    return r;
+  },
+  async createImpactRun(data: InsertAcapImpactRun): Promise<AcapImpactRun> {
+    const [r] = await db.insert(acapImpactRuns).values(data).returning();
+    return r;
+  },
+  async getImpactLevers(runId: number): Promise<AcapImpactLever[]> {
+    return db.select().from(acapImpactLevers).where(eq(acapImpactLevers.runId, runId)).orderBy(desc(acapImpactLevers.estimatedPointGain));
+  },
+  async createImpactLever(data: InsertAcapImpactLever): Promise<AcapImpactLever> {
+    const [l] = await db.insert(acapImpactLevers).values(data).returning();
+    return l;
+  },
+
+  // Genome Traits
+  async getGenomeTraits(scholarId: string, subject?: string): Promise<AcapGenomeTrait[]> {
+    if (subject) {
+      return db.select().from(acapGenomeTraits).where(and(eq(acapGenomeTraits.scholarId, scholarId), eq(acapGenomeTraits.subject, subject)));
+    }
+    return db.select().from(acapGenomeTraits).where(eq(acapGenomeTraits.scholarId, scholarId));
+  },
+  async upsertGenomeTrait(data: InsertAcapGenomeTrait): Promise<AcapGenomeTrait> {
+    const existing = await db.select().from(acapGenomeTraits).where(and(
+      eq(acapGenomeTraits.scholarId, data.scholarId),
+      eq(acapGenomeTraits.traitKey, data.traitKey),
+      eq(acapGenomeTraits.subject, data.subject)
+    ));
+    if (existing.length > 0) {
+      const [u] = await db.update(acapGenomeTraits).set({ ...data, updatedAt: new Date() }).where(eq(acapGenomeTraits.id, existing[0].id)).returning();
+      return u;
+    }
+    const [t] = await db.insert(acapGenomeTraits).values(data).returning();
+    return t;
+  },
+
+  // Genome Events
+  async getGenomeEvents(scholarId: string): Promise<AcapGenomeEvent[]> {
+    return db.select().from(acapGenomeEvents).where(eq(acapGenomeEvents.scholarId, scholarId)).orderBy(desc(acapGenomeEvents.createdAt));
+  },
+  async createGenomeEvent(data: InsertAcapGenomeEvent): Promise<AcapGenomeEvent> {
+    const [e] = await db.insert(acapGenomeEvents).values(data).returning();
+    return e;
+  },
+
+  // Genome Recommendations
+  async getGenomeRecommendations(scholarId: string, subject?: string): Promise<AcapGenomeRecommendation[]> {
+    if (subject) {
+      return db.select().from(acapGenomeRecommendations).where(and(
+        eq(acapGenomeRecommendations.scholarId, scholarId),
+        eq(acapGenomeRecommendations.subject, subject),
+        eq(acapGenomeRecommendations.isActive, true)
+      )).orderBy(acapGenomeRecommendations.priority);
+    }
+    return db.select().from(acapGenomeRecommendations).where(and(
+      eq(acapGenomeRecommendations.scholarId, scholarId),
+      eq(acapGenomeRecommendations.isActive, true)
+    )).orderBy(acapGenomeRecommendations.priority);
+  },
+  async createGenomeRecommendation(data: InsertAcapGenomeRecommendation): Promise<AcapGenomeRecommendation> {
+    const [r] = await db.insert(acapGenomeRecommendations).values(data).returning();
+    return r;
+  },
+  async clearGenomeRecommendations(scholarId: string, subject: string): Promise<void> {
+    await db.update(acapGenomeRecommendations).set({ isActive: false }).where(and(
+      eq(acapGenomeRecommendations.scholarId, scholarId),
+      eq(acapGenomeRecommendations.subject, subject)
+    ));
   },
 };

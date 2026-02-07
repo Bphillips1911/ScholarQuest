@@ -16,11 +16,12 @@ import {
   Plus, Loader2, CheckCircle, Clock, AlertTriangle, Eye,
   Database, FileText, History, Check, X, Sparkles, Users,
   GraduationCap, Zap, Activity, TrendingUp, Layers, PlayCircle,
-  ClipboardList, Send, Award, Filter, Download, PieChart
+  ClipboardList, Send, Award, Filter, Download, PieChart, Dna
 } from "lucide-react";
 import ProjectedAcapScoreTab from "@/components/admin/ProjectedAcapScoreTab";
-
-type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp" | "projected-score";
+import ImpactSimulatorTab from "@/components/admin/ImpactSimulatorTab";
+import StudentGenomeTab from "@/components/admin/StudentGenomeTab";
+type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome";
 
 export default function AdminAcap() {
   const [, setLocation] = useLocation();
@@ -72,6 +73,8 @@ export default function AdminAcap() {
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "bootcamp", label: "Boot Camp", icon: GraduationCap },
     { id: "projected-score", label: "Projected Score", icon: TrendingUp },
+    { id: "impact-simulator", label: "Impact Simulator", icon: Sparkles },
+    { id: "student-genome", label: "Student Genome", icon: Dna },
   ];
 
   return (
@@ -121,6 +124,8 @@ export default function AdminAcap() {
         {activeTab === "reports" && <ReportsTab />}
         {activeTab === "bootcamp" && <BootCampTab />}
         {activeTab === "projected-score" && <ProjectedAcapScoreTab />}
+        {activeTab === "impact-simulator" && <ImpactSimulatorTab />}
+        {activeTab === "student-genome" && <StudentGenomeTab />}
       </div>
     </div>
   );

@@ -55,6 +55,17 @@ Preferred communication style: Simple, everyday language.
   - AI-Powered Adaptive Recommendation Engine: Personalized learning insights with implementation tracking and success metrics
 - **Student Achievement System**: Full gamification with experience points, achievement levels, category filtering, progress visualization, and integration with student dashboard navigation.
 - **Staff Champions Awards**: Recognition program for teachers and staff with role-based admin access (Dr. Phillips and Dr. Tiffani only). Features separate point categories for teachers (15 categories) and staff (12 categories), auto-refresh functionality, and comprehensive tracking. Staff members include secretaries, nurses, bookkeeper, CNP staff, ISS facilitator, custodians, and SRO with dedicated recognition categories.
+- **ACAP Assessment System**: Alabama Comprehensive Assessment Program with AI-powered item generation, adaptive learning, and personalized boot camp tutoring for grades 6-8. Features:
+  - Standards-based assessment aligned to ELA and Math ACAP blueprints with DOK 2-4 rigor
+  - AI Item Generator (gpt-4o) for MC/TEI/CR items and passage generation
+  - Auto-Grader with rubric scoring for constructed response items
+  - Boot Camp Tutor for personalized adaptive learning with scaffolding
+  - Mastery tracking (mastered/proficient/developing/beginning) with growth snapshots
+  - Teacher portal: assignment creation, question bank management, AI generation, class reports
+  - Student portal: mastery map visualization, assessment taking, boot camp sessions, growth tracking
+  - Admin portal: standards/blueprint management, question bank governance, comprehensive audit logs
+  - Schema: 12 tables (acap_standards, acap_blueprints, acap_items, acap_passages, acap_assessments, acap_assignments, acap_attempts, acap_item_responses, acap_mastery_tracking, acap_growth_snapshots, acap_bootcamp_sessions, acap_audit_log)
+  - Files: server/acapRoutes.ts, server/acapStorage.ts, server/services/acapAiService.ts, client/src/pages/teacher-acap.tsx, student-acap.tsx, admin-acap.tsx
 
 # External Dependencies
 

@@ -25,6 +25,7 @@ import {
   sendParentReflectionApproval
 } from "./emailService";
 import { registerSELRoutes } from "./selRoutes";
+import { registerAcapRoutes } from "./acapRoutes";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -258,6 +259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register SEL routes
   registerSELRoutes(app);
+
+  // Register ACAP routes
+  registerAcapRoutes(app);
 
   // Real-time updates endpoint (Server-Sent Events)
   const clients: { res: any; id: string; type?: string }[] = [];

@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameModal } from "@/components/games/GameModal";
 import { ReflectionLogs } from "@/components/admin/ReflectionLogs";
-import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Search, X, UserX, Upload, TrendingUp } from "lucide-react";
+import { Download, RefreshCw, UserPlus, Plus, CheckCircle, Clock, Users, GraduationCap, Award, LogOut, User, MessageSquare, Send, Reply, Camera, Image, Palette, Eye, Mail, TestTube, BarChart3, Brain, FileText, Trophy, Search, X, UserX, Upload, TrendingUp, BookOpen } from "lucide-react";
 import { PBISCategorySelector } from "@/components/PBISCategorySelector";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AdminTeacherViewer } from "@/components/AdminTeacherViewer";
@@ -2361,6 +2361,19 @@ export default function AdminNew() {
                           Parent Portal Info
                         </div>
                         <p className="text-sm text-gray-300 mt-1">Parent setup instructions</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => window.location.href = '/admin-acap'}
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <BookOpen className="mr-2 h-4 w-4" />
+                          ACAP Administration
+                        </div>
+                        <p className="text-sm text-indigo-200 mt-1">Standards, blueprints & assessment management</p>
                       </div>
                     </Button>
                     

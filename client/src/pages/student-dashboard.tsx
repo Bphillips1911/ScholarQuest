@@ -718,6 +718,17 @@ function StudentDashboardContent() {
               <InteractiveScale>
                 <Button 
                   variant="outline" 
+                  onClick={() => setLocation("/student-acap")}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400 hover:from-indigo-600 hover:to-purple-600"
+                  data-testid="button-acap-skills"
+                >
+                  <Brain className="h-4 w-4" />
+                  <span>ACAP Skills</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
                   onClick={() => setThemesModalOpen(true)}
                   className="flex items-center space-x-2"
                   data-testid="button-themes"

@@ -55,6 +55,9 @@ import Tutorial from "@/pages/tutorial";
 import NotFound from "@/pages/not-found";
 import MainLanding from "@/pages/main-landing";
 import AdvancedUIShowcase from "@/pages/advanced-ui-showcase";
+import TeacherAcap from "@/pages/teacher-acap";
+import StudentAcap from "@/pages/student-acap";
+import AdminAcap from "@/pages/admin-acap";
 
 function Router() {
   return (
@@ -82,6 +85,7 @@ function Router() {
         <Route path="/student-login" component={StudentLogin} />
         <Route path="/student-signup" component={StudentSignup} />
         <Route path="/student-dashboard" component={StudentDashboard} />
+        <Route path="/student-acap" component={StudentAcap} />
         <Route path="/student-mood-tracker" component={StudentMoodTracker} />
         <Route path="/student-learning-path" component={StudentLearningPath} />
         <Route path="/student-skill-tree" component={StudentSkillTree} />
@@ -89,6 +93,7 @@ function Router() {
         <Route path="/student-achievements" component={StudentAchievements} />
         <Route path="/gamified-learning" component={GamifiedLearning} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
+        <Route path="/teacher-acap" component={TeacherAcap} />
         <Route path="/teacher-messages" component={TeacherMessages} />
         <Route path="/teacher-student-view/:studentId" component={TeacherStudentView} />
         <Route path="/teacher-student-view" component={TeacherStudentView} />
@@ -99,6 +104,7 @@ function Router() {
         <Route path="/admin-pbis" component={PBIS} />
         <Route path="/admin-sorting" component={HouseSorting} />
         <Route path="/admin-qr" component={AdminQR} />
+        <Route path="/admin-acap" component={AdminAcap} />
         
         {/* Main app routes with navigation */}
         <Route>

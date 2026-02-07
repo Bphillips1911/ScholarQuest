@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import schoolLogoPath from "@assets/BHSA Mustangs Crest_1754722733103.jpg";
-import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain, AlertTriangle, CheckCircle2, UserPlus, Check, X } from "lucide-react";
+import { LogOut, Users, Award, Plus, MessageCircle, UserX, Clock, Send, Home, BookOpen, Trophy, Calendar, Heart, FileText, Shuffle, Camera, Image, Download, ChevronDown, Palette, Edit3, Search, MessageSquare, Loader2, Brain, AlertTriangle, CheckCircle2, UserPlus, Check, X, Target } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 // Tabs removed - using parent-portal style navigation
@@ -1632,6 +1632,15 @@ export default function TeacherDashboard() {
             >
               <Brain className="h-4 w-4" />
               <span>SEL</span>
+            </button>
+            <button
+              onClick={() => setLocation('/teacher-acap')}
+              className="px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
+              data-testid="tab-acap"
+            >
+              <Target className="h-4 w-4" />
+              <span className="hidden sm:inline">ACAP Skills</span>
+              <span className="sm:hidden">ACAP</span>
             </button>
             <button
               onClick={() => setActiveTab('student-export')}

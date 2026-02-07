@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, uuid, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean, uuid, jsonb, serial, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -1054,4 +1054,215 @@ export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
 export type InsertTeacherChampionPoints = z.infer<typeof insertTeacherChampionPointsSchema>;
 export type InsertStaffChampionPoints = z.infer<typeof insertStaffChampionPointsSchema>;
 
+// ========================
+// ACAP Module Tables
+// ========================
 
+export const acapStandards = pgTable("acap_standards", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  domain: varchar("domain", { length: 100 }).notNull(),
+  subdomain: varchar("subdomain", { length: 200 }),
+  gradeLevel: integer("grade_level").notNull(),
+  description: text("description").notNull(),
+  dokLevels: jsonb("dok_levels").$type<number[]>().notNull().default([2, 3, 4]),
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+export const acapBlueprints = pgTable("acap_blueprints", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  gradeLevel: integer("grade_level").notNull(),
+  subject: varchar("subject", { length: 50 }).notNull(),
+  standardIds: jsonb("standard_ids").$type<number[]>().notNull().default([]),
+  dokDistribution: jsonb("dok_distribution").$type<Record<string, number>>().notNull().default({}),
+  totalItems: integer("total_items").notNull().default(30),
+  timeLimitMinutes: integer("time_limit_minutes").notNull().default(60),
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+export const acapPassages = pgTable("acap_passages", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 300 }).notNull(),
+  content: text("content").notNull(),
+  genre: varchar("genre", { length: 50 }),
+  lexileLevel: integer("lexile_level"),
+  gradeLevel: integer("grade_level").notNull(),
+  standardId: integer("standard_id").references(() => acapStandards.id),
+  aiGenerated: boolean("ai_generated").notNull().default(false),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapItems = pgTable("acap_items", {
+  id: serial("id").primaryKey(),
+  standardId: integer("standard_id").references(() => acapStandards.id).notNull(),
+  blueprintId: integer("blueprint_id").references(() => acapBlueprints.id),
+  passageId: integer("passage_id").references(() => acapPassages.id),
+  itemType: varchar("item_type", { length: 30 }).notNull(),
+  dokLevel: integer("dok_level").notNull(),
+  stem: text("stem").notNull(),
+  options: jsonb("options").$type<{ key: string; text: string; }[]>().default([]),
+  correctAnswer: jsonb("correct_answer").$type<any>().notNull(),
+  rubric: jsonb("rubric").$type<any>(),
+  explanation: text("explanation"),
+  difficulty: real("difficulty").default(0.5),
+  discrimination: real("discrimination").default(1.0),
+  aiGenerated: boolean("ai_generated").notNull().default(false),
+  reviewStatus: varchar("review_status", { length: 20 }).notNull().default("pending"),
+  reviewedBy: varchar("reviewed_by"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapAssessments = pgTable("acap_assessments", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 300 }).notNull(),
+  assessmentType: varchar("assessment_type", { length: 20 }).notNull(),
+  blueprintId: integer("blueprint_id").references(() => acapBlueprints.id),
+  gradeLevel: integer("grade_level").notNull(),
+  subject: varchar("subject", { length: 50 }).notNull(),
+  itemIds: jsonb("item_ids").$type<number[]>().notNull().default([]),
+  timeLimitMinutes: integer("time_limit_minutes").default(60),
+  isAdaptive: boolean("is_adaptive").notNull().default(false),
+  settings: jsonb("settings").$type<Record<string, any>>().default({}),
+  createdBy: varchar("created_by").references(() => teacherAuth.id),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapAssignments = pgTable("acap_assignments", {
+  id: serial("id").primaryKey(),
+  assessmentId: integer("assessment_id").references(() => acapAssessments.id).notNull(),
+  teacherId: varchar("teacher_id").references(() => teacherAuth.id).notNull(),
+  targetType: varchar("target_type", { length: 20 }).notNull(),
+  targetIds: jsonb("target_ids").$type<string[]>().notNull().default([]),
+  dueDate: timestamp("due_date"),
+  startDate: timestamp("start_date").defaultNow(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapAttempts = pgTable("acap_attempts", {
+  id: serial("id").primaryKey(),
+  assignmentId: integer("assignment_id").references(() => acapAssignments.id),
+  assessmentId: integer("assessment_id").references(() => acapAssessments.id).notNull(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("in_progress"),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  rawScore: real("raw_score"),
+  scaledScore: real("scaled_score"),
+  percentCorrect: real("percent_correct"),
+  dokBreakdown: jsonb("dok_breakdown").$type<Record<string, any>>().default({}),
+  standardBreakdown: jsonb("standard_breakdown").$type<Record<string, any>>().default({}),
+  adaptiveState: jsonb("adaptive_state").$type<Record<string, any>>().default({}),
+  timeSpentSeconds: integer("time_spent_seconds"),
+});
+
+export const acapItemResponses = pgTable("acap_item_responses", {
+  id: serial("id").primaryKey(),
+  attemptId: integer("attempt_id").references(() => acapAttempts.id).notNull(),
+  itemId: integer("item_id").references(() => acapItems.id).notNull(),
+  response: jsonb("response").$type<any>(),
+  isCorrect: boolean("is_correct"),
+  score: real("score"),
+  maxScore: real("max_score").default(1),
+  aiGradingResult: jsonb("ai_grading_result").$type<Record<string, any>>(),
+  timeSpentSeconds: integer("time_spent_seconds"),
+  sequenceNumber: integer("sequence_number").notNull(),
+  respondedAt: timestamp("responded_at").defaultNow(),
+});
+
+export const acapMasteryTracking = pgTable("acap_mastery_tracking", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  standardId: integer("standard_id").references(() => acapStandards.id).notNull(),
+  masteryLevel: varchar("mastery_level", { length: 30 }).notNull().default("not_started"),
+  currentScore: real("current_score").default(0),
+  attemptsCount: integer("attempts_count").default(0),
+  lastAttemptDate: timestamp("last_attempt_date"),
+  history: jsonb("history").$type<any[]>().default([]),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const acapGrowthSnapshots = pgTable("acap_growth_snapshots", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  snapshotType: varchar("snapshot_type", { length: 20 }).notNull(),
+  assessmentId: integer("assessment_id").references(() => acapAssessments.id),
+  overallScore: real("overall_score"),
+  domainScores: jsonb("domain_scores").$type<Record<string, number>>().default({}),
+  standardScores: jsonb("standard_scores").$type<Record<string, number>>().default({}),
+  growthFromBaseline: real("growth_from_baseline"),
+  riskLevel: varchar("risk_level", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapBootcampSessions = pgTable("acap_bootcamp_sessions", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  standardId: integer("standard_id").references(() => acapStandards.id).notNull(),
+  sessionType: varchar("session_type", { length: 30 }).notNull().default("tutoring"),
+  messages: jsonb("messages").$type<{ role: string; content: string; timestamp: string; }[]>().default([]),
+  practiceItems: jsonb("practice_items").$type<any[]>().default([]),
+  performanceSummary: jsonb("performance_summary").$type<Record<string, any>>(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+});
+
+export const acapAuditLog = pgTable("acap_audit_log", {
+  id: serial("id").primaryKey(),
+  action: varchar("action", { length: 100 }).notNull(),
+  entityType: varchar("entity_type", { length: 50 }).notNull(),
+  entityId: integer("entity_id"),
+  userId: varchar("user_id"),
+  userRole: varchar("user_role", { length: 30 }),
+  details: jsonb("details").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ACAP Insert Schemas
+export const insertAcapStandardSchema = createInsertSchema(acapStandards).omit({ id: true });
+export const insertAcapBlueprintSchema = createInsertSchema(acapBlueprints).omit({ id: true });
+export const insertAcapPassageSchema = createInsertSchema(acapPassages).omit({ id: true, createdAt: true });
+export const insertAcapItemSchema = createInsertSchema(acapItems).omit({ id: true, createdAt: true });
+export const insertAcapAssessmentSchema = createInsertSchema(acapAssessments).omit({ id: true, createdAt: true });
+export const insertAcapAssignmentSchema = createInsertSchema(acapAssignments).omit({ id: true, createdAt: true });
+export const insertAcapAttemptSchema = createInsertSchema(acapAttempts).omit({ id: true });
+export const insertAcapItemResponseSchema = createInsertSchema(acapItemResponses).omit({ id: true, respondedAt: true });
+export const insertAcapMasterySchema = createInsertSchema(acapMasteryTracking).omit({ id: true, updatedAt: true });
+export const insertAcapGrowthSnapshotSchema = createInsertSchema(acapGrowthSnapshots).omit({ id: true, createdAt: true });
+export const insertAcapBootcampSessionSchema = createInsertSchema(acapBootcampSessions).omit({ id: true, startedAt: true });
+export const insertAcapAuditLogSchema = createInsertSchema(acapAuditLog).omit({ id: true, createdAt: true });
+
+// ACAP Type Exports
+export type AcapStandard = typeof acapStandards.$inferSelect;
+export type AcapBlueprint = typeof acapBlueprints.$inferSelect;
+export type AcapPassage = typeof acapPassages.$inferSelect;
+export type AcapItem = typeof acapItems.$inferSelect;
+export type AcapAssessment = typeof acapAssessments.$inferSelect;
+export type AcapAssignment = typeof acapAssignments.$inferSelect;
+export type AcapAttempt = typeof acapAttempts.$inferSelect;
+export type AcapItemResponse = typeof acapItemResponses.$inferSelect;
+export type AcapMasteryTracking = typeof acapMasteryTracking.$inferSelect;
+export type AcapGrowthSnapshot = typeof acapGrowthSnapshots.$inferSelect;
+export type AcapBootcampSession = typeof acapBootcampSessions.$inferSelect;
+export type AcapAuditLog = typeof acapAuditLog.$inferSelect;
+
+export type InsertAcapStandard = z.infer<typeof insertAcapStandardSchema>;
+export type InsertAcapBlueprint = z.infer<typeof insertAcapBlueprintSchema>;
+export type InsertAcapPassage = z.infer<typeof insertAcapPassageSchema>;
+export type InsertAcapItem = z.infer<typeof insertAcapItemSchema>;
+export type InsertAcapAssessment = z.infer<typeof insertAcapAssessmentSchema>;
+export type InsertAcapAssignment = z.infer<typeof insertAcapAssignmentSchema>;
+export type InsertAcapAttempt = z.infer<typeof insertAcapAttemptSchema>;
+export type InsertAcapItemResponse = z.infer<typeof insertAcapItemResponseSchema>;
+export type InsertAcapMasteryTracking = z.infer<typeof insertAcapMasterySchema>;
+export type InsertAcapGrowthSnapshot = z.infer<typeof insertAcapGrowthSnapshotSchema>;
+export type InsertAcapBootcampSession = z.infer<typeof insertAcapBootcampSessionSchema>;
+export type InsertAcapAuditLog = z.infer<typeof insertAcapAuditLogSchema>;
+
+// Re-export chat models for integration
+export { conversations, messages } from "./models/chat";

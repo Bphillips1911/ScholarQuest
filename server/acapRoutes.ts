@@ -1499,6 +1499,65 @@ export function registerAcapRoutes(app: Express): void {
     }
   });
 
+  // Student goals API
+  const goalStore: any[] = [];
+  let goalIdCounter = 1;
+
+  app.get("/api/acap/goals/:scholarId", async (req: Request, res: Response) => {
+    try {
+      const { scholarId } = req.params;
+      const goals = goalStore.filter(g => g.scholarId === scholarId);
+      res.json(goals);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch goals" });
+    }
+  });
+
+  app.post("/api/acap/goals", async (req: Request, res: Response) => {
+    try {
+      const { scholarId, title, reason, type, subject, targetWindow, status } = req.body;
+      if (!scholarId || !title) {
+        return res.status(400).json({ error: "Scholar ID and title are required" });
+      }
+      const goal = {
+        id: `goal_${goalIdCounter++}`,
+        scholarId,
+        title,
+        reason: reason || "",
+        type: type || "OUTCOME",
+        subject: subject || "MATH",
+        targetWindow: targetWindow || "FINAL",
+        status: status || "SUBMITTED",
+        progressPct: 0,
+        nextStep: "Awaiting teacher review",
+        teacherNote: null,
+        createdAt: new Date().toISOString(),
+      };
+      goalStore.push(goal);
+      res.json(goal);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create goal" });
+    }
+  });
+
+  app.put("/api/acap/goals/:goalId", async (req: Request, res: Response) => {
+    try {
+      const { goalId } = req.params;
+      const idx = goalStore.findIndex(g => g.id === goalId);
+      if (idx === -1) return res.status(404).json({ error: "Goal not found" });
+      const { title, reason, type, subject, targetWindow, status } = req.body;
+      if (title) goalStore[idx].title = title;
+      if (reason !== undefined) goalStore[idx].reason = reason;
+      if (type) goalStore[idx].type = type;
+      if (subject) goalStore[idx].subject = subject;
+      if (targetWindow) goalStore[idx].targetWindow = targetWindow;
+      if (status) goalStore[idx].status = status;
+      res.json(goalStore[idx]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update goal" });
+    }
+  });
+
   app.post("/api/acap/rankings/recompute", async (_req: Request, res: Response) => {
     try {
       res.json({ message: "Rankings recomputed successfully", timestamp: new Date().toISOString() });

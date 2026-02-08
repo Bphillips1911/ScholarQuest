@@ -79,17 +79,18 @@ export default function StudentGenomeTab() {
   const { toast } = useToast();
   const [subject, setSubject] = useState("MATH");
   const [grade, setGrade] = useState("6");
-  const [house, setHouse] = useState("all");
+  const [teacherFilter, setTeacherFilter] = useState("all");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [studentName, setStudentName] = useState("Select a Student");
 
   const { data: scholars } = useQuery<any[]>({ queryKey: ["/api/acap/scholars"] });
+  const { data: teachers } = useQuery<any[]>({ queryKey: ["/api/acap/teachers"] });
 
   const filteredScholars = (scholars || []).filter((s: any) => {
     if (grade !== "all" && s.grade && String(s.grade) !== grade) return false;
-    if (house !== "all" && s.house && s.house !== house) return false;
+    if (teacherFilter !== "all" && s.teacherId && s.teacherId !== teacherFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) || s.id?.toLowerCase().includes(q);
@@ -199,15 +200,13 @@ export default function StudentGenomeTab() {
               <SelectTrigger className="w-[110px] bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="all">All Grades</SelectItem>{["6", "7", "8"].map((g) => <SelectItem key={g} value={g}>Grade {g}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={house} onValueChange={setHouse}>
-              <SelectTrigger className="w-[130px] bg-white/10 border-white/20 text-white"><SelectValue placeholder="House" /></SelectTrigger>
+            <Select value={teacherFilter} onValueChange={setTeacherFilter}>
+              <SelectTrigger className="w-[160px] bg-white/10 border-white/20 text-white"><SelectValue placeholder="Teacher" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Houses</SelectItem>
-                <SelectItem value="Johnson">Johnson</SelectItem>
-                <SelectItem value="Marshall">Marshall</SelectItem>
-                <SelectItem value="West">West</SelectItem>
-                <SelectItem value="Drew">Drew</SelectItem>
-                <SelectItem value="Tesla">Tesla</SelectItem>
+                <SelectItem value="all">All Teachers</SelectItem>
+                {(teachers || []).map((t: any) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={() => recomputeMutation.mutate()} disabled={!selectedStudentId || recomputeMutation.isPending} className="gap-2 border-white/30 text-white hover:bg-white/10">

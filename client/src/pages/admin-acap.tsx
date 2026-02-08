@@ -181,6 +181,38 @@ function OverviewTab() {
         ))}
       </div>
 
+      <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+        <CardContent className="pt-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <ClipboardList className="h-6 w-6 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800">ACAP Action Plan</h3>
+              <p className="text-sm text-gray-500">Generate a comprehensive improvement plan based on assessment data, mastery levels, and student performance trends.</p>
+            </div>
+          </div>
+          <Button
+            className="bg-indigo-700 hover:bg-indigo-800 gap-2 shrink-0"
+            onClick={() => {
+              const totalStudents = standards?.length || 0;
+              const actionItems = [
+                pending > 0 ? `Review ${pending} pending question bank items` : null,
+                (assessments?.length || 0) === 0 ? "Create and assign baseline assessments" : null,
+                "Analyze mastery gaps across grade levels",
+                "Schedule Boot Camp interventions for at-risk scholars",
+                "Set up projected score tracking for each grade",
+              ].filter(Boolean);
+              const plan = actionItems.join("\n- ");
+              alert(`ACAP Action Plan\n\nPriority Items:\n- ${plan}\n\nRecommendation: Start with the Impact Simulator tab to identify high-leverage instructional moves.`);
+            }}
+          >
+            <PlayCircle className="h-4 w-4" />
+            Generate Action Plan
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle className="text-lg">Standards by Grade Level</CardTitle></CardHeader>
         <CardContent>
@@ -468,6 +500,16 @@ function BlueprintsStandardsTab() {
                     <Badge className="bg-blue-100 text-blue-700">{b.totalItems} items</Badge>
                     <Badge className="bg-green-100 text-green-700">{b.timeLimitMinutes} min</Badge>
                   </div>
+                  <Button
+                    size="sm"
+                    className="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 gap-1"
+                    onClick={() => {
+                      toast({ title: "Blueprint Assignment", description: `${b.name} is ready to assign. Go to the Assessments tab to create and assign an assessment from this blueprint.` });
+                    }}
+                  >
+                    <Send className="h-3 w-3" />
+                    Assign to Class
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -1213,7 +1255,18 @@ function AISettingsTab() {
             </div>
             <div>
               <Label>Count</Label>
-              <Input type="number" min="1" max="20" value={count} onChange={(e) => setCount(e.target.value)} />
+              <Select value={count} onValueChange={setCount}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 items</SelectItem>
+                  <SelectItem value="5">5 items</SelectItem>
+                  <SelectItem value="10">10 items</SelectItem>
+                  <SelectItem value="15">15 items</SelectItem>
+                  <SelectItem value="20">20 items</SelectItem>
+                  <SelectItem value="25">25 items</SelectItem>
+                  <SelectItem value="30">30 items</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {selectedStd && (

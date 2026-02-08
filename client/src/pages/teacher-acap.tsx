@@ -570,6 +570,7 @@ function QuestionBankTab({ teacherId, gradeNumber }: { teacherId: string; gradeN
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDomain, setFilterDomain] = useState("all");
   const [filterGrade, setFilterGrade] = useState<number>(gradeNumber);
+  const [filterStandard, setFilterStandard] = useState("all");
   const [subjectForGen, setSubjectForGen] = useState("ELA");
 
   useEffect(() => {
@@ -612,6 +613,7 @@ function QuestionBankTab({ teacherId, gradeNumber }: { teacherId: string; gradeN
     if (filterDomain === "math") return d.includes("math");
     return true;
   });
+  if (filterStandard !== "all") filteredItems = filteredItems.filter((i: any) => String(i.standardId) === filterStandard);
 
   const filteredStandards = filterByDomain(standards || [], filterDomain);
 
@@ -712,6 +714,10 @@ function QuestionBankTab({ teacherId, gradeNumber }: { teacherId: string; gradeN
                     <SelectItem value="3">3 items</SelectItem>
                     <SelectItem value="5">5 items</SelectItem>
                     <SelectItem value="10">10 items</SelectItem>
+                    <SelectItem value="15">15 items</SelectItem>
+                    <SelectItem value="20">20 items</SelectItem>
+                    <SelectItem value="25">25 items</SelectItem>
+                    <SelectItem value="30">30 items</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -764,6 +770,18 @@ function QuestionBankTab({ teacherId, gradeNumber }: { teacherId: string; gradeN
             </button>
           ))}
         </div>
+        <span className="text-gray-300">|</span>
+        <Select value={filterStandard} onValueChange={setFilterStandard}>
+          <SelectTrigger className="w-[200px] h-8 text-xs">
+            <SelectValue placeholder="Filter by standard..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Standards</SelectItem>
+            {(filteredStandards || []).map((s: any) => (
+              <SelectItem key={s.id} value={String(s.id)}>{s.code} - {s.domain}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {isLoading ? (

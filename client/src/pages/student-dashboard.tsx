@@ -660,6 +660,17 @@ function StudentDashboardContent() {
               <InteractiveScale>
                 <Button 
                   variant="outline" 
+                  onClick={() => setLocation("/student-acap")}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400 hover:from-indigo-600 hover:to-purple-600"
+                  data-testid="button-acap-skills"
+                >
+                  <Brain className="h-4 w-4" />
+                  <span>ACAP Skills</span>
+                </Button>
+              </InteractiveScale>
+              <InteractiveScale>
+                <Button 
+                  variant="outline" 
                   onClick={() => setLocation("/student-learning-path")}
                   className="flex items-center space-x-1 md:space-x-2 text-xs md:text-sm px-2 md:px-4"
                   data-testid="button-learning-path"
@@ -713,17 +724,6 @@ function StudentDashboardContent() {
                 >
                   <Star className="h-4 w-4" />
                   <span>Achievements</span>
-                </Button>
-              </InteractiveScale>
-              <InteractiveScale>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setLocation("/student-acap")}
-                  className="flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400 hover:from-indigo-600 hover:to-purple-600"
-                  data-testid="button-acap-skills"
-                >
-                  <Brain className="h-4 w-4" />
-                  <span>ACAP Skills</span>
                 </Button>
               </InteractiveScale>
               <InteractiveScale>

@@ -7,26 +7,45 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RingKpi } from "@/components/acap/shared/RingKpi";
 import { GoalReviewQueue } from "@/components/acap/teacher/GoalReviewQueue";
 import { getTeacherClassRanksAndQueue } from "@/lib/acap/api";
-import { Download, Sparkles } from "lucide-react";
+import { Download, Sparkles, Loader2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TeacherClassRankGoalsPage() {
   const [subject, setSubject] = useState<"MATH" | "ELA" | "SCI">("MATH");
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const [summary, setSummary] = useState<any>(null);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [queue, setQueue] = useState<any[]>([]);
 
+  const loadData = async () => {
+    setLoading(true);
+    const data = await getTeacherClassRanksAndQueue();
+    setSummary(data.summary);
+    setDrivers(data.drivers);
+    setQueue(data.queue);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const data = await getTeacherClassRanksAndQueue();
-      setSummary(data.summary);
-      setDrivers(data.drivers);
-      setQueue(data.queue);
-      setLoading(false);
-    })();
+    loadData();
   }, []);
+
+  const recomputeMutation = useMutation({
+    mutationFn: async () => {
+      const teacherId = localStorage.getItem("teacherAuthId") || "";
+      const res = await apiRequest("POST", "/api/acap/rankings/recompute", { subject, teacherId });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Rankings Recomputed", description: "Class rankings have been refreshed with the latest data." });
+      loadData();
+    },
+    onError: () => toast({ title: "Recompute Failed", description: "Could not refresh rankings. Try again.", variant: "destructive" }),
+  });
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -34,7 +53,7 @@ export default function TeacherClassRankGoalsPage() {
         <div className="mx-auto max-w-7xl px-4 py-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Teacher Dashboard \u2022 Rank & Goals</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Teacher Dashboard - Rank & Goals</h1>
               <p className="text-sm text-muted-foreground">
                 Class ranking + student goal review to drive proficiency and growth.
               </p>
@@ -57,9 +76,9 @@ export default function TeacherClassRankGoalsPage() {
                 Export
               </Button>
 
-              <Button className="gap-2">
-                <Sparkles className="h-4 w-4" />
-                Recompute (Preview)
+              <Button className="gap-2" onClick={() => recomputeMutation.mutate()} disabled={recomputeMutation.isPending}>
+                {recomputeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {recomputeMutation.isPending ? "Computing..." : "Recompute"}
               </Button>
             </div>
           </div>
@@ -126,7 +145,7 @@ export default function TeacherClassRankGoalsPage() {
               </div>
 
               <p className="mt-3 text-xs text-muted-foreground">
-                TODO: Wire to domain drill-down + generate item sets + launch Boot Camp recommendations.
+                Click Recompute to refresh rankings with latest assessment data.
               </p>
             </CardContent>
           </Card>

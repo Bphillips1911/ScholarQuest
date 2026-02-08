@@ -10,30 +10,89 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Target, TrendingUp, Sparkles, MessageSquare, PlayCircle, Plus, CheckCircle2, Pencil } from "lucide-react";
+import { Target, TrendingUp, Sparkles, MessageSquare, PlayCircle, Plus, CheckCircle2, Pencil, Loader2 } from "lucide-react";
 import { RingKpi } from "@/components/acap/shared/RingKpi";
 import { getStudentRankAndGoals } from "@/lib/acap/api";
 import { StudentGoal } from "@/lib/acap/types";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function StudentRankGoalsPanel() {
   const [loading, setLoading] = useState(true);
   const [openGoal, setOpenGoal] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+  const { toast } = useToast();
 
   const [subject, setSubject] = useState<"MATH" | "ELA" | "SCI">("MATH");
   const [rank, setRank] = useState<any>(null);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [goals, setGoals] = useState<StudentGoal[]>([]);
 
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalReason, setGoalReason] = useState("");
+  const [goalType, setGoalType] = useState("OUTCOME");
+  const [goalTarget, setGoalTarget] = useState("FINAL");
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    const data = await getStudentRankAndGoals();
+    setRank(data.rank);
+    setDrivers(data.drivers);
+    setGoals(data.goals);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const data = await getStudentRankAndGoals();
-      setRank(data.rank);
-      setDrivers(data.drivers);
-      setGoals(data.goals);
-      setLoading(false);
-    })();
+    loadData();
   }, []);
+
+  const getScholarId = () => {
+    const direct = localStorage.getItem("studentId");
+    if (direct) return direct;
+    try {
+      const data = JSON.parse(localStorage.getItem("studentData") || "{}");
+      return data?.id || "";
+    } catch { return ""; }
+  };
+
+  const goalMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const scholarId = getScholarId();
+      if (!scholarId) throw new Error("No student ID found");
+      const endpoint = editingGoalId
+        ? `/api/acap/goals/${editingGoalId}`
+        : "/api/acap/goals";
+      const method = editingGoalId ? "PUT" : "POST";
+      const res = await apiRequest(method, endpoint, { ...data, scholarId });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: editingGoalId ? "Goal Updated" : "Goal Submitted", description: "Your goal has been sent for teacher review." });
+      setOpenGoal(false);
+      resetGoalForm();
+      loadData();
+    },
+    onError: () => toast({ title: "Failed to save goal", variant: "destructive" }),
+  });
+
+  const resetGoalForm = () => {
+    setGoalTitle("");
+    setGoalReason("");
+    setGoalType("OUTCOME");
+    setGoalTarget("FINAL");
+    setEditingGoalId(null);
+  };
+
+  const openEditGoal = (goal: StudentGoal) => {
+    setGoalTitle(goal.title);
+    setGoalReason("");
+    setGoalType(goal.type || "OUTCOME");
+    setGoalTarget("FINAL");
+    setEditingGoalId(goal.id);
+    setOpenGoal(true);
+  };
 
   return (
     <TooltipProvider>
@@ -105,8 +164,7 @@ export default function StudentRankGoalsPanel() {
               <Separator />
 
               <Button className="w-full gap-2" onClick={() => {
-                const subjectLabel = subject === "MATH" ? "Math" : subject === "ELA" ? "ELA" : "Science";
-                alert(`Launching Daily ${subjectLabel} Skills Activity...`);
+                toast({ title: "Skills Activity Launched", description: `Starting ${subject === "MATH" ? "Math" : subject === "ELA" ? "ELA" : "Science"} adaptive practice. Navigate to the Boot Camp tab to begin your session.` });
               }}>
                 <PlayCircle className="h-4 w-4" />
                 Start Today's Skills
@@ -170,15 +228,36 @@ export default function StudentRankGoalsPanel() {
               <Separator />
 
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="gap-2" onClick={() => setOpenGoal(true)}>
+                <Button variant="outline" className="gap-2" onClick={() => { resetGoalForm(); setOpenGoal(true); }}>
                   <Pencil className="h-4 w-4" />
                   Create / Edit Goal
                 </Button>
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2" onClick={() => setShowProgress(!showProgress)}>
                   <TrendingUp className="h-4 w-4" />
-                  View Progress Details
+                  {showProgress ? "Hide Progress" : "View Progress Details"}
                 </Button>
               </div>
+              {showProgress && (
+                <Card className="border-blue-200 bg-blue-50">
+                  <CardContent className="pt-4 space-y-3">
+                    <h4 className="font-semibold text-sm">Progress Summary</h4>
+                    {goals.length > 0 ? goals.map((g) => (
+                      <div key={g.id} className="flex items-center justify-between text-sm">
+                        <span className="truncate flex-1">{g.title}</span>
+                        <div className="flex items-center gap-2 ml-2">
+                          <Progress value={g.progressPct} className="w-24" />
+                          <span className="text-xs font-medium w-10 text-right">{g.progressPct}%</span>
+                        </div>
+                      </div>
+                    )) : (
+                      <p className="text-xs text-muted-foreground">Create goals above to see your progress details here.</p>
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                      Proficiency Score: {rank?.proficiencyScore || 0}/100 | Growth Score: {rank?.growthScore || 0}/100
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -209,7 +288,7 @@ export default function StudentRankGoalsPanel() {
 
               <div className="space-y-2">
                 <div className="text-xs text-muted-foreground">Goal Type</div>
-                <Select defaultValue="OUTCOME">
+                <Select value={goalType} onValueChange={setGoalType}>
                   <SelectTrigger>
                     <SelectValue placeholder="Goal type" />
                   </SelectTrigger>
@@ -223,17 +302,17 @@ export default function StudentRankGoalsPanel() {
 
               <div className="space-y-2 md:col-span-2">
                 <div className="text-xs text-muted-foreground">Goal Title</div>
-                <Input placeholder="e.g., Reach Level 3 by Final (Math)" />
+                <Input placeholder="e.g., Reach Level 3 by Final (Math)" value={goalTitle} onChange={(e) => setGoalTitle(e.target.value)} />
               </div>
 
               <div className="space-y-2 md:col-span-2">
                 <div className="text-xs text-muted-foreground">Why this goal?</div>
-                <Input placeholder="Short explanation (optional)" />
+                <Input placeholder="Short explanation (optional)" value={goalReason} onChange={(e) => setGoalReason(e.target.value)} />
               </div>
 
               <div className="space-y-2 md:col-span-2">
                 <div className="text-xs text-muted-foreground">Target Date</div>
-                <Select defaultValue="FINAL">
+                <Select value={goalTarget} onValueChange={setGoalTarget}>
                   <SelectTrigger>
                     <SelectValue placeholder="Target window" />
                   </SelectTrigger>
@@ -246,18 +325,25 @@ export default function StudentRankGoalsPanel() {
             </div>
 
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setOpenGoal(false)}>
+              <Button variant="outline" onClick={() => { setOpenGoal(false); resetGoalForm(); }}>
                 Cancel
               </Button>
-              <Button className="gap-2" onClick={() => setOpenGoal(false)}>
-                <CheckCircle2 className="h-4 w-4" />
-                Submit for Teacher Review
+              <Button
+                className="gap-2"
+                disabled={!goalTitle.trim() || goalMutation.isPending}
+                onClick={() => goalMutation.mutate({
+                  title: goalTitle,
+                  reason: goalReason,
+                  type: goalType,
+                  subject,
+                  targetWindow: goalTarget,
+                  status: "SUBMITTED",
+                })}
+              >
+                {goalMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {editingGoalId ? "Update Goal" : "Submit for Teacher Review"}
               </Button>
             </DialogFooter>
-
-            <p className="mt-2 text-xs text-muted-foreground">
-              TODO: Wire to POST /api/acap/goals and status SUBMITTED.
-            </p>
           </DialogContent>
         </Dialog>
       </div>

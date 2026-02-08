@@ -24,8 +24,10 @@ export default function StudentAcap() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("mastery");
-  const scholarId = localStorage.getItem("studentId") || "";
-  const scholarName = localStorage.getItem("studentName") || "Scholar";
+  const studentDataRaw = localStorage.getItem("studentData");
+  const studentDataParsed = studentDataRaw ? (() => { try { return JSON.parse(studentDataRaw); } catch { return null; } })() : null;
+  const scholarId = localStorage.getItem("studentId") || studentDataParsed?.id || "";
+  const scholarName = localStorage.getItem("studentName") || studentDataParsed?.name || (studentDataParsed?.firstName ? `${studentDataParsed.firstName} ${studentDataParsed.lastName || ""}`.trim() : "Scholar");
 
   const tabs = [
     { id: "mastery" as Tab, label: "Mastery Map", icon: Target },

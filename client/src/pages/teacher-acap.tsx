@@ -13,10 +13,11 @@ import {
   ArrowLeft, BookOpen, ClipboardList, FileText, BarChart3, Brain,
   Plus, Loader2, CheckCircle, Clock, AlertTriangle, Sparkles,
   Target, TrendingUp, Users, Eye, Pencil, Trash2, Send, Filter,
-  ThumbsUp, ThumbsDown, XCircle, Calculator, PenTool
+  ThumbsUp, ThumbsDown, XCircle, Calculator, PenTool, Award
 } from "lucide-react";
+import TeacherClassRankGoalsPage from "@/pages/acap/TeacherClassRankGoalsPage";
 
-type Tab = "overview" | "assignments" | "question-bank" | "reports" | "bootcamp";
+type Tab = "overview" | "assignments" | "question-bank" | "reports" | "bootcamp" | "rank-goals";
 
 interface TeacherInfo {
   id: string;
@@ -55,6 +56,7 @@ export default function TeacherAcap() {
     { id: "question-bank" as Tab, label: "Question Bank", icon: BookOpen },
     { id: "reports" as Tab, label: "Reports", icon: FileText },
     { id: "bootcamp" as Tab, label: "Boot Camp", icon: Brain },
+    { id: "rank-goals" as Tab, label: "Rank & Goals", icon: Award },
   ];
 
   return (
@@ -100,6 +102,7 @@ export default function TeacherAcap() {
         {activeTab === "question-bank" && <QuestionBankTab teacherId={teacherId} gradeNumber={gradeNumber} />}
         {activeTab === "reports" && <ReportsTab teacherId={teacherId} />}
         {activeTab === "bootcamp" && <BootCampTab teacherId={teacherId} gradeNumber={gradeNumber} />}
+        {activeTab === "rank-goals" && <TeacherClassRankGoalsPage />}
       </div>
     </div>
   );

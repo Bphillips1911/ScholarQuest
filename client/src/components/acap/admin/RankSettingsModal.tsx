@@ -1,0 +1,274 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { getRankSettings, updateRankSettings } from "@/lib/acap/api";
+import { RankSettings } from "@/lib/acap/types";
+
+export default function RankSettingsModal({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const [settings, setSettings] = useState<RankSettings | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const s = await getRankSettings();
+      setSettings(s);
+    })();
+  }, [open]);
+
+  function setWeight(key: "baseline" | "midpoint" | "final", value: number) {
+    if (!settings) return;
+    setSettings({ ...settings, weights: { ...settings.weights, [key]: value } });
+  }
+
+  async function onSave() {
+    if (!settings) return;
+    await updateRankSettings(settings);
+    onOpenChange(false);
+  }
+
+  if (!settings) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>Rank Settings</DialogTitle>
+            <DialogDescription>Loading\u2026</DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const weightTotal = settings.weights.baseline + settings.weights.midpoint + settings.weights.final;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[720px]">
+        <DialogHeader>
+          <DialogTitle>Rank Settings</DialogTitle>
+          <DialogDescription>
+            Configure how proficiency & growth ranks are computed (weights, tie-breakers, and population rules).
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <Card className="border-slate-200">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold">Assessment Weights</div>
+                  <div className="text-xs text-muted-foreground">Baseline + Midpoint + Final should total 100.</div>
+                </div>
+                <Badge variant={weightTotal === 100 ? "secondary" : "destructive"}>Total: {weightTotal}</Badge>
+              </div>
+
+              <WeightRow
+                label="Baseline"
+                value={settings.weights.baseline}
+                onChange={(v) => setWeight("baseline", v)}
+              />
+              <WeightRow
+                label="Midpoint"
+                value={settings.weights.midpoint}
+                onChange={(v) => setWeight("midpoint", v)}
+              />
+              <WeightRow
+                label="Final"
+                value={settings.weights.final}
+                onChange={(v) => setWeight("final", v)}
+              />
+
+              <p className="text-xs text-muted-foreground">
+                TODO: Enforce 100-total constraint (auto-balance sliders) if desired.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200">
+            <CardContent className="p-4 space-y-3">
+              <div className="text-sm font-semibold">Tie-breakers</div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <ToggleRow
+                  label="Final level first"
+                  checked={settings.tieBreakers.finalLevelFirst}
+                  onCheckedChange={(v) =>
+                    setSettings({ ...settings, tieBreakers: { ...settings.tieBreakers, finalLevelFirst: v } })
+                  }
+                />
+                <ToggleRow
+                  label="DOK 3\u20134 accuracy"
+                  checked={settings.tieBreakers.dok34Accuracy}
+                  onCheckedChange={(v) =>
+                    setSettings({ ...settings, tieBreakers: { ...settings.tieBreakers, dok34Accuracy: v } })
+                  }
+                />
+                <ToggleRow
+                  label="Writing evidence"
+                  checked={settings.tieBreakers.writingEvidence}
+                  onCheckedChange={(v) =>
+                    setSettings({ ...settings, tieBreakers: { ...settings.tieBreakers, writingEvidence: v } })
+                  }
+                />
+                <ToggleRow
+                  label="Improvement slope"
+                  checked={settings.tieBreakers.improvementSlope}
+                  onCheckedChange={(v) =>
+                    setSettings({ ...settings, tieBreakers: { ...settings.tieBreakers, improvementSlope: v } })
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200">
+            <CardContent className="p-4 space-y-3">
+              <div className="text-sm font-semibold">Population Rules</div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={settings.populationRules.includeGrades.includes(6)}
+                  onCheckedChange={(v) => {
+                    const inc = new Set(settings.populationRules.includeGrades);
+                    v ? inc.add(6) : inc.delete(6);
+                    setSettings({
+                      ...settings,
+                      populationRules: { ...settings.populationRules, includeGrades: Array.from(inc).sort() },
+                    });
+                  }}
+                  id="g6"
+                />
+                <label htmlFor="g6" className="text-sm">Include Grade 6</label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={settings.populationRules.includeGrades.includes(7)}
+                  onCheckedChange={(v) => {
+                    const inc = new Set(settings.populationRules.includeGrades);
+                    v ? inc.add(7) : inc.delete(7);
+                    setSettings({
+                      ...settings,
+                      populationRules: { ...settings.populationRules, includeGrades: Array.from(inc).sort() },
+                    });
+                  }}
+                  id="g7"
+                />
+                <label htmlFor="g7" className="text-sm">Include Grade 7</label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={settings.populationRules.includeGrades.includes(8)}
+                  onCheckedChange={(v) => {
+                    const inc = new Set(settings.populationRules.includeGrades);
+                    v ? inc.add(8) : inc.delete(8);
+                    setSettings({
+                      ...settings,
+                      populationRules: { ...settings.populationRules, includeGrades: Array.from(inc).sort() },
+                    });
+                  }}
+                  id="g8"
+                />
+                <label htmlFor="g8" className="text-sm">Include Grade 8</label>
+              </div>
+
+              <Separator />
+
+              <ToggleRow
+                label="Exclude new enrollments"
+                checked={settings.populationRules.excludeNewEnrollments}
+                onCheckedChange={(v) =>
+                  setSettings({ ...settings, populationRules: { ...settings.populationRules, excludeNewEnrollments: v } })
+                }
+              />
+
+              <ToggleRow
+                label="Override school population N"
+                checked={settings.populationRules.useSchoolPopulationOverride}
+                onCheckedChange={(v) =>
+                  setSettings({
+                    ...settings,
+                    populationRules: { ...settings.populationRules, useSchoolPopulationOverride: v },
+                  })
+                }
+              />
+
+              {settings.populationRules.useSchoolPopulationOverride ? (
+                <div className="rounded-lg border bg-white p-3">
+                  <div className="text-xs text-muted-foreground">School population override N</div>
+                  <Input
+                    type="number"
+                    value={settings.populationRules.schoolPopulationOverrideN ?? 0}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        populationRules: {
+                          ...settings.populationRules,
+                          schoolPopulationOverrideN: Number(e.target.value),
+                        },
+                      })
+                    }
+                    className="mt-2"
+                  />
+                </div>
+              ) : null}
+
+              <p className="text-xs text-muted-foreground">
+                TODO: Apply these rules to rank computation and student-facing "out of N" display.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={onSave}>Save Settings</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function WeightRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="text-sm">{label}</div>
+        <Badge variant="secondary">{value}%</Badge>
+      </div>
+      <Slider value={[value]} onValueChange={(v) => onChange(v[0] ?? 0)} max={100} step={1} />
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onCheckedChange,
+}: {
+  label: string;
+  checked: boolean;
+  onCheckedChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border bg-white p-3">
+      <div className="text-sm">{label}</div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
+  );
+}

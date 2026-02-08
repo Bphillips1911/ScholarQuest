@@ -58,6 +58,8 @@ import AdvancedUIShowcase from "@/pages/advanced-ui-showcase";
 import TeacherAcap from "@/pages/teacher-acap";
 import StudentAcap from "@/pages/student-acap";
 import AdminAcap from "@/pages/admin-acap";
+import TeacherClassRankGoalsPage from "@/pages/acap/TeacherClassRankGoalsPage";
+import AdminRankingsPage from "@/pages/acap/AdminRankingsPage";
 
 function Router() {
   return (
@@ -105,6 +107,8 @@ function Router() {
         <Route path="/admin-sorting" component={HouseSorting} />
         <Route path="/admin-qr" component={AdminQR} />
         <Route path="/admin-acap" component={AdminAcap} />
+        <Route path="/teacher/acap/rank-goals" component={TeacherClassRankGoalsPage} />
+        <Route path="/admin/acap/rankings" component={AdminRankingsPage} />
         
         {/* Main app routes with navigation */}
         <Route>

@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, BookOpen, Target, BarChart3, Brain, Trophy,
   Loader2, CheckCircle, Clock, AlertTriangle, TrendingUp,
-  Send, Star, Play, MessageCircle, Sparkles, ChevronRight
+  Send, Star, Play, MessageCircle, Sparkles, ChevronRight, Award
 } from "lucide-react";
+import StudentRankGoalsPanel from "@/components/acap/student/StudentRankGoalsPanel";
 
-type Tab = "mastery" | "assessments" | "bootcamp" | "reports";
+type Tab = "mastery" | "assessments" | "bootcamp" | "reports" | "rank-goals";
 
 export default function StudentAcap() {
   const [, setLocation] = useLocation();
@@ -27,6 +28,7 @@ export default function StudentAcap() {
     { id: "assessments" as Tab, label: "Assessments", icon: BookOpen },
     { id: "bootcamp" as Tab, label: "Boot Camp", icon: Brain },
     { id: "reports" as Tab, label: "My Growth", icon: TrendingUp },
+    { id: "rank-goals" as Tab, label: "Rank & Goals", icon: Award },
   ];
 
   return (
@@ -71,6 +73,7 @@ export default function StudentAcap() {
         {activeTab === "assessments" && <AssessmentsTab scholarId={scholarId} />}
         {activeTab === "bootcamp" && <BootCampTab scholarId={scholarId} scholarName={scholarName} />}
         {activeTab === "reports" && <GrowthTab scholarId={scholarId} />}
+        {activeTab === "rank-goals" && <StudentRankGoalsPanel />}
       </div>
     </div>
   );

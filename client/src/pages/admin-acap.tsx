@@ -21,7 +21,8 @@ import {
 import ProjectedAcapScoreTab from "@/components/admin/ProjectedAcapScoreTab";
 import ImpactSimulatorTab from "@/components/admin/ImpactSimulatorTab";
 import StudentGenomeTab from "@/components/admin/StudentGenomeTab";
-type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome";
+import AdminRankingsPage from "@/pages/acap/AdminRankingsPage";
+type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome" | "rankings";
 
 export default function AdminAcap() {
   const [, setLocation] = useLocation();
@@ -75,6 +76,7 @@ export default function AdminAcap() {
     { id: "projected-score", label: "Projected Score", icon: TrendingUp },
     { id: "impact-simulator", label: "Impact Simulator", icon: Sparkles },
     { id: "student-genome", label: "Student Genome", icon: Dna },
+    { id: "rankings", label: "Rankings", icon: Award },
   ];
 
   return (
@@ -126,6 +128,7 @@ export default function AdminAcap() {
         {activeTab === "projected-score" && <ProjectedAcapScoreTab />}
         {activeTab === "impact-simulator" && <ImpactSimulatorTab />}
         {activeTab === "student-genome" && <StudentGenomeTab />}
+        {activeTab === "rankings" && <AdminRankingsPage />}
       </div>
     </div>
   );

@@ -1377,18 +1377,19 @@ export function registerAcapRoutes(app: Express): void {
   app.post("/api/acap/access-codes", async (req: Request, res: Response) => {
     try {
       const { assessmentId, teacherId, window, gradeLevel, subject, expiresAt } = req.body;
-      if (!assessmentId || !teacherId || !window || !gradeLevel || !subject) {
-        return res.status(400).json({ error: "assessmentId, teacherId, window, gradeLevel, subject are required" });
+      if (!teacherId || !window || !gradeLevel || !subject) {
+        return res.status(400).json({ error: "teacherId, window, gradeLevel, subject are required" });
       }
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const accessCode = await acapStorage.createAccessCode({
-        code, assessmentId, teacherId, window, gradeLevel, subject,
+        code, assessmentId: assessmentId || null, teacherId, window, gradeLevel, subject,
         isActive: true,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       });
       res.json(accessCode);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create access code" });
+    } catch (error: any) {
+      console.error("Access code creation error:", error);
+      res.status(500).json({ error: error.message || "Failed to create access code" });
     }
   });
 

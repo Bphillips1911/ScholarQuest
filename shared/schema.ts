@@ -1405,7 +1405,7 @@ export const insertAcapTutorAdaptationSchema = createInsertSchema(acapTutorAdapt
 export const acapAccessCodes = pgTable("acap_access_codes", {
   id: serial("id").primaryKey(),
   code: varchar("code", { length: 12 }).notNull().unique(),
-  assessmentId: integer("assessment_id").references(() => acapAssessments.id).notNull(),
+  assessmentId: integer("assessment_id").references(() => acapAssessments.id),
   teacherId: varchar("teacher_id").notNull(),
   window: varchar({ length: 20 }).notNull(),
   gradeLevel: integer("grade_level").notNull(),

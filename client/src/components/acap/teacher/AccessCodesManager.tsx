@@ -46,9 +46,8 @@ export default function AccessCodesManager({ teacherId }: { teacherId: string })
         a.subject === subject && a.gradeLevel === parseInt(grade) &&
         (a.assessmentType?.toLowerCase().includes(window.toLowerCase()) || !a.assessmentType)
       );
-      const assessmentId = matchingAssessment?.id || 1;
       const res = await apiRequest("POST", "/api/acap/access-codes", {
-        assessmentId, teacherId, window, gradeLevel: parseInt(grade), subject,
+        assessmentId: matchingAssessment?.id || null, teacherId, window, gradeLevel: parseInt(grade), subject,
       });
       return res.json();
     },
@@ -56,7 +55,7 @@ export default function AccessCodesManager({ teacherId }: { teacherId: string })
       queryClient.invalidateQueries({ queryKey: ["/api/acap/access-codes"] });
       toast({ title: "Access Code Created", description: `Code: ${data.code} — Share this with students to start the ${window.toLowerCase()} assessment.` });
     },
-    onError: () => toast({ title: "Failed to create code", variant: "destructive" }),
+    onError: (err: any) => toast({ title: "Failed to create code", description: err.message || "Please try again.", variant: "destructive" }),
   });
 
   const deactivateMutation = useMutation({

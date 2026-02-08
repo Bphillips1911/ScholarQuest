@@ -1,0 +1,201 @@
+You are fixing PBIS House of Champions ACAP Adaptive Skills in PUBLISHED/PRODUCTION mode where data disappears compared to preview/demo.
+
+CRITICAL OUTCOME
+All Teacher, Student, Admin ACAP pages must:
+- load standards/blueprints/items from the SAME production data source as preview
+- have functional dropdowns and actions (assignments filtering, item generation, recompute, access codes)
+- show the correct logged-in user name (teacher/student/admin)
+- remove/clean any \u2022 / \u2122 / escaped unicode artifacts
+- have correct navigation placement (Student ACAP tab next to SEL or bell)
+- have all tabs clickable AND operational (no dead buttons)
+
+PHASE 1 — IMMEDIATE DIAG (MUST IMPLEMENT FIRST)
+1) Add a production-safe debug panel endpoint (ADMIN ONLY):
+   GET /api/acap/_debug/summary
+   returns:
+   - env: NODE_ENV, APP_URL, DB connection identifier (masked), tenant/schoolId
+   - counts: standards_count by grade+subject, blueprints_count, items_count, users_count, students_count
+   - lastStandardsImportAt
+   - auth: current user role, userId, schoolId
+   - failures: last 20 ACAP API errors logged server-side
+
+2) Add server-side request logging ONLY for ACAP routes in prod:
+   - log route, status, userId, role, schoolId, duration
+   - log errors with stack traces
+   - ensure logs appear in Replit Deploy logs
+
+3) On the frontend, add a silent developer console toggle (admin only):
+   - When ?debug=1, show a small “Data Health” card calling /api/acap/_debug/summary.
+
+WHY: This will reveal why prod shows “No standards” (empty DB vs authorization vs tenant mismatch).
+
+PHASE 2 — FIX THE ROOT CAUSE OF “NO STANDARDS IN PRODUCTION”
+LIKELY CAUSES: (address ALL)
+A) DB in production is different/empty and standards were never imported.
+B) standards query is scoped by schoolId/tenant, but prod users have a different schoolId or null.
+C) API requests failing in prod due to cookies, CORS, base URL, or auth.
+D) migrations not run in deployed environment.
+
+Implement:
+1) Ensure DB migrations run on deploy:
+   - If using Drizzle/Prisma, ensure Replit Deploy runs migration step automatically.
+   - Add a startup check in server:
+     - if ACAP tables missing => log fatal and return friendly error.
+
+2) Add an Admin-only “Import Standards” capability that works in prod:
+   POST /api/acap/standards/import
+   body: { source: "alabama_cos_pdfs" | "seed_pack", overwrite?: boolean }
+   - This should populate:
+     standards table (grade, subject, code, description)
+     blueprint_domain table (subject, grade, domain, dok expectations)
+   - For now, use your existing seeded dataset in preview (if exists in repo) as “seed_pack”.
+   - Mark import timestamp.
+
+3) Make standards queries tenant-safe and fallback-safe:
+   - Always scope standards by schoolId if present.
+   - If schoolId missing but user authenticated: fallback to “default schoolId” for your deployment OR return explicit admin error message in UI with “Import Standards” CTA.
+
+4) Fix ALL dropdowns to use the same standards endpoint:
+   - GET /api/acap/standards?grade=&subject=
+   - This must return non-empty in production once import is done.
+   - Teacher sees standards for grades they teach; Admin sees all; Student sees only their grade.
+
+PHASE 3 — TEACHER ACCOUNT FIXES (ALL TABS OPERATIONAL)
+Teacher ACAP route: /teacher-acap
+Tabs: Overview, Assignments, Question Bank, Reports, Boot Camp, Rank & Goals, Access Codes
+
+1) OVERVIEW: standards not showing in prod
+   - Ensure Overview fetches via /api/acap/standardsCoverage?teacherId=me&grade=&subject=
+   - Coverage must be computed from standards table + attempts/items data.
+   - If standards table empty, show actionable message:
+     “Standards not imported. Contact Admin.” (only if truly empty, not auth issue)
+
+2) ASSIGNMENTS: “Filter items by standard(s)” blank
+   - Populate filter options from /api/acap/standards?grade=&subject=
+   - Ensure assignments query accepts standardCodes[] and filters correctly.
+
+3) QUESTION BANK: Standard dropdown blank; counts only up to 10
+   - Standard dropdown must call /api/acap/standards?grade=&subject=
+   - Expand “Number of Items” dropdown to:
+     3, 5, 10, 15, 20, 25, 30
+   - Ensure the Generate button calls:
+     POST /api/acap/items/generate
+     body includes: grade, subject, standardCode, dokLevel, itemType, count
+
+4) RANK & GOALS: remove \u2022 artifacts, spacing, recompute not working
+   - Create a shared helper:
+     sanitizeLabel(str) that:
+       - replaces any literal "\u2022", "\u2122", escaped sequences with safe characters
+       - removes “\u” artifacts entirely if present
+   - Apply sanitizeLabel to all dashboard titles/subtitles and item labels.
+   - Ensure “Recompute” calls:
+     POST /api/acap/rankings/recompute (teacher scope = teacher’s classes)
+   - Ensure all cards/tables load real values and respond to subject dropdown.
+
+5) ACCESS CODES: “Failed to create code”
+   - Fix backend:
+     POST /api/acap/access-codes/create
+     body: { studentId, window: baseline|midpoint|final, subject, grade }
+   - Ensure teacher can only create codes for students in their roster.
+   - Common prod issue: missing table/migration. Create and migrate:
+     acap_access_codes(id, school_id, student_id, window, code_hash, code_last4, created_by, created_at, active)
+   - Return { code, code_last4, expiresAt? } on create.
+   - Frontend: show created code in “Active Codes” table, with Copy + Regenerate.
+   - Fix toast: show actual server message.
+
+6) HEADER NAME: Teacher name must show
+   - Replace “Teacher” badge with “Ms./Mr. LastName” or full name from session:
+     GET /api/pbis/me returns { displayName, role, gradeLevel(s) }
+
+PHASE 4 — STUDENT ACCOUNT FIXES
+Student ACAP route: /student-acap
+1) NAV PLACEMENT:
+   - Move ACAP Adaptive Skills button next to SEL tab OR notification bell (per request).
+   - Update Student Portal nav component so ACAP link is first-class and always visible.
+
+2) DISPLAY STUDENT NAME:
+   - Replace “Scholar” label with student displayName (from /api/pbis/me).
+
+3) ENTER ACCESS CODE:
+   - Implement Student access code start:
+     POST /api/acap/access-codes/redeem
+     body: { code, lastNameOrStudentId?, window }
+   - If valid, create attempt and route to locked assessment player.
+
+4) BOOT CAMP tab functional:
+   - Ensure /api/acap/bootcamp/* endpoints exist and return assigned sessions.
+   - Student sees their current assignment and progress.
+
+5) MY GROWTH tab functional:
+   - Wire to /api/acap/growth/student?subject=
+   - Use baseline/midpoint/final attempts to compute growth.
+
+6) RANK & GOALS cleanup:
+   - Remove \u2122 and any \u artifacts using sanitizeLabel.
+   - Ensure Start Today’s Skills is functional:
+     - POST /api/acap/daily/start => returns next activity set and routes to activity player
+   - Create/Edit Goal: POST/PATCH /api/acap/goals
+   - View Progress Details: GET /api/acap/goals/:id/progress
+   - Messages tab: ensure student receives system messages on goal progress:
+     - POST /api/messages/system (server-triggered)
+     - UI shows message list
+
+7) BACK BUTTON:
+   - Ensure back button routes to student homepage (Student Portal root), not previous random location.
+
+8) MASTERY MAP standards missing in prod:
+   - Mastery Map must render from:
+     GET /api/acap/mastery-map/student?subject=
+   - Which joins standards + mastery state (level1-4) for student grade.
+
+PHASE 5 — ADMIN ACAP PORTAL FIXES (PUBLISHED MODE EMPTY)
+Admin ACAP route: /admin-acap
+1) BLUEPRINTS & STANDARDS missing in published mode
+   - Fix standards/blueprints endpoints to use production DB and correct schoolId.
+   - Implement interactive blueprint cards:
+     - Clicking blueprint opens modal: “Assign Blueprint”
+       assign to teacher(s)/grade(s)/class(es) with schedule window.
+     - POST /api/acap/blueprints/assign { blueprintId, teacherIds|classIds, window, dueDate }
+
+2) AI SETTINGS standard dropdown blank
+   - Use same /api/acap/standards?grade=&subject=
+   - Must populate in prod after standards import.
+
+3) INSTRUCTIONAL IMPACT “Create Action Plan” dead
+   - Implement Action Plan creation:
+     POST /api/acap/impact/action-plans
+     body: { scope, subject, grade, levers[], notes, assigns?: { teacherIds, classIds }, dueDates }
+   - UI opens Action Plan modal, saves, and shows confirmation.
+
+4) STUDENT GENOME:
+   - Replace houses tabs (Johnson/Marshall/etc) with TEACHERS already in PBIS system:
+     GET /api/pbis/teachers?schoolId=
+   - Clicking a teacher loads their students and genome summaries.
+   - Fix the blank tab next to houses:
+     Replace with a labeled control “Cohort” (Baseline | Midpoint | Final | All Three).
+   - Ensure all Tutor Adaptations toggles work and persist:
+     PATCH /api/acap/genome/student/:id/adaptations
+
+PHASE 6 — FIX RECOMPUTE / REALTIME / CACHE
+1) If production uses caching (CDN), ensure ACAP GET endpoints set:
+   Cache-Control: no-store for user-scoped data.
+2) Ensure TanStack Query uses correct base URL in prod and includes credentials.
+3) If requests fail in prod because cookies not sent:
+   - set fetch/axios to credentials: "include"
+   - ensure server CORS allows credentials and correct origin
+4) After any mutation (generate code, recompute, generate items), invalidate queries.
+
+PHASE 7 — ACCEPTANCE TESTS (MUST PASS)
+- Teacher: standards visible on Overview + Assignments + Question Bank dropdowns in PUBLISHED mode.
+- Teacher: can generate items (count up to 30) after selecting standard.
+- Teacher: Rank & Goals page has no \u artifacts; Recompute updates live values.
+- Teacher: Access Codes create successfully; Active Codes list shows code.
+- Student: ACAP tab appears next to SEL/bell; student name shows; access code redeem works.
+- Student: Boot Camp, My Growth, Rank & Goals, Start Today’s Skills all functional.
+- Admin: standards/blueprints visible in published mode; blueprint assignment works.
+- Admin: AI Settings standards dropdown works.
+- Admin: Action Plan creation works.
+- Admin: Student Genome teacher tabs load real teacher rosters; blank control replaced with Cohort selector; Tutor Adaptations all functional.
+
+DELIVERABLE
+Implement all changes now. Do not leave TODO placeholders. Use real PBIS users/students/teachers already in DB. Fix all spacing, labels, and escaped unicode artifacts. Ensure production parity with preview.

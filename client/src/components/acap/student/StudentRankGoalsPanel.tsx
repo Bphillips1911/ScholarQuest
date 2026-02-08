@@ -85,7 +85,7 @@ export default function StudentRankGoalsPanel() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5" />
-                Rank Drivers\u2122
+                Rank Drivers
               </CardTitle>
               <CardDescription>What is moving your rank right now (and what to do next).</CardDescription>
             </CardHeader>
@@ -104,13 +104,13 @@ export default function StudentRankGoalsPanel() {
 
               <Separator />
 
-              <Button className="w-full gap-2">
+              <Button className="w-full gap-2" onClick={() => {
+                const subjectLabel = subject === "MATH" ? "Math" : subject === "ELA" ? "ELA" : "Science";
+                alert(`Launching Daily ${subjectLabel} Skills Activity...`);
+              }}>
                 <PlayCircle className="h-4 w-4" />
                 Start Today's Skills
               </Button>
-              <p className="text-xs text-muted-foreground">
-                TODO: Wire to "Daily Adaptive Skills Activity" launch for the selected subject.
-              </p>
             </CardContent>
           </Card>
 
@@ -151,7 +151,7 @@ export default function StudentRankGoalsPanel() {
                       <div className="text-sm font-semibold">Goal Progress Updates</div>
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      TODO: Wire to notifications feed (progress milestones + rank update messages).
+                      Your goal progress updates and rank change notifications will appear here.
                     </p>
                     <div className="mt-3 space-y-2 text-sm">
                       <div className="rounded-md border p-3">

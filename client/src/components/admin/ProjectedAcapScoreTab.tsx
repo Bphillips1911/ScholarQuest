@@ -24,6 +24,7 @@ export default function ProjectedAcapScoreTab() {
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [thresholds, setThresholds] = useState({ A: 90, B: 80, C: 70, D: 60, F: 0 });
 
+  const [whatIfSubject, setWhatIfSubject] = useState("Math");
   const [slider30, setSlider30] = useState(26);
   const [slider10, setSlider10] = useState(20);
   const [slider5, setSlider5] = useState(25);
@@ -311,54 +312,76 @@ export default function ProjectedAcapScoreTab() {
           {/* What-If Scenario Lab */}
           <Card className="border-2 border-blue-100 shadow-lg">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
-                What-If Scenario Lab
-                <span className="text-sm text-gray-400 font-normal ml-2">See how performance and attendance goals could impact the projected ACAP report score</span>
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  What-If Scenario Lab
+                  <span className="text-sm text-gray-400 font-normal ml-2">See how performance and attendance goals could impact the projected ACAP report score</span>
+                </CardTitle>
+                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                  {["Math", "ELA"].map((s) => (
+                    <button key={s} onClick={() => setWhatIfSubject(s)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${whatIfSubject === s ? "bg-white shadow text-blue-700 font-semibold" : "text-gray-500 hover:text-gray-700"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="mb-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-4">
                   <Layers className="h-4 w-4 text-indigo-600" />
                   <span className="font-semibold text-sm text-gray-700">Spread Level 1 Students To Higher Levels</span>
-                  <Badge variant="outline" className="ml-auto text-xs">{totalStudents} total students</Badge>
+                  <Badge className="ml-auto text-xs bg-blue-100 text-blue-700">{whatIfSubject}</Badge>
+                  <Badge variant="outline" className="text-xs">{totalStudents} total students</Badge>
                 </div>
 
-                {/* Slider: Move 30% */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600 w-48">Move 30% of Level 1 into</span>
-                    <div className="flex-1">
-                      <input type="range" min={0} max={100} value={slider30} onChange={(e) => setSlider30(parseInt(e.target.value))} className="w-full h-2 bg-gradient-to-r from-blue-200 to-blue-500 rounded-lg appearance-none cursor-pointer" />
-                    </div>
-                    <span className="text-sm font-semibold text-blue-700 w-12">{slider30}%</span>
-                    <span className="text-sm text-gray-500 w-20">{Math.round(((levelCounts.level1 || 0) * slider30) / 100)} students</span>
-                  </div>
-
-                  {/* Slider: Move 10% */}
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600 w-48">Move 10% of Level 1 into</span>
-                    <div className="flex-1">
-                      <input type="range" min={0} max={100} value={slider10} onChange={(e) => setSlider10(parseInt(e.target.value))} className="w-full h-2 bg-gradient-to-r from-green-200 to-green-500 rounded-lg appearance-none cursor-pointer" />
-                    </div>
-                    <span className="text-sm font-semibold text-green-700 w-12">{slider10}%</span>
-                    <span className="text-sm text-gray-500 w-20">{Math.round(((levelCounts.level1 || 0) * slider10) / 100)} students</span>
-                  </div>
-
-                  {/* Slider: Move 5% */}
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600 w-48">Move 5% of Level 1 into</span>
-                    <div className="flex-1">
-                      <input type="range" min={0} max={100} value={slider5} onChange={(e) => setSlider5(parseInt(e.target.value))} className="w-full h-2 bg-gradient-to-r from-emerald-200 to-emerald-500 rounded-lg appearance-none cursor-pointer" />
-                    </div>
-                    <span className="text-sm font-semibold text-emerald-700 w-12">{slider5}%</span>
-                    <span className="text-sm text-gray-500 w-20">{Math.round(((levelCounts.level1 || 0) * slider5) / 100)} students</span>
-                  </div>
+                <div className="space-y-5">
+                  {[
+                    { id: "l2", label: "Move Level 1 into Level 2", desc: "Move students from below basic to approaching proficiency", value: slider30, setter: setSlider30, color: "amber", gradient: "from-amber-200 to-amber-500", targetLevel: "Level 2" },
+                    { id: "l3", label: "Move Level 1 into Level 3", desc: "Move students from below basic to proficient", value: slider10, setter: setSlider10, color: "blue", gradient: "from-blue-200 to-blue-500", targetLevel: "Level 3" },
+                    { id: "l4", label: "Move Level 1 into Level 4", desc: "Move students from below basic to advanced", value: slider5, setter: setSlider5, color: "emerald", gradient: "from-emerald-200 to-emerald-500", targetLevel: "Level 4" },
+                  ].map((slider) => {
+                    const studentsCount = Math.round(((levelCounts.level1 || 0) * slider.value) / 100);
+                    return (
+                      <div key={slider.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <span className="text-sm font-semibold text-gray-700">{slider.label}</span>
+                            <p className="text-xs text-gray-400 mt-0.5">{slider.desc}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={`bg-${slider.color}-100 text-${slider.color}-700 text-xs`}>{slider.targetLevel}</Badge>
+                            <span className={`text-lg font-bold text-${slider.color}-600`}>{slider.value}%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <input type="range" min={0} max={100} value={slider.value} onChange={(e) => slider.setter(parseInt(e.target.value))} className={`w-full h-2.5 bg-gradient-to-r ${slider.gradient} rounded-lg appearance-none cursor-pointer`} />
+                          </div>
+                          <div className="bg-white rounded-lg px-3 py-1 border text-center min-w-[80px]">
+                            <div className="text-xs text-gray-400">Students</div>
+                            <div className="text-sm font-bold text-gray-800">{studentsCount}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex gap-1 items-center">
+                            <div className="w-3 h-3 rounded bg-red-400" />
+                            <span className="text-[10px] text-gray-500">L1: {(levelCounts.level1 || 0) - studentsCount}</span>
+                          </div>
+                          <span className="text-gray-300">→</span>
+                          <div className="flex gap-1 items-center">
+                            <div className={`w-3 h-3 rounded bg-${slider.color}-400`} />
+                            <span className="text-[10px] text-gray-500">{slider.targetLevel}: +{studentsCount}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Attendance Slider */}
-                <div className="mt-4 pt-3 border-t">
+                <div className="mt-5 pt-4 border-t">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm font-semibold text-gray-700">Attendance Increase</span>
                   </div>
@@ -386,26 +409,31 @@ export default function ProjectedAcapScoreTab() {
                   <Button onClick={() => {
                     if (latestRun) {
                       saveSnapshotMutation.mutate({
-                        scenarioName: `Shift: L2+${slider30}%, L3+${slider10}%, L4+${slider5}%, Att+${attendanceSlider}`,
+                        scenarioName: `${whatIfSubject} Shift: L2+${slider30}%, L3+${slider10}%, L4+${slider5}%, Att+${attendanceSlider}`,
                         levelShifts: { toLevel2: slider30, toLevel3: slider10, toLevel4: slider5 },
                         attendanceWhatIf: { newAttendance: Math.min(attendancePoints + attendanceSlider, 15) },
+                        subject: whatIfSubject,
                       });
+                      toast({ title: "Score Updated", description: `What-If scenario for ${whatIfSubject} has been saved as a snapshot.` });
+                    } else {
+                      toast({ title: "No Data", description: "Run 'Score SIS' first to generate projection data, then adjust the What-If sliders.", variant: "destructive" });
                     }
-                  }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  }} className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={saveSnapshotMutation.isPending}>
+                    {saveSnapshotMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Zap className="h-4 w-4 mr-1" />}
                     Update Score
                   </Button>
                 </div>
 
-                {/* Students Needed Cards */}
+                {/* Students Needed Summary Cards */}
                 <div className="mt-4 grid grid-cols-3 gap-3">
                   {[
-                    { pct: "30%", label: `Move ${slider30}% of Level 1 into`, target: "L2", badge: "Void", badgeColor: "bg-amber-400", students: whatIfScore.studentsNeeded.l2, delta: `+${((whatIfScore.studentsNeeded.l2 / (totalStudents || 1)) * 100).toFixed(1)}%` },
-                    { pct: "10%", label: `Move ${slider10}% of Level 1 into`, target: "L3", badge: "Viable", badgeColor: "bg-blue-400", students: whatIfScore.studentsNeeded.l3, delta: `+${((whatIfScore.studentsNeeded.l3 / (totalStudents || 1)) * 100).toFixed(1)}%` },
-                    { pct: "5%", label: `Move ${slider5}% of Level 1 into`, target: "L4", badge: "View", badgeColor: "bg-emerald-400", students: whatIfScore.studentsNeeded.l4, delta: `+${((whatIfScore.studentsNeeded.l4 / (totalStudents || 1)) * 100).toFixed(1)}%` },
+                    { label: `Move ${slider30}% of Level 1 into Level 2`, target: "L2", badge: "Approaching", badgeColor: "bg-amber-500", students: whatIfScore.studentsNeeded.l2, delta: `+${((whatIfScore.studentsNeeded.l2 / (totalStudents || 1)) * 100).toFixed(1)}%`, remaining: (levelCounts.level1 || 0) - whatIfScore.studentsNeeded.l2 },
+                    { label: `Move ${slider10}% of Level 1 into Level 3`, target: "L3", badge: "Proficient", badgeColor: "bg-blue-500", students: whatIfScore.studentsNeeded.l3, delta: `+${((whatIfScore.studentsNeeded.l3 / (totalStudents || 1)) * 100).toFixed(1)}%`, remaining: (levelCounts.level1 || 0) - whatIfScore.studentsNeeded.l3 },
+                    { label: `Move ${slider5}% of Level 1 into Level 4`, target: "L4", badge: "Advanced", badgeColor: "bg-emerald-500", students: whatIfScore.studentsNeeded.l4, delta: `+${((whatIfScore.studentsNeeded.l4 / (totalStudents || 1)) * 100).toFixed(1)}%`, remaining: (levelCounts.level1 || 0) - whatIfScore.studentsNeeded.l4 },
                   ].map((card, i) => (
                     <div key={i} className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="text-xs text-gray-500 mb-1">{card.label}</div>
-                      <div className="text-xs text-gray-400">0 Level 1 → {card.students} → {card.target} students</div>
+                      <div className="text-xs text-gray-600 font-medium mb-1">{card.label}</div>
+                      <div className="text-xs text-gray-400">{levelCounts.level1 || 0} Level 1 → {card.students} → {card.target} students</div>
                       <div className="flex items-center gap-2 mt-2">
                         <Badge className={`${card.badgeColor} text-white text-xs`}>{card.badge}</Badge>
                         <span className="text-green-600 text-sm font-semibold">{card.delta}</span>
@@ -523,6 +551,47 @@ export default function ProjectedAcapScoreTab() {
                     <div key={i} className="flex items-start gap-2 bg-amber-50 rounded-lg p-3 border border-amber-100">
                       <ChevronRight className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-gray-700">{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Schoolwide Assessments List */}
+          {(schoolwideAssessments || []).length > 0 && (
+            <Card className="border-2 border-indigo-100 shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-indigo-600" /> Created Schoolwide Assessments ({(schoolwideAssessments || []).length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {(schoolwideAssessments || []).map((sa: any) => (
+                    <div key={sa.id} className="flex items-center justify-between bg-white rounded-lg border p-3 hover:shadow-sm transition-shadow">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                          <BookOpen className="h-5 w-5 text-indigo-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-gray-800">{sa.title}</div>
+                          <div className="flex gap-1.5 mt-0.5">
+                            <Badge variant="secondary" className="text-[10px]">{sa.subject}</Badge>
+                            <Badge variant="outline" className="text-[10px]">Grades {(sa.gradeLevels || []).join(", ")}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{sa.itemCount} items</Badge>
+                            {sa.status && <Badge className="text-[10px] bg-emerald-100 text-emerald-700">{sa.status}</Badge>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">{sa.createdAt ? new Date(sa.createdAt).toLocaleDateString() : ""}</span>
+                        <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+                          toast({ title: "Assessment Details", description: `${sa.title} — ${sa.itemCount} items, DOK Mix: ${JSON.stringify(sa.dokMix || {})}` });
+                        }}>
+                          Preview
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

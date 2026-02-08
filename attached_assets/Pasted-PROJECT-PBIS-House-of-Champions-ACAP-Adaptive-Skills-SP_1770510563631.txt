@@ -1,0 +1,78 @@
+PROJECT: PBIS House of Champions → ACAP Adaptive Skills
+SPRINT: Add Rank + Goals system (Student/Teacher/Admin) with UI skeletons + routes + API stubs.
+
+TECH STACK REQUIREMENTS
+- React + TypeScript
+- Tailwind CSS
+- shadcn/ui components (Button, Card, Tabs, Dialog, Select, Input, Badge, Progress, ScrollArea, Tooltip, Switch, Checkbox, Separator)
+- lucide-react icons
+- Routing: use existing router (wouter or react-router). Match project conventions.
+- Do NOT implement business logic; DO implement complete UI skeleton + typed interfaces + stub data with TODO comments.
+
+ROUTES TO ADD
+1) Student ACAP Tab Panel:
+   - If there is an existing ACAP Adaptive Skills student tab route, embed <StudentRankGoalsPanel /> into it.
+   - Otherwise add: /student/acap → StudentAcapPage and render <StudentRankGoalsPanel /> within.
+
+2) Teacher:
+   - /teacher/acap/rank-goals → TeacherClassRankGoalsPage
+
+3) Admin:
+   - /admin/acap/rankings → AdminRankingsPage
+
+FILES TO CREATE
+A) Student UI
+- src/components/acap/student/StudentRankGoalsPanel.tsx
+
+B) Teacher UI
+- src/pages/acap/TeacherClassRankGoalsPage.tsx
+- src/components/acap/teacher/GoalReviewQueue.tsx
+
+C) Admin UI
+- src/pages/acap/AdminRankingsPage.tsx
+- src/components/acap/admin/RankSettingsModal.tsx
+
+D) Shared
+- src/components/acap/shared/RingKpi.tsx (simple ring-style KPI placeholder)
+- src/lib/acap/types.ts (TypeScript types for rank/goals)
+
+API STUBS (NO LOGIC)
+- Create placeholder functions in:
+  src/lib/acap/api.ts
+  - getStudentRankAndGoals()
+  - getTeacherClassRanksAndQueue()
+  - getAdminRankings()
+  - getRankSettings()
+  - updateRankSettings()
+Each returns mocked objects with TODOs.
+
+UI REQUIREMENTS
+STUDENT PANEL:
+- Two rank tiles: Proficiency Rank (e.g., 9/354) and Growth Rank (21/354)
+- “Rank Drivers” list (3 drivers with deltas)
+- “ACAP Targets” goal card (create/edit/submit flow)
+- “Teacher Review Status” pill (Draft/Submitted/Approved/Revision Requested)
+- Real-time progress bars and a “Start Today’s Skills” CTA
+- No other students shown.
+
+TEACHER PAGE:
+- Class rank tiles: proficiency + growth rank vs school, and grade rank summary
+- “Class Drivers” table (domains, DOK distribution)
+- GoalReviewQueue component with tabs: Submitted, Revision Requested, Approved
+- Each goal row has Approve / Request Revision / Comment buttons (UI only)
+
+ADMIN PAGE:
+- Ranking tables (Grades, Classes, Teachers) with tabs
+- Filters (subject, grade, assessment window, population rule)
+- Export buttons (PDF/CSV)
+- Rank Settings modal:
+  - weights sliders for baseline/midpoint/final
+  - toggle tie-breakers
+  - population include/exclude rules
+  - Save (UI only)
+
+DELIVERABLE
+- Compile-clean TSX
+- No runtime errors
+- All components styled and consistent with existing PBIS House of Champions UI.
+- Add TODO markers where API wiring and role-based auth will be applied.

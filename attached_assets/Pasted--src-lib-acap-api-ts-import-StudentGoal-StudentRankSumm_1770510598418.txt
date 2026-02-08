@@ -1,0 +1,153 @@
+// src/lib/acap/api.ts
+import {
+  StudentGoal,
+  StudentRankSummary,
+  RankDriver,
+  TeacherClassRankSummary,
+  GoalQueueItem,
+  AdminRankingRow,
+  RankSettings,
+} from "@/lib/acap/types";
+
+export async function getStudentRankAndGoals(): Promise<{
+  rank: StudentRankSummary;
+  drivers: RankDriver[];
+  goals: StudentGoal[];
+}> {
+  // TODO: Wire to backend
+  return {
+    rank: {
+      subject: "MATH",
+      window: "ALL_THREE",
+      proficiencyRank: 9,
+      growthRank: 21,
+      populationN: 354,
+      proficiencyScore: 78,
+      growthScore: 66,
+      updatedAtLabel: "Updated today",
+    },
+    drivers: [
+      { label: "DOK 3–4 Accuracy", deltaLabel: "+8%", detail: "Improved on multi-step reasoning tasks." },
+      { label: "Evidence/Justification", deltaLabel: "+1.0", detail: "Stronger explanations raised rubric score." },
+      { label: "Readiness Score", deltaLabel: "+6", detail: "Better stamina + fewer rapid guesses." },
+    ],
+    goals: [
+      {
+        id: "g1",
+        subject: "MATH",
+        type: "OUTCOME",
+        title: "Reach Level 3 by Final (Math)",
+        status: "APPROVED",
+        progressPct: 64,
+        nextStep: "Complete today’s DOK 3 practice set (15 items).",
+        teacherNote: "Focus on proportional reasoning; show your work.",
+      },
+      {
+        id: "g2",
+        subject: "ELA",
+        type: "SKILL",
+        title: "Improve Evidence & Justification (ELA)",
+        status: "SUBMITTED",
+        progressPct: 32,
+        nextStep: "Write 1 short response with 2 pieces of evidence.",
+      },
+    ],
+  };
+}
+
+export async function getTeacherClassRanksAndQueue(): Promise<{
+  summary: TeacherClassRankSummary;
+  drivers: { domain: string; dok2Pct: number; dok34Pct: number; note: string }[];
+  queue: GoalQueueItem[];
+}> {
+  // TODO: Wire to backend
+  return {
+    summary: {
+      subject: "MATH",
+      window: "ALL_THREE",
+      className: "Grade 6 • Period 2",
+      proficiencyRank: 3,
+      growthRank: 5,
+      totalClassesN: 18,
+      gradeRank: 2,
+      totalGradesN: 6,
+    },
+    drivers: [
+      { domain: "Expressions & Equations", dok2Pct: 42, dok34Pct: 58, note: "High leverage for Level 2→3 movement." },
+      { domain: "Ratios & Proportional Relationships", dok2Pct: 55, dok34Pct: 45, note: "Boost DOK3 success rate." },
+      { domain: "Geometry", dok2Pct: 61, dok34Pct: 39, note: "Re-teach misconceptions; quick gains possible." },
+    ],
+    queue: [
+      {
+        goalId: "q1",
+        studentId: "BH130",
+        studentName: "Dante Adams",
+        grade: 6,
+        subject: "MATH",
+        goalTitle: "Reach Level 3 by Final (Math)",
+        status: "SUBMITTED",
+        progressPct: 62,
+        submittedAtLabel: "Today 9:14 AM",
+      },
+      {
+        goalId: "q2",
+        studentId: "BH153",
+        studentName: "Ah’Davien Berryhill",
+        grade: 6,
+        subject: "ELA",
+        goalTitle: "Improve Evidence & Justification",
+        status: "REVISION_REQUESTED",
+        progressPct: 28,
+        submittedAtLabel: "Yesterday 2:01 PM",
+      },
+    ],
+  };
+}
+
+export async function getAdminRankings(): Promise<{
+  grades: AdminRankingRow[];
+  classes: AdminRankingRow[];
+  teachers: AdminRankingRow[];
+}> {
+  // TODO: Wire to backend
+  return {
+    grades: [
+      { id: "g6", label: "Grade 6", proficiencyRank: 2, growthRank: 1, proficiencyScore: 74, growthScore: 81 },
+      { id: "g7", label: "Grade 7", proficiencyRank: 4, growthRank: 3, proficiencyScore: 68, growthScore: 72 },
+      { id: "g8", label: "Grade 8", proficiencyRank: 1, growthRank: 2, proficiencyScore: 77, growthScore: 76 },
+    ],
+    classes: [
+      { id: "c1", label: "G6 • Period 2", proficiencyRank: 3, growthRank: 5, proficiencyScore: 71, growthScore: 69 },
+      { id: "c2", label: "G6 • Period 1", proficiencyRank: 6, growthRank: 9, proficiencyScore: 64, growthScore: 61 },
+    ],
+    teachers: [
+      { id: "t1", label: "E. Mastin", proficiencyRank: 2, growthRank: 4, proficiencyScore: 73, growthScore: 70 },
+      { id: "t2", label: "A. Eatmon", proficiencyRank: 5, growthRank: 7, proficiencyScore: 67, growthScore: 63 },
+    ],
+  };
+}
+
+export async function getRankSettings(): Promise<RankSettings> {
+  // TODO: Wire to backend
+  return {
+    window: "ALL_THREE",
+    weights: { baseline: 15, midpoint: 25, final: 60 },
+    tieBreakers: {
+      finalLevelFirst: true,
+      dok34Accuracy: true,
+      writingEvidence: true,
+      improvementSlope: true,
+    },
+    populationRules: {
+      includeGrades: [6, 7, 8],
+      excludeNewEnrollments: false,
+      useSchoolPopulationOverride: true,
+      schoolPopulationOverrideN: 354,
+    },
+  };
+}
+
+export async function updateRankSettings(_settings: RankSettings): Promise<void> {
+  // TODO: Wire to backend
+  return;
+}

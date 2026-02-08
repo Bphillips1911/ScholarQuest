@@ -382,8 +382,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get specific house
-  app.get("/api/houses/:id", async (req, res) => {
+  // Get specific house (protected)
+  app.get("/api/houses/:id", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const house = await storage.getHouse(req.params.id);
       if (!house) {
@@ -502,8 +502,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get scholars by house
-  app.get("/api/houses/:id/scholars", async (req, res) => {
+  // Get scholars by house (protected)
+  app.get("/api/houses/:id/scholars", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const scholars = await storage.getScholarsByHouse(req.params.id);
       res.json(scholars);
@@ -670,8 +670,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get point entries by house
-  app.get("/api/houses/:id/points", async (req, res) => {
+  // Get point entries by house (protected)
+  app.get("/api/houses/:id/points", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const entries = await storage.getPointEntriesByHouse(req.params.id);
       res.json(entries);
@@ -680,9 +680,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // PBIS routes
+  // PBIS routes (protected)
   // Get all PBIS entries
-  app.get("/api/pbis", async (_req, res) => {
+  app.get("/api/pbis", authenticateTeacherOrAdmin, async (_req, res) => {
     try {
       const entries = await storage.getPbisEntries();
       res.json(entries);
@@ -692,8 +692,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create PBIS entry
-  app.post("/api/pbis", async (req, res) => {
+  // Create PBIS entry (protected)
+  app.post("/api/pbis", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       console.log("PBIS ENTRY REQUEST:", req.body);
       
@@ -1019,7 +1019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Photo upload routes
   // Get all PBIS photos
-  app.get("/api/pbis-photos", async (_req, res) => {
+  app.get("/api/pbis-photos", authenticateTeacherOrAdmin, async (_req, res) => {
     try {
       const photos = await storage.getPbisPhotos();
       res.json(photos);
@@ -1028,8 +1028,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Backward compatibility route
-  app.get("/api/pbis/photos", async (_req, res) => {
+  // Backward compatibility route (protected)
+  app.get("/api/pbis/photos", authenticateTeacherOrAdmin, async (_req, res) => {
     try {
       const photos = await storage.getPbisPhotos();
       res.json(photos);
@@ -1038,8 +1038,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload PBIS photo for teachers
-  app.post("/api/upload-pbis-photo", upload.single('photo'), async (req, res) => {
+  // Upload PBIS photo for teachers (protected)
+  app.post("/api/upload-pbis-photo", authenticateTeacherOrAdmin, upload.single('photo'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No photo file uploaded" });
@@ -1061,8 +1061,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload PBIS photo (backward compatibility)
-  app.post("/api/pbis/photos", upload.single('photo'), async (req, res) => {
+  // Upload PBIS photo (backward compatibility, protected)
+  app.post("/api/pbis/photos", authenticateTeacherOrAdmin, upload.single('photo'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No photo file uploaded" });
@@ -1084,8 +1084,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete PBIS photo
-  app.delete("/api/pbis/photos/:id", async (req, res) => {
+  // Delete PBIS photo (protected)
+  app.delete("/api/pbis/photos/:id", authenticateTeacherOrAdmin, async (req, res) => {
     try {
       const deleted = await storage.deletePbisPhoto(req.params.id);
       if (deleted) {

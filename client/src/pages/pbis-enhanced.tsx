@@ -223,8 +223,10 @@ export default function PBIS() {
       formData.append("description", description);
       formData.append("uploadedBy", selectedTeacher || "Unknown Teacher");
 
+      const token = localStorage.getItem('teacherToken') || localStorage.getItem('adminToken');
       const response = await fetch("/api/pbis/photos", {
         method: "POST",
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData,
       });
 

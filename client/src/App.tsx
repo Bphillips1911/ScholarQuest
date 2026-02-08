@@ -8,6 +8,7 @@ import { realTimeSync } from "@/lib/realTimeSync";
 import { NotificationProvider } from "@/components/NotificationSystem";
 import { notificationService } from "@/services/notificationService";
 import NavigationHeader from "@/components/navigation-header";
+import AuthGuard from "@/components/auth-guard";
 import { AdvancedUIProvider } from "@/components/ui/advanced-ui-system";
 import { SkipLink } from "@/components/ui/accessibility-focused";
 import Dashboard from "@/pages/dashboard";
@@ -116,13 +117,13 @@ function Router() {
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Switch>
               <Route path="/dashboard" component={Dashboard} />
-              <Route path="/houses" component={Houses} />
-              <Route path="/houses/:id" component={HouseDetail} />
-              <Route path="/add-points" component={PBIS} />
-              <Route path="/pbis" component={PBIS} />
-              <Route path="/pbis-recognition" component={PBIS} />
-              <Route path="/scholars" component={Houses} />
-              <Route path="/monthly-pbis" component={MonthlyPBIS} />
+              <Route path="/houses">{() => <AuthGuard sectionName="The Houses section"><Houses /></AuthGuard>}</Route>
+              <Route path="/houses/:id">{(params: any) => <AuthGuard sectionName="The Houses section"><HouseDetail {...params} /></AuthGuard>}</Route>
+              <Route path="/add-points">{() => <AuthGuard sectionName="The PBIS section"><PBIS /></AuthGuard>}</Route>
+              <Route path="/pbis">{() => <AuthGuard sectionName="The PBIS section"><PBIS /></AuthGuard>}</Route>
+              <Route path="/pbis-recognition">{() => <AuthGuard sectionName="The PBIS section"><PBIS /></AuthGuard>}</Route>
+              <Route path="/scholars">{() => <AuthGuard sectionName="The Houses section"><Houses /></AuthGuard>}</Route>
+              <Route path="/monthly-pbis">{() => <AuthGuard sectionName="The Monthly Tracking section"><MonthlyPBIS /></AuthGuard>}</Route>
               <Route path="/pledge" component={Pledge} />
               <Route path="/parent-letter" component={ParentLetter} />
               <Route path="/house-sorting" component={HouseSorting} />

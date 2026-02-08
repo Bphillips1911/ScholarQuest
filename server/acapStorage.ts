@@ -6,16 +6,19 @@ import {
   acapMasteryTracking, acapGrowthSnapshots, acapBootcampSessions, acapAuditLog,
   acapProjectionRuns, acapProjectionSnapshots, acapSchoolwideAssessments, acapSchoolwideResults,
   acapImpactRuns, acapImpactLevers, acapGenomeTraits, acapGenomeEvents, acapGenomeRecommendations,
+  acapTutorAdaptations, acapAccessCodes,
   type AcapStandard, type AcapBlueprint, type AcapPassage, type AcapItem,
   type AcapAssessment, type AcapAssignment, type AcapAttempt, type AcapItemResponse,
   type AcapMasteryTracking, type AcapGrowthSnapshot, type AcapBootcampSession, type AcapAuditLog,
   type AcapProjectionRun, type AcapProjectionSnapshot, type AcapSchoolwideAssessment, type AcapSchoolwideResult,
   type AcapImpactRun, type AcapImpactLever, type AcapGenomeTrait, type AcapGenomeEvent, type AcapGenomeRecommendation,
+  type AcapTutorAdaptation, type AcapAccessCode,
   type InsertAcapStandard, type InsertAcapBlueprint, type InsertAcapPassage, type InsertAcapItem,
   type InsertAcapAssessment, type InsertAcapAssignment, type InsertAcapAttempt, type InsertAcapItemResponse,
   type InsertAcapMasteryTracking, type InsertAcapGrowthSnapshot, type InsertAcapBootcampSession, type InsertAcapAuditLog,
   type InsertAcapProjectionRun, type InsertAcapProjectionSnapshot, type InsertAcapSchoolwideAssessment, type InsertAcapSchoolwideResult,
   type InsertAcapImpactRun, type InsertAcapImpactLever, type InsertAcapGenomeTrait, type InsertAcapGenomeEvent, type InsertAcapGenomeRecommendation,
+  type InsertAcapTutorAdaptation, type InsertAcapAccessCode,
 } from "@shared/schema";
 
 export const acapStorage = {
@@ -420,5 +423,44 @@ export const acapStorage = {
       eq(acapGenomeRecommendations.scholarId, scholarId),
       eq(acapGenomeRecommendations.subject, subject)
     ));
+  },
+
+  async getTutorAdaptation(scholarId: string, subject: string): Promise<AcapTutorAdaptation | undefined> {
+    const [a] = await db.select().from(acapTutorAdaptations).where(and(
+      eq(acapTutorAdaptations.scholarId, scholarId),
+      eq(acapTutorAdaptations.subject, subject)
+    ));
+    return a;
+  },
+  async upsertTutorAdaptation(data: InsertAcapTutorAdaptation): Promise<AcapTutorAdaptation> {
+    const existing = await db.select().from(acapTutorAdaptations).where(and(
+      eq(acapTutorAdaptations.scholarId, data.scholarId),
+      eq(acapTutorAdaptations.subject, data.subject)
+    ));
+    if (existing.length > 0) {
+      const [u] = await db.update(acapTutorAdaptations).set({ ...data, updatedAt: new Date() }).where(eq(acapTutorAdaptations.id, existing[0].id)).returning();
+      return u;
+    }
+    const [a] = await db.insert(acapTutorAdaptations).values(data).returning();
+    return a;
+  },
+
+  async getAccessCodes(teacherId?: string): Promise<AcapAccessCode[]> {
+    if (teacherId) {
+      return db.select().from(acapAccessCodes).where(eq(acapAccessCodes.teacherId, teacherId)).orderBy(desc(acapAccessCodes.createdAt));
+    }
+    return db.select().from(acapAccessCodes).orderBy(desc(acapAccessCodes.createdAt));
+  },
+  async getAccessCodeByCode(code: string): Promise<AcapAccessCode | undefined> {
+    const [c] = await db.select().from(acapAccessCodes).where(eq(acapAccessCodes.code, code));
+    return c;
+  },
+  async createAccessCode(data: InsertAcapAccessCode): Promise<AcapAccessCode> {
+    const [c] = await db.insert(acapAccessCodes).values(data).returning();
+    return c;
+  },
+  async deactivateAccessCode(id: number): Promise<AcapAccessCode> {
+    const [c] = await db.update(acapAccessCodes).set({ isActive: false }).where(eq(acapAccessCodes.id, id)).returning();
+    return c;
   },
 };

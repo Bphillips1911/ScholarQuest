@@ -22,9 +22,12 @@ import ProjectedAcapScoreTab from "@/components/admin/ProjectedAcapScoreTab";
 import ImpactSimulatorTab from "@/components/admin/ImpactSimulatorTab";
 import StudentGenomeTab from "@/components/admin/StudentGenomeTab";
 import AdminRankingsPage from "@/pages/acap/AdminRankingsPage";
+import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
+import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome" | "rankings";
 
 export default function AdminAcap() {
+  useAcapWebSocket();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -87,13 +90,16 @@ export default function AdminAcap() {
             <Button variant="ghost" className="text-white hover:bg-white/20" onClick={() => setLocation("/admin")}>
               <ArrowLeft className="h-5 w-5 mr-1" /> Back to Admin Dashboard
             </Button>
-            <div className="border-l border-white/30 pl-4">
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Shield className="h-6 w-6" /> ACAP Admin Portal
-              </h1>
-              <p className="text-slate-300 text-sm">
-                {adminData?.firstName} {adminData?.lastName} — {adminData?.title || "Administrator"}
-              </p>
+            <div className="border-l border-white/30 pl-4 flex items-center gap-3">
+              <img src={bhsaCrestPath} alt="BHSA Crest" className="h-10 w-10 object-contain" />
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  <Shield className="h-6 w-6" /> ACAP Admin Portal
+                </h1>
+                <p className="text-slate-300 text-sm">
+                  Bush Hills STEAM Academy — {adminData?.firstName} {adminData?.lastName} — {adminData?.title || "Administrator"}
+                </p>
+              </div>
             </div>
           </div>
         </div>

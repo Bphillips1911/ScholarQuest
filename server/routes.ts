@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertScholarSchema, insertTeacherSchema, insertPointEntrySchema, insertPbisEntrySchema, insertPbisPhotoSchema, insertParentSchema, insertTeacherAuthSchema, insertAdministratorSchema, insertParentTeacherMessageSchema, teacherAuth, houses, teachers, type Scholar, type House } from "@shared/schema";
 import { db } from "./db";
@@ -7329,5 +7330,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===== END MARKETING MATERIALS ROUTES =====
 
   const httpServer = createServer(app);
+
+  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+  const wsClients = new Set<WebSocket>();
+
+  wss.on("connection", (ws: WebSocket) => {
+    wsClients.add(ws);
+    ws.on("close", () => wsClients.delete(ws));
+    ws.on("error", () => wsClients.delete(ws));
+  });
+
+  function broadcastAcapEvent(event: string, data?: any) {
+    const message = JSON.stringify({ type: "acap", event, data, timestamp: Date.now() });
+    for (const client of wsClients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    }
+  }
+
+  (global as any).__broadcastAcapEvent = broadcastAcapEvent;
+
   return httpServer;
 }

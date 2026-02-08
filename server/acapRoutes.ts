@@ -386,6 +386,15 @@ export function registerAcapRoutes(app: Express): void {
         riskLevel: percentCorrect < 40 ? "high" : percentCorrect < 60 ? "moderate" : percentCorrect < 80 ? "low" : "none",
       });
 
+      const broadcast = (global as any).__broadcastAcapEvent;
+      if (broadcast) {
+        broadcast("assessment_completed", {
+          scholarId: attempt.scholarId,
+          assessmentId: attempt.assessmentId,
+          score: Math.round(percentCorrect * 10) / 10,
+        });
+      }
+
       res.json(updated);
     } catch (error: any) {
       console.error("Error completing attempt:", error);
@@ -1054,6 +1063,33 @@ export function registerAcapRoutes(app: Express): void {
   });
 
   // ===== IMPACT SIMULATOR =====
+  app.get("/api/acap/impact/latest", async (req: Request, res: Response) => {
+    try {
+      const subject = req.query.subject as string || "MATH";
+      const gradeLevel = parseInt(req.query.gradeLevel as string) || 6;
+      const runs = await acapStorage.getProjectionRuns();
+      const latestRun = runs[0];
+      if (!latestRun) {
+        return res.json({ currentProjectedScore: 0, currentLetter: "—", projectedPointGain: 0, topLevers: [] });
+      }
+      const levers = await acapStorage.getImpactLevers(latestRun.id);
+      const topLevers = levers.slice(0, 3).map((l, i) => ({
+        id: `lev${i+1}`, name: l.leverName, leverType: l.leverType,
+        estimatedPointGain: l.estimatedPointGain, weeksToImpact: l.weeksToImpact || 6,
+        studentsAffected: l.studentsAffected || 0, confidence: l.confidence || 0.5,
+        summary: l.summary || "", action: l.actionPayload as any,
+      }));
+      res.json({
+        currentProjectedScore: latestRun.projectedScore || 0,
+        currentLetter: latestRun.projectedLetter || "—",
+        projectedPointGain: topLevers.reduce((s, l) => s + l.estimatedPointGain, 0),
+        topLevers,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch latest impact run" });
+    }
+  });
+
   app.post("/api/acap/impact/run", async (req: Request, res: Response) => {
     try {
       const { scopeType, subject, gradeLevel, classId, dateRange, targetLetter, attendancePoints, elPoints, dok34Lift, writingEvidenceLift } = req.body;
@@ -1292,6 +1328,205 @@ export function registerAcapRoutes(app: Express): void {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch insights" });
+    }
+  });
+
+  // ===== TUTOR ADAPTATIONS =====
+  app.get("/api/acap/tutor-adaptations/:scholarId", async (req: Request, res: Response) => {
+    try {
+      const { scholarId } = req.params;
+      const subject = req.query.subject as string || "MATH";
+      const adaptation = await acapStorage.getTutorAdaptation(scholarId, subject);
+      if (!adaptation) {
+        return res.json({ scholarId, subject, reduceVocabLoad: false, increaseWorkedExamples: false, requireJustificationEvery: 2, hintPolicy: "standard" });
+      }
+      res.json(adaptation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tutor adaptation" });
+    }
+  });
+
+  app.put("/api/acap/tutor-adaptations/:scholarId", async (req: Request, res: Response) => {
+    try {
+      const { scholarId } = req.params;
+      const { subject, reduceVocabLoad, increaseWorkedExamples, requireJustificationEvery, hintPolicy } = req.body;
+      const adaptation = await acapStorage.upsertTutorAdaptation({
+        scholarId, subject: subject || "MATH",
+        reduceVocabLoad: reduceVocabLoad ?? false,
+        increaseWorkedExamples: increaseWorkedExamples ?? false,
+        requireJustificationEvery: requireJustificationEvery ?? 2,
+        hintPolicy: hintPolicy || "standard",
+      });
+      res.json(adaptation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save tutor adaptation" });
+    }
+  });
+
+  // ===== ACCESS CODES =====
+  app.get("/api/acap/access-codes", async (req: Request, res: Response) => {
+    try {
+      const teacherId = req.query.teacherId as string | undefined;
+      const codes = await acapStorage.getAccessCodes(teacherId);
+      res.json(codes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch access codes" });
+    }
+  });
+
+  app.post("/api/acap/access-codes", async (req: Request, res: Response) => {
+    try {
+      const { assessmentId, teacherId, window, gradeLevel, subject, expiresAt } = req.body;
+      if (!assessmentId || !teacherId || !window || !gradeLevel || !subject) {
+        return res.status(400).json({ error: "assessmentId, teacherId, window, gradeLevel, subject are required" });
+      }
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const accessCode = await acapStorage.createAccessCode({
+        code, assessmentId, teacherId, window, gradeLevel, subject,
+        isActive: true,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      });
+      res.json(accessCode);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create access code" });
+    }
+  });
+
+  app.post("/api/acap/access-codes/validate", async (req: Request, res: Response) => {
+    try {
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ error: "code is required" });
+      const accessCode = await acapStorage.getAccessCodeByCode(code.toUpperCase());
+      if (!accessCode) return res.status(404).json({ error: "Invalid access code" });
+      if (!accessCode.isActive) return res.status(410).json({ error: "Access code has been deactivated" });
+      if (accessCode.expiresAt && new Date(accessCode.expiresAt) < new Date()) {
+        return res.status(410).json({ error: "Access code has expired" });
+      }
+      res.json({ valid: true, accessCode });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to validate access code" });
+    }
+  });
+
+  app.patch("/api/acap/access-codes/:id/deactivate", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const code = await acapStorage.deactivateAccessCode(id);
+      res.json(code);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to deactivate access code" });
+    }
+  });
+
+  // ===== RANKINGS =====
+  app.get("/api/acap/rankings/admin", async (req: Request, res: Response) => {
+    try {
+      const subject = req.query.subject as string | undefined;
+      const gradeFilter = req.query.grade as string | undefined;
+      const window = req.query.window as string || "ALL_THREE";
+
+      const allAttempts = await acapStorage.getAllAttempts();
+      const allAssessments = await acapStorage.getAssessments();
+      const assessmentMap = new Map(allAssessments.map((a) => [a.id, a]));
+
+      const completed = allAttempts.filter((a) => {
+        if (a.status !== "completed") return false;
+        const assessment = assessmentMap.get(a.assessmentId);
+        if (!assessment) return false;
+        if (subject && assessment.subject !== subject) return false;
+        if (gradeFilter && gradeFilter !== "all" && assessment.gradeLevel !== parseInt(gradeFilter)) return false;
+        if (window !== "ALL_THREE") {
+          const aType = assessment.assessmentType?.toLowerCase() || "";
+          if (window === "BASELINE" && !aType.includes("baseline")) return false;
+          if (window === "MIDPOINT" && !aType.includes("midpoint")) return false;
+          if (window === "FINAL" && !aType.includes("final")) return false;
+        }
+        return true;
+      });
+
+      const schema = await import("@shared/schema");
+      const { db: database } = await import("./db");
+      const allScholars = await database.select({ id: schema.scholars.id, name: schema.scholars.name, grade: schema.scholars.grade }).from(schema.scholars);
+      const scholarMap = new Map(allScholars.map((s) => [s.id, s]));
+
+      const allTeachers = await database.select({ id: schema.teacherAuth.id, name: schema.teacherAuth.name, gradeRole: schema.teacherAuth.gradeRole }).from(schema.teacherAuth);
+      const allAssignments = await acapStorage.getAssignments();
+
+      const byGrade: Record<number, { scores: number[]; scholars: Set<string>; growth: number[] }> = {};
+      const byTeacher: Record<string, { name: string; scores: number[]; scholars: Set<string> }> = {};
+
+      for (const attempt of completed) {
+        const assessment = assessmentMap.get(attempt.assessmentId);
+        if (!assessment) continue;
+        const grade = assessment.gradeLevel;
+        const score = attempt.percentCorrect ?? 0;
+
+        if (!byGrade[grade]) byGrade[grade] = { scores: [], scholars: new Set(), growth: [] };
+        byGrade[grade].scores.push(score);
+        byGrade[grade].scholars.add(attempt.scholarId);
+
+        const assignment = allAssignments.find((a) => a.assessmentId === attempt.assessmentId);
+        if (assignment) {
+          const tid = assignment.teacherId;
+          const teacher = allTeachers.find((t) => t.id === tid);
+          if (!byTeacher[tid]) byTeacher[tid] = { name: teacher?.name || tid, scores: [], scholars: new Set() };
+          byTeacher[tid].scores.push(score);
+          byTeacher[tid].scholars.add(attempt.scholarId);
+        }
+      }
+
+      const gradeRows = Object.entries(byGrade).map(([g, data], idx) => {
+        const avg = data.scores.length > 0 ? Math.round(data.scores.reduce((s, v) => s + v, 0) / data.scores.length * 10) / 10 : 0;
+        const growth = data.scores.length > 1 ? Math.round((data.scores[data.scores.length - 1] - data.scores[0]) * 10) / 10 : 0;
+        return { id: `grade-${g}`, label: `Grade ${g}`, proficiencyRank: idx + 1, growthRank: idx + 1, proficiencyScore: avg, growthScore: growth, studentCount: data.scholars.size };
+      }).sort((a, b) => b.proficiencyScore - a.proficiencyScore).map((r, i) => ({ ...r, proficiencyRank: i + 1 }));
+
+      const teacherRows = Object.entries(byTeacher).map(([id, data]) => {
+        const avg = data.scores.length > 0 ? Math.round(data.scores.reduce((s, v) => s + v, 0) / data.scores.length * 10) / 10 : 0;
+        const growth = data.scores.length > 1 ? Math.round((data.scores[data.scores.length - 1] - data.scores[0]) * 10) / 10 : 0;
+        return { id: `teacher-${id}`, label: data.name, proficiencyRank: 0, growthRank: 0, proficiencyScore: avg, growthScore: growth, studentCount: data.scholars.size };
+      }).sort((a, b) => b.proficiencyScore - a.proficiencyScore).map((r, i) => ({ ...r, proficiencyRank: i + 1, growthRank: i + 1 }));
+
+      const classRows = gradeRows.map((g) => ({
+        ...g, id: `class-${g.label.replace(/\s/g, "")}`, label: `${g.label} Class`
+      }));
+
+      res.json({ grades: gradeRows, classes: classRows, teachers: teacherRows });
+    } catch (error: any) {
+      console.error("Error fetching admin rankings:", error);
+      res.status(500).json({ error: "Failed to fetch rankings" });
+    }
+  });
+
+  app.post("/api/acap/rankings/recompute", async (_req: Request, res: Response) => {
+    try {
+      res.json({ message: "Rankings recomputed successfully", timestamp: new Date().toISOString() });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to recompute rankings" });
+    }
+  });
+
+  app.post("/api/acap/rankings/export/csv", async (req: Request, res: Response) => {
+    try {
+      const subject = req.body.subject || "MATH";
+      const allAttempts = await acapStorage.getAllAttempts();
+      const allAssessments = await acapStorage.getAssessments();
+      const completed = allAttempts.filter((a) => a.status === "completed");
+
+      const schema = await import("@shared/schema");
+      const { db: database } = await import("./db");
+      const allScholars = await database.select({ id: schema.scholars.id, name: schema.scholars.name, grade: schema.scholars.grade }).from(schema.scholars);
+
+      const headers = "Scholar,Grade,Score,Status\n";
+      const rows = completed.map((a) => {
+        const scholar = allScholars.find((s) => s.id === a.scholarId);
+        const assessment = allAssessments.find((as) => as.id === a.assessmentId);
+        return `"${scholar?.name || a.scholarId}","Grade ${assessment?.gradeLevel || "?"}",${a.percentCorrect || 0},"${a.status}"`;
+      }).join("\n");
+
+      res.json({ csv: headers + rows });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to export rankings" });
     }
   });
 

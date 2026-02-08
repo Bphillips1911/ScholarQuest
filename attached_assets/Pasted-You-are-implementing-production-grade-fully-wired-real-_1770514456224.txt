@@ -1,0 +1,218 @@
+You are implementing production-grade, fully wired, real-time ACAP Admin features inside the existing PBIS House of Champions codebase. NO mock data. Use existing PBIS users/students/teachers/rosters/classes already in the database.
+
+PRIMARY GOAL
+Fix and complete these three ACAP Admin tabs so they work end-to-end with real data and correct UI fidelity:
+1) Instructional Impact Simulator
+2) Student Readiness Genome
+3) ACAP Rankings
+
+SECONDARY GOALS
+A) Fix misspellings, spacing, labels, and empty/undefined controls across all ACAP Admin dashboards to match the provided screenshots.
+B) Make all top tabs clickable and route-correct.
+C) Ensure real-time updates: when new assessment results arrive, the UI updates without refresh.
+D) Add Assessment Access Codes system: baseline/midpoint/final codes generated per scholar; teacher/admin can retrieve/regenerate; scholars can enter either (username+password) OR (access code) to start an assessment—only one required.
+
+HARD REQUIREMENTS
+- No placeholder/gibberish text in production UI.
+- No disabled “Run Simulator” button unless required fields are missing; show why disabled.
+- Remove the “blank button next to Grade 6” in Student Genome OR implement it as an explicit control with a label and real function (see below).
+- All Tutor Adaptations toggles must work and persist.
+- Rankings must use real data, not random values, and must reflect Baseline/Midpoint/Final (All Three filter).
+- Export buttons must export real computed datasets (CSV at minimum).
+- Use role-based access: Admin can see schoolwide/class/teacher/student; Teacher sees only own rosters; Student sees only self and rank position only (e.g., “9th out of 354”) without exposing others.
+
+ASSUMPTIONS ABOUT STACK
+- React + TypeScript + Tailwind + shadcn/ui
+- TanStack Query for data fetching
+- Node/Express backend with DB (Postgres) using existing ORM pattern in repo (Drizzle or Prisma)
+- If websockets already exist, use them. If not, implement SSE for realtime invalidation.
+
+STEP 0 — AUDIT & FIX NAV/ROUTES (MUST DO FIRST)
+1) Locate ACAP Admin portal route files (likely src/pages/admin-acap/* or similar).
+2) Ensure tabs map to routes:
+   - /admin-acap/rankings
+   - /admin-acap/impact-simulator
+   - /admin-acap/student-genome
+   (and any existing ones: /admin-acap/projected-score, /admin-acap/boot-camp, etc.)
+3) Fix tab spelling: “Assessments”, “Completion”, “AI Settings”, “Reports”, “Boot Camp”, “Projected Score”, “Impact Simulator”, “Student Genome”, “Rankings”.
+4) Ensure active tab styling matches screenshot (pill highlight), and spacing/padding is consistent.
+
+STEP 1 — REPLACE MOCK DATA WITH REAL PBIS DATA (SHARED DATA LAYER)
+Create backend endpoints that read existing PBIS tables:
+- GET /api/pbis/context/me  -> returns role, userId, schoolId
+- GET /api/pbis/rosters?scope=teacher|class|grade&... -> returns teacher’s classes + student lists
+- GET /api/pbis/students/search?q= -> returns matching students (admin only; teacher limited to own roster)
+
+On frontend:
+- Replace any hardcoded “Grade 6, 7, 8” lists with a query to actual active grades in DB.
+- Replace any hardcoded “Dante Adams” etc. with fetched student profile data.
+
+STEP 2 — REAL-TIME INFRA (DO NOT SKIP)
+Implement a realtime mechanism that pushes “acap_updated” events whenever:
+- an assessment attempt is completed
+- rankings recomputed
+- genome traits updated
+- simulator baseline dataset changes
+
+Implementation:
+A) Preferred: WebSocket (Socket.io) channel: “acap”
+B) If no WS exists: Server-Sent Events endpoint:
+   - GET /api/realtime/acap/stream (authorized)
+   Emits JSON events: { type: "acap_updated", scope: { gradeId?, teacherId?, classId?, studentId? } }
+
+Frontend:
+- Create a hook useAcapRealtimeInvalidation() that subscribes and invalidates TanStack Query keys:
+   - ["acap.rankings", filters]
+   - ["acap.genome", studentId, subject]
+   - ["acap.simulator", filters]
+   - ["acap.profilesummary", studentId]
+
+STEP 3 — RANKINGS (ADMIN + TEACHER + STUDENT VIEWS)
+Backend data model:
+- Use assessment results from Baseline/Midpoint/Final attempts.
+Compute:
+- proficiency_score (0–100) per attempt + overall
+- growth_score between Baseline->Midpoint, Midpoint->Final, Baseline->Final
+Ranking:
+- rank_position within a configured “population set” (admin-configurable)
+- For student: return only “your rank position + population size” with no other student rows.
+
+Endpoints:
+- GET /api/acap/rankings/admin?subject=&grade=&cohort=allThree|baseline|mid|final
+- GET /api/acap/rankings/teacher?subject=&classId=&cohort=
+- GET /api/acap/rankings/student?subject=&cohort=
+- POST /api/acap/rankings/recompute (admin only)
+- POST /api/acap/rankings/settings (admin only)
+Settings includes:
+- population mode: schoolwide | grade-only | selected-grades | custom-student-set
+- include/exclude inactive students
+
+Frontend:
+- Fix Admin Rankings dashboard spacing and remove any “TODO” placeholder.
+- Filters must wire to query params and refetch.
+- “Export” downloads CSV from backend.
+- “Settings” opens a real modal to configure population mode and cohort defaults.
+- “Recompute” triggers backend recompute and shows toast progress.
+
+STEP 4 — STUDENT READINESS GENOME (ADMIN WORKFLOW + TUTOR ADAPTATIONS)
+You currently show a blank control next to “Grade 6”. Replace it with a labeled control:
+Option to implement (REQUIRED): “Cohort” selector
+- Cohort dropdown: Baseline | Midpoint | Final | All Three (aggregated traits)
+
+Header controls:
+- Subject dropdown (Math/ELA/Science)
+- Grade dropdown (real)
+- Cohort dropdown (replaces blank button)
+- Search input for students (admin can search all; teacher limited)
+
+Genome data:
+- Traits computed from assessment behavior + performance patterns:
+  - stamina_index, rapid_guess_risk, evidence_use, vocab_load_risk, etc.
+Tutor Adaptations toggles MUST:
+- persist per student per subject in DB
+- show status chips and last-updated timestamps
+- affect Boot Camp tutor prompt generation later
+
+Endpoints:
+- GET /api/acap/genome/search?subject=&grade=&q=
+- GET /api/acap/genome/student/:studentId?subject=&cohort=
+- PATCH /api/acap/genome/student/:studentId/adaptations
+- GET /api/acap/genome/admin/insights?filters... (for your Insights list page)
+
+Frontend:
+- Make every adaptation toggle clickable and saved.
+- Show a “Saved” toast and optimistic UI.
+- Ensure “No Student Selected” state matches screenshot but with clean text.
+
+STEP 5 — INSTRUCTIONAL IMPACT SIMULATOR (FULL FIDELITY)
+Purpose:
+Simulate projected report-score point gain based on levers:
+- DOK 3–4 accuracy lift
+- writing evidence lift
+- vocab stamina lift
+and constraints:
+- grade, subject, scope (school/grade/class), timeframe, attendance points, EL points
+
+Backend:
+- Compute current baseline metrics from actual ACAP attempts (or in-house assessments).
+- Simulation function returns:
+  - projected_point_gain
+  - top_levers (ranked)
+  - students_needed_estimates
+  - confidence score based on data volume
+
+Endpoints:
+- GET /api/acap/simulator/baseline?scope=&subject=&grade=&timeframe=
+- POST /api/acap/simulator/run  body:{ scope, filters, knobs:{dokLift, writingLift, vocabLift}, attendancePts, elPts, targetGradeLetter }
+- GET /api/acap/simulator/export.csv?runId=
+
+Frontend:
+- Fix “Run Simulator” button: enabled when required filters chosen.
+- If disabled, show inline requirement chips: “Select subject”, “Select grade”, etc.
+- Make all cards/actions (Assign Boot Camp, Schedule PD Session, Launch Boot Camp) functional:
+  - these create an intervention plan object and optionally assign Boot Camp to selected roster.
+
+STEP 6 — ASSESSMENT ACCESS CODES (BASELINE/MIDPOINT/FINAL)
+DB:
+Create table acap_access_codes:
+- id
+- student_id
+- assessment_type (baseline|midpoint|final)
+- code_hash
+- code_last4 (for display)
+- issued_by_user_id
+- issued_at
+- expires_at (optional)
+- is_active boolean
+
+Rules:
+- Generate unique 6–8 char alphanumeric code.
+- Teacher/admin can retrieve (show masked + last4) and regenerate (invalidate old).
+- Student can access assessment by either:
+  A) username+password
+  OR
+  B) access code + student last name (or DOB month/day if you prefer)
+Only one method required; DO NOT require both.
+
+Endpoints:
+- POST /api/acap/codes/generate { studentId, type }
+- POST /api/acap/codes/regenerate { studentId, type }
+- GET /api/acap/codes/teacher/roster?classId=  (teacher only)
+- POST /api/acap/assessment/start-by-code { code, lastName, type }
+- POST /api/acap/assessment/start-by-login { username, password, type } (or use existing auth flow then start)
+
+Frontend:
+- Add “Assessment Access” section in teacher roster tools:
+  - view/retrieve code, regenerate code button, copy button
+- Student “Start Assessment” screen:
+  - Tab 1: Login
+  - Tab 2: Access Code
+  - Both lead to same attempt creation flow.
+
+STEP 7 — FINAL QA PASS (MUST COMPLETE)
+- Fix misspellings and spacing across all ACAP Admin screens:
+  - remove odd unicode sequences like “\u2022” being displayed incorrectly
+  - normalize headings and padding to match screenshots
+- Ensure all exports work.
+- Ensure all tabs are functional and route-correct.
+- Ensure all screens show real data once assessments exist.
+
+DELIVERABLES
+1) Working admin tabs with real data and realtime refresh.
+2) Working genome adaptations with persistence.
+3) Working rankings with privacy rules (student sees only their rank).
+4) Working simulator run flow with export.
+5) Working access code generation + student entry flow.
+6) Remove blank/undefined UI controls; replace with Cohort selector in Student Genome.
+7) No engineer needed: include a /docs/acap-admin-wiring.md with setup notes, endpoints list, and how to test.
+
+ACCEPTANCE TESTS (RUN LOCALLY)
+- Open /admin-acap/rankings: filters update table; recompute updates results live.
+- Open /admin-acap/impact-simulator: run simulation returns projected gain; export downloads.
+- Open /admin-acap/student-genome: search student; toggles persist; reload reflects saved state.
+- Teacher view: sees only own rosters and class ranks.
+- Student view: sees only “rank X of N” and goal tracking.
+- Create access codes; start assessment by code; teacher can regenerate; old code invalid.
+- Completing an assessment triggers realtime update in rankings/genome/simulator baseline.
+
+Proceed to implement now in the repo.

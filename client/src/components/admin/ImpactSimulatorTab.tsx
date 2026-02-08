@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import {
   PlayCircle, FileText, Table2, SlidersHorizontal, Loader2, TrendingUp,
   BookOpen, Brain, Zap
 } from "lucide-react";
+import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 
 type Lever = {
   id: string;
@@ -73,14 +74,28 @@ export default function ImpactSimulatorTab() {
   const [dok34Lift, setDok34Lift] = useState(15);
   const [writingEvidenceLift, setWritingEvidenceLift] = useState(10);
 
-  const [currentProjectedScore, setCurrentProjectedScore] = useState(83);
-  const [currentLetter, setCurrentLetter] = useState("B");
-  const [projectedPointGain, setProjectedPointGain] = useState(9.4);
-  const [levers, setLevers] = useState<Lever[]>([
-    { id: "lev1", name: "Boost Math DOK 3–4 Instruction", leverType: "DOK_SHIFT", estimatedPointGain: 3.8, weeksToImpact: 6, studentsAffected: 63, confidence: 0.72, summary: "Move Level 2 → Level 3 DOK ratio from 19% to 36%. ~53 scholars (level D.1).", action: { type: "ASSIGN_BOOTCAMP", payload: { track: "MATH_DOK3_PROPORTIONAL_REASONING", durationWeeks: 4 } } },
-    { id: "lev2", name: "Improve Text Evidence Scores", leverType: "WRITING_EVIDENCE", estimatedPointGain: 2.7, weeksToImpact: 5, studentsAffected: 56, confidence: 0.66, summary: "Boost Writing rubric evidence scores from 1.4 to 2. ~56 scholars (writing).", action: { type: "SCHEDULE_COACHING", payload: { focus: "EVIDENCE_REASONING", durationWeeks: 4 } } },
-    { id: "lev3", name: "Strengthen Vocabulary Stamina", leverType: "VOCAB", estimatedPointGain: 2.2, weeksToImpact: 8, studentsAffected: 61, confidence: 0.59, summary: "Multi select performance from 26% to 41%. ~61 scholars (reading).", action: { type: "GENERATE_ITEMSET", payload: { subject: "ELA", grade: 6, dok: [2, 3], domain: "Vocabulary", itemCount: 30 } } },
-  ]);
+  const [currentProjectedScore, setCurrentProjectedScore] = useState(0);
+  const [currentLetter, setCurrentLetter] = useState("—");
+  const [projectedPointGain, setProjectedPointGain] = useState(0);
+  const [levers, setLevers] = useState<Lever[]>([]);
+
+  const { data: latestRun } = useQuery({
+    queryKey: ["/api/acap/impact/latest", subject, grade],
+    queryFn: async () => {
+      const res = await fetch(`/api/acap/impact/latest?subject=${subject}&gradeLevel=${grade}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (latestRun) {
+      if (latestRun.topLevers?.length > 0) setLevers(latestRun.topLevers);
+      if (latestRun.currentProjectedScore != null) setCurrentProjectedScore(latestRun.currentProjectedScore);
+      if (latestRun.currentLetter) setCurrentLetter(latestRun.currentLetter);
+      if (latestRun.projectedPointGain != null) setProjectedPointGain(latestRun.projectedPointGain);
+    }
+  }, [latestRun]);
 
   const runSimulatorMutation = useMutation({
     mutationFn: async () => {
@@ -125,10 +140,11 @@ export default function ImpactSimulatorTab() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <img src={bhsaCrestPath} alt="BHSA" className="h-8 w-8 object-contain" />
               <Sparkles className="h-6 w-6 text-yellow-400" /> Instructional Impact Simulator™
             </h2>
             <p className="text-sm text-slate-300 mt-1">
-              Welcome ACAP CCUHBOT! Let's identify the most impactful moves to improve our school's projected state diagnostic.
+              Bush Hills STEAM Academy — Identify the most impactful instructional moves to improve projected ACAP scores.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -322,12 +338,12 @@ export default function ImpactSimulatorTab() {
 
           <Card className="border-2 border-amber-100 shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-amber-600" /> ACAP DOK Level 2</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-amber-600" /> ACAP DOK Level 2 Strategy</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-xs text-gray-600">
-                <p>Scaffold Malappart Latur clearance cognitive diagnostics. Refer to ghc specifications.</p>
-                <p className="text-gray-400">Readiness, Relate have freaky, lockers to canine chasaa diagnosed score</p>
+                <p>Scaffold Level 2 students toward DOK 3 proficiency through targeted cognitive diagnostics and structured practice.</p>
+                <p className="text-gray-400">Prioritize reasoning stamina and evidence-based response training for maximum growth impact.</p>
               </div>
             </CardContent>
           </Card>

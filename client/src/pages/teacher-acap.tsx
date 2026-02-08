@@ -16,8 +16,11 @@ import {
   ThumbsUp, ThumbsDown, XCircle, Calculator, PenTool, Award
 } from "lucide-react";
 import TeacherClassRankGoalsPage from "@/pages/acap/TeacherClassRankGoalsPage";
+import AccessCodesManager from "@/components/acap/teacher/AccessCodesManager";
+import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
+import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 
-type Tab = "overview" | "assignments" | "question-bank" | "reports" | "bootcamp" | "rank-goals";
+type Tab = "overview" | "assignments" | "question-bank" | "reports" | "bootcamp" | "rank-goals" | "access-codes";
 
 interface TeacherInfo {
   id: string;
@@ -28,6 +31,7 @@ interface TeacherInfo {
 }
 
 export default function TeacherAcap() {
+  useAcapWebSocket();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -57,6 +61,7 @@ export default function TeacherAcap() {
     { id: "reports" as Tab, label: "Reports", icon: FileText },
     { id: "bootcamp" as Tab, label: "Boot Camp", icon: Brain },
     { id: "rank-goals" as Tab, label: "Rank & Goals", icon: Award },
+    { id: "access-codes" as Tab, label: "Access Codes", icon: Target },
   ];
 
   return (
@@ -67,9 +72,10 @@ export default function TeacherAcap() {
             <Button variant="ghost" className="text-white hover:bg-white/20" onClick={() => setLocation("/teacher-dashboard")}>
               <ArrowLeft className="h-5 w-5 mr-1" /> Back
             </Button>
+            <img src={bhsaCrestPath} alt="BHSA Crest" className="h-9 w-9 object-contain" />
             <div>
               <h1 className="text-2xl font-bold">ACAP Adaptive Skills</h1>
-              <p className="text-indigo-200 text-sm">Standards-Based Assessment & AI-Powered Learning</p>
+              <p className="text-indigo-200 text-sm">Bush Hills STEAM Academy — Standards-Based Assessment & AI-Powered Learning</p>
             </div>
           </div>
           <div className="text-right text-sm text-indigo-200">
@@ -103,6 +109,7 @@ export default function TeacherAcap() {
         {activeTab === "reports" && <ReportsTab teacherId={teacherId} />}
         {activeTab === "bootcamp" && <BootCampTab teacherId={teacherId} gradeNumber={gradeNumber} />}
         {activeTab === "rank-goals" && <TeacherClassRankGoalsPage />}
+        {activeTab === "access-codes" && <AccessCodesManager teacherId={teacherId} />}
       </div>
     </div>
   );

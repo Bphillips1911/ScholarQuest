@@ -13,10 +13,14 @@ import {
   Send, Star, Play, MessageCircle, Sparkles, ChevronRight, Award
 } from "lucide-react";
 import StudentRankGoalsPanel from "@/components/acap/student/StudentRankGoalsPanel";
+import AccessCodeEntry from "@/components/acap/student/AccessCodeEntry";
+import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
+import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 
 type Tab = "mastery" | "assessments" | "bootcamp" | "reports" | "rank-goals";
 
 export default function StudentAcap() {
+  useAcapWebSocket();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("mastery");
@@ -39,9 +43,10 @@ export default function StudentAcap() {
             <Button variant="ghost" className="text-white hover:bg-white/20" onClick={() => setLocation("/student-dashboard")}>
               <ArrowLeft className="h-5 w-5 mr-1" /> Back
             </Button>
+            <img src={bhsaCrestPath} alt="BHSA Crest" className="h-9 w-9 object-contain" />
             <div>
               <h1 className="text-2xl font-bold">ACAP Adaptive Skills</h1>
-              <p className="text-blue-200 text-sm">Your Personalized Learning Journey</p>
+              <p className="text-blue-200 text-sm">Bush Hills STEAM Academy — Your Personalized Learning Journey</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -182,6 +187,7 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
   const [selectedAnswer, setSelectedAnswer] = useState<any>(null);
   const [textAnswer, setTextAnswer] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [showCodeEntry, setShowCodeEntry] = useState(false);
 
   const { data: assignments, isLoading } = useQuery({
     queryKey: ["/api/acap/assignments/scholar", scholarId],
@@ -343,6 +349,27 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-gray-800">My Assessments</h2>
+      {showCodeEntry && (
+        <div className="mb-4">
+          <AccessCodeEntry onValidCode={(data) => {
+            setShowCodeEntry(false);
+            toast({ title: "Access Granted", description: `Starting ${data.accessCode.window.toLowerCase()} assessment.` });
+            startMutation.mutate({ assessmentId: data.accessCode.assessmentId, scholarId });
+          }} />
+          <div className="flex justify-center mt-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowCodeEntry(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      {!showCodeEntry && (
+        <div className="mb-4 flex justify-end">
+          <Button variant="outline" className="gap-2" onClick={() => setShowCodeEntry(true)}>
+            <Target className="h-4 w-4" /> Enter Access Code
+          </Button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div>
       ) : (assignments as any[])?.length > 0 ? (

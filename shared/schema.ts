@@ -1389,6 +1389,34 @@ export const insertAcapGenomeTraitSchema = createInsertSchema(acapGenomeTraits).
 export const insertAcapGenomeEventSchema = createInsertSchema(acapGenomeEvents).omit({ id: true, createdAt: true });
 export const insertAcapGenomeRecommendationSchema = createInsertSchema(acapGenomeRecommendations).omit({ id: true, createdAt: true });
 
+export const acapTutorAdaptations = pgTable("acap_tutor_adaptations", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  subject: varchar("subject", { length: 20 }).notNull(),
+  reduceVocabLoad: boolean("reduce_vocab_load").default(false).notNull(),
+  increaseWorkedExamples: boolean("increase_worked_examples").default(false).notNull(),
+  requireJustificationEvery: integer("require_justification_every").default(2).notNull(),
+  hintPolicy: varchar("hint_policy", { length: 50 }).default("standard").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAcapTutorAdaptationSchema = createInsertSchema(acapTutorAdaptations).omit({ id: true, updatedAt: true });
+
+export const acapAccessCodes = pgTable("acap_access_codes", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 12 }).notNull().unique(),
+  assessmentId: integer("assessment_id").references(() => acapAssessments.id).notNull(),
+  teacherId: varchar("teacher_id").notNull(),
+  window: varchar({ length: 20 }).notNull(),
+  gradeLevel: integer("grade_level").notNull(),
+  subject: varchar("subject", { length: 20 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAcapAccessCodeSchema = createInsertSchema(acapAccessCodes).omit({ id: true, createdAt: true });
+
 // ACAP Type Exports
 export type AcapStandard = typeof acapStandards.$inferSelect;
 export type AcapBlueprint = typeof acapBlueprints.$inferSelect;
@@ -1429,6 +1457,10 @@ export type AcapImpactLever = typeof acapImpactLevers.$inferSelect;
 export type AcapGenomeTrait = typeof acapGenomeTraits.$inferSelect;
 export type AcapGenomeEvent = typeof acapGenomeEvents.$inferSelect;
 export type AcapGenomeRecommendation = typeof acapGenomeRecommendations.$inferSelect;
+export type AcapTutorAdaptation = typeof acapTutorAdaptations.$inferSelect;
+export type InsertAcapTutorAdaptation = z.infer<typeof insertAcapTutorAdaptationSchema>;
+export type AcapAccessCode = typeof acapAccessCodes.$inferSelect;
+export type InsertAcapAccessCode = z.infer<typeof insertAcapAccessCodeSchema>;
 export type InsertAcapImpactRun = z.infer<typeof insertAcapImpactRunSchema>;
 export type InsertAcapImpactLever = z.infer<typeof insertAcapImpactLeverSchema>;
 export type InsertAcapGenomeTrait = z.infer<typeof insertAcapGenomeTraitSchema>;

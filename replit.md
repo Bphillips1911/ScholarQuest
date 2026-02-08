@@ -65,16 +65,19 @@ Preferred communication style: Simple, everyday language.
   - Student portal: mastery map visualization, assessment taking, boot camp sessions, growth tracking
   - Admin portal: standards/blueprint management, question bank governance, comprehensive audit logs
   - Projected ACAP Report Score module: Proprietary projection model (ProficiencyIndex + GrowthIndex + WritingIndex + AttendancePoints + ELPoints => ProjectedScore 0-100 with letter grade), What-If Scenario Lab with sliders for Level 1 redistribution, Schoolwide Assessment Builder with DOK mix/domain weights/writing types, CSV/PDF export, snapshot storage
-  - Schema: 16 tables (acap_standards, acap_blueprints, acap_items, acap_passages, acap_assessments, acap_assignments, acap_attempts, acap_item_responses, acap_mastery_tracking, acap_growth_snapshots, acap_bootcamp_sessions, acap_audit_log, acap_projection_runs, acap_projection_snapshots, acap_schoolwide_assessments, acap_schoolwide_results)
-  - Instructional Impact Simulator: Top 3 instructional levers, what-if controls, students-needed calculator, CSV/PDF export
-  - Student Readiness Genome: 6 cognitive trait diagnostics, tutor adaptations, coaching recommendations per student
+  - Schema: 18 tables (acap_standards, acap_blueprints, acap_items, acap_passages, acap_assessments, acap_assignments, acap_attempts, acap_item_responses, acap_mastery_tracking, acap_growth_snapshots, acap_bootcamp_sessions, acap_audit_log, acap_projection_runs, acap_projection_snapshots, acap_schoolwide_assessments, acap_schoolwide_results, acap_tutor_adaptations, acap_access_codes)
+  - Instructional Impact Simulator: Top 3 instructional levers, what-if controls, students-needed calculator, CSV/PDF export, auto-loads latest run data on mount via GET /api/acap/impact/latest
+  - Student Readiness Genome: 6 cognitive trait diagnostics, tutor adaptations with persistence (acap_tutor_adaptations table), coaching recommendations per student, cohort filtering (grade/house dropdown)
+  - Assessment Access Codes: Teacher generates one-time codes (baseline/midpoint/final) via Access Codes tab; students enter codes to unlock assessments; validation endpoint with expiry/deactivation support
+  - Real-time WebSocket updates: WebSocket server at /ws broadcasts assessment_completed events; client hook (useAcapWebSocket) auto-invalidates TanStack Query caches for rankings, mastery, dashboard data
+  - BHSA Crest branding: Official school crest displayed in all ACAP dashboard headers (admin, teacher, student, Impact Simulator, Student Genome, Rankings)
   - Rank + Goals System (UI skeletons + API stubs):
     - Student: Private proficiency/growth rank tiles, rank drivers, ACAP targets with goal creation/edit/submit flow, teacher review status
     - Teacher: Class rank KPIs, class rank drivers with DOK distribution, goal review queue (Submitted/Revision/Approved tabs)
     - Admin: Grade/class/teacher ranking tables, filters, rank settings modal (weights, tie-breakers, population rules), export
     - Types: client/src/lib/acap/types.ts, API stubs: client/src/lib/acap/api.ts
     - Routes: /teacher/acap/rank-goals, /admin/acap/rankings (standalone), embedded as tabs in student-acap, teacher-acap, admin-acap
-  - Files: server/acapRoutes.ts, server/acapStorage.ts, server/services/acapAiService.ts, client/src/pages/teacher-acap.tsx, student-acap.tsx, admin-acap.tsx, client/src/components/admin/ProjectedAcapScoreTab.tsx, client/src/components/admin/ImpactSimulatorTab.tsx, client/src/components/admin/StudentGenomeTab.tsx, client/src/components/acap/student/StudentRankGoalsPanel.tsx, client/src/components/acap/teacher/GoalReviewQueue.tsx, client/src/pages/acap/TeacherClassRankGoalsPage.tsx, client/src/pages/acap/AdminRankingsPage.tsx, client/src/components/acap/admin/RankSettingsModal.tsx, client/src/components/acap/shared/RingKpi.tsx
+  - Files: server/acapRoutes.ts, server/acapStorage.ts, server/services/acapAiService.ts, client/src/pages/teacher-acap.tsx, student-acap.tsx, admin-acap.tsx, client/src/components/admin/ProjectedAcapScoreTab.tsx, client/src/components/admin/ImpactSimulatorTab.tsx, client/src/components/admin/StudentGenomeTab.tsx, client/src/components/acap/student/StudentRankGoalsPanel.tsx, client/src/components/acap/student/AccessCodeEntry.tsx, client/src/components/acap/teacher/GoalReviewQueue.tsx, client/src/components/acap/teacher/AccessCodesManager.tsx, client/src/pages/acap/TeacherClassRankGoalsPage.tsx, client/src/pages/acap/AdminRankingsPage.tsx, client/src/components/acap/admin/RankSettingsModal.tsx, client/src/components/acap/shared/RingKpi.tsx, client/src/hooks/useAcapWebSocket.ts
 
 # External Dependencies
 

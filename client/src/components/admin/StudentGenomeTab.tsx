@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import {
   AlertTriangle, Wand2, ArrowRight, Search, Users, GraduationCap,
   Target, Zap, Activity, Star
 } from "lucide-react";
+import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 
 type TraitKey = "REASONING_STAMINA" | "MULTISTEP_REASONING" | "VOCAB_TOLERANCE" | "EVIDENCE_JUSTIFICATION" | "RESPONSE_LATENCY" | "ERROR_RECOVERY";
 
@@ -78,6 +79,7 @@ export default function StudentGenomeTab() {
   const { toast } = useToast();
   const [subject, setSubject] = useState("MATH");
   const [grade, setGrade] = useState("6");
+  const [house, setHouse] = useState("all");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -85,9 +87,15 @@ export default function StudentGenomeTab() {
 
   const { data: scholars } = useQuery<any[]>({ queryKey: ["/api/acap/scholars"] });
 
-  const filteredScholars = (scholars || []).filter((s: any) =>
-    !searchQuery || `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) || s.id?.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 20);
+  const filteredScholars = (scholars || []).filter((s: any) => {
+    if (grade !== "all" && s.grade && String(s.grade) !== grade) return false;
+    if (house !== "all" && s.house && s.house !== house) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) || s.id?.toLowerCase().includes(q);
+    }
+    return true;
+  }).slice(0, 20);
 
   const { data: genomeData, isLoading: loadingGenome } = useQuery({
     queryKey: ["/api/acap/genome/student", selectedStudentId, subject],
@@ -123,10 +131,44 @@ export default function StudentGenomeTab() {
     onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
   });
 
+  const { data: tutorData } = useQuery({
+    queryKey: ["/api/acap/tutor-adaptations", selectedStudentId, subject],
+    queryFn: async () => {
+      if (!selectedStudentId) return null;
+      const res = await fetch(`/api/acap/tutor-adaptations/${selectedStudentId}?subject=${subject}`);
+      return res.json();
+    },
+    enabled: !!selectedStudentId,
+  });
+
+  const saveTutorMutation = useMutation({
+    mutationFn: async (data: TutorAdaptations) => {
+      if (!selectedStudentId) throw new Error("No student");
+      const res = await apiRequest("PUT", `/api/acap/tutor-adaptations/${selectedStudentId}`, { ...data, subject });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/tutor-adaptations", selectedStudentId] });
+      toast({ title: "Tutor Adaptations Saved", description: "Settings have been persisted for this student." });
+    },
+    onError: () => toast({ title: "Save Failed", variant: "destructive" }),
+  });
+
   const traits: Trait[] = genomeData?.traits || [];
   const readinessScore = genomeData?.readinessScore || 0;
   const recommendations: Recommendation[] = recsData?.recommendations || [];
-  const tutor: TutorAdaptations = recsData?.tutorAdaptations || { reduceVocabLoad: false, increaseWorkedExamples: false, requireJustificationEvery: 2, hintPolicy: "standard" };
+  const defaultTutor: TutorAdaptations = { reduceVocabLoad: false, increaseWorkedExamples: false, requireJustificationEvery: 2, hintPolicy: "standard" };
+  const [tutor, setTutor] = useState<TutorAdaptations>(defaultTutor);
+
+  useEffect(() => {
+    const source = tutorData?.id ? tutorData : (recsData?.tutorAdaptations || defaultTutor);
+    setTutor({
+      reduceVocabLoad: !!source.reduceVocabLoad,
+      increaseWorkedExamples: !!source.increaseWorkedExamples,
+      requireJustificationEvery: source.requireJustificationEvery ?? 2,
+      hintPolicy: source.hintPolicy || "standard",
+    });
+  }, [tutorData, recsData]);
 
   const selectStudent = (scholar: any) => {
     setSelectedStudentId(scholar.id);
@@ -139,12 +181,13 @@ export default function StudentGenomeTab() {
       <div className="border-b bg-gradient-to-r from-slate-900 to-emerald-900 rounded-xl p-6 text-white">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
+            <img src={bhsaCrestPath} alt="BHSA" className="h-10 w-10 object-contain" />
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
               <Dna className="h-5 w-5 text-white" />
             </div>
             <div>
               <h2 className="text-2xl font-bold tracking-tight">Student Readiness Genome™</h2>
-              <p className="text-sm text-emerald-200">Bush Hills STEAM Academy • Student diagnostics that power tutoring, coaching, and growth.</p>
+              <p className="text-sm text-emerald-200">Bush Hills STEAM Academy — Student diagnostics that power tutoring, coaching, and growth.</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -154,7 +197,18 @@ export default function StudentGenomeTab() {
             </Select>
             <Select value={grade} onValueChange={setGrade}>
               <SelectTrigger className="w-[110px] bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
-              <SelectContent>{["6", "7", "8"].map((g) => <SelectItem key={g} value={g}>Grade {g}</SelectItem>)}</SelectContent>
+              <SelectContent><SelectItem value="all">All Grades</SelectItem>{["6", "7", "8"].map((g) => <SelectItem key={g} value={g}>Grade {g}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={house} onValueChange={setHouse}>
+              <SelectTrigger className="w-[130px] bg-white/10 border-white/20 text-white"><SelectValue placeholder="House" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Houses</SelectItem>
+                <SelectItem value="Johnson">Johnson</SelectItem>
+                <SelectItem value="Marshall">Marshall</SelectItem>
+                <SelectItem value="West">West</SelectItem>
+                <SelectItem value="Drew">Drew</SelectItem>
+                <SelectItem value="Tesla">Tesla</SelectItem>
+              </SelectContent>
             </Select>
             <Button variant="outline" onClick={() => recomputeMutation.mutate()} disabled={!selectedStudentId || recomputeMutation.isPending} className="gap-2 border-white/30 text-white hover:bg-white/10">
               <Sparkles className="h-4 w-4" /> Refresh Genome
@@ -217,20 +271,31 @@ export default function StudentGenomeTab() {
             <CardContent className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-white/70 text-xs">Reduce vocab load</span>
-                {tutor.reduceVocabLoad ? <Badge className="bg-emerald-500/20 text-emerald-300 border-0 gap-1"><CheckCircle2 className="h-3 w-3" /> On</Badge> : <Badge variant="outline" className="text-white/50 border-white/20 gap-1"><AlertTriangle className="h-3 w-3" /> Off</Badge>}
+                <Switch checked={tutor.reduceVocabLoad} onCheckedChange={(v) => setTutor(prev => ({ ...prev, reduceVocabLoad: v }))} />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-white/70 text-xs">More worked examples</span>
-                {tutor.increaseWorkedExamples ? <Badge className="bg-emerald-500/20 text-emerald-300 border-0 gap-1"><CheckCircle2 className="h-3 w-3" /> On</Badge> : <Badge variant="outline" className="text-white/50 border-white/20 gap-1"><AlertTriangle className="h-3 w-3" /> Off</Badge>}
+                <Switch checked={tutor.increaseWorkedExamples} onCheckedChange={(v) => setTutor(prev => ({ ...prev, increaseWorkedExamples: v }))} />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-white/70 text-xs">Require justification every</span>
-                <Badge className="bg-white/20 text-white border-0">{tutor.requireJustificationEvery} items</Badge>
+                <Select value={String(tutor.requireJustificationEvery)} onValueChange={(v) => setTutor(prev => ({ ...prev, requireJustificationEvery: parseInt(v) }))}>
+                  <SelectTrigger className="w-[80px] h-7 bg-white/10 border-white/20 text-white text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>{[1, 2, 3, 4, 5].map(n => <SelectItem key={n} value={String(n)}>{n} items</SelectItem>)}</SelectContent>
+                </Select>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-white/70 text-xs">Hint policy</span>
-                <Badge variant="outline" className="text-white/70 border-white/20">{tutor.hintPolicy}</Badge>
+                <Select value={tutor.hintPolicy} onValueChange={(v) => setTutor(prev => ({ ...prev, hintPolicy: v }))}>
+                  <SelectTrigger className="w-[100px] h-7 bg-white/10 border-white/20 text-white text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="standard">Standard</SelectItem><SelectItem value="minimal">Minimal</SelectItem><SelectItem value="aggressive">Aggressive</SelectItem></SelectContent>
+                </Select>
               </div>
+              {selectedStudentId && (
+                <Button size="sm" className="w-full mt-2 gap-1 bg-emerald-600 hover:bg-emerald-700 text-xs" onClick={() => saveTutorMutation.mutate(tutor)} disabled={saveTutorMutation.isPending}>
+                  <CheckCircle2 className="h-3 w-3" /> {saveTutorMutation.isPending ? "Saving..." : "Save Adaptations"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -341,7 +406,7 @@ export default function StudentGenomeTab() {
                           <Star className="h-5 w-5" />
                         </div>
                         <span className="text-[10px] font-semibold text-gray-600 text-center max-w-[80px]">{t.label}</span>
-                        <span className="text-[10px] text-gray-400">{Math.round(t.score)} sextlets</span>
+                        <span className="text-[10px] text-gray-400">{Math.round(t.score)}/100</span>
                       </div>
                     );
                   })}
@@ -398,7 +463,7 @@ export default function StudentGenomeTab() {
             <Card className="border-2 border-teal-100 shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-teal-600" /> Enable Interventions</CardTitle>
-                <CardDescription className="text-xs">Enable intel pvol ppe autases to master-tor dataered to.</CardDescription>
+                <CardDescription className="text-xs">Activate personalized Boot Camp tutoring sessions tailored to this student's cognitive profile.</CardDescription>
               </CardHeader>
               <CardContent className="flex gap-2">
                 <Button variant="outline" className="flex-1 text-xs">Remind Later</Button>

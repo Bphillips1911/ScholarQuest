@@ -1074,14 +1074,14 @@ export function registerAcapRoutes(app: Express): void {
       }
       const levers = await acapStorage.getImpactLevers(latestRun.id);
       const topLevers = levers.slice(0, 3).map((l, i) => ({
-        id: `lev${i+1}`, name: l.leverName, leverType: l.leverType,
+        id: `lev${i+1}`, name: (l as any).leverName || l.name, leverType: l.leverType,
         estimatedPointGain: l.estimatedPointGain, weeksToImpact: l.weeksToImpact || 6,
         studentsAffected: l.studentsAffected || 0, confidence: l.confidence || 0.5,
         summary: l.summary || "", action: l.actionPayload as any,
       }));
       res.json({
         currentProjectedScore: latestRun.projectedScore || 0,
-        currentLetter: latestRun.projectedLetter || "—",
+        currentLetter: (latestRun as any).projectedLetter || latestRun.letterGrade || "—",
         projectedPointGain: topLevers.reduce((s, l) => s + l.estimatedPointGain, 0),
         topLevers,
       });

@@ -7,18 +7,21 @@ import {
   acapProjectionRuns, acapProjectionSnapshots, acapSchoolwideAssessments, acapSchoolwideResults,
   acapImpactRuns, acapImpactLevers, acapGenomeTraits, acapGenomeEvents, acapGenomeRecommendations,
   acapTutorAdaptations, acapAccessCodes,
+  acapForgeAssessments, acapForgeVersions, acapForgeAttemptEvents, acapForgeOfflineSources,
   type AcapStandard, type AcapBlueprint, type AcapPassage, type AcapItem,
   type AcapAssessment, type AcapAssignment, type AcapAttempt, type AcapItemResponse,
   type AcapMasteryTracking, type AcapGrowthSnapshot, type AcapBootcampSession, type AcapAuditLog,
   type AcapProjectionRun, type AcapProjectionSnapshot, type AcapSchoolwideAssessment, type AcapSchoolwideResult,
   type AcapImpactRun, type AcapImpactLever, type AcapGenomeTrait, type AcapGenomeEvent, type AcapGenomeRecommendation,
   type AcapTutorAdaptation, type AcapAccessCode,
+  type AcapForgeAssessment, type AcapForgeVersion, type AcapForgeAttemptEvent, type AcapForgeOfflineSource,
   type InsertAcapStandard, type InsertAcapBlueprint, type InsertAcapPassage, type InsertAcapItem,
   type InsertAcapAssessment, type InsertAcapAssignment, type InsertAcapAttempt, type InsertAcapItemResponse,
   type InsertAcapMasteryTracking, type InsertAcapGrowthSnapshot, type InsertAcapBootcampSession, type InsertAcapAuditLog,
   type InsertAcapProjectionRun, type InsertAcapProjectionSnapshot, type InsertAcapSchoolwideAssessment, type InsertAcapSchoolwideResult,
   type InsertAcapImpactRun, type InsertAcapImpactLever, type InsertAcapGenomeTrait, type InsertAcapGenomeEvent, type InsertAcapGenomeRecommendation,
   type InsertAcapTutorAdaptation, type InsertAcapAccessCode,
+  type InsertAcapForgeAssessment, type InsertAcapForgeVersion, type InsertAcapForgeAttemptEvent, type InsertAcapForgeOfflineSource,
 } from "@shared/schema";
 
 export const acapStorage = {
@@ -462,5 +465,114 @@ export const acapStorage = {
   async deactivateAccessCode(id: number): Promise<AcapAccessCode> {
     const [c] = await db.update(acapAccessCodes).set({ isActive: false }).where(eq(acapAccessCodes.id, id)).returning();
     return c;
+  },
+
+  // ===== Forge Assessments =====
+  async getForgeAssessments(status?: string): Promise<AcapForgeAssessment[]> {
+    if (status) {
+      return db.select().from(acapForgeAssessments).where(eq(acapForgeAssessments.status, status)).orderBy(desc(acapForgeAssessments.createdAt));
+    }
+    return db.select().from(acapForgeAssessments).orderBy(desc(acapForgeAssessments.createdAt));
+  },
+  async getForgeAssessment(id: number): Promise<AcapForgeAssessment | undefined> {
+    const [a] = await db.select().from(acapForgeAssessments).where(eq(acapForgeAssessments.id, id));
+    return a;
+  },
+  async createForgeAssessment(data: InsertAcapForgeAssessment): Promise<AcapForgeAssessment> {
+    const [a] = await db.insert(acapForgeAssessments).values(data).returning();
+    return a;
+  },
+  async updateForgeAssessment(id: number, data: Partial<InsertAcapForgeAssessment>): Promise<AcapForgeAssessment> {
+    const [a] = await db.update(acapForgeAssessments).set({ ...data, updatedAt: new Date() }).where(eq(acapForgeAssessments.id, id)).returning();
+    return a;
+  },
+  async deleteForgeAssessment(id: number): Promise<void> {
+    await db.delete(acapForgeVersions).where(eq(acapForgeVersions.forgeAssessmentId, id));
+    await db.delete(acapForgeAssessments).where(eq(acapForgeAssessments.id, id));
+  },
+
+  // ===== Forge Versions =====
+  async getForgeVersions(forgeAssessmentId: number): Promise<AcapForgeVersion[]> {
+    return db.select().from(acapForgeVersions).where(eq(acapForgeVersions.forgeAssessmentId, forgeAssessmentId)).orderBy(acapForgeVersions.versionLabel);
+  },
+  async createForgeVersion(data: InsertAcapForgeVersion): Promise<AcapForgeVersion> {
+    const [v] = await db.insert(acapForgeVersions).values(data).returning();
+    return v;
+  },
+  async updateForgeVersion(id: number, data: Partial<InsertAcapForgeVersion>): Promise<AcapForgeVersion> {
+    const [v] = await db.update(acapForgeVersions).set(data).where(eq(acapForgeVersions.id, id)).returning();
+    return v;
+  },
+  async deleteForgeVersions(forgeAssessmentId: number): Promise<void> {
+    await db.delete(acapForgeVersions).where(eq(acapForgeVersions.forgeAssessmentId, forgeAssessmentId));
+  },
+
+  // ===== Forge Attempt Events =====
+  async createForgeAttemptEvent(data: InsertAcapForgeAttemptEvent): Promise<AcapForgeAttemptEvent> {
+    const [e] = await db.insert(acapForgeAttemptEvents).values(data).returning();
+    return e;
+  },
+  async getForgeAttemptEvents(attemptId: number): Promise<AcapForgeAttemptEvent[]> {
+    return db.select().from(acapForgeAttemptEvents).where(eq(acapForgeAttemptEvents.attemptId, attemptId)).orderBy(acapForgeAttemptEvents.createdAt);
+  },
+  async getForgeAttemptEventsByScholar(scholarId: string): Promise<AcapForgeAttemptEvent[]> {
+    return db.select().from(acapForgeAttemptEvents).where(eq(acapForgeAttemptEvents.scholarId, scholarId)).orderBy(desc(acapForgeAttemptEvents.createdAt));
+  },
+
+  // ===== Forge Offline Sources =====
+  async getForgeOfflineSources(): Promise<AcapForgeOfflineSource[]> {
+    return db.select().from(acapForgeOfflineSources).orderBy(desc(acapForgeOfflineSources.createdAt));
+  },
+  async createForgeOfflineSource(data: InsertAcapForgeOfflineSource): Promise<AcapForgeOfflineSource> {
+    const [s] = await db.insert(acapForgeOfflineSources).values(data).returning();
+    return s;
+  },
+  async updateForgeOfflineSource(id: number, data: Partial<InsertAcapForgeOfflineSource>): Promise<AcapForgeOfflineSource> {
+    const [s] = await db.update(acapForgeOfflineSources).set(data).where(eq(acapForgeOfflineSources.id, id)).returning();
+    return s;
+  },
+  async deleteForgeOfflineSource(id: number): Promise<void> {
+    await db.delete(acapForgeOfflineSources).where(eq(acapForgeOfflineSources.id, id));
+  },
+
+  // ===== Forge Reporting =====
+  async getForgeAssessmentReport(forgeAssessmentId: number) {
+    const assessment = await this.getForgeAssessment(forgeAssessmentId);
+    if (!assessment) return null;
+    const versions = await this.getForgeVersions(forgeAssessmentId);
+    const items = assessment.itemIds.length > 0 ? await this.getItemsByIds(assessment.itemIds) : [];
+    const allAttempts = await db.select().from(acapAttempts).orderBy(desc(acapAttempts.startedAt));
+    const forgeAttempts = allAttempts.filter(a => {
+      const state = a.adaptiveState as any;
+      return state?.forgeAssessmentId === forgeAssessmentId;
+    });
+    const attemptIds = forgeAttempts.map(a => a.id);
+    let allResponses: any[] = [];
+    if (attemptIds.length > 0) {
+      allResponses = await db.select().from(acapItemResponses).where(inArray(acapItemResponses.attemptId, attemptIds));
+    }
+    let allEvents: AcapForgeAttemptEvent[] = [];
+    if (attemptIds.length > 0) {
+      allEvents = await db.select().from(acapForgeAttemptEvents).where(inArray(acapForgeAttemptEvents.attemptId, attemptIds));
+    }
+    const integrityFlags = forgeAttempts.map(attempt => {
+      const events = allEvents.filter(e => e.attemptId === attempt.id);
+      const tabSwitches = events.filter(e => e.eventType === 'tab_blur').length;
+      const fastClicks = events.filter(e => e.eventType === 'fast_response').length;
+      let status: 'green' | 'yellow' | 'red' = 'green';
+      const reasons: string[] = [];
+      if (tabSwitches > 3) { status = 'red'; reasons.push(`${tabSwitches} tab switches`); }
+      else if (tabSwitches > 0) { status = 'yellow'; reasons.push(`${tabSwitches} tab switches`); }
+      if (fastClicks > 5) { status = 'red'; reasons.push(`${fastClicks} rapid clicks`); }
+      else if (fastClicks > 2) { status = 'yellow'; reasons.push(`${fastClicks} rapid clicks`); }
+      return { attemptId: attempt.id, scholarId: attempt.scholarId, status, reasons, tabSwitches, fastClicks };
+    });
+    const itemAnalysis = items.map(item => {
+      const responses = allResponses.filter(r => r.itemId === item.id);
+      const correct = responses.filter(r => r.isCorrect).length;
+      const total = responses.length;
+      return { itemId: item.id, stem: (item.stem as any)?.text || '', standardId: item.standardId, dokLevel: item.dokLevel, totalResponses: total, correctCount: correct, accuracy: total > 0 ? Math.round((correct / total) * 100) : 0 };
+    });
+    return { assessment, versions, items, attempts: forgeAttempts, responses: allResponses, integrityFlags, itemAnalysis, totalStudents: forgeAttempts.length, averageScore: forgeAttempts.length > 0 ? Math.round(forgeAttempts.reduce((s, a) => s + (a.percentCorrect || 0), 0) / forgeAttempts.length) : 0 };
   },
 };

@@ -2,10 +2,13 @@ import type { Express, Request, Response } from "express";
 import { acapStorage } from "./acapStorage";
 import { db } from "./db";
 import { generateItems, generatePassage, autoGradeResponse, bootcampTutor } from "./services/acapAiService";
+import jwt from "jsonwebtoken";
+import { storage } from "./storage";
 import {
   insertAcapStandardSchema, insertAcapBlueprintSchema, insertAcapPassageSchema,
   insertAcapItemSchema, insertAcapAssessmentSchema, insertAcapAssignmentSchema,
   insertAcapProjectionRunSchema, insertAcapSchoolwideAssessmentSchema,
+  insertAcapForgeAssessmentSchema,
 } from "@shared/schema";
 
 export function registerAcapRoutes(app: Express): void {
@@ -1603,6 +1606,454 @@ export function registerAcapRoutes(app: Express): void {
       res.json(event);
     } catch (error) {
       res.status(500).json({ error: "Failed to record scored event" });
+    }
+  });
+
+  // ===== ACAP FORGE ROUTES (Admin-Only) =====
+  const authenticateForgeAdmin = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token provided" });
+    try {
+      const decoded: any = jwt.verify(token, "bhsa-admin-secret-2025-stable");
+      const session = await storage.getAdminSession(token);
+      if (!session) return res.status(401).json({ error: "Invalid session" });
+      const admin = await storage.getAdministratorByEmail(decoded.email);
+      if (!admin) return res.status(401).json({ error: "Invalid token" });
+      if (!admin.isApproved && admin.title !== "Principal") return res.status(403).json({ error: "Account pending approval" });
+      req.admin = admin;
+      next();
+    } catch (error) {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  };
+
+  // Forge Assessments CRUD
+  app.get("/api/acap/forge/assessments", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const assessments = await acapStorage.getForgeAssessments(status);
+      res.json(assessments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch forge assessments" });
+    }
+  });
+
+  app.get("/api/acap/forge/assessments/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const assessment = await acapStorage.getForgeAssessment(id);
+      if (!assessment) return res.status(404).json({ error: "Assessment not found" });
+      const versions = await acapStorage.getForgeVersions(id);
+      res.json({ ...assessment, versions });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch forge assessment" });
+    }
+  });
+
+  app.post("/api/acap/forge/assessments", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const data = {
+        ...req.body,
+        createdBy: req.admin?.id || req.admin?.email,
+        versionGroupId: `forge-${Date.now()}`,
+      };
+      const assessment = await acapStorage.createForgeAssessment(data);
+      await acapStorage.createAuditEntry({
+        action: "forge_create_assessment", entityType: "forge_assessment", entityId: assessment.id,
+        userId: req.admin?.email, userRole: "admin", details: { title: assessment.title },
+      });
+      res.status(201).json(assessment);
+    } catch (error: any) {
+      console.error("Forge create assessment error:", error);
+      res.status(400).json({ error: error.message || "Failed to create forge assessment" });
+    }
+  });
+
+  app.patch("/api/acap/forge/assessments/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const assessment = await acapStorage.updateForgeAssessment(id, req.body);
+      res.json(assessment);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update forge assessment" });
+    }
+  });
+
+  app.delete("/api/acap/forge/assessments/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await acapStorage.deleteForgeAssessment(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete forge assessment" });
+    }
+  });
+
+  // Differentiate Versions
+  app.post("/api/acap/forge/assessments/:id/differentiate", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const assessment = await acapStorage.getForgeAssessment(id);
+      if (!assessment) return res.status(404).json({ error: "Assessment not found" });
+      const versionCount = req.body.versionCount || 4;
+      const labels = ["A", "B", "C", "D", "E", "F", "G", "H"].slice(0, versionCount);
+      await acapStorage.deleteForgeVersions(id);
+      const versions = [];
+      for (const label of labels) {
+        const itemOrder = [...assessment.itemIds];
+        if (label !== "A") {
+          for (let i = itemOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [itemOrder[i], itemOrder[j]] = [itemOrder[j], itemOrder[i]];
+          }
+        }
+        const optionShuffles: Record<string, number[]> = {};
+        if (label !== "A") {
+          for (const itemId of itemOrder) {
+            const shuffle = [0, 1, 2, 3];
+            for (let i = shuffle.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffle[i], shuffle[j]] = [shuffle[j], shuffle[i]];
+            }
+            optionShuffles[String(itemId)] = shuffle;
+          }
+        }
+        const code = Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+        const version = await acapStorage.createForgeVersion({
+          forgeAssessmentId: id, versionLabel: label, itemOrder, optionShuffles, accessCode: code,
+        });
+        versions.push(version);
+      }
+      await acapStorage.updateForgeAssessment(id, { status: "versioned" } as any);
+      await acapStorage.createAuditEntry({
+        action: "forge_differentiate", entityType: "forge_assessment", entityId: id,
+        userId: req.admin?.email, userRole: "admin", details: { versionCount },
+      });
+      res.json({ versions });
+    } catch (error) {
+      console.error("Forge differentiate error:", error);
+      res.status(500).json({ error: "Failed to differentiate versions" });
+    }
+  });
+
+  // Publish Assessment
+  app.post("/api/acap/forge/assessments/:id/publish", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const assessment = await acapStorage.getForgeAssessment(id);
+      if (!assessment) return res.status(404).json({ error: "Assessment not found" });
+      const { targetType, targetIds, teacherIds } = req.body;
+      const mainAssessment = await acapStorage.createAssessment({
+        title: `[Forge] ${assessment.title}`,
+        assessmentType: assessment.assessmentType,
+        gradeLevel: (assessment.grades as number[])[0] || 6,
+        subject: (assessment.subjects as string[])[0] || "ELA",
+        itemIds: assessment.itemIds,
+        timeLimitMinutes: assessment.timeLimitMinutes,
+        settings: { forgeAssessmentId: id, lockMode: assessment.lockMode, antiRushMonitor: assessment.antiRushMonitor },
+        createdBy: req.admin?.email,
+      });
+      if (targetType && targetIds) {
+        await acapStorage.createAssignment({
+          assessmentId: mainAssessment.id,
+          teacherId: req.admin?.email || "admin",
+          targetType,
+          targetIds,
+          status: "active",
+        } as any);
+      }
+      await acapStorage.updateForgeAssessment(id, { status: "published", publishedAt: new Date() } as any);
+      const versions = await acapStorage.getForgeVersions(id);
+      for (const version of versions) {
+        if (!version.accessCode) {
+          const code = Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+          await acapStorage.updateForgeVersion(version.id, { accessCode: code } as any);
+        }
+      }
+      await acapStorage.createAuditEntry({
+        action: "forge_publish", entityType: "forge_assessment", entityId: id,
+        userId: req.admin?.email, userRole: "admin", details: { assessmentId: mainAssessment.id },
+      });
+      res.json({ success: true, assessmentId: mainAssessment.id, versions });
+    } catch (error: any) {
+      console.error("Forge publish error:", error);
+      res.status(500).json({ error: error.message || "Failed to publish forge assessment" });
+    }
+  });
+
+  // Forge Versions
+  app.get("/api/acap/forge/assessments/:id/versions", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const versions = await acapStorage.getForgeVersions(id);
+      res.json(versions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch versions" });
+    }
+  });
+
+  // Forge Reports
+  app.get("/api/acap/forge/assessments/:id/report", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const report = await acapStorage.getForgeAssessmentReport(id);
+      if (!report) return res.status(404).json({ error: "Assessment not found" });
+      res.json(report);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+
+  // Student Test Delivery (access code gate)
+  app.get("/api/acap/forge/test/access/:code", async (req: Request, res: Response) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      const allForge = await acapStorage.getForgeAssessments("published");
+      let foundAssessment = null;
+      let foundVersion = null;
+      for (const fa of allForge) {
+        const versions = await acapStorage.getForgeVersions(fa.id);
+        const match = versions.find(v => v.accessCode === code);
+        if (match) {
+          foundAssessment = fa;
+          foundVersion = match;
+          break;
+        }
+      }
+      if (!foundAssessment || !foundVersion) {
+        return res.status(404).json({ error: "Invalid access code" });
+      }
+      const items = foundAssessment.itemIds.length > 0 ? await acapStorage.getItemsByIds(foundVersion.itemOrder.length > 0 ? foundVersion.itemOrder : foundAssessment.itemIds) : [];
+      const orderedItems = foundVersion.itemOrder.length > 0
+        ? foundVersion.itemOrder.map((id: number) => items.find(i => i.id === id)).filter(Boolean)
+        : items;
+      res.json({
+        assessment: { id: foundAssessment.id, title: foundAssessment.title, timeLimitMinutes: foundAssessment.timeLimitMinutes, lockMode: foundAssessment.lockMode, antiRushMonitor: foundAssessment.antiRushMonitor, itemCount: orderedItems.length },
+        version: { id: foundVersion.id, label: foundVersion.versionLabel },
+        items: orderedItems.map((item: any, idx: number) => {
+          const shuffles = foundVersion!.optionShuffles as Record<string, number[]>;
+          const shuffle = shuffles[String(item.id)];
+          let options = item.options || [];
+          if (shuffle && Array.isArray(options)) {
+            options = shuffle.map((i: number) => options[i]).filter(Boolean);
+          }
+          return { id: item.id, index: idx, stem: item.stem, options, itemType: item.itemType, passageId: item.passageId, dokLevel: item.dokLevel };
+        }),
+      });
+    } catch (error) {
+      console.error("Forge test access error:", error);
+      res.status(500).json({ error: "Failed to access test" });
+    }
+  });
+
+  // Start Forge Test Attempt
+  app.post("/api/acap/forge/test/start", async (req: Request, res: Response) => {
+    try {
+      const { scholarId, forgeAssessmentId, versionId } = req.body;
+      if (!scholarId || !forgeAssessmentId) return res.status(400).json({ error: "scholarId and forgeAssessmentId required" });
+      const assessment = await acapStorage.getForgeAssessment(forgeAssessmentId);
+      if (!assessment) return res.status(404).json({ error: "Assessment not found" });
+      const mainAssessments = await acapStorage.getAssessments();
+      const linked = mainAssessments.find(a => {
+        const s = a.settings as any;
+        return s?.forgeAssessmentId === forgeAssessmentId;
+      });
+      if (!linked) return res.status(400).json({ error: "Assessment not yet published. No linked assessment found." });
+      const assessmentId = linked.id;
+      const attempt = await acapStorage.createAttempt({
+        assessmentId,
+        scholarId,
+        status: "in_progress",
+        adaptiveState: { forgeAssessmentId, versionId },
+      });
+      await acapStorage.createForgeAttemptEvent({ attemptId: attempt.id, scholarId, eventType: "test_started", metadata: { forgeAssessmentId, versionId } });
+      res.json(attempt);
+    } catch (error: any) {
+      console.error("Forge test start error:", error);
+      res.status(500).json({ error: error.message || "Failed to start test" });
+    }
+  });
+
+  // Record Answer
+  app.patch("/api/acap/forge/test/attempts/:attemptId/answer", async (req: Request, res: Response) => {
+    try {
+      const attemptId = parseInt(req.params.attemptId);
+      const { itemId, selectedOption, scholarId, timeSpent, itemIndex } = req.body;
+      if (!scholarId) return res.status(400).json({ error: "scholarId required" });
+      const attempt = await acapStorage.getAttempt(attemptId);
+      if (!attempt) return res.status(404).json({ error: "Attempt not found" });
+      if (attempt.scholarId !== scholarId) return res.status(403).json({ error: "Attempt does not belong to this student" });
+      const item = await acapStorage.getItem(itemId);
+      const isCorrect = item ? (item.correctAnswer === selectedOption) : false;
+      await acapStorage.createItemResponse({
+        attemptId, itemId,
+        isCorrect,
+        timeSpentSeconds: timeSpent || 0, sequenceNumber: itemIndex || 0,
+        response: [selectedOption || ""],
+      } as any);
+      if (timeSpent && timeSpent < 3) {
+        await acapStorage.createForgeAttemptEvent({ attemptId, scholarId: scholarId || attempt.scholarId, eventType: "fast_response", itemIndex, metadata: { timeSpent, itemId } });
+      }
+      res.json({ saved: true, isCorrect });
+    } catch (error) {
+      console.error("Forge answer error:", error);
+      res.status(500).json({ error: "Failed to save answer" });
+    }
+  });
+
+  // Record Integrity Event
+  app.post("/api/acap/forge/test/attempts/:attemptId/event", async (req: Request, res: Response) => {
+    try {
+      const attemptId = parseInt(req.params.attemptId);
+      const { scholarId, eventType, itemIndex, metadata } = req.body;
+      if (!scholarId) return res.status(400).json({ error: "scholarId required" });
+      const attempt = await acapStorage.getAttempt(attemptId);
+      if (!attempt) return res.status(404).json({ error: "Attempt not found" });
+      if (attempt.scholarId !== scholarId) return res.status(403).json({ error: "Attempt does not belong to this student" });
+      const event = await acapStorage.createForgeAttemptEvent({ attemptId, scholarId, eventType, itemIndex, metadata: metadata || {} });
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to record event" });
+    }
+  });
+
+  // Submit Forge Test
+  app.post("/api/acap/forge/test/attempts/:attemptId/submit", async (req: Request, res: Response) => {
+    try {
+      const attemptId = parseInt(req.params.attemptId);
+      const { scholarId, reflection, timeSpentSeconds } = req.body;
+      if (!scholarId) return res.status(400).json({ error: "scholarId required" });
+      const attempt = await acapStorage.getAttempt(attemptId);
+      if (!attempt) return res.status(404).json({ error: "Attempt not found" });
+      if (attempt.scholarId !== scholarId) return res.status(403).json({ error: "Attempt does not belong to this student" });
+      const responses = await acapStorage.getItemResponses(attemptId);
+      const correctCount = responses.filter(r => r.isCorrect).length;
+      const total = responses.length;
+      const percentCorrect = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+      const events = await acapStorage.getForgeAttemptEvents(attemptId);
+      const tabSwitches = events.filter(e => e.eventType === "tab_blur").length;
+      const fastClicks = events.filter(e => e.eventType === "fast_response").length;
+      let integrityStatus: string = "green";
+      const integrityReasons: string[] = [];
+      if (tabSwitches > 3) { integrityStatus = "red"; integrityReasons.push(`${tabSwitches} tab switches`); }
+      else if (tabSwitches > 0) { integrityStatus = "yellow"; integrityReasons.push(`${tabSwitches} tab switches`); }
+      if (fastClicks > 5) { integrityStatus = "red"; integrityReasons.push(`${fastClicks} rapid clicks`); }
+      else if (fastClicks > 2) { if (integrityStatus !== "red") integrityStatus = "yellow"; integrityReasons.push(`${fastClicks} rapid clicks`); }
+      const updated = await acapStorage.updateAttempt(attemptId, {
+        status: "completed", completedAt: new Date(), rawScore: correctCount, percentCorrect,
+        timeSpentSeconds: timeSpentSeconds || 0,
+        adaptiveState: { ...(attempt.adaptiveState as any), reflection, integrityStatus, integrityReasons },
+      });
+      await acapStorage.createForgeAttemptEvent({ attemptId, scholarId: scholarId || attempt.scholarId, eventType: "test_submitted", metadata: { percentCorrect, integrityStatus, integrityReasons, reflection } });
+      res.json({ ...updated, integrityStatus, integrityReasons, correctCount, total, percentCorrect });
+    } catch (error: any) {
+      console.error("Forge submit error:", error);
+      res.status(500).json({ error: error.message || "Failed to submit test" });
+    }
+  });
+
+  // Forge Offline Sources
+  app.get("/api/acap/forge/offline-sources", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const sources = await acapStorage.getForgeOfflineSources();
+      res.json(sources);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch offline sources" });
+    }
+  });
+
+  app.post("/api/acap/forge/offline-sources", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const data = { ...req.body, uploadedBy: req.admin?.email };
+      const source = await acapStorage.createForgeOfflineSource(data);
+      res.status(201).json(source);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create offline source" });
+    }
+  });
+
+  app.delete("/api/acap/forge/offline-sources/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await acapStorage.deleteForgeOfflineSource(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete offline source" });
+    }
+  });
+
+  // Auto-tag standards (rules-based)
+  app.post("/api/acap/forge/auto-tag", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { items, gradeLevel, subject, strictMode } = req.body;
+      if (!items || !Array.isArray(items)) return res.status(400).json({ error: "items array required" });
+      const standards = await acapStorage.getStandards(gradeLevel);
+      const keywordMap: Record<string, string[]> = {
+        "ratio": ["RP", "Proportional Reasoning", "PR"], "proportion": ["RP", "Proportional Reasoning", "PR"], "unit rate": ["RP", "Proportional Reasoning"], "percent": ["RP", "Proportional Reasoning"],
+        "expression": ["EE", "Expressions", "Algebra"], "equation": ["EE", "Equations", "Algebra"], "variable": ["EE", "Expressions", "Algebra"], "inequality": ["EE", "Algebra"],
+        "area": ["G", "Geometry"], "volume": ["G", "Geometry"], "angle": ["G", "Geometry"], "triangle": ["G", "Geometry"], "circle": ["G", "Geometry"],
+        "mean": ["SP", "Statistics", "Data"], "median": ["SP", "Statistics", "Data"], "data": ["SP", "Statistics", "Data"], "probability": ["SP", "Statistics", "Probability"], "sample": ["SP", "Statistics"],
+        "fraction": ["NS", "Number", "Rational"], "decimal": ["NS", "Number", "Rational"], "integer": ["NS", "Number"], "negative": ["NS", "Number"],
+        "function": ["F", "Functions"], "slope": ["F", "Functions", "Linear"], "linear": ["F", "Functions", "Linear"], "graph": ["F", "Functions", "Graph"],
+        "reading": ["RI", "RL", "Reading", "Literature"], "writing": ["W", "Writing"], "argument": ["W", "Writing"], "evidence": ["RI", "Reading"],
+        "vocabulary": ["L", "Language"], "grammar": ["L", "Language"], "narrative": ["RL", "Literature"], "informational": ["RI", "Reading", "Informational"],
+        "analyze": ["RI", "Reading"], "compare": ["RI", "Reading"], "contrast": ["RI", "Reading"], "summarize": ["RI", "Reading"],
+      };
+      const dokHints: Record<string, number> = {
+        "identify": 1, "recall": 1, "define": 1, "list": 1,
+        "explain": 2, "describe": 2, "interpret": 2, "classify": 2, "compare": 2,
+        "analyze": 3, "evaluate": 3, "construct": 3, "justify": 3, "support": 3,
+        "synthesize": 4, "design": 4, "create": 4, "prove": 4,
+      };
+      const taggedItems = items.map((item: any) => {
+        const text = (typeof item.stem === "string" ? item.stem : item.stem?.text || "").toLowerCase();
+        const matchedDomains: string[] = [];
+        for (const [keyword, domains] of Object.entries(keywordMap)) {
+          if (text.includes(keyword)) matchedDomains.push(...domains);
+        }
+        const uniqueDomains = Array.from(new Set(matchedDomains));
+        const descriptionMatches = standards.filter(s => {
+          const desc = (s.description || "").toLowerCase();
+          const subdomain = (s.subdomain || "").toLowerCase();
+          const domain = (s.domain || "").toLowerCase();
+          const words = text.split(/\s+/).filter((w: string) => w.length > 3);
+          const matchCount = words.filter((w: string) => desc.includes(w) || subdomain.includes(w) || domain.includes(w)).length;
+          return matchCount >= 2;
+        });
+        const codeMatches = standards.filter(s => uniqueDomains.some(d => s.domain.includes(d) || s.code.includes(d) || (s.subdomain || "").includes(d)));
+        const matchedStandards = Array.from(new Map([...codeMatches, ...descriptionMatches].map(s => [s.id, s])).values());
+        let suggestedDok = 2;
+        for (const [verb, dok] of Object.entries(dokHints)) {
+          if (text.includes(verb)) { suggestedDok = Math.max(suggestedDok, dok); break; }
+        }
+        const confidence = matchedStandards.length > 0 ? Math.min(95, 60 + matchedStandards.length * 10) : 20;
+        if (strictMode && confidence < 60) return { ...item, suggestedStandards: [], suggestedDok, confidence, status: "needs_review" };
+        return {
+          ...item,
+          suggestedStandards: matchedStandards.slice(0, 3).map(s => ({ id: s.id, code: s.code, domain: s.domain, description: s.description })),
+          suggestedDok,
+          confidence,
+          status: confidence >= 80 ? "accepted" : confidence >= 50 ? "review" : "needs_review",
+        };
+      });
+      res.json({ taggedItems, totalTagged: taggedItems.filter((i: any) => i.suggestedStandards.length > 0).length, totalItems: items.length });
+    } catch (error) {
+      console.error("Auto-tag error:", error);
+      res.status(500).json({ error: "Failed to auto-tag items" });
+    }
+  });
+
+  // Forge Reports Export CSV
+  app.get("/api/acap/forge/assessments/:id/export", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const report = await acapStorage.getForgeAssessmentReport(id);
+      if (!report) return res.status(404).json({ error: "Assessment not found" });
+      const headers = "Item ID,Stem,Standard ID,DOK,Total Responses,Correct,Accuracy %\n";
+      const rows = report.itemAnalysis.map(ia => `${ia.itemId},"${ia.stem.replace(/"/g, '""')}",${ia.standardId || ""},${ia.dokLevel || ""},${ia.totalResponses},${ia.correctCount},${ia.accuracy}`).join("\n");
+      res.json({ csv: headers + rows });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to export report" });
     }
   });
 

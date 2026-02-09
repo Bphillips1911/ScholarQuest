@@ -1,0 +1,95 @@
+REPLIT AGENT MASTER PROMPT — IMPLEMENT “ACAP Forge™” (Admin Custom Assessment Builder)
+
+GOAL
+Implement a new Admin-only feature called “ACAP Forge™” that lets admins create ACAP-style assessments of any length, deliver them like a real locked test, record responses, generate analytics reports, and optionally create differentiated versions of the same assessment to reduce copying. Must integrate with existing ACAP Adaptive Skills data, rosters, and roles (Student/Teacher/Admin) already present in PBIS House of Champions. Use real DB data, not mock data.
+
+NON-NEGOTIABLES
+- Production-mode must match demo-mode behavior: standards, blueprints, rosters must load reliably.
+- Every tab and button must be wired end-to-end (no dead UI).
+- No “\u2022” / “\u2122” artifacts in UI text. Use literal characters only.
+- Use existing styling patterns (Tailwind + shadcn) and routing.
+- Realtime updates: use TanStack Query + invalidation + websocket/SSE only if already in project; otherwise implement “realtime-feel” with polling + invalidation after mutations.
+- Strict role-based access: Admin-only routes and APIs for Forge; Teachers can only view assigned tests and create access codes; Students can only take tests assigned to them.
+- Logging: record attempt events for anti-rush and integrity monitoring.
+
+FEATURES TO BUILD
+A) Admin UI: ACAP Forge Builder Page
+Route: /admin/acap/forge
+Sections:
+1) Assessment Setup: name, grade(s), subject(s), window, time limit, security toggles (lock mode, anti-rush monitor)
+2) Item Blueprint & Sources:
+   - choose Standards/Blueprint domains & DOK distribution
+   - choose source(s): existing Question Bank, Uploaded docs/passages, optional AI generate
+   - choose total item count (any number; allow 25–200+)
+   - include Writing component: prompt type (Argumentative, Informative/Expository, Research Literacy, Persuasive), rubric selector, required reflection after submit
+3) Differentiate Versions button:
+   - generates Version A/B/C/D (configurable count)
+   - per version: reorder items/options, generate equivalent numeric variants, shuffle distractors, swap passage order, etc
+4) Publish & Assign:
+   - assign to Teachers/Class rosters/Grades/Schoolwide
+   - generate student access codes (one-time or time-windowed)
+5) Exports:
+   - CSV exports of item analysis, standards mastery, DOK breakdown
+   - PDF report pack
+
+B) Delivery: Locked Baseline/Midpoint/Final Test Player (Student)
+Route: /acap/test/:accessCode
+- Access Code entry gate OR login gate (either one works; not both required)
+- Locked player best-effort:
+  - full-screen request, disable navigation within app
+  - show warning on tab blur/visibility change
+  - record tab switches + blur events
+- Record responses on click; autosave per item
+- Review screen (unanswered flagged)
+- Submit Reflection required (rushing integrity explanation + “I did my best” confirmation)
+- Submit final -> results page + integrity flag
+
+C) Integrity Monitor (“Anti-Rush / Random Click”)
+- Detect: too-fast per item, rapid consecutive clicks, high change rate, extreme low time-on-task, unusual option patterns
+- Color-coded status: Green/Yellow/Red with reason codes
+- Show to Student at end (must acknowledge), Teacher in roster, Admin in reports
+- Store event timeline for audit
+
+D) Reporting
+- After completion: generate summary for student/teacher/admin
+- Provide: proficiency distribution, growth indicators (baseline->midpoint->final), standards mastery map, domain + DOK breakdown, time-on-task, integrity flags
+- Allow export CSV/PDF
+
+DATA INTEGRATION REQUIREMENTS
+- Use existing users/teachers/students already populated (PBIS House of Champions). Do not seed mock records.
+- Standards must load from DB in production and preview; fix any env issues causing missing data in published app.
+- Ensure teacher “Standards Coverage” uses grade + subject + assigned standards.
+
+IMPLEMENTATION STEPS
+1) Add DB tables (see schema in chat) via Drizzle ORM migrations.
+2) Add API routes:
+   - POST /api/admin/acap/forge/assessments
+   - POST /api/admin/acap/forge/assessments/:id/differentiate
+   - POST /api/admin/acap/forge/assessments/:id/publish
+   - GET  /api/admin/acap/forge/assessments?filters
+   - GET  /api/acap/test/access/:code (student gate)
+   - POST /api/acap/test/attempts/start
+   - PATCH /api/acap/test/attempts/:attemptId/answer
+   - POST /api/acap/test/attempts/:attemptId/submit
+   - GET  /api/teacher/acap/tests (assigned)
+   - POST /api/teacher/acap/access-codes (create/regenerate)
+3) Frontend pages using Tailwind + shadcn:
+   - AdminForgeBuilderPage
+   - StudentTestGate + LockedTestPlayer + Review + SubmitReflection
+   - TeacherAssignedTestsPage
+   - Reports pages (admin/teacher)
+4) Wiring:
+   - Use TanStack Query for data fetching/mutations
+   - invalidate queries after every mutation so UI updates “realtime”
+5) QA checklist:
+   - Create assessment (no AI) using Question Bank only
+   - Differentiate into 4 versions
+   - Publish to a class
+   - Generate access codes
+   - Student enters code, takes test, responses recorded
+   - Integrity flags computed
+   - Reports render + export works
+
+DELIVERABLES
+- Fully working end-to-end in production mode with role guards.
+- No dead buttons, no placeholder endpoints, no mock data dependencies.

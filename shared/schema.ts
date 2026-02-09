@@ -1417,6 +1417,69 @@ export const acapAccessCodes = pgTable("acap_access_codes", {
 
 export const insertAcapAccessCodeSchema = createInsertSchema(acapAccessCodes).omit({ id: true, createdAt: true });
 
+// ===== ACAP Forge Tables =====
+export const acapForgeAssessments = pgTable("acap_forge_assessments", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 300 }).notNull(),
+  grades: jsonb("grades").$type<number[]>().notNull().default([]),
+  subjects: jsonb("subjects").$type<string[]>().notNull().default([]),
+  assessmentType: varchar("assessment_type", { length: 30 }).notNull().default("diagnostic"),
+  window: varchar("window", { length: 30 }).default("baseline"),
+  timeLimitMinutes: integer("time_limit_minutes").default(60),
+  lockMode: boolean("lock_mode").default(true),
+  antiRushMonitor: boolean("anti_rush_monitor").default(true),
+  itemIds: jsonb("item_ids").$type<number[]>().notNull().default([]),
+  standardIds: jsonb("standard_ids").$type<number[]>().notNull().default([]),
+  dokDistribution: jsonb("dok_distribution").$type<Record<string, number>>().default({}),
+  writingConfig: jsonb("writing_config").$type<Record<string, any>>().default({}),
+  versionGroupId: varchar("version_group_id", { length: 50 }),
+  status: varchar("status", { length: 20 }).notNull().default("draft"),
+  createdBy: varchar("created_by"),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const acapForgeVersions = pgTable("acap_forge_versions", {
+  id: serial("id").primaryKey(),
+  forgeAssessmentId: integer("forge_assessment_id").references(() => acapForgeAssessments.id).notNull(),
+  versionLabel: varchar("version_label", { length: 10 }).notNull().default("A"),
+  itemOrder: jsonb("item_order").$type<number[]>().notNull().default([]),
+  optionShuffles: jsonb("option_shuffles").$type<Record<string, number[]>>().default({}),
+  numericVariants: jsonb("numeric_variants").$type<Record<string, any>>().default({}),
+  accessCode: varchar("access_code", { length: 12 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapForgeAttemptEvents = pgTable("acap_forge_attempt_events", {
+  id: serial("id").primaryKey(),
+  attemptId: integer("attempt_id").notNull(),
+  scholarId: varchar("scholar_id").notNull(),
+  eventType: varchar("event_type", { length: 50 }).notNull(),
+  itemIndex: integer("item_index"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapForgeOfflineSources = pgTable("acap_forge_offline_sources", {
+  id: serial("id").primaryKey(),
+  filename: varchar("filename", { length: 300 }).notNull(),
+  originalName: varchar("original_name", { length: 300 }),
+  fileType: varchar("file_type", { length: 20 }),
+  parseStatus: varchar("parse_status", { length: 20 }).notNull().default("queued"),
+  detectedItems: jsonb("detected_items").$type<any[]>().default([]),
+  tagResults: jsonb("tag_results").$type<any[]>().default([]),
+  gradeLevel: integer("grade_level"),
+  subject: varchar("subject", { length: 20 }),
+  uploadedBy: varchar("uploaded_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAcapForgeAssessmentSchema = createInsertSchema(acapForgeAssessments).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAcapForgeVersionSchema = createInsertSchema(acapForgeVersions).omit({ id: true, createdAt: true });
+export const insertAcapForgeAttemptEventSchema = createInsertSchema(acapForgeAttemptEvents).omit({ id: true, createdAt: true });
+export const insertAcapForgeOfflineSourceSchema = createInsertSchema(acapForgeOfflineSources).omit({ id: true, createdAt: true });
+
 // ACAP Type Exports
 export type AcapStandard = typeof acapStandards.$inferSelect;
 export type AcapBlueprint = typeof acapBlueprints.$inferSelect;
@@ -1466,6 +1529,15 @@ export type InsertAcapImpactLever = z.infer<typeof insertAcapImpactLeverSchema>;
 export type InsertAcapGenomeTrait = z.infer<typeof insertAcapGenomeTraitSchema>;
 export type InsertAcapGenomeEvent = z.infer<typeof insertAcapGenomeEventSchema>;
 export type InsertAcapGenomeRecommendation = z.infer<typeof insertAcapGenomeRecommendationSchema>;
+
+export type AcapForgeAssessment = typeof acapForgeAssessments.$inferSelect;
+export type AcapForgeVersion = typeof acapForgeVersions.$inferSelect;
+export type AcapForgeAttemptEvent = typeof acapForgeAttemptEvents.$inferSelect;
+export type AcapForgeOfflineSource = typeof acapForgeOfflineSources.$inferSelect;
+export type InsertAcapForgeAssessment = z.infer<typeof insertAcapForgeAssessmentSchema>;
+export type InsertAcapForgeVersion = z.infer<typeof insertAcapForgeVersionSchema>;
+export type InsertAcapForgeAttemptEvent = z.infer<typeof insertAcapForgeAttemptEventSchema>;
+export type InsertAcapForgeOfflineSource = z.infer<typeof insertAcapForgeOfflineSourceSchema>;
 
 // Re-export chat models for integration
 export { conversations, messages } from "./models/chat";

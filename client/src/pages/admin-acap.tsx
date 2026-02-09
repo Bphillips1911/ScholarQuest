@@ -22,9 +22,12 @@ import ProjectedAcapScoreTab from "@/components/admin/ProjectedAcapScoreTab";
 import ImpactSimulatorTab from "@/components/admin/ImpactSimulatorTab";
 import StudentGenomeTab from "@/components/admin/StudentGenomeTab";
 import AdminRankingsPage from "@/pages/acap/AdminRankingsPage";
+import ForgeBuilderTab from "@/components/acap/admin/ForgeBuilderTab";
+import ForgeCostControlsTab from "@/components/acap/admin/ForgeCostControlsTab";
 import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
-type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome" | "rankings";
+import { Hammer, DollarSign } from "lucide-react";
+type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "forge" | "forge-cost-controls" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome" | "rankings";
 
 export default function AdminAcap() {
   useAcapWebSocket();
@@ -73,6 +76,8 @@ export default function AdminAcap() {
     { id: "question-bank", label: "Question Bank", icon: BookOpen },
     { id: "assessments", label: "Assessments", icon: ClipboardList },
     { id: "assessment-completion", label: "Completion", icon: CheckCircle },
+    { id: "forge", label: "Forge", icon: Hammer },
+    { id: "forge-cost-controls", label: "Cost Controls", icon: DollarSign },
     { id: "ai-settings", label: "AI Settings", icon: Brain },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "bootcamp", label: "Boot Camp", icon: GraduationCap },
@@ -128,6 +133,8 @@ export default function AdminAcap() {
         {activeTab === "question-bank" && <QuestionBankTab />}
         {activeTab === "assessments" && <AssessmentsTab />}
         {activeTab === "assessment-completion" && <AssessmentCompletionTab />}
+        {activeTab === "forge" && <ForgeBuilderTab />}
+        {activeTab === "forge-cost-controls" && <ForgeCostControlsTab />}
         {activeTab === "ai-settings" && <AISettingsTab />}
         {activeTab === "reports" && <ReportsTab />}
         {activeTab === "bootcamp" && <BootCampTab />}

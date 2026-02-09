@@ -1,0 +1,103 @@
+Cost Controls & Offline Builder” panel design (what it includes)
+1) Build Offline (Free)
+
+Card: “Upload Sources (No AI)”
+
+Drag/drop PDF/DOCX/TXT
+
+Source list with:
+
+filename, uploaded-by, created-at
+
+“Parse status” (Queued → Parsed → Items detected)
+
+Remove / re-parse
+
+Button: “Run Offline Builder”
+
+Output: detected items appear in an Item Staging Queue
+
+item type: MCQ / Short response / Passage / Writing prompt
+
+detected answer key (if present)
+
+detected grade band + subject (heuristics)
+
+confidence indicator
+
+2) Auto-Tag Standards (Rules-Based)
+
+Card: “Rules Tagger”
+
+Dropdowns:
+
+Grade (6/7/8), Subject (ELA/Math/Science)
+
+Blueprint Domain (optional)
+
+Toggle: Strict mode (only tag when high confidence)
+
+Toggle: Allow multi-tag (primary standard + secondary support)
+
+“Rules Packs” selector (admin can manage):
+
+Keywords → standards mapping (ex: “ratios”, “unit rate” → RP cluster)
+
+Skill verbs → DOK hints (ex: “justify”, “analyze”, “compare”)
+
+Item structure rules (graphs/tables → certain domains)
+
+Results UI (per item):
+
+Suggested Standard(s) with confidence %
+
+Suggested DOK
+
+“Accept” / “Edit” / “Needs Review” badges
+
+Bulk actions: accept all above threshold, export review list
+
+3) Build Test (Zero AI)
+
+Card: “Assemble Assessment”
+
+Test settings:
+
+Name, window, time limit, calculator policy, randomize order
+
+Item counts per DOK/domain (sliders or number inputs)
+
+Blueprint coverage meter:
+
+coverage by domain + DOK distribution
+
+“Build Version A” (baseline)
+
+“Differentiate Versions” (A/B/C) using offline shuffling + equivalent form rules
+
+reorder items
+
+swap distractor order
+
+parallel item pools (if you uploaded enough)
+
+4) Optional AI (Last 10% only)
+
+Card: “AI Add-Ons (Optional)”
+All OFF by default.
+
+✅ Generate rationales for correct/incorrect
+
+✅ Rewrite stems for clarity (no standard shift)
+
+✅ Improve distractors (same difficulty band)
+
+✅ Create “teacher explanation” and “student hint”
+
+Budget guardrails:
+
+daily cap, per-assessment cap
+
+“estimate cost” before running
+
+usage log + export

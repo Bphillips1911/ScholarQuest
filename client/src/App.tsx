@@ -61,6 +61,7 @@ import StudentAcap from "@/pages/student-acap";
 import AdminAcap from "@/pages/admin-acap";
 import TeacherClassRankGoalsPage from "@/pages/acap/TeacherClassRankGoalsPage";
 import AdminRankingsPage from "@/pages/acap/AdminRankingsPage";
+import ForgeTestPlayer from "@/pages/acap/ForgeTestPlayer";
 
 function Router() {
   return (
@@ -110,6 +111,7 @@ function Router() {
         <Route path="/admin-acap" component={AdminAcap} />
         <Route path="/teacher/acap/rank-goals" component={TeacherClassRankGoalsPage} />
         <Route path="/admin/acap/rankings" component={AdminRankingsPage} />
+        <Route path="/acap/forge-test" component={ForgeTestPlayer} />
         
         {/* Main app routes with navigation */}
         <Route>

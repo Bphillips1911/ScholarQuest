@@ -16,6 +16,7 @@ import StudentRankGoalsPanel from "@/components/acap/student/StudentRankGoalsPan
 import AccessCodeEntry from "@/components/acap/student/AccessCodeEntry";
 import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
+import { PRODUCT_NAME_PLAIN, TAGLINE } from "@/lib/educapBrand";
 
 type Tab = "mastery" | "assessments" | "bootcamp" | "reports" | "rank-goals";
 
@@ -45,10 +46,10 @@ export default function StudentAcap() {
             <Button variant="ghost" className="text-white hover:bg-white/20" onClick={() => setLocation("/student-dashboard")}>
               <ArrowLeft className="h-5 w-5 mr-1" /> Back
             </Button>
-            <img src={bhsaCrestPath} alt="BHSA Crest" className="h-9 w-9 object-contain" />
+            <img src="/branding/educap-logo.png" alt="EduCAP Logo" className="h-10 w-auto object-contain" />
             <div>
-              <h1 className="text-2xl font-bold">ACAP Adaptive Skills</h1>
-              <p className="text-blue-200 text-sm">Bush Hills STEAM Academy — Your Personalized Learning Journey</p>
+              <h1 className="text-2xl font-bold">{PRODUCT_NAME_PLAIN}</h1>
+              <p className="text-blue-200 text-sm italic">{TAGLINE}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -174,7 +175,7 @@ function MasteryTab({ scholarId }: { scholarId: string }) {
               })}
             </div>
           ) : (
-            <p className="text-center text-gray-500 py-4">No standards loaded yet.</p>
+            <p className="text-center text-gray-500 py-4">No standards loaded yet. Master the Standards. Earn the Growth.</p>
           )}
         </CardContent>
       </Card>
@@ -531,7 +532,7 @@ function BootCampTab({ scholarId, scholarName }: { scholarId: string; scholarNam
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-        <Brain className="h-5 w-5 text-purple-500" /> ACAP Boot Camp
+        <Brain className="h-5 w-5 text-purple-500" /> EduCAP Boot Camp
       </h2>
       <p className="text-gray-600">Get personalized AI tutoring on standards you're working to master.</p>
 

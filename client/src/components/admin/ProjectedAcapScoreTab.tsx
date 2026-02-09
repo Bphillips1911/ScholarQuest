@@ -207,7 +207,7 @@ export default function ProjectedAcapScoreTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Target className="h-6 w-6 text-emerald-600" /> Projected ACAP Report Score
+            <Target className="h-6 w-6 text-emerald-600" /> Projected EduCAP Report Score
           </h2>
           <p className="text-gray-500 text-sm mt-1">Proprietary projection model with real-time what-if analysis</p>
         </div>
@@ -316,7 +316,7 @@ export default function ProjectedAcapScoreTab() {
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-blue-600" />
                   What-If Scenario Lab
-                  <span className="text-sm text-gray-400 font-normal ml-2">See how performance and attendance goals could impact the projected ACAP report score</span>
+                  <span className="text-sm text-gray-400 font-normal ml-2">See how performance and attendance goals could impact the projected EduCAP report score</span>
                 </CardTitle>
                 <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                   {["Math", "ELA"].map((s) => (

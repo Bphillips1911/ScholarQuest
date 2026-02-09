@@ -101,7 +101,7 @@ export default function StudentRankGoalsPanel() {
           <div>
             <h2 className="text-lg font-semibold">Rank & Goals</h2>
             <p className="text-sm text-muted-foreground">
-              Your private rank + ACAP targets. No other scholar names are shown.
+              Your private rank + EduCAP targets. No other scholar names are shown.
             </p>
           </div>
 
@@ -176,7 +176,7 @@ export default function StudentRankGoalsPanel() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5" />
-                ACAP Targets
+                EduCAP Targets
               </CardTitle>
               <CardDescription>Set goals. Your teacher can review and approve them.</CardDescription>
             </CardHeader>
@@ -265,7 +265,7 @@ export default function StudentRankGoalsPanel() {
         <Dialog open={openGoal} onOpenChange={setOpenGoal}>
           <DialogContent className="sm:max-w-[640px]">
             <DialogHeader>
-              <DialogTitle>Create an ACAP Goal</DialogTitle>
+              <DialogTitle>Create an EduCAP Goal</DialogTitle>
               <DialogDescription>
                 Choose an outcome, skill, or process goal. Teacher review is required for approval.
               </DialogDescription>

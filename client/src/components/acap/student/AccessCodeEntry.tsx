@@ -64,7 +64,7 @@ export default function AccessCodeEntry({ onValidCode }: { onValidCode: (data: V
           </div>
         </div>
         <CardTitle>Enter Access Code</CardTitle>
-        <CardDescription>Your teacher will give you a code to start the ACAP assessment.</CardDescription>
+        <CardDescription>Your teacher will give you a code to start the EduCAP assessment.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>

@@ -1268,9 +1268,9 @@ export default function TeacherDashboard() {
 
   const academicCriteria = [
     "Scoring Green on I-Ready assessments",
-    "Show growth on I-Ready and ACAP Practice Test",
+    "Show growth on I-Ready and EduCAP Practice Test",
     "Passing required pathway lessons", 
-    "Scoring proficient on ACAP Practice Test 1 and 2",
+    "Scoring proficient on EduCAP Practice Test 1 and 2",
     "Passing teacher assessments",
     "Turning in homework consistently",
     "Completing projects on time",
@@ -1639,8 +1639,8 @@ export default function TeacherDashboard() {
               data-testid="tab-acap"
             >
               <Target className="h-4 w-4" />
-              <span className="hidden sm:inline">ACAP Skills</span>
-              <span className="sm:hidden">ACAP</span>
+              <span className="hidden sm:inline">EduCAP Skills</span>
+              <span className="sm:hidden">EduCAP</span>
             </button>
             <button
               onClick={() => setActiveTab('student-export')}

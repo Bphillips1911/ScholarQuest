@@ -247,7 +247,7 @@ export default function ForgeBuilderTab() {
       <div className="bg-gradient-to-r from-indigo-700 to-blue-800 rounded-xl p-6 text-white">
         <div className="flex items-center gap-3 mb-1">
           <Layers className="h-7 w-7" />
-          <h2 className="text-2xl font-bold">ACAP Forge™</h2>
+          <h2 className="text-2xl font-bold">EduCAP Forge™</h2>
         </div>
         <p className="text-indigo-200 text-sm">Build. Differentiate. Deliver. Diagnose.</p>
       </div>
@@ -378,7 +378,7 @@ export default function ForgeBuilderTab() {
             </div>
             <div className="ml-auto">
               <Badge variant="outline" className="border-indigo-300 text-indigo-700 px-3 py-1">
-                ACAP Question Bank: {approvedItems.length} approved items
+                EduCAP Question Bank: {approvedItems.length} approved items
               </Badge>
             </div>
           </div>

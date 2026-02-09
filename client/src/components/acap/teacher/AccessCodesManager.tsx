@@ -82,7 +82,7 @@ export default function AccessCodesManager({ teacherId }: { teacherId: string })
       <Card className="border-2 border-indigo-100">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5 text-indigo-600" /> Generate Access Code</CardTitle>
-          <CardDescription>Create a one-time access code for students to begin a baseline, midpoint, or final ACAP assessment.</CardDescription>
+          <CardDescription>Create a one-time access code for students to begin a baseline, midpoint, or final EduCAP assessment.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-end gap-3">

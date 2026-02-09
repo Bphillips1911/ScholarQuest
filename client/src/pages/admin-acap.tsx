@@ -27,6 +27,7 @@ import ForgeCostControlsTab from "@/components/acap/admin/ForgeCostControlsTab";
 import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 import { Hammer, DollarSign } from "lucide-react";
+import { ADMIN_PORTAL, TAGLINE, DISCLAIMER_ADMIN } from "@/lib/educapBrand";
 type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "forge" | "forge-cost-controls" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome" | "rankings";
 
 export default function AdminAcap() {
@@ -96,12 +97,13 @@ export default function AdminAcap() {
               <ArrowLeft className="h-5 w-5 mr-1" /> Back to Admin Dashboard
             </Button>
             <div className="border-l border-white/30 pl-4 flex items-center gap-3">
-              <img src={bhsaCrestPath} alt="BHSA Crest" className="h-10 w-10 object-contain" />
+              <img src="/branding/educap-logo.png" alt="EduCAP Logo" className="h-10 w-auto object-contain" />
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                  <Shield className="h-6 w-6" /> ACAP Admin Portal
+                  <Shield className="h-6 w-6" /> {ADMIN_PORTAL}
                 </h1>
-                <p className="text-slate-300 text-sm">
+                <p className="text-slate-300 text-sm italic">{TAGLINE}</p>
+                <p className="text-slate-400 text-xs">
                   Bush Hills STEAM Academy — {adminData?.firstName} {adminData?.lastName} — {adminData?.title || "Administrator"}
                 </p>
               </div>
@@ -195,7 +197,7 @@ function OverviewTab() {
               <ClipboardList className="h-6 w-6 text-indigo-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-800">ACAP Action Plan</h3>
+              <h3 className="font-semibold text-gray-800">EduCAP Action Plan</h3>
               <p className="text-sm text-gray-500">Generate a comprehensive improvement plan based on assessment data, mastery levels, and student performance trends.</p>
             </div>
           </div>
@@ -211,7 +213,7 @@ function OverviewTab() {
                 "Set up projected score tracking for each grade",
               ].filter(Boolean);
               const plan = actionItems.join("\n- ");
-              alert(`ACAP Action Plan\n\nPriority Items:\n- ${plan}\n\nRecommendation: Start with the Impact Simulator tab to identify high-leverage instructional moves.`);
+              alert(`EduCAP Action Plan\n\nPriority Items:\n- ${plan}\n\nRecommendation: Start with the Impact Simulator tab to identify high-leverage instructional moves.`);
             }}
           >
             <PlayCircle className="h-4 w-4" />
@@ -1333,7 +1335,7 @@ function ReportsTab() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">School-Wide ACAP Reports</h2>
+      <h2 className="text-xl font-bold text-gray-800">School-Wide EduCAP Reports</h2>
 
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
@@ -1645,7 +1647,7 @@ function BootCampTab() {
             <div className="bg-purple-50 p-4 rounded-lg text-center">
               <Target className="h-6 w-6 text-purple-600 mx-auto mb-2" />
               <p className="text-sm font-medium">Standards-Aligned</p>
-              <p className="text-xs text-gray-500 mt-1">Sessions tied to specific ACAP standards for targeted support</p>
+              <p className="text-xs text-gray-500 mt-1">Sessions tied to specific EduCAP standards for targeted support</p>
             </div>
           </div>
         </CardContent>

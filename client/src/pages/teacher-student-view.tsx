@@ -327,7 +327,7 @@ export default function TeacherStudentView() {
                 Help Quests
               </Button>
               
-              {/* ACAP Skills Button */}
+              {/* EduCAP Skills Button */}
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -337,7 +337,7 @@ export default function TeacherStudentView() {
                 }}
               >
                 <Brain className="h-4 w-4 mr-1" />
-                ACAP Skills
+                EduCAP Skills
               </Button>
               
               {/* SEL Button */}

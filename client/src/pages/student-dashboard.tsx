@@ -665,7 +665,7 @@ function StudentDashboardContent() {
                   data-testid="button-acap-skills"
                 >
                   <Brain className="h-4 w-4" />
-                  <span>ACAP Skills</span>
+                  <span>EduCAP Skills</span>
                 </Button>
               </InteractiveScale>
               <InteractiveScale>

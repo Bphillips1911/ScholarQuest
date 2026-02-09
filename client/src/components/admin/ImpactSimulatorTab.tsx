@@ -144,7 +144,7 @@ export default function ImpactSimulatorTab() {
               <Sparkles className="h-6 w-6 text-yellow-400" /> Instructional Impact Simulator™
             </h2>
             <p className="text-sm text-slate-300 mt-1">
-              Bush Hills STEAM Academy — Identify the most impactful instructional moves to improve projected ACAP scores.
+              Bush Hills STEAM Academy — Identify the most impactful instructional moves to improve projected EduCAP scores.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -338,7 +338,7 @@ export default function ImpactSimulatorTab() {
 
           <Card className="border-2 border-amber-100 shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-amber-600" /> ACAP DOK Level 2 Strategy</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-amber-600" /> EduCAP DOK Level 2 Strategy</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-xs text-gray-600">

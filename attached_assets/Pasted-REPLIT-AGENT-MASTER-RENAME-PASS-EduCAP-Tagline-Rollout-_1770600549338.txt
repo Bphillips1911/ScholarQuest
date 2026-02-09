@@ -1,0 +1,197 @@
+REPLIT AGENT — MASTER RENAME PASS (EduCAP™ + Tagline Rollout)
+
+GOAL
+Replace ALL user-facing “ACAP” wording in PBIS House of Champions with “EduCAP” and add the tagline:
+“EduCAP™ — Master the Standards. Earn the Growth.”
+in every appropriate surface (headers, subheaders, empty states, exports), while avoiding redundancy and keeping UI clean.
+
+HARD RULES
+1) Replace ONLY user-facing strings. Do NOT rename any database tables/columns yet unless explicitly listed below.
+2) Keep existing routes stable (no breaking URLs) unless you add redirects.
+3) Add ™ only in primary brand lockups (headers, title bars, hero areas, PDF headers/footers). Avoid ™ in tight UI chips/buttons.
+4) Don’t add the tagline inside buttons, tiny nav labels, tables, or dense cards. Use it in page headers / report headers / empty states.
+5) Add a “Not affiliated…” disclaimer in Admin/Exports only (small text), not student UI.
+
+WHERE TAGLINE MUST APPEAR
+A) Top page header/subheader for ALL EduCAP pages:
+   - Admin: /admin-acap/* pages
+   - Teacher: /teacher-acap/* pages
+   - Student: /student-acap/* pages
+B) PDF/Export report headers + footers (CSV doesn’t need it).
+C) Empty state blocks for EduCAP landing screens (lightweight).
+D) EduCAP Forge pages + Cost Controls panel (header/subheader).
+
+WHERE TAGLINE SHOULD NOT APPEAR
+- Top nav tabs labels (“Overview”, “Reports”, “Boot Camp”)
+- Small badges/chips (e.g., “Active”, “Grade 6”)
+- Buttons (“Generate”, “Run Simulator”, “Export”)
+- Inside tables/rows (Ranking tables, student list)
+
+PRIMARY BRAND LOCKUP TEXT (copy EXACTLY)
+Title:
+  "EduCAP™ Adaptive Skills"
+Tagline:
+  "Master the Standards. Earn the Growth."
+Header format:
+  EduCAP™ Adaptive Skills
+  Master the Standards. Earn the Growth.
+
+ADMIN BRAND LOCKUP TEXT
+Title:
+  "EduCAP™ Admin Portal"
+Subhead:
+  "Master the Standards. Earn the Growth."
+Disclaimers (small text in Admin + exports):
+  "EduCAP™ is a standards-aligned instructional platform. Not affiliated with or endorsed by any state testing program."
+
+FORGE BRAND LOCKUP TEXT
+Title:
+  "EduCAP Forge™"
+Subhead:
+  "Master the Standards. Earn the Growth."
+Secondary (optional line):
+  "Assessment Design • Versioning • Reporting"
+
+RENAMING MAP (GLOBAL STRING REPLACEMENTS)
+Perform a codebase-wide search and update user-facing text labels:
+- "ACAP Adaptive Skills" -> "EduCAP™ Adaptive Skills" (page titles/headers)
+- "ACAP Admin Portal" -> "EduCAP™ Admin Portal"
+- "ACAP Forge" -> "EduCAP Forge™"
+- "Projected ACAP Report Score" -> "Projected EduCAP Report Score"
+- "ACAP Boot Camp" -> "EduCAP Boot Camp"
+- "ACAP Baseline" -> "EduCAP Baseline"
+- "ACAP Mid-point" / "ACAP Midpoint" -> "EduCAP Midpoint"
+- "ACAP Final" -> "EduCAP Final"
+- "ACAP Question Bank" -> "EduCAP Question Bank"
+- "ACAP Schoolwide Assessment" -> "EduCAP Schoolwide Assessment"
+- "ACAP Rankings" -> "EduCAP Rankings"
+- "ACAP" (generic, standalone in UI) -> "EduCAP" (ONLY if it’s a visible label; do not rename internal constants blindly)
+
+IMPORTANT: Do NOT change any official blueprint file names or citations in uploaded PDFs; only change in-app labels.
+
+NAV LABELS (recommended)
+Keep the tab name:
+- Teacher: “EduCAP Adaptive Skills”
+- Student: “EduCAP Adaptive Skills”
+- Admin: “EduCAP” or “EduCAP Admin” (short)
+Do NOT put ™ in nav labels, only in headers.
+
+LOGO PLACEMENT
+Use the provided EduCAP logo asset (store at: /public/branding/educap-logo.png).
+Add logo in these places:
+1) EduCAP page header left (Admin/Teacher/Student pages).
+2) Admin portal top bar (left next to shield icon).
+3) Exports (PDF) top-left.
+4) Forge pages header.
+Do NOT add logo inside tables, modals, or tiny cards unless there is already a header slot.
+
+IMPLEMENTATION TASKS (STEP-BY-STEP)
+
+STEP 1 — Add a centralized brand config
+Create: /src/lib/educapBrand.ts
+Export:
+- BRAND_NAME = "EduCAP™"
+- PRODUCT_NAME = "EduCAP™ Adaptive Skills"
+- TAGLINE = "Master the Standards. Earn the Growth."
+- ADMIN_PORTAL = "EduCAP™ Admin Portal"
+- FORGE = "EduCAP Forge™"
+- DISCLAIMER_ADMIN = "EduCAP™ is a standards-aligned instructional platform. Not affiliated with or endorsed by any state testing program."
+Also export helper:
+- getHeaderCopy(context: "admin"|"teacher"|"student"|"forge") returning {title, subtitle, showDisclaimer}
+
+STEP 2 — Add a reusable PageHeader component
+Create: /src/components/branding/EduCapPageHeader.tsx
+Props:
+- context: "admin"|"teacher"|"student"|"forge"
+- rightSlot?: ReactNode (buttons)
+- showLogo?: boolean (default true)
+Render:
+- logo + title + tagline
+- optionally disclaimer (admin only) in muted small text
+Use shadcn Card/Separator or clean divs consistent with your UI.
+
+STEP 3 — Replace headers across all EduCAP pages
+Update these pages to use EduCapPageHeader:
+Admin:
+- Projected Score
+- Impact Simulator
+- Student Genome
+- Rankings
+- Blueprints & Standards
+- AI Settings
+- Forge + Cost Controls
+Teacher:
+- Overview
+- Assignments
+- Question Bank
+- Reports
+- Boot Camp
+- Rank & Goals
+- Access Codes
+Student:
+- Mastery Map
+- Assessments
+- Boot Camp
+- My Growth
+- Rank & Goals
+All should show:
+Title: EduCAP™ Adaptive Skills (or Admin/Forge titles where applicable)
+Subtitle: Master the Standards. Earn the Growth.
+
+STEP 4 — Fix “\u2022”, “\u2122”, gibberish artifacts
+Scan for occurrences of:
+- "\\u2022" "\\u2122" "\\u2014" "\\u2013"
+Replace with real characters:
+- "•" "™" "—" "–"
+But prefer using the constants above so you don’t embed escape sequences.
+
+STEP 5 — Update document title + meta
+Wherever you set document.title or Helmet:
+- "ACAP ..." -> "EduCAP™ ..."
+Example:
+document.title = "EduCAP™ Adaptive Skills — Master the Standards. Earn the Growth."
+
+STEP 6 — Update exports (PDF header/footer)
+Any PDF generation templates:
+Header:
+- Logo (left)
+- “EduCAP™ Adaptive Skills”
+- tagline line
+Footer:
+- “EduCAP™ — Master the Standards. Earn the Growth.”
+Admin-only footer small line:
+- DISCLAIMER_ADMIN
+CSV exports: no tagline required.
+
+STEP 7 — Add UI empty-state copy with tagline (light)
+Examples:
+- No standards loaded yet:
+  "No standards loaded yet. Master the Standards. Earn the Growth."
+- No assessments created:
+  "No assessments yet. Master the Standards. Earn the Growth."
+Do NOT overuse—one line maximum.
+
+STEP 8 — Preserve route stability + optional redirects
+Keep existing routes /teacher-acap /student-acap /admin-acap.
+Optionally add friendly aliases:
+- /teacher-educap -> redirect to /teacher-acap
+- /student-educap -> redirect to /student-acap
+- /admin-educap -> redirect to /admin-acap
+Do NOT break existing links.
+
+STEP 9 — QA Checklist (must pass)
+- All tabs still clickable and routes still work.
+- Titles show EduCAP™ correctly everywhere.
+- Tagline appears only in headers/exports/empty states.
+- No duplicated tagline in nested sections.
+- No stray “ACAP” visible anywhere in UI except inside uploaded documents.
+- Logo renders crisp on white + gradient headers.
+- Admin disclaimer only appears in Admin and PDF exports.
+
+DELIVERABLES
+1) PR with all text replacements and header component usage.
+2) Add /public/branding/educap-logo.png and wire it everywhere specified.
+3) Screenshot set: Teacher Overview, Student Mastery Map, Admin Rankings, Forge main, Forge Cost Controls panel.
+
+EXECUTE NOW
+Proceed to implement this rename pass end-to-end, keeping routes stable and ensuring everything builds successfully.

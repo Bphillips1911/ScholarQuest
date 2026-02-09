@@ -922,7 +922,7 @@ export default function AdminNew() {
               <TabsTrigger value="badges" className="text-xs sm:text-sm px-2 py-2">Badges</TabsTrigger>
               <TabsTrigger value="acap-admin" className="text-xs sm:text-sm px-2 py-2">
                 <BookOpen className="h-4 w-4 mr-1" />
-                ACAP Portal
+                EduCAP Portal
               </TabsTrigger>
             </TabsList>
             
@@ -2283,7 +2283,7 @@ export default function AdminNew() {
                       <div className="text-left">
                         <div className="flex items-center">
                           <BookOpen className="mr-2 h-4 w-4" />
-                          ACAP Administration
+                          EduCAP Administration
                         </div>
                         <p className="text-sm text-indigo-200 mt-1">Standards, blueprints & assessment management</p>
                       </div>
@@ -3910,10 +3910,10 @@ function AdminAcapPanel({ themeStyles }: { themeStyles: any }) {
         <CardHeader>
           <CardTitle style={{color: themeStyles.textPrimary}} className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-indigo-500" />
-            ACAP Adaptive Skills Administration
+            EduCAP Adaptive Skills Administration
           </CardTitle>
           <CardDescription style={{color: themeStyles.textSecondary}}>
-            Manage standards, blueprints, question banks, and assessment data for the ACAP system
+            Manage standards, blueprints, question banks, and assessment data for the EduCAP system
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -4131,14 +4131,14 @@ function AdminAcapPanel({ themeStyles }: { themeStyles: any }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-center py-6 text-gray-500">No assessments created yet. Teachers can create assessments from the Teacher ACAP portal.</p>
+                <p className="text-center py-6 text-gray-500">No assessments created yet. Teachers can create assessments from the Teacher EduCAP portal.</p>
               )}
             </div>
           )}
 
           {acapSubTab === "reports" && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700">ACAP System Overview</h3>
+              <h3 className="font-semibold text-gray-700">EduCAP System Overview</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-blue-50 p-4 rounded-lg text-center">
                   <BookOpen className="h-6 w-6 text-blue-500 mx-auto mb-1" />
@@ -4184,7 +4184,7 @@ function AdminAcapPanel({ themeStyles }: { themeStyles: any }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-center py-6 text-gray-500">No audit log entries yet. Actions will be recorded as teachers and admins use the ACAP system.</p>
+                <p className="text-center py-6 text-gray-500">No audit log entries yet. Actions will be recorded as teachers and admins use the EduCAP system.</p>
               )}
             </div>
           )}

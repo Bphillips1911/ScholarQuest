@@ -78,7 +78,7 @@ export default function AdminRankingsPage() {
           <div className="flex items-center gap-3">
             <img src={bhsaCrestPath} alt="BHSA" className="h-10 w-10 object-contain" />
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Admin ACAP Rankings</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Admin EduCAP Rankings</h1>
               <p className="text-sm text-slate-300">
                 Bush Hills STEAM Academy — Proficiency and growth rankings across grades, classes, and teachers.
               </p>
@@ -195,7 +195,7 @@ function RankTable({ rows }: { rows: RankingRow[] }) {
       ))}
       {!rows.length && (
         <div className="rounded-lg border bg-white p-8 text-center text-sm text-muted-foreground">
-          No ranking data available yet. Rankings are computed from completed ACAP assessment attempts.
+          No ranking data available yet. Rankings are computed from completed EduCAP assessment attempts. Master the Standards. Earn the Growth.
         </div>
       )}
     </div>

@@ -19,6 +19,7 @@ import TeacherClassRankGoalsPage from "@/pages/acap/TeacherClassRankGoalsPage";
 import AccessCodesManager from "@/components/acap/teacher/AccessCodesManager";
 import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
+import { PRODUCT_NAME_PLAIN, TAGLINE } from "@/lib/educapBrand";
 
 type Tab = "overview" | "assignments" | "question-bank" | "reports" | "bootcamp" | "rank-goals" | "access-codes";
 
@@ -83,10 +84,10 @@ export default function TeacherAcap() {
             <Button variant="ghost" className="text-white hover:bg-white/20" onClick={() => setLocation("/teacher-dashboard")}>
               <ArrowLeft className="h-5 w-5 mr-1" /> Back
             </Button>
-            <img src={bhsaCrestPath} alt="BHSA Crest" className="h-9 w-9 object-contain" />
+            <img src="/branding/educap-logo.png" alt="EduCAP Logo" className="h-10 w-auto object-contain" />
             <div>
-              <h1 className="text-2xl font-bold">ACAP Adaptive Skills</h1>
-              <p className="text-indigo-200 text-sm">Bush Hills STEAM Academy — Standards-Based Assessment & AI-Powered Learning</p>
+              <h1 className="text-2xl font-bold">{PRODUCT_NAME_PLAIN}</h1>
+              <p className="text-indigo-200 text-sm italic">{TAGLINE}</p>
             </div>
           </div>
           <div className="text-right text-sm text-indigo-200">
@@ -961,7 +962,7 @@ function BootCampTab({ teacherId, gradeNumber }: { teacherId: string; gradeNumbe
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">ACAP Boot Camp Management</h2>
+      <h2 className="text-xl font-bold text-gray-800">EduCAP Boot Camp Management</h2>
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5 text-purple-500" /> Boot Camp Overview</CardTitle></CardHeader>
         <CardContent>
@@ -978,7 +979,7 @@ function BootCampTab({ teacherId, gradeNumber }: { teacherId: string; gradeNumbe
             <div className="bg-indigo-50 p-4 rounded-lg">
               <Target className="h-8 w-8 text-indigo-500 mx-auto mb-2" />
               <p className="font-medium text-indigo-700">Standard-Aligned</p>
-              <p className="text-xs text-gray-500">Focused on Grade {gradeNumber} ACAP standards</p>
+              <p className="text-xs text-gray-500">Focused on Grade {gradeNumber} EduCAP standards</p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
               <TrendingUp className="h-8 w-8 text-green-500 mx-auto mb-2" />

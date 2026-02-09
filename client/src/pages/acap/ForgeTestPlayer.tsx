@@ -318,7 +318,7 @@ export default function ForgeTestPlayer() {
             <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
               <Lock className="h-8 w-8 text-indigo-600" />
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">ACAP Forge Assessment</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-900">EduCAP Forge™ Assessment</CardTitle>
             <p className="text-gray-500 text-sm">Enter your 6-character access code to begin</p>
           </CardHeader>
           <CardContent className="space-y-4">

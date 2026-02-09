@@ -1475,6 +1475,41 @@ export const acapForgeOfflineSources = pgTable("acap_forge_offline_sources", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const acapForgeRulePacks = pgTable("acap_forge_rule_packs", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  createdBy: varchar("created_by"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapForgeRules = pgTable("acap_forge_rules", {
+  id: serial("id").primaryKey(),
+  rulePackId: integer("rule_pack_id").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  matchPattern: varchar("match_pattern", { length: 500 }).notNull(),
+  mapsToStandard: varchar("maps_to_standard", { length: 50 }).notNull(),
+  dokHint: integer("dok_hint"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const acapForgeAiUsageLog = pgTable("acap_forge_ai_usage_log", {
+  id: serial("id").primaryKey(),
+  feature: varchar("feature", { length: 100 }).notNull(),
+  itemCount: integer("item_count").notNull().default(0),
+  costUsd: real("cost_usd").notNull().default(0),
+  adminEmail: varchar("admin_email"),
+  forgeAssessmentId: integer("forge_assessment_id"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAcapForgeRulePackSchema = createInsertSchema(acapForgeRulePacks).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAcapForgeRuleSchema = createInsertSchema(acapForgeRules).omit({ id: true, createdAt: true });
+export const insertAcapForgeAiUsageLogSchema = createInsertSchema(acapForgeAiUsageLog).omit({ id: true, createdAt: true });
+
 export const insertAcapForgeAssessmentSchema = createInsertSchema(acapForgeAssessments).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAcapForgeVersionSchema = createInsertSchema(acapForgeVersions).omit({ id: true, createdAt: true });
 export const insertAcapForgeAttemptEventSchema = createInsertSchema(acapForgeAttemptEvents).omit({ id: true, createdAt: true });
@@ -1534,10 +1569,16 @@ export type AcapForgeAssessment = typeof acapForgeAssessments.$inferSelect;
 export type AcapForgeVersion = typeof acapForgeVersions.$inferSelect;
 export type AcapForgeAttemptEvent = typeof acapForgeAttemptEvents.$inferSelect;
 export type AcapForgeOfflineSource = typeof acapForgeOfflineSources.$inferSelect;
+export type AcapForgeRulePack = typeof acapForgeRulePacks.$inferSelect;
+export type AcapForgeRule = typeof acapForgeRules.$inferSelect;
+export type AcapForgeAiUsageLog = typeof acapForgeAiUsageLog.$inferSelect;
 export type InsertAcapForgeAssessment = z.infer<typeof insertAcapForgeAssessmentSchema>;
 export type InsertAcapForgeVersion = z.infer<typeof insertAcapForgeVersionSchema>;
 export type InsertAcapForgeAttemptEvent = z.infer<typeof insertAcapForgeAttemptEventSchema>;
 export type InsertAcapForgeOfflineSource = z.infer<typeof insertAcapForgeOfflineSourceSchema>;
+export type InsertAcapForgeRulePack = z.infer<typeof insertAcapForgeRulePackSchema>;
+export type InsertAcapForgeRule = z.infer<typeof insertAcapForgeRuleSchema>;
+export type InsertAcapForgeAiUsageLog = z.infer<typeof insertAcapForgeAiUsageLogSchema>;
 
 // Re-export chat models for integration
 export { conversations, messages } from "./models/chat";

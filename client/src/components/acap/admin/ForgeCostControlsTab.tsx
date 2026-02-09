@@ -1,744 +1,1048 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, FileText, Trash2, Zap, Check, AlertTriangle, Brain, Shield, DollarSign } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface OfflineSource {
-  id: number;
-  filename: string;
-  originalName: string;
-  fileType: string;
-  gradeLevel: number;
-  subject: string;
-  parseStatus?: string;
-  detectedCount?: number;
-}
+import {
+  Upload, Wand2, FileText, Tag, Hammer, Sparkles, RefreshCw, Trash2,
+  CheckCircle2, AlertTriangle, XCircle, SlidersHorizontal, Download,
+  Settings, Layers, ListChecks, FileUp, ShieldCheck, Plus, Loader2,
+} from "lucide-react";
 
-interface DetectedItem {
+type Subject = "ELA" | "Math" | "Science";
+type GradeBand = "6" | "7" | "8";
+type ParseStatus = "queued" | "parsing" | "parsed" | "error";
+type ItemType = "MCQ" | "Short Response" | "Passage" | "Writing Prompt";
+type ReviewStatus = "Needs Review" | "Accepted" | "Edited" | "Rejected";
+
+type StagedItem = {
   id: string;
-  stem: string;
+  sourceDocId: string;
   type: string;
-  answerKey: string;
-  gradeBand: string;
+  subject?: Subject;
+  grade?: GradeBand;
+  stem: string;
+  promptPreview?: string;
+  hasKey: boolean;
+  answerKey?: string;
+  suggestedDOK?: number;
+  suggestedStandards?: Array<{ code: string; label: string; confidence: number }>;
+  reviewStatus: ReviewStatus;
   confidence: number;
-  sourceFile: string;
-}
+  lastUpdated?: string;
+};
 
-interface TaggedItem extends DetectedItem {
-  suggestedStandards: { id: number; code: string; domain: string; description: string }[];
-  suggestedDok: number;
-  status: string;
-}
+type RuleRow = {
+  id: number;
+  enabled: boolean;
+  matchPattern: string;
+  mapsToStandard: string;
+  dokHint?: number;
+  notes?: string;
+};
 
-interface UsageLogEntry {
-  timestamp: string;
-  action: string;
-  cost: number;
-}
+type BudgetState = {
+  enabled: boolean;
+  dailyCapUSD: number;
+  perAssessmentCapUSD: number;
+  usageTodayUSD: number;
+  usageThisAssessmentUSD: number;
+};
+
+type AiAddonFlags = {
+  rationales: boolean;
+  rewriteStems: boolean;
+  improveDistractors: boolean;
+  teacherExplanation: boolean;
+  studentHint: boolean;
+};
 
 export default function ForgeCostControlsTab() {
   const { toast } = useToast();
   const adminToken = localStorage.getItem("adminToken");
+  const authHeaders = { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" };
 
-  const [uploadFileName, setUploadFileName] = useState("");
-  const [uploadOriginalName, setUploadOriginalName] = useState("");
-  const [uploadFileType, setUploadFileType] = useState("pdf");
-  const [uploadGrade, setUploadGrade] = useState("7");
-  const [uploadSubject, setUploadSubject] = useState("Math");
+  const [subject, setSubject] = useState<Subject>("Math");
+  const [grade, setGrade] = useState<GradeBand>("6");
+  const [strictMode, setStrictMode] = useState(true);
+  const [allowMultiTag, setAllowMultiTag] = useState(true);
+  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(80);
+  const [selectedRulePackId, setSelectedRulePackId] = useState<string>("");
+  const [stagedItems, setStagedItems] = useState<StagedItem[]>([]);
+  const [budget, setBudget] = useState<BudgetState>({
+    enabled: false, dailyCapUSD: 10, perAssessmentCapUSD: 3,
+    usageTodayUSD: 0, usageThisAssessmentUSD: 0,
+  });
+  const [aiAddons, setAiAddons] = useState<AiAddonFlags>({
+    rationales: false, rewriteStems: false, improveDistractors: false,
+    teacherExplanation: false, studentHint: false,
+  });
 
-  const [detectedItems, setDetectedItems] = useState<DetectedItem[]>([]);
-  const [taggedItems, setTaggedItems] = useState<TaggedItem[]>([]);
-
-  const [tagGrade, setTagGrade] = useState("7");
-  const [tagSubject, setTagSubject] = useState("Math");
-  const [strictMode, setStrictMode] = useState(false);
-  const [allowMultiTag, setAllowMultiTag] = useState(false);
-
-  const [testName, setTestName] = useState("");
-  const [testWindow, setTestWindow] = useState("");
-  const [timeLimit, setTimeLimit] = useState(60);
-  const [dokSliders, setDokSliders] = useState({ dok1: 25, dok2: 40, dok3: 25, dok4: 10 });
-
-  const [aiRationales, setAiRationales] = useState(false);
-  const [aiRewriteStems, setAiRewriteStems] = useState(false);
-  const [aiDistractors, setAiDistractors] = useState(false);
-  const [aiTeacherExplanation, setAiTeacherExplanation] = useState(false);
-  const [dailyCap, setDailyCap] = useState("5.00");
-  const [perAssessmentCap, setPerAssessmentCap] = useState("2.00");
-  const [estimatedCost, setEstimatedCost] = useState<number | null>(null);
-  const [usageLog, setUsageLog] = useState<UsageLogEntry[]>([]);
-
-  const { data: offlineSources = [], isLoading: loadingSources } = useQuery<OfflineSource[]>({
+  const { data: offlineSources = [], isLoading: loadingSources } = useQuery<any[]>({
     queryKey: ["/api/acap/forge/offline-sources"],
     queryFn: async () => {
-      const res = await fetch("/api/acap/forge/offline-sources", {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch offline sources");
+      const res = await fetch("/api/acap/forge/offline-sources", { headers: { Authorization: `Bearer ${adminToken}` } });
+      if (!res.ok) throw new Error("Failed");
       return res.json();
     },
     enabled: !!adminToken,
   });
 
-  const uploadMutation = useMutation({
-    mutationFn: async (body: { filename: string; originalName: string; fileType: string; gradeLevel: number; subject: string }) => {
-      const res = await fetch("/api/acap/forge/offline-sources", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify(body),
+  const { data: rulePacks = [] } = useQuery<any[]>({
+    queryKey: ["/api/acap/forge/rule-packs"],
+    queryFn: async () => {
+      const res = await fetch("/api/acap/forge/rule-packs", { headers: { Authorization: `Bearer ${adminToken}` } });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!adminToken,
+  });
+
+  const rulePackIdNum = parseInt(selectedRulePackId) || (rulePacks[0]?.id ?? 0);
+
+  const { data: rules = [] } = useQuery<RuleRow[]>({
+    queryKey: ["/api/acap/forge/rule-packs", rulePackIdNum, "rules"],
+    queryFn: async () => {
+      const res = await fetch(`/api/acap/forge/rule-packs/${rulePackIdNum}/rules`, { headers: { Authorization: `Bearer ${adminToken}` } });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!adminToken && rulePackIdNum > 0,
+  });
+
+  const { data: aiUsage } = useQuery<any>({
+    queryKey: ["/api/acap/forge/ai/usage"],
+    queryFn: async () => {
+      const res = await fetch("/api/acap/forge/ai/usage?range=today", { headers: { Authorization: `Bearer ${adminToken}` } });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!adminToken,
+  });
+
+  useEffect(() => {
+    if (aiUsage && aiUsage.todayUsd !== undefined) {
+      setBudget(prev => {
+        if (prev.usageTodayUSD !== aiUsage.todayUsd) {
+          return { ...prev, usageTodayUSD: aiUsage.todayUsd || 0 };
+        }
+        return prev;
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to upload source");
-      }
+    }
+  }, [aiUsage]);
+
+  const uploadMutation = useMutation({
+    mutationFn: async (body: any) => {
+      const res = await fetch("/api/acap/forge/offline/upload", { method: "POST", headers: authHeaders, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/offline-sources"] });
-      toast({ title: "Source Added", description: "File metadata saved. Ready for parsing." });
-      setUploadFileName("");
-      setUploadOriginalName("");
+      toast({ title: "Source Added", description: "File uploaded. Ready for parsing." });
     },
-    onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`/api/acap/forge/offline-sources/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      if (!res.ok) throw new Error("Failed to delete source");
+      const res = await fetch(`/api/acap/forge/offline-sources/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${adminToken}` } });
+      if (!res.ok) throw new Error("Failed");
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/offline-sources"] });
-      toast({ title: "Removed", description: "Offline source deleted." });
-    },
-    onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Removed" });
     },
   });
 
-  const autoTagMutation = useMutation({
-    mutationFn: async (body: { items: any[]; gradeLevel: number; subject: string; strictMode: boolean }) => {
-      const res = await fetch("/api/acap/forge/auto-tag", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to auto-tag");
-      }
+  const parseMutation = useMutation({
+    mutationFn: async (sourceId: number) => {
+      const res = await fetch("/api/acap/forge/offline/parse", { method: "POST", headers: authHeaders, body: JSON.stringify({ sourceId }) });
+      if (!res.ok) throw new Error("Failed");
       return res.json();
     },
     onSuccess: (data) => {
-      setTaggedItems(data.taggedItems || []);
-      toast({
-        title: "Auto-Tag Complete",
-        description: `Tagged ${data.totalTagged}/${data.totalItems} items with standards.`,
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/offline-sources"] });
+      const newItems: StagedItem[] = (data.items || []).map((it: any) => ({
+        id: it.id,
+        sourceDocId: it.sourceDocId || `src_${data.sourceId}`,
+        type: it.type || "MCQ",
+        subject,
+        grade,
+        stem: it.stem,
+        promptPreview: it.stem,
+        hasKey: !!it.answerKey,
+        answerKey: it.answerKey,
+        suggestedDOK: undefined,
+        suggestedStandards: [],
+        reviewStatus: "Needs Review" as ReviewStatus,
+        confidence: it.confidence || 0,
+      }));
+      setStagedItems(prev => [...prev, ...newItems]);
+      toast({ title: "Parsed", description: `${data.itemCount} items detected.` });
     },
-    onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    onError: (e: any) => toast({ title: "Parse Error", description: e.message, variant: "destructive" }),
+  });
+
+  const autoTagRulesMutation = useMutation({
+    mutationFn: async (body: any) => {
+      const res = await fetch("/api/acap/forge/auto-tag-rules", { method: "POST", headers: authHeaders, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: (data) => {
+      const tagged = data.taggedItems || [];
+      setStagedItems(prev => {
+        const updated = [...prev];
+        for (const t of tagged) {
+          const idx = updated.findIndex(it => it.id === t.id);
+          if (idx >= 0) {
+            updated[idx] = { ...updated[idx], suggestedStandards: t.suggestedStandards, suggestedDOK: t.suggestedDOK, confidence: t.confidence, reviewStatus: t.reviewStatus || "Needs Review" };
+          }
+        }
+        return updated;
+      });
+      toast({ title: "Auto-Tag Complete", description: `Tagged ${data.totalTagged}/${data.totalItems} items.` });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const saveRulePackMutation = useMutation({
+    mutationFn: async (body: { rulePackId: number; rules: any[] }) => {
+      const res = await fetch(`/api/acap/forge/rule-packs/${body.rulePackId}/rules/bulk`, {
+        method: "PUT", headers: authHeaders,
+        body: JSON.stringify({ rules: body.rules }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/rule-packs", rulePackIdNum, "rules"] });
+      toast({ title: "Rules Saved" });
     },
   });
 
-  const handleUpload = () => {
-    if (!uploadFileName.trim()) {
-      toast({ title: "Validation", description: "Filename is required.", variant: "destructive" });
-      return;
+  const aiEstimateMutation = useMutation({
+    mutationFn: async (body: any) => {
+      const res = await fetch("/api/acap/forge/ai/estimate", { method: "POST", headers: authHeaders, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setBudget(prev => ({ ...prev, usageThisAssessmentUSD: data.estimatedCostUsd }));
+      toast({ title: "Estimate", description: data.enabledFeatures === 0 ? "No AI add-ons enabled. Cost: $0.00" : `Estimated: $${data.estimatedCostUsd.toFixed(4)} for ${data.enabledFeatures} add-on(s) × ${data.itemCount} items.` });
+    },
+  });
+
+  const aiRunMutation = useMutation({
+    mutationFn: async (body: any) => {
+      const res = await fetch("/api/acap/forge/ai/run", { method: "POST", headers: authHeaders, body: JSON.stringify(body) });
+      if (!res.ok) { const t = await res.text(); throw new Error(t); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/ai/usage"] });
+      toast({ title: "AI Enhancements Applied", description: `$${data.totalCost.toFixed(4)} spent on ${data.features.length} feature(s).` });
+    },
+    onError: (e: any) => toast({ title: "AI Error", description: e.message, variant: "destructive" }),
+  });
+
+  const buildMutation = useMutation({
+    mutationFn: async (body: any) => {
+      const res = await fetch("/api/acap/forge/build-from-staged", { method: "POST", headers: authHeaders, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/assessments"] });
+      toast({ title: "Assessment Built", description: `"${data.title}" created as draft.` });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const filteredItems = useMemo(() => stagedItems.filter(it => it.subject === subject && it.grade === grade), [stagedItems, subject, grade]);
+  const acceptedAboveThreshold = useMemo(() => filteredItems.filter(it => (it.suggestedStandards?.[0]?.confidence ?? it.confidence) >= confidenceThreshold).length, [filteredItems, confidenceThreshold]);
+
+  const [uploadFileName, setUploadFileName] = useState("");
+  const [uploadOriginalName, setUploadOriginalName] = useState("");
+  const [uploadFileType, setUploadFileType] = useState("pdf");
+  const [localRules, setLocalRules] = useState<RuleRow[]>([]);
+  const prevRulePackRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (rules.length > 0 && rulePackIdNum !== prevRulePackRef.current) {
+      setLocalRules(rules);
+      prevRulePackRef.current = rulePackIdNum;
     }
-    uploadMutation.mutate({
-      filename: uploadFileName.trim(),
-      originalName: uploadOriginalName.trim() || uploadFileName.trim(),
-      fileType: uploadFileType,
-      gradeLevel: parseInt(uploadGrade),
-      subject: uploadSubject,
-    });
-  };
-
-  const handleLaunchOfflineBuilder = () => {
-    if (offlineSources.length === 0) {
-      toast({ title: "No Sources", description: "Upload at least one file first.", variant: "destructive" });
-      return;
-    }
-
-    const sampleItems: DetectedItem[] = offlineSources.flatMap((src, idx) => {
-      const types = ["multiple_choice", "constructed_response", "multiple_choice", "drag_drop"];
-      const keys = ["B", "open", "C", "A"];
-      const bands = ["6-7", "7-8", "6-8"];
-      const stems = [
-        "Which expression is equivalent to 3(x + 4)?",
-        "Explain how the author develops the central idea using textual evidence.",
-        "What is the area of a triangle with base 10 and height 6?",
-        "Arrange the steps of the scientific method in order.",
-      ];
-      return types.map((t, i) => ({
-        id: `detected-${idx}-${i}`,
-        stem: stems[i],
-        type: t,
-        answerKey: keys[i],
-        gradeBand: bands[i % bands.length],
-        confidence: 70 + Math.floor(Math.random() * 25),
-        sourceFile: src.originalName || src.filename,
-      }));
-    });
-
-    setDetectedItems(sampleItems);
-    toast({
-      title: "Offline Builder Complete",
-      description: `Detected ${sampleItems.length} items from ${offlineSources.length} source(s).`,
-    });
-  };
-
-  const handleRunRulesTagger = () => {
-    if (detectedItems.length === 0) {
-      toast({ title: "No Items", description: "Launch the offline builder first to detect items.", variant: "destructive" });
-      return;
-    }
-    autoTagMutation.mutate({
-      items: detectedItems.map((d) => ({ ...d, stem: d.stem })),
-      gradeLevel: parseInt(tagGrade),
-      subject: tagSubject,
-      strictMode,
-    });
-  };
-
-  const handleAcceptAllAboveThreshold = (threshold: number) => {
-    setTaggedItems((prev) =>
-      prev.map((item) =>
-        item.confidence >= threshold ? { ...item, status: "accepted" } : item
-      )
-    );
-    toast({ title: "Bulk Accept", description: `Accepted all items with confidence >= ${threshold}%.` });
-  };
-
-  const handleEstimateCost = () => {
-    const enabledCount = [aiRationales, aiRewriteStems, aiDistractors, aiTeacherExplanation].filter(Boolean).length;
-    const itemCount = taggedItems.length || detectedItems.length || 10;
-    const perItemCost = 0.003;
-    const total = enabledCount * itemCount * perItemCost;
-    setEstimatedCost(total);
-
-    if (enabledCount > 0) {
-      setUsageLog((prev) => [
-        {
-          timestamp: new Date().toLocaleString(),
-          action: `Estimated cost for ${enabledCount} add-on(s) x ${itemCount} items`,
-          cost: total,
-        },
-        ...prev,
-      ]);
-    }
-
-    toast({
-      title: "Cost Estimate",
-      description: enabledCount === 0
-        ? "No AI add-ons enabled. Cost: $0.00"
-        : `Estimated cost: $${total.toFixed(4)} for ${enabledCount} add-on(s) across ${itemCount} items.`,
-    });
-  };
-
-  const getParseStatusBadge = (src: OfflineSource) => {
-    if (src.parseStatus === "parsed") return <Badge className="bg-green-100 text-green-700">Parsed</Badge>;
-    if (src.detectedCount && src.detectedCount > 0) return <Badge className="bg-blue-100 text-blue-700">{src.detectedCount} Items detected</Badge>;
-    return <Badge className="bg-yellow-100 text-yellow-700">Queued</Badge>;
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "accepted":
-        return <Badge className="bg-green-100 text-green-700"><Check className="h-3 w-3 mr-1" />Accept</Badge>;
-      case "review":
-        return <Badge className="bg-yellow-100 text-yellow-700"><AlertTriangle className="h-3 w-3 mr-1" />Edit</Badge>;
-      default:
-        return <Badge className="bg-red-100 text-red-700"><AlertTriangle className="h-3 w-3 mr-1" />Needs Review</Badge>;
-    }
-  };
-
-  const blueprintCoverage = taggedItems.length > 0
-    ? Math.min(100, Math.round((taggedItems.filter((i) => i.status === "accepted").length / Math.max(taggedItems.length, 1)) * 100))
-    : 0;
+  }, [rules, rulePackIdNum]);
 
   return (
-    <div className="space-y-8">
-      <div className="bg-gradient-to-r from-indigo-700 to-blue-800 rounded-xl p-6 text-white">
-        <div className="flex items-center gap-3 mb-1">
-          <Shield className="h-7 w-7" />
-          <h2 className="text-2xl font-bold">Cost Controls & Offline Builder</h2>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="text-2xl font-semibold tracking-tight">Forge → Cost Controls & Offline Builder</div>
+          <div className="mt-1 text-sm text-muted-foreground">Upload → auto-tag standards (rules-based) → build test with $0 AI. Optional AI add-ons for the final 10%.</div>
         </div>
-        <p className="text-indigo-200 text-sm">Upload. Auto-Tag Standards Via Rules.</p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => {
+            const csv = stagedItems.map(it => `"${it.stem}",${it.type},${it.suggestedDOK || ""},${it.suggestedStandards?.[0]?.code || ""},${it.confidence},${it.reviewStatus}`).join("\n");
+            const blob = new Blob(["Stem,Type,DOK,Standard,Confidence,Status\n" + csv], { type: "text/csv" });
+            const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "forge-items-export.csv"; a.click();
+          }}>
+            <Download className="h-4 w-4" /> Export
+          </Button>
+        </div>
       </div>
 
-      {/* === Section 1: Build Offline (Free) === */}
-      <Card className="border-indigo-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-800">
-            <Upload className="h-5 w-5" /> Build Offline (Free)
-          </CardTitle>
-          <CardDescription>Upload source documents and detect assessment items without AI costs.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="border-2 border-dashed border-indigo-300 rounded-lg p-6 bg-indigo-50/50 text-center space-y-4">
-            <Upload className="h-10 w-10 mx-auto text-indigo-400" />
-            <p className="text-sm text-indigo-600 font-medium">Drag & drop PDF, DOCX, or TXT files here</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg mx-auto text-left">
-              <div>
-                <Label htmlFor="upload-filename" className="text-xs">Filename</Label>
-                <Input
-                  id="upload-filename"
-                  placeholder="e.g. math-items-bank.pdf"
-                  value={uploadFileName}
-                  onChange={(e) => setUploadFileName(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="upload-original" className="text-xs">Original Name</Label>
-                <Input
-                  id="upload-original"
-                  placeholder="e.g. 7th Grade Math Items"
-                  value={uploadOriginalName}
-                  onChange={(e) => setUploadOriginalName(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">File Type</Label>
-                <Select value={uploadFileType} onValueChange={setUploadFileType}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pdf">PDF</SelectItem>
-                    <SelectItem value="docx">DOCX</SelectItem>
-                    <SelectItem value="txt">TXT</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Grade Level</Label>
-                <Select value={uploadGrade} onValueChange={setUploadGrade}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="6">Grade 6</SelectItem>
-                    <SelectItem value="7">Grade 7</SelectItem>
-                    <SelectItem value="8">Grade 8</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="md:col-span-2">
-                <Label className="text-xs">Subject</Label>
-                <Select value={uploadSubject} onValueChange={setUploadSubject}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Math">Math</SelectItem>
-                    <SelectItem value="ELA">ELA</SelectItem>
-                    <SelectItem value="Science">Science</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <Button
-              onClick={handleUpload}
-              disabled={uploadMutation.isPending}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              {uploadMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-              Upload Source
-            </Button>
-          </div>
+      <div className="grid gap-4 md:grid-cols-12">
+        <Card className="md:col-span-8">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2"><Layers className="h-5 w-5" /> Offline Pipeline</CardTitle>
+            <CardDescription>Run the pipeline in order. Everything works without AI.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Tabs defaultValue="upload" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="upload" className="gap-2"><Upload className="h-4 w-4" /> Upload</TabsTrigger>
+                <TabsTrigger value="tag" className="gap-2"><Tag className="h-4 w-4" /> Auto-tag</TabsTrigger>
+                <TabsTrigger value="build" className="gap-2"><Hammer className="h-4 w-4" /> Build Test</TabsTrigger>
+                <TabsTrigger value="ai" className="gap-2"><Sparkles className="h-4 w-4" /> AI Add-ons</TabsTrigger>
+              </TabsList>
 
-          {loadingSources ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
-              <span className="ml-2 text-sm text-gray-500">Loading sources...</span>
-            </div>
-          ) : offlineSources.length > 0 ? (
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700">Uploaded Sources</h4>
-              {offlineSources.map((src) => (
-                <div key={src.id} className="flex items-center justify-between p-3 border rounded-lg bg-white">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-indigo-500" />
-                    <div>
-                      <p className="text-sm font-medium">{src.originalName || src.filename}</p>
-                      <p className="text-xs text-gray-500">Grade {src.gradeLevel} - {src.subject} - .{src.fileType}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getParseStatusBadge(src)}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => deleteMutation.mutate(src.id)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+              {/* ===== UPLOAD TAB ===== */}
+              <TabsContent value="upload" className="mt-4">
+                <div className="grid gap-4">
+                  <Card className="border-dashed">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2"><FileUp className="h-5 w-5" /> Upload Sources (No AI)</CardTitle>
+                      <CardDescription>Add source documents. Offline parsing detects items & passages.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="grid gap-3 rounded-lg border bg-muted/20 p-4">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div>
+                            <Label className="text-xs">Filename</Label>
+                            <Input className="mt-1" placeholder="e.g. math-items-bank.pdf" value={uploadFileName} onChange={e => setUploadFileName(e.target.value)} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Display Name</Label>
+                            <Input className="mt-1" placeholder="e.g. 7th Grade Math Items" value={uploadOriginalName} onChange={e => setUploadOriginalName(e.target.value)} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">File Type</Label>
+                            <Select value={uploadFileType} onValueChange={setUploadFileType}>
+                              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pdf">PDF</SelectItem>
+                                <SelectItem value="docx">DOCX</SelectItem>
+                                <SelectItem value="txt">TXT</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Grade</Label>
+                              <Select value={grade} onValueChange={v => setGrade(v as GradeBand)}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="6">Grade 6</SelectItem>
+                                  <SelectItem value="7">Grade 7</SelectItem>
+                                  <SelectItem value="8">Grade 8</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-xs">Subject</Label>
+                              <Select value={subject} onValueChange={v => setSubject(v as Subject)}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Math">Math</SelectItem>
+                                  <SelectItem value="ELA">ELA</SelectItem>
+                                  <SelectItem value="Science">Science</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button onClick={() => {
+                            if (!uploadFileName.trim()) { toast({ title: "Validation", description: "Filename required.", variant: "destructive" }); return; }
+                            uploadMutation.mutate({ filename: uploadFileName.trim(), originalName: uploadOriginalName.trim() || uploadFileName.trim(), fileType: uploadFileType, gradeLevel: parseInt(grade), subject });
+                            setUploadFileName(""); setUploadOriginalName("");
+                          }} disabled={uploadMutation.isPending} className="gap-2">
+                            {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload Source
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Uploaded Sources</CardTitle>
+                      <CardDescription>Parse status + detected items.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>File</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Items</TableHead>
+                            <TableHead className="w-[140px] text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loadingSources ? (
+                            <TableRow><TableCell colSpan={4} className="py-8 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                          ) : offlineSources.length === 0 ? (
+                            <TableRow><TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">No uploads yet.</TableCell></TableRow>
+                          ) : offlineSources.map((d: any) => (
+                            <TableRow key={d.id}>
+                              <TableCell>
+                                <div className="font-medium">{d.originalName || d.filename}</div>
+                                <div className="text-xs text-muted-foreground">{(d.fileType || "txt").toUpperCase()} • Grade {d.gradeLevel} {d.subject}</div>
+                              </TableCell>
+                              <TableCell><ParseStatusBadge status={d.parseStatus || "queued"} /></TableCell>
+                              <TableCell className="text-right font-medium">{(d.detectedItems || []).length}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button variant="outline" size="sm" onClick={() => parseMutation.mutate(d.id)} disabled={parseMutation.isPending}>
+                                    <RefreshCw className={cn("h-4 w-4", parseMutation.isPending && "animate-spin")} />
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="text-destructive" onClick={() => deleteMutation.mutate(d.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 text-center py-2">No sources uploaded yet.</p>
-          )}
+              </TabsContent>
 
-          <div className="flex justify-end">
-            <Button
-              onClick={handleLaunchOfflineBuilder}
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={offlineSources.length === 0}
-            >
-              <Zap className="h-4 w-4 mr-2" /> Launch Offline Builder
-            </Button>
-          </div>
-
-          {detectedItems.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700">Item Staging Queue ({detectedItems.length} items)</h4>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {detectedItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{item.stem}</p>
-                      <p className="text-xs text-gray-500">Source: {item.sourceFile}</p>
-                    </div>
-                    <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                      <Badge variant="outline" className="text-xs">{item.type}</Badge>
-                      <Badge variant="outline" className="text-xs">Key: {item.answerKey}</Badge>
-                      <Badge variant="outline" className="text-xs">{item.gradeBand}</Badge>
-                      <Badge className={item.confidence >= 80 ? "bg-green-100 text-green-700" : item.confidence >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>
-                        {item.confidence}%
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* === Section 2: Auto-Tag Standards (Rules-Based) === */}
-      <Card className="border-indigo-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-800">
-            <Zap className="h-5 w-5" /> Auto-Tag Standards (Rules-Based)
-          </CardTitle>
-          <CardDescription>Tag detected items with Alabama standards using keyword rules - no AI cost.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-xs">Grade</Label>
-              <Select value={tagGrade} onValueChange={setTagGrade}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="6">Grade 6</SelectItem>
-                  <SelectItem value="7">Grade 7</SelectItem>
-                  <SelectItem value="8">Grade 8</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Subject</Label>
-              <Select value={tagSubject} onValueChange={setTagSubject}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ELA">ELA</SelectItem>
-                  <SelectItem value="Math">Math</SelectItem>
-                  <SelectItem value="Science">Science</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end gap-4">
-              <div className="flex items-center gap-2">
-                <Switch checked={strictMode} onCheckedChange={setStrictMode} />
-                <Label className="text-xs">Strict Mode</Label>
-              </div>
-            </div>
-            <div className="flex items-end gap-4">
-              <div className="flex items-center gap-2">
-                <Switch checked={allowMultiTag} onCheckedChange={setAllowMultiTag} />
-                <Label className="text-xs">Allow Multi-Tag</Label>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              onClick={handleRunRulesTagger}
-              disabled={autoTagMutation.isPending || detectedItems.length === 0}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              {autoTagMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
-              Run Rules Tagger
-            </Button>
-            {taggedItems.length > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => handleAcceptAllAboveThreshold(70)}
-                className="border-green-300 text-green-700 hover:bg-green-50"
-              >
-                <Check className="h-4 w-4 mr-2" /> {"Accept All >= 70%"}
-              </Button>
-            )}
-          </div>
-
-          {taggedItems.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700">Tagged Results ({taggedItems.length} items)</h4>
-              <div className="max-h-72 overflow-y-auto space-y-2">
-                {taggedItems.map((item, idx) => (
-                  <div key={item.id || idx} className="p-3 border rounded-lg bg-white space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium truncate flex-1">{item.stem}</p>
-                      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                        {getStatusBadge(item.status)}
-                        <Badge className={item.confidence >= 80 ? "bg-green-100 text-green-700" : item.confidence >= 50 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>
-                          {item.confidence}%
-                        </Badge>
+              {/* ===== AUTO-TAG TAB ===== */}
+              <TabsContent value="tag" className="mt-4">
+                <Card className="mb-4">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5" /> Auto-Tag Settings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="grid gap-4 md:grid-cols-12">
+                      <div className="md:col-span-3">
+                        <Label className="text-xs">Subject</Label>
+                        <Select value={subject} onValueChange={v => setSubject(v as Subject)}>
+                          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Math">Math</SelectItem>
+                            <SelectItem value="ELA">ELA</SelectItem>
+                            <SelectItem value="Science">Science</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <Label className="text-xs">Grade</Label>
+                        <Select value={grade} onValueChange={v => setGrade(v as GradeBand)}>
+                          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="6">6</SelectItem>
+                            <SelectItem value="7">7</SelectItem>
+                            <SelectItem value="8">8</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="md:col-span-2 flex items-end gap-2">
+                        <Switch checked={strictMode} onCheckedChange={setStrictMode} />
+                        <Label className="text-xs">Strict</Label>
+                      </div>
+                      <div className="md:col-span-2 flex items-end gap-2">
+                        <Switch checked={allowMultiTag} onCheckedChange={setAllowMultiTag} />
+                        <Label className="text-xs">Multi-Tag</Label>
+                      </div>
+                      <div className="md:col-span-3">
+                        <Label className="text-xs">Confidence Threshold: {confidenceThreshold}%</Label>
+                        <Slider value={[confidenceThreshold]} min={40} max={100} step={5} onValueChange={v => setConfidenceThreshold(v[0] ?? 80)} className="mt-2" />
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-xs">DOK {item.suggestedDok}</Badge>
-                      {item.suggestedStandards?.map((s, si) => (
-                        <Badge key={si} className="bg-indigo-100 text-indigo-700 text-xs">{s.code}</Badge>
-                      ))}
-                      {(!item.suggestedStandards || item.suggestedStandards.length === 0) && (
-                        <span className="text-xs text-gray-400">No standards matched</span>
-                      )}
+                    <div className="mt-3 flex items-center gap-2">
+                      <Button onClick={() => {
+                        if (stagedItems.length === 0) { toast({ title: "No Items", description: "Upload and parse sources first.", variant: "destructive" }); return; }
+                        autoTagRulesMutation.mutate({
+                          items: stagedItems.filter(i => i.subject === subject && i.grade === grade),
+                          gradeLevel: parseInt(grade), subject, rulePackId: rulePackIdNum,
+                          strictMode, allowMultiTag,
+                        });
+                      }} disabled={autoTagRulesMutation.isPending || stagedItems.length === 0} className="gap-2">
+                        {autoTagRulesMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />} Run Auto-Tag
+                      </Button>
+                      <Badge variant="secondary">{acceptedAboveThreshold} items above {confidenceThreshold}%</Badge>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </CardContent>
+                </Card>
 
-      {/* === Section 3: Build Test (Zero AI) === */}
-      <Card className="border-indigo-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-800">
-            <Shield className="h-5 w-5" /> Build Test (Zero AI)
-          </CardTitle>
-          <CardDescription>Assemble a standards-aligned assessment without any AI costs.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="test-name" className="text-xs">Test Name</Label>
-              <Input
-                id="test-name"
-                placeholder="e.g. Fall Diagnostic 7th Math"
-                value={testName}
-                onChange={(e) => setTestName(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="test-window" className="text-xs">Test Window</Label>
-              <Input
-                id="test-window"
-                placeholder="e.g. Oct 1 - Oct 15"
-                value={testWindow}
-                onChange={(e) => setTestWindow(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="time-limit" className="text-xs">Time Limit (minutes)</Label>
-              <Input
-                id="time-limit"
-                type="number"
-                value={timeLimit}
-                onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)}
-                className="mt-1"
-              />
-            </div>
-          </div>
+                <div className="grid gap-4 lg:grid-cols-12">
+                  <Card className="lg:col-span-5">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5" /> Rule Pack + Editor</CardTitle>
+                      <CardDescription>Rules-based tagging. No AI required.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Select value={selectedRulePackId || String(rulePacks[0]?.id || "")} onValueChange={v => { setSelectedRulePackId(v); prevRulePackRef.current = 0; }}>
+                          <SelectTrigger><SelectValue placeholder="Select pack" /></SelectTrigger>
+                          <SelectContent>
+                            {rulePacks.map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Separator className="my-3" />
+                      <ScrollArea className="h-[280px]">
+                        <div className="space-y-2">
+                          {localRules.map((rule, idx) => (
+                            <div key={rule.id || idx} className="rounded-lg border p-2 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Checkbox checked={rule.enabled} onCheckedChange={(v) => {
+                                  setLocalRules(prev => prev.map((r, i) => i === idx ? { ...r, enabled: Boolean(v) } : r));
+                                }} />
+                                <Input value={rule.matchPattern} className="text-xs h-7" onChange={e => {
+                                  setLocalRules(prev => prev.map((r, i) => i === idx ? { ...r, matchPattern: e.target.value } : r));
+                                }} />
+                              </div>
+                              <div className="grid grid-cols-3 gap-1">
+                                <Input value={rule.mapsToStandard} className="text-xs h-7" placeholder="Standard" onChange={e => {
+                                  setLocalRules(prev => prev.map((r, i) => i === idx ? { ...r, mapsToStandard: e.target.value } : r));
+                                }} />
+                                <Select value={String(rule.dokHint || 2)} onValueChange={v => {
+                                  setLocalRules(prev => prev.map((r, i) => i === idx ? { ...r, dokHint: parseInt(v) } : r));
+                                }}>
+                                  <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="2">DOK 2</SelectItem>
+                                    <SelectItem value="3">DOK 3</SelectItem>
+                                    <SelectItem value="4">DOK 4</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Button variant="ghost" size="sm" className="h-7 text-destructive" onClick={() => {
+                                  setLocalRules(prev => prev.filter((_, i) => i !== idx));
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                              </div>
+                              {rule.notes && <div className="text-xs text-muted-foreground pl-6">{rule.notes}</div>}
+                            </div>
+                          ))}
+                          <Button variant="outline" size="sm" className="w-full gap-1" onClick={() => {
+                            setLocalRules(prev => [...prev, { id: 0, enabled: true, matchPattern: "", mapsToStandard: "", dokHint: 2, notes: "" }]);
+                          }}><Plus className="h-3 w-3" /> Add Rule</Button>
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                    <CardFooter className="justify-end gap-2">
+                      <Button variant="outline" className="gap-2" onClick={() => {
+                        saveRulePackMutation.mutate({ rulePackId: rulePackIdNum, rules: localRules.map(r => ({ enabled: r.enabled, matchPattern: r.matchPattern, mapsToStandard: r.mapsToStandard, dokHint: r.dokHint, notes: r.notes })) });
+                      }} disabled={saveRulePackMutation.isPending}>
+                        {saveRulePackMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />} Save Pack
+                      </Button>
+                      <Button className="gap-2" onClick={() => {
+                        if (stagedItems.length === 0) { toast({ title: "No items", variant: "destructive" }); return; }
+                        autoTagRulesMutation.mutate({
+                          items: stagedItems.filter(i => i.subject === subject && i.grade === grade),
+                          gradeLevel: parseInt(grade), subject, rulePackId: rulePackIdNum,
+                          strictMode, allowMultiTag,
+                        });
+                      }} disabled={autoTagRulesMutation.isPending}>
+                        <Wand2 className="h-4 w-4" /> Apply Rules
+                      </Button>
+                    </CardFooter>
+                  </Card>
 
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-gray-700">DOK Distribution</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(["dok1", "dok2", "dok3", "dok4"] as const).map((key, i) => (
-                <div key={key}>
-                  <Label className="text-xs">DOK {i + 1} ({dokSliders[key]}%)</Label>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={dokSliders[key]}
-                    onChange={(e) =>
-                      setDokSliders((prev) => ({ ...prev, [key]: parseInt(e.target.value) }))
-                    }
-                    className="w-full mt-1 accent-indigo-600"
-                  />
+                  <Card className="lg:col-span-7">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2"><ListChecks className="h-5 w-5" /> Item Staging Queue</CardTitle>
+                      <CardDescription>Review, accept, edit, or reject items before building a test.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex items-center justify-between mb-3">
+                        <Badge variant="secondary">{filteredItems.length} items • {filteredItems.filter(i => i.reviewStatus === "Accepted").length} accepted</Badge>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setStagedItems(prev => prev.map(it => {
+                            if (it.subject !== subject || it.grade !== grade) return it;
+                            const conf = it.suggestedStandards?.[0]?.confidence ?? it.confidence;
+                            return conf >= confidenceThreshold ? { ...it, reviewStatus: "Accepted" } : it;
+                          }));
+                          toast({ title: "Bulk Accept", description: `Accepted items above ${confidenceThreshold}%.` });
+                        }} className="gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> Accept All ≥ {confidenceThreshold}%
+                        </Button>
+                      </div>
+                      <ScrollArea className="h-[300px]">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Item</TableHead>
+                              <TableHead>DOK</TableHead>
+                              <TableHead>Standard</TableHead>
+                              <TableHead>Confidence</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredItems.length === 0 ? (
+                              <TableRow><TableCell colSpan={6} className="text-center py-8 text-sm text-muted-foreground">No items. Upload and parse sources first.</TableCell></TableRow>
+                            ) : filteredItems.map(it => (
+                              <TableRow key={it.id}>
+                                <TableCell className="max-w-[180px]">
+                                  <div className="text-sm truncate">{it.stem || it.promptPreview}</div>
+                                  <div className="text-xs text-muted-foreground">{it.type}{it.hasKey ? " • Has Key" : ""}</div>
+                                </TableCell>
+                                <TableCell><Badge variant="outline">{it.suggestedDOK || "—"}</Badge></TableCell>
+                                <TableCell>
+                                  {it.suggestedStandards?.slice(0, 1).map((s, i) => <Badge key={i} variant="secondary" className="text-xs">{s.code}</Badge>)}
+                                  {(!it.suggestedStandards || it.suggestedStandards.length === 0) && <span className="text-xs text-muted-foreground">—</span>}
+                                </TableCell>
+                                <TableCell><ConfidencePill value={it.suggestedStandards?.[0]?.confidence ?? it.confidence} threshold={confidenceThreshold} /></TableCell>
+                                <TableCell><ReviewStatusBadge status={it.reviewStatus} /></TableCell>
+                                <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild><Button variant="outline" size="sm">Set</Button></DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => setStagedItems(prev => prev.map(i => i.id === it.id ? { ...i, reviewStatus: "Accepted" } : i))}>
+                                        <CheckCircle2 className="mr-2 h-4 w-4" /> Accept
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => setStagedItems(prev => prev.map(i => i.id === it.id ? { ...i, reviewStatus: "Edited" } : i))}>
+                                        <Wand2 className="mr-2 h-4 w-4" /> Mark Edited
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem onClick={() => setStagedItems(prev => prev.map(i => i.id === it.id ? { ...i, reviewStatus: "Rejected" } : i))} className="text-destructive">
+                                        <XCircle className="mr-2 h-4 w-4" /> Reject
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
                 </div>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500">
-              Total: {dokSliders.dok1 + dokSliders.dok2 + dokSliders.dok3 + dokSliders.dok4}%
-              {dokSliders.dok1 + dokSliders.dok2 + dokSliders.dok3 + dokSliders.dok4 !== 100 && (
-                <span className="text-red-500 ml-2">(should equal 100%)</span>
-              )}
-            </p>
-          </div>
+              </TabsContent>
 
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-gray-700">Blueprint Coverage</h4>
-            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-indigo-500 to-blue-500"
-                style={{ width: `${blueprintCoverage}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-500">{blueprintCoverage}% coverage from accepted tagged items</p>
-          </div>
+              {/* ===== BUILD TEST TAB ===== */}
+              <TabsContent value="build" className="mt-4">
+                <BuildTestPanel
+                  subject={subject} grade={grade}
+                  stagedItems={filteredItems.filter(i => i.reviewStatus === "Accepted" || i.reviewStatus === "Edited")}
+                  onBuild={(opts) => buildMutation.mutate(opts)}
+                  isBuilding={buildMutation.isPending}
+                />
+              </TabsContent>
 
-          <div className="flex gap-3">
-            <Button
-              className="bg-indigo-600 hover:bg-indigo-700"
-              disabled={!testName.trim()}
-              onClick={() =>
-                toast({ title: "Version A Built", description: `"${testName}" assembled with ${taggedItems.filter((i) => i.status === "accepted").length || detectedItems.length} items.` })
-              }
-            >
-              <Shield className="h-4 w-4 mr-2" /> Build Version A
-            </Button>
-            <Button
-              variant="outline"
-              className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-              disabled={!testName.trim()}
-              onClick={() =>
-                toast({ title: "Differentiation Started", description: "Generating A/B/C/D versions with varied item order and distractors." })
-              }
-            >
-              Differentiate Versions
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              {/* ===== AI ADD-ONS TAB ===== */}
+              <TabsContent value="ai" className="mt-4">
+                <AiAddOnsPanel
+                  budget={budget} setBudget={setBudget}
+                  aiAddons={aiAddons} setAiAddons={setAiAddons}
+                  itemCount={stagedItems.length}
+                  onEstimate={() => aiEstimateMutation.mutate({ flags: aiAddons, itemCount: stagedItems.length })}
+                  onRunEnhancements={() => aiRunMutation.mutate({ flags: aiAddons, itemCount: stagedItems.length, dailyCap: budget.dailyCapUSD, perAssessmentCap: budget.perAssessmentCapUSD })}
+                  isEstimating={aiEstimateMutation.isPending}
+                  isRunning={aiRunMutation.isPending}
+                  aiUsageLog={aiUsage?.log || []}
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
-      {/* === Section 4: Optional AI Add-Ons === */}
-      <Card className="border-indigo-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-800">
-            <Brain className="h-5 w-5" /> Optional AI Add-Ons
-          </CardTitle>
-          <CardDescription>Enable optional AI features with budget guardrails. All toggles off by default.</CardDescription>
+        <Card className="md:col-span-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Cost Controls</CardTitle>
+            <CardDescription>Always know what you'll spend. Default is $0.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <BudgetMeter budget={budget} onChange={setBudget} />
+            <Separator className="my-4" />
+            <OfflineStatusCard docs={offlineSources} items={stagedItems} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function ParseStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    queued: { label: "Queued", variant: "secondary" },
+    parsing: { label: "Parsing", variant: "outline" },
+    parsed: { label: "Parsed", variant: "default" },
+    error: { label: "Error", variant: "destructive" },
+  };
+  const v = map[status] || map.queued;
+  return <Badge variant={v.variant}>{v.label}</Badge>;
+}
+
+function ReviewStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { icon: any; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    "Needs Review": { icon: <AlertTriangle className="mr-1 h-3.5 w-3.5" />, variant: "outline" },
+    "Accepted": { icon: <CheckCircle2 className="mr-1 h-3.5 w-3.5" />, variant: "default" },
+    "Edited": { icon: <Wand2 className="mr-1 h-3.5 w-3.5" />, variant: "secondary" },
+    "Rejected": { icon: <XCircle className="mr-1 h-3.5 w-3.5" />, variant: "destructive" },
+  };
+  const v = map[status] || map["Needs Review"];
+  return <Badge variant={v.variant} className="inline-flex items-center">{v.icon}{status}</Badge>;
+}
+
+function ConfidencePill({ value, threshold }: { value: number; threshold: number }) {
+  const good = value >= threshold;
+  return (
+    <div className="inline-flex items-center gap-2">
+      <Badge variant={good ? "default" : "secondary"}>{value}%</Badge>
+    </div>
+  );
+}
+
+function BuildTestPanel({ subject, grade, stagedItems, onBuild, isBuilding }: {
+  subject: Subject; grade: GradeBand; stagedItems: StagedItem[];
+  onBuild: (opts: any) => void; isBuilding: boolean;
+}) {
+  const [testName, setTestName] = useState(`Forge Assessment — Grade ${grade} ${subject}`);
+  const [timeLimitMin, setTimeLimitMin] = useState(60);
+  const [randomize, setRandomize] = useState(true);
+  const [dok2, setDok2] = useState(40);
+  const [dok3, setDok3] = useState(40);
+  const [dok4, setDok4] = useState(20);
+  const [lockPlayer, setLockPlayer] = useState(true);
+  const [requireReflection, setRequireReflection] = useState(true);
+  const [reorderItems, setReorderItems] = useState(true);
+  const [shuffleChoices, setShuffleChoices] = useState(true);
+
+  const dokTotal = dok2 + dok3 + dok4;
+  const itemsWithKeys = stagedItems.filter(i => i.hasKey || i.answerKey).length;
+  const uniqueStandards = new Set(stagedItems.flatMap(i => (i.suggestedStandards || []).map(s => s.code)));
+
+  return (
+    <div className="grid gap-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2"><Hammer className="h-5 w-5" /> Assemble Assessment (Zero AI)</CardTitle>
+          <CardDescription>Build from accepted/edited items, then differentiate A/B/C using offline logic.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-3 border rounded-lg">
+        <CardContent className="pt-0">
+          <div className="grid gap-4 md:grid-cols-12">
+            <div className="md:col-span-8 grid gap-3">
               <div>
-                <p className="text-sm font-medium">Generate Rationales</p>
-                <p className="text-xs text-gray-500">Create explanations for correct/incorrect answers</p>
+                <Label className="text-xs text-muted-foreground">Assessment name</Label>
+                <Input className="mt-1" value={testName} onChange={e => setTestName(e.target.value)} />
               </div>
-              <Switch checked={aiRationales} onCheckedChange={setAiRationales} />
+              <div className="grid gap-3 md:grid-cols-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Time limit (minutes)</Label>
+                  <Input className="mt-1" type="number" value={timeLimitMin} onChange={e => setTimeLimitMin(Number(e.target.value || 0))} />
+                </div>
+                <div className="flex items-end gap-2">
+                  <Checkbox checked={randomize} onCheckedChange={v => setRandomize(Boolean(v))} />
+                  <Label className="text-sm">Randomize order</Label>
+                </div>
+              </div>
+              <Separator />
+              <div className="grid gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">DOK Distribution</div>
+                  <Badge variant={dokTotal === 100 ? "default" : "destructive"}>DOK2 {dok2}% • DOK3 {dok3}% • DOK4 {dok4}% {dokTotal !== 100 ? `(${dokTotal}%)` : ""}</Badge>
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <DokSlider label="DOK 2" value={dok2} onChange={setDok2} />
+                  <DokSlider label="DOK 3" value={dok3} onChange={setDok3} />
+                  <DokSlider label="DOK 4" value={dok4} onChange={setDok4} />
+                </div>
+              </div>
             </div>
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-              <div>
-                <p className="text-sm font-medium">Rewrite Stems for Clarity</p>
-                <p className="text-xs text-gray-500">AI-polish question stems</p>
-              </div>
-              <Switch checked={aiRewriteStems} onCheckedChange={setAiRewriteStems} />
-            </div>
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-              <div>
-                <p className="text-sm font-medium">Improve Distractors</p>
-                <p className="text-xs text-gray-500">Enhance wrong answer choices</p>
-              </div>
-              <Switch checked={aiDistractors} onCheckedChange={setAiDistractors} />
-            </div>
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-              <div>
-                <p className="text-sm font-medium">Teacher Explanation & Student Hint</p>
-                <p className="text-xs text-gray-500">Create per-item teacher notes and student hints</p>
-              </div>
-              <Switch checked={aiTeacherExplanation} onCheckedChange={setAiTeacherExplanation} />
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" /> Budget Guardrails
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="daily-cap" className="text-xs">Daily Cap ($)</Label>
-                <Input
-                  id="daily-cap"
-                  type="number"
-                  step="0.50"
-                  value={dailyCap}
-                  onChange={(e) => setDailyCap(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="assessment-cap" className="text-xs">Per-Assessment Cap ($)</Label>
-                <Input
-                  id="assessment-cap"
-                  type="number"
-                  step="0.50"
-                  value={perAssessmentCap}
-                  onChange={(e) => setPerAssessmentCap(e.target.value)}
-                  className="mt-1"
-                />
+            <div className="md:col-span-4">
+              <div className="rounded-lg border bg-muted/10 p-4">
+                <div className="text-sm font-medium">Blueprint Coverage</div>
+                <div className="mt-2 space-y-3">
+                  <CoverageRow label="Accepted items" value={stagedItems.length > 0 ? 100 : 0} />
+                  <CoverageRow label="Standards covered" value={Math.min(100, uniqueStandards.size * 15)} />
+                  <CoverageRow label="Items with keys" value={stagedItems.length > 0 ? Math.round((itemsWithKeys / stagedItems.length) * 100) : 0} />
+                </div>
+                <div className="mt-3 text-xs text-muted-foreground">{stagedItems.length} items ready to build</div>
               </div>
             </div>
           </div>
+        </CardContent>
+        <CardFooter className="justify-end gap-2">
+          <Button onClick={() => onBuild({
+            title: testName, grades: [parseInt(grade)], subjects: [subject],
+            assessmentType: "diagnostic", timeLimitMinutes: timeLimitMin,
+            lockMode: lockPlayer, antiRushMonitor: requireReflection,
+            stagedItems, dokDistribution: { dok2, dok3, dok4 },
+          })} disabled={isBuilding || stagedItems.length === 0} className="gap-2">
+            {isBuilding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Hammer className="h-4 w-4" />} Build Assessment
+          </Button>
+        </CardFooter>
+      </Card>
 
-          <div className="flex gap-3 items-center">
-            <Button
-              onClick={handleEstimateCost}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              <DollarSign className="h-4 w-4 mr-2" /> Estimate Cost
-            </Button>
-            {estimatedCost !== null && (
-              <span className="text-sm font-semibold text-indigo-700">
-                Estimated: ${estimatedCost.toFixed(4)}
-              </span>
-            )}
-          </div>
-
-          {usageLog.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700">Usage Log</h4>
-              <div className="max-h-40 overflow-y-auto space-y-1">
-                {usageLog.map((entry, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs p-2 border rounded bg-gray-50">
-                    <span className="text-gray-500">{entry.timestamp}</span>
-                    <span className="text-gray-700">{entry.action}</span>
-                    <span className="font-medium text-indigo-600">${entry.cost.toFixed(4)}</span>
-                  </div>
-                ))}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Versioning & Integrity Controls (Offline)</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-lg border p-3">
+              <div className="text-sm font-medium mb-2">Offline Differentiation</div>
+              <div className="grid gap-2 text-sm">
+                <div className="flex items-center gap-2"><Checkbox checked={reorderItems} onCheckedChange={v => setReorderItems(Boolean(v))} /><span>Reorder items</span></div>
+                <div className="flex items-center gap-2"><Checkbox checked={shuffleChoices} onCheckedChange={v => setShuffleChoices(Boolean(v))} /><span>Shuffle answer choices</span></div>
+                <div className="flex items-center gap-2"><Checkbox /><span>Swap equivalent items from pool</span></div>
               </div>
             </div>
-          )}
+            <div className="rounded-lg border p-3">
+              <div className="text-sm font-medium mb-2">Integrity Options</div>
+              <div className="grid gap-2 text-sm">
+                <div className="flex items-center gap-2"><Checkbox checked={lockPlayer} onCheckedChange={v => setLockPlayer(Boolean(v))} /><span>Lock player navigation</span></div>
+                <div className="flex items-center gap-2"><Checkbox checked={requireReflection} onCheckedChange={v => setRequireReflection(Boolean(v))} /><span>Require reflection on submit</span></div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function DokSlider({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="rounded-lg border p-3">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium">{label}</div>
+        <Badge variant="secondary">{value}%</Badge>
+      </div>
+      <Slider value={[value]} min={0} max={100} step={5} onValueChange={v => onChange(v[0] ?? 0)} className="mt-3" />
+    </div>
+  );
+}
+
+function CoverageRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="grid gap-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{value}%</span>
+      </div>
+      <Progress value={value} />
+    </div>
+  );
+}
+
+function AiAddOnsPanel({ budget, setBudget, aiAddons, setAiAddons, itemCount, onEstimate, onRunEnhancements, isEstimating, isRunning, aiUsageLog }: {
+  budget: BudgetState; setBudget: (b: BudgetState) => void;
+  aiAddons: AiAddonFlags; setAiAddons: (f: AiAddonFlags) => void;
+  itemCount: number; onEstimate: () => void; onRunEnhancements: () => void;
+  isEstimating: boolean; isRunning: boolean; aiUsageLog: any[];
+}) {
+  return (
+    <div className="grid gap-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" /> AI Add-ons (Optional "Last 10%")</CardTitle>
+          <CardDescription>AI is OFF by default. Use only for rationales, clarity rewrites, and polish.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-7 rounded-lg border p-4">
+              <div className="text-sm font-medium mb-3">Select AI Enhancements</div>
+              <div className="grid gap-3">
+                <ToggleRow label="Generate rationales (correct + common distractors)" checked={aiAddons.rationales} onChange={v => setAiAddons({ ...aiAddons, rationales: v })} />
+                <ToggleRow label="Rewrite stems for clarity (no standard shift)" checked={aiAddons.rewriteStems} onChange={v => setAiAddons({ ...aiAddons, rewriteStems: v })} />
+                <ToggleRow label="Improve distractors (same difficulty band)" checked={aiAddons.improveDistractors} onChange={v => setAiAddons({ ...aiAddons, improveDistractors: v })} />
+                <ToggleRow label="Teacher explanation" checked={aiAddons.teacherExplanation} onChange={v => setAiAddons({ ...aiAddons, teacherExplanation: v })} />
+                <ToggleRow label="Student hint" checked={aiAddons.studentHint} onChange={v => setAiAddons({ ...aiAddons, studentHint: v })} />
+              </div>
+            </div>
+            <div className="lg:col-span-5">
+              <BudgetMeter budget={budget} onChange={setBudget} />
+              <div className="mt-3 flex items-center justify-end gap-2">
+                <Button variant="outline" onClick={onEstimate} disabled={isEstimating} className="gap-2">
+                  {isEstimating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />} Estimate
+                </Button>
+                <Button onClick={onRunEnhancements} disabled={isRunning || !budget.enabled} className="gap-2">
+                  {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Run AI
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">AI Usage Log</CardTitle>
+          <CardDescription>Track every AI run for transparency.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Timestamp</TableHead>
+                <TableHead>Feature</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead className="text-right">Cost</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(!aiUsageLog || aiUsageLog.length === 0) ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4 text-sm text-muted-foreground">No AI usage yet. Cost: $0.00</TableCell>
+                </TableRow>
+              ) : aiUsageLog.map((entry: any, idx: number) => (
+                <TableRow key={idx}>
+                  <TableCell className="text-sm">{new Date(entry.createdAt).toLocaleString()}</TableCell>
+                  <TableCell className="text-sm">{entry.feature}</TableCell>
+                  <TableCell className="text-sm">{entry.itemCount}</TableCell>
+                  <TableCell className="text-right text-sm font-medium">${(entry.costUsd || 0).toFixed(4)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border bg-muted/10 p-3">
+      <div className="text-sm">{label}</div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function BudgetMeter({ budget, onChange }: { budget: BudgetState; onChange: (b: BudgetState) => void }) {
+  const pctDaily = Math.min(100, Math.round((budget.usageTodayUSD / Math.max(0.01, budget.dailyCapUSD)) * 100));
+  const pctAssessment = Math.min(100, Math.round((budget.usageThisAssessmentUSD / Math.max(0.01, budget.perAssessmentCapUSD)) * 100));
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base"><ShieldCheck className="h-4 w-4" /> Budget Guardrails</CardTitle>
+        <CardDescription>Hard caps prevent surprise costs.</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium">Enable AI spend</div>
+            <div className="text-xs text-muted-foreground">Off by default</div>
+          </div>
+          <Switch checked={budget.enabled} onCheckedChange={v => onChange({ ...budget, enabled: Boolean(v) })} />
+        </div>
+        <Separator className="my-4" />
+        <div className="grid gap-3">
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Daily cap</span>
+              <span className="font-medium">${budget.dailyCapUSD.toFixed(2)}</span>
+            </div>
+            <Input type="number" value={budget.dailyCapUSD} min={0} step={0.5} disabled={!budget.enabled}
+              onChange={e => onChange({ ...budget, dailyCapUSD: Number(e.target.value || 0) })} />
+          </div>
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Per-assessment cap</span>
+              <span className="font-medium">${budget.perAssessmentCapUSD.toFixed(2)}</span>
+            </div>
+            <Input type="number" value={budget.perAssessmentCapUSD} min={0} step={0.25} disabled={!budget.enabled}
+              onChange={e => onChange({ ...budget, perAssessmentCapUSD: Number(e.target.value || 0) })} />
+          </div>
+          <div className="rounded-lg border bg-muted/10 p-3 grid gap-3">
+            <div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Usage today</span>
+                <span className="font-medium">${budget.usageTodayUSD.toFixed(2)} / ${budget.dailyCapUSD.toFixed(2)}</span>
+              </div>
+              <Progress value={pctDaily} className="mt-2" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">This assessment</span>
+                <span className="font-medium">${budget.usageThisAssessmentUSD.toFixed(2)} / ${budget.perAssessmentCapUSD.toFixed(2)}</span>
+              </div>
+              <Progress value={pctAssessment} className="mt-2" />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OfflineStatusCard({ docs, items }: { docs: any[]; items: StagedItem[] }) {
+  const parsedDocs = docs.filter(d => (d.parseStatus || d.status) === "parsed").length;
+  const parsingDocs = docs.filter(d => (d.parseStatus || d.status) === "parsing").length;
+  const byStatus = useMemo(() => {
+    const counts: Record<string, number> = { "Needs Review": 0, Accepted: 0, Edited: 0, Rejected: 0 };
+    for (const it of items) counts[it.reviewStatus] = (counts[it.reviewStatus] || 0) + 1;
+    return counts;
+  }, [items]);
+  const readyToBuild = (byStatus.Accepted || 0) + (byStatus.Edited || 0);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Offline Builder Status</CardTitle>
+        <CardDescription>Quick snapshot of readiness.</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid gap-2 text-sm">
+          <div className="flex items-center justify-between"><span className="text-muted-foreground">Docs parsed</span><span className="font-medium">{parsedDocs}</span></div>
+          <div className="flex items-center justify-between"><span className="text-muted-foreground">Docs parsing</span><span className="font-medium">{parsingDocs}</span></div>
+          <div className="flex items-center justify-between"><span className="text-muted-foreground">Items staged</span><span className="font-medium">{items.length}</span></div>
+        </div>
+        <Separator className="my-3" />
+        <div className="grid gap-2">
+          <StatusRow label="Needs Review" value={byStatus["Needs Review"] || 0} variant="outline" icon={<AlertTriangle className="h-4 w-4" />} />
+          <StatusRow label="Accepted" value={byStatus.Accepted || 0} variant="default" icon={<CheckCircle2 className="h-4 w-4" />} />
+          <StatusRow label="Edited" value={byStatus.Edited || 0} variant="secondary" icon={<Wand2 className="h-4 w-4" />} />
+          <StatusRow label="Rejected" value={byStatus.Rejected || 0} variant="destructive" icon={<XCircle className="h-4 w-4" />} />
+        </div>
+        {readyToBuild > 0 && (
+          <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-2 text-center">
+            <Badge className="bg-green-600">{readyToBuild} items ready to build</Badge>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatusRow({ label, value, variant, icon }: { label: string; value: number; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border bg-muted/10 p-2">
+      <div className="flex items-center gap-2"><span className="text-muted-foreground">{icon}</span><span className="text-sm">{label}</span></div>
+      <Badge variant={variant}>{value}</Badge>
     </div>
   );
 }

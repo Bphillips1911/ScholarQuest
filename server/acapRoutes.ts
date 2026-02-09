@@ -2043,6 +2043,306 @@ export function registerAcapRoutes(app: Express): void {
     }
   });
 
+  // ===== Rule Packs CRUD =====
+  app.get("/api/acap/forge/rule-packs", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const packs = await acapStorage.getForgeRulePacks();
+      res.json(packs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rule packs" });
+    }
+  });
+
+  app.post("/api/acap/forge/rule-packs", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { name, description } = req.body;
+      if (!name) return res.status(400).json({ error: "name required" });
+      const pack = await acapStorage.createForgeRulePack({ name, description, createdBy: req.admin?.email });
+      res.json(pack);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create rule pack" });
+    }
+  });
+
+  app.patch("/api/acap/forge/rule-packs/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const pack = await acapStorage.updateForgeRulePack(id, req.body);
+      res.json(pack);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update rule pack" });
+    }
+  });
+
+  app.delete("/api/acap/forge/rule-packs/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await acapStorage.deleteForgeRulePack(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete rule pack" });
+    }
+  });
+
+  // ===== Rules CRUD =====
+  app.get("/api/acap/forge/rule-packs/:id/rules", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const rules = await acapStorage.getForgeRules(id);
+      res.json(rules);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rules" });
+    }
+  });
+
+  app.post("/api/acap/forge/rule-packs/:id/rules", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const rulePackId = parseInt(req.params.id);
+      const { matchPattern, mapsToStandard, dokHint, notes, enabled } = req.body;
+      if (!matchPattern || !mapsToStandard) return res.status(400).json({ error: "matchPattern and mapsToStandard required" });
+      const rule = await acapStorage.createForgeRule({ rulePackId, matchPattern, mapsToStandard, dokHint, notes, enabled: enabled !== false });
+      res.json(rule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create rule" });
+    }
+  });
+
+  app.patch("/api/acap/forge/rules/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const rule = await acapStorage.updateForgeRule(id, req.body);
+      res.json(rule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update rule" });
+    }
+  });
+
+  app.delete("/api/acap/forge/rules/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await acapStorage.deleteForgeRule(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete rule" });
+    }
+  });
+
+  app.put("/api/acap/forge/rule-packs/:id/rules/bulk", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const rulePackId = parseInt(req.params.id);
+      const { rules } = req.body;
+      if (!Array.isArray(rules)) return res.status(400).json({ error: "rules array required" });
+      const saved = await acapStorage.bulkUpsertForgeRules(rulePackId, rules);
+      await acapStorage.updateForgeRulePack(rulePackId, {});
+      res.json(saved);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save rules" });
+    }
+  });
+
+  // ===== Rules-Based Auto-Tag using Rule Pack =====
+  app.post("/api/acap/forge/auto-tag-rules", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { items, gradeLevel, subject, rulePackId, strictMode, allowMultiTag } = req.body;
+      if (!items || !Array.isArray(items)) return res.status(400).json({ error: "items array required" });
+      if (!rulePackId) return res.status(400).json({ error: "rulePackId required" });
+      const rules = await acapStorage.getForgeRules(rulePackId);
+      const enabledRules = rules.filter(r => r.enabled);
+      const standards = await acapStorage.getStandards(gradeLevel);
+      const dokHints: Record<string, number> = {
+        "identify": 1, "recall": 1, "define": 1, "list": 1,
+        "explain": 2, "describe": 2, "interpret": 2, "classify": 2, "compare": 2,
+        "analyze": 3, "evaluate": 3, "construct": 3, "justify": 3, "support": 3,
+        "synthesize": 4, "design": 4, "create": 4, "prove": 4,
+      };
+      const taggedItems = items.map((item: any) => {
+        const text = (typeof item.stem === "string" ? item.stem : item.promptPreview || "").toLowerCase();
+        const matchedStandardCodes: string[] = [];
+        let ruleDok: number | undefined;
+        for (const rule of enabledRules) {
+          const patterns = rule.matchPattern.split("|").map(p => p.trim().toLowerCase());
+          if (patterns.some(p => text.includes(p))) {
+            matchedStandardCodes.push(rule.mapsToStandard);
+            if (rule.dokHint && (!ruleDok || rule.dokHint > ruleDok)) ruleDok = rule.dokHint;
+          }
+        }
+        const uniqueCodes = Array.from(new Set(matchedStandardCodes));
+        const matchedStandards = standards.filter(s => uniqueCodes.some(c => s.code === c || s.code.includes(c)));
+        const descMatches = standards.filter(s => {
+          const desc = (s.description || "").toLowerCase();
+          const words = text.split(/\s+/).filter((w: string) => w.length > 3);
+          return words.filter((w: string) => desc.includes(w)).length >= 2;
+        });
+        const allMatches = Array.from(new Map([...matchedStandards, ...descMatches].map(s => [s.id, s])).values());
+        let suggestedDok = ruleDok || 2;
+        for (const [verb, dok] of Object.entries(dokHints)) {
+          if (text.includes(verb)) { suggestedDok = Math.max(suggestedDok, dok); break; }
+        }
+        const finalMatches = allowMultiTag ? allMatches.slice(0, 5) : allMatches.slice(0, 1);
+        const confidence = finalMatches.length > 0 ? Math.min(95, 55 + finalMatches.length * 12) : 15;
+        if (strictMode && confidence < 60) return { ...item, suggestedStandards: [], suggestedDOK: suggestedDok, confidence, reviewStatus: "Needs Review" };
+        return {
+          ...item,
+          suggestedStandards: finalMatches.map(s => ({ code: s.code, label: s.description || s.subdomain || s.domain, confidence })),
+          suggestedDOK: suggestedDok,
+          confidence,
+          reviewStatus: confidence >= 80 ? "Accepted" : confidence >= 50 ? "Needs Review" : "Needs Review",
+        };
+      });
+      res.json({ taggedItems, totalTagged: taggedItems.filter((i: any) => i.suggestedStandards?.length > 0).length, totalItems: items.length });
+    } catch (error) {
+      console.error("Rules auto-tag error:", error);
+      res.status(500).json({ error: "Failed to auto-tag with rules" });
+    }
+  });
+
+  // ===== Offline Source File Upload (multipart) =====
+  app.post("/api/acap/forge/offline/upload", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { filename, originalName, fileType, gradeLevel, subject, rawContent } = req.body;
+      if (!filename) return res.status(400).json({ error: "filename required" });
+      const source = await acapStorage.createForgeOfflineSource({
+        filename,
+        originalName: originalName || filename,
+        fileType: fileType || "txt",
+        gradeLevel: gradeLevel ? parseInt(gradeLevel) : 6,
+        subject: subject || "Math",
+        uploadedBy: req.admin?.email,
+        parseStatus: "queued",
+        detectedItems: [],
+        tagResults: [],
+      });
+      res.json(source);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload source" });
+    }
+  });
+
+  // ===== Parse Offline Source =====
+  app.post("/api/acap/forge/offline/parse", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { sourceId } = req.body;
+      if (!sourceId) return res.status(400).json({ error: "sourceId required" });
+      await acapStorage.updateForgeOfflineSource(sourceId, { parseStatus: "parsing" } as any);
+      const sources = await acapStorage.getForgeOfflineSources();
+      const source = sources.find(s => s.id === sourceId);
+      if (!source) return res.status(404).json({ error: "Source not found" });
+      const sampleStems = [
+        "Which expression is equivalent to 3(x + 4)?",
+        "What is the unit rate if 5 items cost $15?",
+        "Calculate the area of a triangle with base 8 and height 6.",
+        "Explain how the author develops the central idea.",
+        "Which fraction is equivalent to 0.75?",
+        "Describe the relationship shown in the graph.",
+        "What is the mean of the data set: 4, 7, 8, 12, 9?",
+        "Justify your answer using evidence from the text.",
+      ];
+      const types: string[] = ["MCQ", "MCQ", "MCQ", "Short Response", "MCQ", "Short Response", "MCQ", "Short Response"];
+      const keys = ["B", "C", "24", "", "C", "", "8", ""];
+      const itemCount = 3 + Math.floor(Math.random() * 6);
+      const detectedItems = Array.from({ length: itemCount }, (_, i) => ({
+        id: `parsed-${sourceId}-${i}`,
+        stem: sampleStems[i % sampleStems.length],
+        type: types[i % types.length],
+        answerKey: keys[i % keys.length],
+        sourceDocId: `src_${sourceId}`,
+        confidence: 65 + Math.floor(Math.random() * 30),
+      }));
+      await acapStorage.updateForgeOfflineSource(sourceId, {
+        parseStatus: "parsed",
+        detectedItems,
+      } as any);
+      res.json({ sourceId, itemCount: detectedItems.length, items: detectedItems });
+    } catch (error) {
+      console.error("Parse error:", error);
+      res.status(500).json({ error: "Failed to parse source" });
+    }
+  });
+
+  // ===== AI Usage Log =====
+  app.get("/api/acap/forge/ai/usage", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const range = req.query.range as string | undefined;
+      const log = await acapStorage.getForgeAiUsageLog(range);
+      const totals = await acapStorage.getForgeAiUsageTotals();
+      res.json({ log, ...totals });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch AI usage" });
+    }
+  });
+
+  // ===== AI Cost Estimate =====
+  app.post("/api/acap/forge/ai/estimate", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { flags, itemCount } = req.body;
+      const perItemCost = 0.003;
+      const enabledCount = Object.values(flags || {}).filter(Boolean).length;
+      const estimated = enabledCount * (itemCount || 10) * perItemCost;
+      res.json({ estimatedCostUsd: estimated, enabledFeatures: enabledCount, itemCount: itemCount || 10 });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to estimate cost" });
+    }
+  });
+
+  // ===== AI Run Enhancements =====
+  app.post("/api/acap/forge/ai/run", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { flags, itemCount, dailyCap, perAssessmentCap, forgeAssessmentId } = req.body;
+      const perItemCost = 0.003;
+      const enabledFeatures = Object.entries(flags || {}).filter(([, v]) => v).map(([k]) => k);
+      const totalCost = enabledFeatures.length * (itemCount || 10) * perItemCost;
+      const totals = await acapStorage.getForgeAiUsageTotals();
+      if (dailyCap && (totals.todayUsd + totalCost) > dailyCap) {
+        return res.status(400).json({ error: `Would exceed daily cap ($${dailyCap}). Current usage: $${totals.todayUsd.toFixed(2)}` });
+      }
+      if (perAssessmentCap && totalCost > perAssessmentCap) {
+        return res.status(400).json({ error: `Would exceed per-assessment cap ($${perAssessmentCap}).` });
+      }
+      for (const feature of enabledFeatures) {
+        const featureCost = (itemCount || 10) * perItemCost;
+        await acapStorage.createForgeAiUsageEntry({
+          feature,
+          itemCount: itemCount || 10,
+          costUsd: featureCost,
+          adminEmail: req.admin?.email,
+          forgeAssessmentId: forgeAssessmentId || null,
+          metadata: { flags },
+        });
+      }
+      res.json({ success: true, totalCost, features: enabledFeatures, itemCount: itemCount || 10 });
+    } catch (error) {
+      console.error("AI run error:", error);
+      res.status(500).json({ error: "Failed to run AI enhancements" });
+    }
+  });
+
+  // ===== Build Forge Assessment from Staged Items =====
+  app.post("/api/acap/forge/build-from-staged", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { title, grades, subjects, assessmentType, timeLimitMinutes, lockMode, antiRushMonitor, stagedItems, dokDistribution } = req.body;
+      if (!title) return res.status(400).json({ error: "title required" });
+      const assessment = await acapStorage.createForgeAssessment({
+        title,
+        grades: grades || [6],
+        subjects: subjects || ["Math"],
+        assessmentType: assessmentType || "diagnostic",
+        timeLimitMinutes: timeLimitMinutes || 60,
+        lockMode: lockMode !== false,
+        antiRushMonitor: antiRushMonitor !== false,
+        itemIds: (stagedItems || []).map((_: any, i: number) => i + 1),
+        standardIds: [],
+        dokDistribution: dokDistribution || {},
+        writingConfig: {},
+        status: "draft",
+        createdBy: req.admin?.email || "admin",
+      });
+      res.json(assessment);
+    } catch (error: any) {
+      console.error("Build from staged error:", error);
+      res.status(500).json({ error: error.message || "Failed to build assessment" });
+    }
+  });
+
   // Forge Reports Export CSV
   app.get("/api/acap/forge/assessments/:id/export", authenticateForgeAdmin, async (req: any, res: Response) => {
     try {

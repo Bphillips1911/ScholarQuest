@@ -1,0 +1,1566 @@
+/**
+ * FILE: client/src/pages/admin/forge/ForgeCostControlsOfflineBuilder.tsx
+ * PURPOSE: shadcn/Tailwind skeleton for:
+ * - Tabs (Upload, Auto-tag, Build Test, AI Add-ons)
+ * - Cards
+ * - Item staging queue
+ * - Rule editor
+ * - AI budget meter
+ *
+ * NOTE: This is UI-only skeleton. Your Agent should wire API + state.
+ */
+
+import * as React from "react";
+import { AppLayout } from "@/components/AppLayout";
+import { cn } from "@/lib/utils";
+
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+import {
+  Upload,
+  Wand2,
+  ShieldDollarSign,
+  FileText,
+  Tag,
+  Hammer,
+  Sparkles,
+  RefreshCw,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  SlidersHorizontal,
+  Download,
+  Settings,
+  Layers,
+  ListChecks,
+  FileUp,
+} from "lucide-react";
+
+/* -----------------------------
+   Types (UI-level)
+------------------------------ */
+
+type Subject = "ELA" | "Math" | "Science";
+type GradeBand = "6" | "7" | "8";
+type ParseStatus = "Queued" | "Parsing" | "Parsed" | "Error";
+type ItemType = "MCQ" | "Short Response" | "Passage" | "Writing Prompt";
+type ReviewStatus = "Needs Review" | "Accepted" | "Edited" | "Rejected";
+
+type UploadDoc = {
+  id: string;
+  name: string;
+  kind: "pdf" | "docx" | "txt";
+  uploadedAt: string;
+  uploadedBy: string;
+  status: ParseStatus;
+  itemsDetected: number;
+};
+
+type StagedItem = {
+  id: string;
+  sourceDocId: string;
+  type: ItemType;
+  subject: Subject;
+  grade: GradeBand;
+  promptPreview: string;
+  hasKey: boolean;
+  suggestedDOK?: 2 | 3 | 4;
+  suggestedStandards?: Array<{ code: string; label: string; confidence: number }>;
+  reviewStatus: ReviewStatus;
+  lastUpdated: string;
+};
+
+type RulePack = {
+  id: string;
+  name: string;
+  description?: string;
+  updatedAt: string;
+};
+
+type RuleRow = {
+  id: string;
+  enabled: boolean;
+  match: string; // keyword/regex phrase
+  mapsToStandard: string; // standard code
+  dokHint?: 2 | 3 | 4;
+  notes?: string;
+};
+
+type BudgetState = {
+  enabled: boolean;
+  dailyCapUSD: number;
+  perAssessmentCapUSD: number;
+  usageTodayUSD: number;
+  usageThisAssessmentUSD: number;
+};
+
+type AiAddonFlags = {
+  rationales: boolean;
+  rewriteStems: boolean;
+  improveDistractors: boolean;
+  teacherExplanation: boolean;
+  studentHint: boolean;
+};
+
+/* -----------------------------
+   Mock Data (replace with API)
+------------------------------ */
+
+const MOCK_DOCS: UploadDoc[] = [
+  {
+    id: "doc_1",
+    name: "Grade6_Math_Items_Set1.pdf",
+    kind: "pdf",
+    uploadedAt: "2026-02-08 2:12 PM",
+    uploadedBy: "Dr. Bobby Phillips",
+    status: "Parsed",
+    itemsDetected: 42,
+  },
+  {
+    id: "doc_2",
+    name: "ELA_Passages_6-8.docx",
+    kind: "docx",
+    uploadedAt: "2026-02-08 2:13 PM",
+    uploadedBy: "Dr. Bobby Phillips",
+    status: "Parsing",
+    itemsDetected: 0,
+  },
+];
+
+const MOCK_RULE_PACKS: RulePack[] = [
+  { id: "rp_1", name: "BHSA Core Rules Pack", description: "Keywords → standards mapping (offline).", updatedAt: "2026-02-08" },
+  { id: "rp_2", name: "Science Graph/Table Heuristics", description: "Structure rules for data displays.", updatedAt: "2026-02-07" },
+];
+
+const MOCK_RULE_ROWS: RuleRow[] = [
+  { id: "r1", enabled: true, match: "unit rate|rate per", mapsToStandard: "6.RP.3", dokHint: 2, notes: "Ratios & proportional reasoning" },
+  { id: "r2", enabled: true, match: "justify|explain why", mapsToStandard: "6.MP.3", dokHint: 3, notes: "Reasoning / argumentation" },
+  { id: "r3", enabled: false, match: "median|interquartile", mapsToStandard: "6.SP.5", dokHint: 2, notes: "Stats keywords" },
+];
+
+const MOCK_ITEMS: StagedItem[] = [
+  {
+    id: "item_101",
+    sourceDocId: "doc_1",
+    type: "MCQ",
+    subject: "Math",
+    grade: "6",
+    promptPreview: "A store sells 3 notebooks for $6. What is the unit rate per notebook?",
+    hasKey: true,
+    suggestedDOK: 2,
+    suggestedStandards: [{ code: "6.RP.3", label: "Use ratio and rate reasoning to solve problems", confidence: 92 }],
+    reviewStatus: "Needs Review",
+    lastUpdated: "2026-02-08 2:15 PM",
+  },
+  {
+    id: "item_102",
+    sourceDocId: "doc_1",
+    type: "MCQ",
+    subject: "Math",
+    grade: "6",
+    promptPreview: "Which statement best justifies that two expressions are equivalent?",
+    hasKey: false,
+    suggestedDOK: 3,
+    suggestedStandards: [{ code: "6.EE.3", label: "Apply properties of operations to generate equivalent expressions", confidence: 78 }],
+    reviewStatus: "Needs Review",
+    lastUpdated: "2026-02-08 2:15 PM",
+  },
+];
+
+const DEFAULT_BUDGET: BudgetState = {
+  enabled: false,
+  dailyCapUSD: 10,
+  perAssessmentCapUSD: 3,
+  usageTodayUSD: 0.86,
+  usageThisAssessmentUSD: 0.24,
+};
+
+const DEFAULT_AI_ADDONS: AiAddonFlags = {
+  rationales: false,
+  rewriteStems: false,
+  improveDistractors: false,
+  teacherExplanation: false,
+  studentHint: false,
+};
+
+/* -----------------------------
+   Page
+------------------------------ */
+
+export default function ForgeCostControlsOfflineBuilderPage() {
+  // TODO: Replace with API-driven state (TanStack Query + mutations).
+  const [docs, setDocs] = React.useState<UploadDoc[]>(MOCK_DOCS);
+  const [items, setItems] = React.useState<StagedItem[]>(MOCK_ITEMS);
+
+  const [subject, setSubject] = React.useState<Subject>("Math");
+  const [grade, setGrade] = React.useState<GradeBand>("6");
+
+  const [strictMode, setStrictMode] = React.useState(true);
+  const [allowMultiTag, setAllowMultiTag] = React.useState(true);
+  const [confidenceThreshold, setConfidenceThreshold] = React.useState<number>(80);
+
+  const [rulePackId, setRulePackId] = React.useState<string>(MOCK_RULE_PACKS[0]?.id ?? "");
+  const [rules, setRules] = React.useState<RuleRow[]>(MOCK_RULE_ROWS);
+
+  const [budget, setBudget] = React.useState<BudgetState>(DEFAULT_BUDGET);
+  const [aiAddons, setAiAddons] = React.useState<AiAddonFlags>(DEFAULT_AI_ADDONS);
+
+  // derived
+  const filteredItems = React.useMemo(() => {
+    return items.filter((it) => it.subject === subject && it.grade === grade);
+  }, [items, subject, grade]);
+
+  const acceptedAboveThresholdCount = React.useMemo(() => {
+    return filteredItems.filter((it) => {
+      const top = it.suggestedStandards?.[0];
+      return top && top.confidence >= confidenceThreshold;
+    }).length;
+  }, [filteredItems, confidenceThreshold]);
+
+  return (
+    <AppLayout>
+      <div className="mx-auto w-full max-w-6xl px-4 py-6">
+        <HeaderBar
+          title="Forge → Cost Controls & Offline Builder"
+          subtitle="Upload → auto-tag standards (rules-based) → build test with $0 AI. Optional AI add-ons for the final 10%."
+          right={
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" /> Export
+              </Button>
+              <Button className="gap-2">
+                <FileUp className="h-4 w-4" /> New Upload
+              </Button>
+            </div>
+          }
+        />
+
+        <div className="mt-4 grid gap-4 md:grid-cols-12">
+          <Card className="md:col-span-8">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="h-5 w-5" />
+                Offline Pipeline
+              </CardTitle>
+              <CardDescription>Run the pipeline in order. Everything works without AI.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Tabs defaultValue="upload" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="upload" className="gap-2">
+                    <Upload className="h-4 w-4" /> Upload
+                  </TabsTrigger>
+                  <TabsTrigger value="tag" className="gap-2">
+                    <Tag className="h-4 w-4" /> Auto-tag
+                  </TabsTrigger>
+                  <TabsTrigger value="build" className="gap-2">
+                    <Hammer className="h-4 w-4" /> Build Test
+                  </TabsTrigger>
+                  <TabsTrigger value="ai" className="gap-2">
+                    <Sparkles className="h-4 w-4" /> AI Add-ons
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="upload" className="mt-4">
+                  <UploadPanel
+                    docs={docs}
+                    onReparse={(docId) => {
+                      // TODO: POST /api/forge/offline/parse {docId}
+                      setDocs((prev) =>
+                        prev.map((d) => (d.id === docId ? { ...d, status: "Parsing" } : d)),
+                      );
+                    }}
+                    onRemove={(docId) => {
+                      // TODO: DELETE /api/forge/docs/:id
+                      setDocs((prev) => prev.filter((d) => d.id !== docId));
+                      setItems((prev) => prev.filter((it) => it.sourceDocId !== docId));
+                    }}
+                    onUpload={() => {
+                      // TODO: Upload flow (presigned URL or multipart)
+                    }}
+                    onRunOfflineBuilder={() => {
+                      // TODO: POST /api/forge/offline/run {scope: docIds}
+                    }}
+                  />
+                </TabsContent>
+
+                <TabsContent value="tag" className="mt-4">
+                  <AutoTagPanel
+                    subject={subject}
+                    grade={grade}
+                    setSubject={setSubject}
+                    setGrade={setGrade}
+                    strictMode={strictMode}
+                    setStrictMode={setStrictMode}
+                    allowMultiTag={allowMultiTag}
+                    setAllowMultiTag={setAllowMultiTag}
+                    confidenceThreshold={confidenceThreshold}
+                    setConfidenceThreshold={setConfidenceThreshold}
+                    acceptedAboveThresholdCount={acceptedAboveThresholdCount}
+                    onAutoTag={() => {
+                      // TODO: POST /api/forge/offline/tag {subject, grade, rulePackId, strictMode, allowMultiTag}
+                    }}
+                  />
+                  <div className="mt-4 grid gap-4 lg:grid-cols-12">
+                    <Card className="lg:col-span-5">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2">
+                          <SlidersHorizontal className="h-5 w-5" /> Rule Pack + Editor
+                        </CardTitle>
+                        <CardDescription>Rules-based tagging. No AI required.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <RulePackPicker
+                          rulePackId={rulePackId}
+                          setRulePackId={setRulePackId}
+                          packs={MOCK_RULE_PACKS}
+                          onManagePacks={() => {
+                            // TODO: open pack management modal
+                          }}
+                        />
+                        <Separator className="my-4" />
+                        <RuleEditor rules={rules} onChange={setRules} />
+                      </CardContent>
+                      <CardFooter className="justify-end gap-2">
+                        <Button variant="outline" className="gap-2">
+                          <Settings className="h-4 w-4" /> Save Pack
+                        </Button>
+                        <Button className="gap-2">
+                          <Wand2 className="h-4 w-4" /> Apply Rules
+                        </Button>
+                      </CardFooter>
+                    </Card>
+
+                    <Card className="lg:col-span-7">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2">
+                          <ListChecks className="h-5 w-5" /> Item Staging Queue
+                        </CardTitle>
+                        <CardDescription>Review, accept, edit, or reject items before building a test.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <StagingQueue
+                          items={filteredItems}
+                          confidenceThreshold={confidenceThreshold}
+                          onBulkAccept={() => {
+                            // TODO: PATCH /api/forge/items/bulk {ids, status:"Accepted"}
+                            setItems((prev) =>
+                              prev.map((it) => {
+                                if (it.subject !== subject || it.grade !== grade) return it;
+                                const top = it.suggestedStandards?.[0];
+                                if (top && top.confidence >= confidenceThreshold) {
+                                  return { ...it, reviewStatus: "Accepted" };
+                                }
+                                return it;
+                              }),
+                            );
+                          }}
+                          onOpenItem={(itemId) => {
+                            // TODO: open item editor modal
+                            console.log("open item", itemId);
+                          }}
+                          onSetStatus={(itemId, status) => {
+                            // TODO: PATCH /api/forge/items/:id {reviewStatus:status}
+                            setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, reviewStatus: status } : it)));
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="build" className="mt-4">
+                  <BuildTestPanel
+                    subject={subject}
+                    grade={grade}
+                    onBuildVersionA={() => {
+                      // TODO: POST /api/forge/assessments/build {subject, grade, version:"A", offline:true}
+                    }}
+                    onDifferentiate={() => {
+                      // TODO: POST /api/forge/assessments/differentiate {assessmentId, mode:"A/B/C"}
+                    }}
+                  />
+                </TabsContent>
+
+                <TabsContent value="ai" className="mt-4">
+                  <AiAddOnsPanel
+                    budget={budget}
+                    setBudget={setBudget}
+                    aiAddons={aiAddons}
+                    setAiAddons={setAiAddons}
+                    onEstimate={() => {
+                      // TODO: POST /api/forge/ai/estimate {flags, itemCount}
+                    }}
+                    onRunEnhancements={() => {
+                      // TODO: POST /api/forge/ai/run {flags, caps}
+                    }}
+                  />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <ShieldDollarSign className="h-5 w-5" />
+                Cost Controls
+              </CardTitle>
+              <CardDescription>Always know what you’ll spend. Default is $0.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <BudgetMeter budget={budget} onChange={setBudget} />
+              <Separator className="my-4" />
+              <OfflineStatusCard docs={docs} items={items} />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
+
+/* -----------------------------
+   Header
+------------------------------ */
+
+function HeaderBar({
+  title,
+  subtitle,
+  right,
+}: {
+  title: string;
+  subtitle?: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div>
+        <div className="text-2xl font-semibold tracking-tight">{title}</div>
+        {subtitle ? <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div> : null}
+      </div>
+      {right ? <div className="flex items-center gap-2">{right}</div> : null}
+    </div>
+  );
+}
+
+/* -----------------------------
+   Upload Panel
+------------------------------ */
+
+function UploadPanel({
+  docs,
+  onUpload,
+  onReparse,
+  onRemove,
+  onRunOfflineBuilder,
+}: {
+  docs: UploadDoc[];
+  onUpload: () => void;
+  onReparse: (docId: string) => void;
+  onRemove: (docId: string) => void;
+  onRunOfflineBuilder: () => void;
+}) {
+  return (
+    <div className="grid gap-4">
+      <Card className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <FileUp className="h-5 w-5" />
+            Upload Sources (No AI)
+          </CardTitle>
+          <CardDescription>Drop PDFs/DOCX/TXT. Offline parsing detects items & passages.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid gap-3 rounded-lg border bg-muted/20 p-4">
+            <div className="text-sm font-medium">Drag & drop files here</div>
+            <div className="text-xs text-muted-foreground">Or click Upload to choose files.</div>
+            <div className="flex items-center gap-2">
+              <Button onClick={onUpload} className="gap-2">
+                <Upload className="h-4 w-4" /> Upload Files
+              </Button>
+              <Button variant="outline" onClick={onRunOfflineBuilder} className="gap-2">
+                <RefreshCw className="h-4 w-4" /> Run Offline Builder
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Uploaded Sources
+          </CardTitle>
+          <CardDescription>Parsing status + detected items. (Wire to real docs in production.)</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>File</TableHead>
+                <TableHead>Uploaded</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Items</TableHead>
+                <TableHead className="w-[120px] text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {docs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                    No uploads yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                docs.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell>
+                      <div className="font-medium">{d.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {d.kind.toUpperCase()} • by {d.uploadedBy}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{d.uploadedAt}</TableCell>
+                    <TableCell>
+                      <ParseStatusBadge status={d.status} />
+                    </TableCell>
+                    <TableCell className="text-right font-medium">{d.itemsDetected}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            Actions
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onReparse(d.id)}>
+                            <RefreshCw className="mr-2 h-4 w-4" /> Re-parse
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onRemove(d.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Remove
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ParseStatusBadge({ status }: { status: ParseStatus }) {
+  const map: Record<ParseStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    Queued: { label: "Queued", variant: "secondary" },
+    Parsing: { label: "Parsing", variant: "outline" },
+    Parsed: { label: "Parsed", variant: "default" },
+    Error: { label: "Error", variant: "destructive" },
+  };
+  const v = map[status];
+  return <Badge variant={v.variant}>{v.label}</Badge>;
+}
+
+/* -----------------------------
+   Auto-tag Panel
+------------------------------ */
+
+function AutoTagPanel({
+  subject,
+  grade,
+  setSubject,
+  setGrade,
+  strictMode,
+  setStrictMode,
+  allowMultiTag,
+  setAllowMultiTag,
+  confidenceThreshold,
+  setConfidenceThreshold,
+  acceptedAboveThresholdCount,
+  onAutoTag,
+}: {
+  subject: Subject;
+  grade: GradeBand;
+  setSubject: (s: Subject) => void;
+  setGrade: (g: GradeBand) => void;
+  strictMode: boolean;
+  setStrictMode: (v: boolean) => void;
+  allowMultiTag: boolean;
+  setAllowMultiTag: (v: boolean) => void;
+  confidenceThreshold: number;
+  setConfidenceThreshold: (n: number) => void;
+  acceptedAboveThresholdCount: number;
+  onAutoTag: () => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2">
+          <Tag className="h-5 w-5" />
+          Auto-Tag Standards (Rules-Based)
+        </CardTitle>
+        <CardDescription>Run tagging with strict guardrails and confidence thresholds.</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid gap-4 md:grid-cols-12">
+          <div className="md:col-span-3">
+            <Label className="text-xs text-muted-foreground">Subject</Label>
+            <Select value={subject} onValueChange={(v) => setSubject(v as Subject)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select subject" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ELA">ELA</SelectItem>
+                <SelectItem value="Math">Math</SelectItem>
+                <SelectItem value="Science">Science</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="md:col-span-2">
+            <Label className="text-xs text-muted-foreground">Grade</Label>
+            <Select value={grade} onValueChange={(v) => setGrade(v as GradeBand)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Grade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6">Grade 6</SelectItem>
+                <SelectItem value="7">Grade 7</SelectItem>
+                <SelectItem value="8">Grade 8</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="md:col-span-7 flex flex-col gap-3 rounded-lg border bg-muted/10 p-3">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="text-sm font-medium">Strict mode</div>
+                <div className="text-xs text-muted-foreground">Only tag when confidence is high.</div>
+              </div>
+              <Switch checked={strictMode} onCheckedChange={setStrictMode} />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="text-sm font-medium">Allow multi-tag</div>
+                <div className="text-xs text-muted-foreground">Primary standard + secondary support.</div>
+              </div>
+              <Switch checked={allowMultiTag} onCheckedChange={setAllowMultiTag} />
+            </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">Confidence threshold</div>
+                <Badge variant="secondary">{confidenceThreshold}%</Badge>
+              </div>
+              <Slider
+                value={[confidenceThreshold]}
+                min={50}
+                max={99}
+                step={1}
+                onValueChange={(v) => setConfidenceThreshold(v[0] ?? 80)}
+              />
+              <div className="text-xs text-muted-foreground">
+                Items above threshold: <span className="font-medium">{acceptedAboveThresholdCount}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="justify-end gap-2">
+        <Button variant="outline" className="gap-2">
+          <Download className="h-4 w-4" /> Export Review List
+        </Button>
+        <Button onClick={onAutoTag} className="gap-2">
+          <Wand2 className="h-4 w-4" /> Run Auto-Tag
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+/* -----------------------------
+   Rule Pack Picker + Editor
+------------------------------ */
+
+function RulePackPicker({
+  rulePackId,
+  setRulePackId,
+  packs,
+  onManagePacks,
+}: {
+  rulePackId: string;
+  setRulePackId: (id: string) => void;
+  packs: RulePack[];
+  onManagePacks: () => void;
+}) {
+  const current = packs.find((p) => p.id === rulePackId);
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">Rules Pack</Label>
+        <Button size="sm" variant="ghost" onClick={onManagePacks} className="gap-2">
+          <Settings className="h-4 w-4" /> Manage
+        </Button>
+      </div>
+      <Select value={rulePackId} onValueChange={setRulePackId}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select a rules pack" />
+        </SelectTrigger>
+        <SelectContent>
+          {packs.map((p) => (
+            <SelectItem key={p.id} value={p.id}>
+              {p.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {current ? (
+        <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+          <div className="font-medium text-foreground">{current.name}</div>
+          {current.description ? <div className="mt-1">{current.description}</div> : null}
+          <div className="mt-2">Updated: {current.updatedAt}</div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RuleEditor({
+  rules,
+  onChange,
+}: {
+  rules: RuleRow[];
+  onChange: (rows: RuleRow[]) => void;
+}) {
+  return (
+    <div className="grid gap-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-medium">Rule Editor</div>
+          <div className="text-xs text-muted-foreground">Keyword/regex → Standard (+ optional DOK hint)</div>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-2"
+          onClick={() => {
+            // Add a new blank row
+            onChange([
+              ...rules,
+              { id: crypto.randomUUID(), enabled: true, match: "", mapsToStandard: "", notes: "" },
+            ]);
+          }}
+        >
+          <SlidersHorizontal className="h-4 w-4" /> Add Rule
+        </Button>
+      </div>
+
+      <ScrollArea className="h-[360px] rounded-md border">
+        <div className="p-3">
+          <div className="grid gap-3">
+            {rules.map((r, idx) => (
+              <div key={r.id} className="rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={r.enabled}
+                      onCheckedChange={(v) => {
+                        const next = [...rules];
+                        next[idx] = { ...r, enabled: Boolean(v) };
+                        onChange(next);
+                      }}
+                    />
+                    <div className="text-sm font-medium">Rule {idx + 1}</div>
+                    {!r.enabled ? <Badge variant="outline">Disabled</Badge> : null}
+                  </div>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onChange(rules.filter((x) => x.id !== r.id))}
+                    aria-label="Remove rule"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="mt-3 grid gap-3 md:grid-cols-12">
+                  <div className="md:col-span-6">
+                    <Label className="text-xs text-muted-foreground">Match (keyword / regex)</Label>
+                    <Input
+                      value={r.match}
+                      placeholder='e.g., "unit rate|rate per"'
+                      className="mt-1"
+                      onChange={(e) => {
+                        const next = [...rules];
+                        next[idx] = { ...r, match: e.target.value };
+                        onChange(next);
+                      }}
+                    />
+                  </div>
+
+                  <div className="md:col-span-4">
+                    <Label className="text-xs text-muted-foreground">Maps to Standard</Label>
+                    <Input
+                      value={r.mapsToStandard}
+                      placeholder="e.g., 6.RP.3"
+                      className="mt-1"
+                      onChange={(e) => {
+                        const next = [...rules];
+                        next[idx] = { ...r, mapsToStandard: e.target.value };
+                        onChange(next);
+                      }}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label className="text-xs text-muted-foreground">DOK hint</Label>
+                    <Select
+                      value={r.dokHint ? String(r.dokHint) : "none"}
+                      onValueChange={(v) => {
+                        const next = [...rules];
+                        next[idx] = { ...r, dokHint: v === "none" ? undefined : (Number(v) as 2 | 3 | 4) };
+                        onChange(next);
+                      }}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="2">DOK 2</SelectItem>
+                        <SelectItem value="3">DOK 3</SelectItem>
+                        <SelectItem value="4">DOK 4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="md:col-span-12">
+                    <Label className="text-xs text-muted-foreground">Notes</Label>
+                    <Input
+                      value={r.notes ?? ""}
+                      placeholder="Optional notes for reviewers."
+                      className="mt-1"
+                      onChange={(e) => {
+                        const next = [...rules];
+                        next[idx] = { ...r, notes: e.target.value };
+                        onChange(next);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {rules.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">No rules yet. Add your first rule.</div>
+            ) : null}
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+/* -----------------------------
+   Staging Queue
+------------------------------ */
+
+function StagingQueue({
+  items,
+  confidenceThreshold,
+  onBulkAccept,
+  onOpenItem,
+  onSetStatus,
+}: {
+  items: StagedItem[];
+  confidenceThreshold: number;
+  onBulkAccept: () => void;
+  onOpenItem: (itemId: string) => void;
+  onSetStatus: (itemId: string, status: ReviewStatus) => void;
+}) {
+  const [query, setQuery] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState<ReviewStatus | "All">("All");
+
+  const view = React.useMemo(() => {
+    return items
+      .filter((it) => (statusFilter === "All" ? true : it.reviewStatus === statusFilter))
+      .filter((it) => it.promptPreview.toLowerCase().includes(query.toLowerCase()));
+  }, [items, query, statusFilter]);
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-1 items-center gap-2">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search items…"
+            className="max-w-md"
+          />
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All</SelectItem>
+              <SelectItem value="Needs Review">Needs Review</SelectItem>
+              <SelectItem value="Accepted">Accepted</SelectItem>
+              <SelectItem value="Edited">Edited</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">Threshold: {confidenceThreshold}%</Badge>
+          <Button variant="outline" onClick={onBulkAccept} className="gap-2">
+            <CheckCircle2 className="h-4 w-4" /> Accept all ≥ threshold
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Item</TableHead>
+              <TableHead>Suggested Tag</TableHead>
+              <TableHead className="text-center">Confidence</TableHead>
+              <TableHead className="text-center">Key</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-[140px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {view.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                  No staged items for this view.
+                </TableCell>
+              </TableRow>
+            ) : (
+              view.map((it) => {
+                const top = it.suggestedStandards?.[0];
+                const conf = top?.confidence ?? 0;
+                return (
+                  <TableRow key={it.id}>
+                    <TableCell>
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline">{it.type}</Badge>
+                        <div>
+                          <div className="line-clamp-2 text-sm font-medium">{it.promptPreview}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {it.subject} • Grade {it.grade} • Updated {it.lastUpdated}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      {top ? (
+                        <div className="text-sm">
+                          <div className="font-medium">{top.code}</div>
+                          <div className="line-clamp-1 text-xs text-muted-foreground">{top.label}</div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">No suggestion</div>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="text-center">
+                      <ConfidencePill value={conf} threshold={confidenceThreshold} />
+                    </TableCell>
+
+                    <TableCell className="text-center">{it.hasKey ? <Badge>Yes</Badge> : <Badge variant="secondary">No</Badge>}</TableCell>
+
+                    <TableCell>
+                      <ReviewStatusBadge status={it.reviewStatus} />
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => onOpenItem(it.id)}>
+                          Edit
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              Set
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onSetStatus(it.id, "Accepted")}>
+                              <CheckCircle2 className="mr-2 h-4 w-4" /> Accept
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onSetStatus(it.id, "Edited")}>
+                              <Wand2 className="mr-2 h-4 w-4" /> Mark Edited
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onSetStatus(it.id, "Rejected")} className="text-destructive">
+                              <XCircle className="mr-2 h-4 w-4" /> Reject
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
+  const map: Record<ReviewStatus, { icon: React.ReactNode; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    "Needs Review": { icon: <AlertTriangle className="mr-1 h-3.5 w-3.5" />, variant: "outline" },
+    Accepted: { icon: <CheckCircle2 className="mr-1 h-3.5 w-3.5" />, variant: "default" },
+    Edited: { icon: <Wand2 className="mr-1 h-3.5 w-3.5" />, variant: "secondary" },
+    Rejected: { icon: <XCircle className="mr-1 h-3.5 w-3.5" />, variant: "destructive" },
+  };
+  const v = map[status];
+  return (
+    <Badge variant={v.variant} className="inline-flex items-center">
+      {v.icon}
+      {status}
+    </Badge>
+  );
+}
+
+function ConfidencePill({ value, threshold }: { value: number; threshold: number }) {
+  const good = value >= threshold;
+  return (
+    <div className="inline-flex items-center gap-2">
+      <Badge variant={good ? "default" : "secondary"}>{value}%</Badge>
+      <div className={cn("h-2 w-16 rounded-full bg-muted", good ? "" : "")}>
+        <div className="h-2 rounded-full" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------
+   Build Test Panel
+------------------------------ */
+
+function BuildTestPanel({
+  subject,
+  grade,
+  onBuildVersionA,
+  onDifferentiate,
+}: {
+  subject: Subject;
+  grade: GradeBand;
+  onBuildVersionA: () => void;
+  onDifferentiate: () => void;
+}) {
+  const [testName, setTestName] = React.useState(`Forge Assessment — Grade ${grade} ${subject}`);
+  const [timeLimitMin, setTimeLimitMin] = React.useState(60);
+  const [randomize, setRandomize] = React.useState(true);
+
+  // Offline blueprint controls (UI-only)
+  const [dok2, setDok2] = React.useState(40);
+  const [dok3, setDok3] = React.useState(40);
+  const [dok4, setDok4] = React.useState(20);
+
+  return (
+    <div className="grid gap-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <Hammer className="h-5 w-5" />
+            Assemble Assessment (Zero AI)
+          </CardTitle>
+          <CardDescription>Build Version A, then differentiate A/B/C using offline logic (shuffle + equivalent pools).</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid gap-4 md:grid-cols-12">
+            <div className="md:col-span-8 grid gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Assessment name</Label>
+                <Input className="mt-1" value={testName} onChange={(e) => setTestName(e.target.value)} />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Time limit (minutes)</Label>
+                  <Input
+                    className="mt-1"
+                    type="number"
+                    value={timeLimitMin}
+                    onChange={(e) => setTimeLimitMin(Number(e.target.value || 0))}
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <Checkbox checked={randomize} onCheckedChange={(v) => setRandomize(Boolean(v))} />
+                  <Label className="text-sm">Randomize item order</Label>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">DOK distribution</div>
+                  <Badge variant="secondary">DOK2 {dok2}% • DOK3 {dok3}% • DOK4 {dok4}%</Badge>
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <DokSlider label="DOK 2" value={dok2} onChange={setDok2} />
+                  <DokSlider label="DOK 3" value={dok3} onChange={setDok3} />
+                  <DokSlider label="DOK 4" value={dok4} onChange={setDok4} />
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  TODO: Enforce sum=100 in logic. Current UI is only a skeleton.
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-4">
+              <div className="rounded-lg border bg-muted/10 p-4">
+                <div className="text-sm font-medium">Blueprint Coverage Meter</div>
+                <div className="mt-2 space-y-3">
+                  <CoverageRow label="Domains covered" value={74} />
+                  <CoverageRow label="Standards represented" value={61} />
+                  <CoverageRow label="Items with keys" value={86} />
+                </div>
+                <div className="mt-4 text-xs text-muted-foreground">
+                  TODO: Compute coverage from accepted/edited items in staging queue.
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="justify-end gap-2">
+          <Button variant="outline" onClick={onDifferentiate} className="gap-2">
+            <Layers className="h-4 w-4" /> Differentiate Versions (A/B/C)
+          </Button>
+          <Button onClick={onBuildVersionA} className="gap-2">
+            <Hammer className="h-4 w-4" /> Build Version A
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Versioning Controls (Offline)</CardTitle>
+          <CardDescription>Shuffle, distractor reordering, and equivalent pools — no AI required.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid gap-3 md:grid-cols-12">
+            <div className="md:col-span-6 rounded-lg border p-3">
+              <div className="text-sm font-medium">Offline Differentiation</div>
+              <div className="mt-2 grid gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Checkbox defaultChecked />
+                  <span>Reorder items</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox defaultChecked />
+                  <span>Shuffle answer choices</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox />
+                  <span>Swap in equivalent items from pool (same standard + DOK)</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  TODO: define “equivalence pools” (assessment_item_pool) in schema and use deterministic seed per version.
+                </div>
+              </div>
+            </div>
+            <div className="md:col-span-6 rounded-lg border p-3">
+              <div className="text-sm font-medium">Integrity Options</div>
+              <div className="mt-2 grid gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Checkbox defaultChecked />
+                  <span>Lock player navigation (baseline/midpoint/final)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox defaultChecked />
+                  <span>Require reflection on submit</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  TODO: Wiring to assessment runtime flags (player config) + monitoring features.
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function DokSlider({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="rounded-lg border p-3">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium">{label}</div>
+        <Badge variant="secondary">{value}%</Badge>
+      </div>
+      <Slider value={[value]} min={0} max={100} step={1} onValueChange={(v) => onChange(v[0] ?? 0)} className="mt-3" />
+    </div>
+  );
+}
+
+function CoverageRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="grid gap-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{value}%</span>
+      </div>
+      <Progress value={value} />
+    </div>
+  );
+}
+
+/* -----------------------------
+   AI Add-ons Panel
+------------------------------ */
+
+function AiAddOnsPanel({
+  budget,
+  setBudget,
+  aiAddons,
+  setAiAddons,
+  onEstimate,
+  onRunEnhancements,
+}: {
+  budget: BudgetState;
+  setBudget: (b: BudgetState) => void;
+  aiAddons: AiAddonFlags;
+  setAiAddons: (f: AiAddonFlags) => void;
+  onEstimate: () => void;
+  onRunEnhancements: () => void;
+}) {
+  return (
+    <div className="grid gap-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            AI Add-ons (Optional “Last 10%”)
+          </CardTitle>
+          <CardDescription>AI is OFF by default. Use only for rationales, clarity rewrites, and polish.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-7 rounded-lg border p-4">
+              <div className="text-sm font-medium">Select AI Enhancements</div>
+              <div className="mt-3 grid gap-3">
+                <ToggleRow
+                  label="Generate rationales (correct + common distractors)"
+                  checked={aiAddons.rationales}
+                  onChange={(v) => setAiAddons({ ...aiAddons, rationales: v })}
+                />
+                <ToggleRow
+                  label="Rewrite stems for clarity (no standard shift)"
+                  checked={aiAddons.rewriteStems}
+                  onChange={(v) => setAiAddons({ ...aiAddons, rewriteStems: v })}
+                />
+                <ToggleRow
+                  label="Improve distractors (same difficulty band)"
+                  checked={aiAddons.improveDistractors}
+                  onChange={(v) => setAiAddons({ ...aiAddons, improveDistractors: v })}
+                />
+                <ToggleRow
+                  label="Teacher explanation"
+                  checked={aiAddons.teacherExplanation}
+                  onChange={(v) => setAiAddons({ ...aiAddons, teacherExplanation: v })}
+                />
+                <ToggleRow
+                  label="Student hint"
+                  checked={aiAddons.studentHint}
+                  onChange={(v) => setAiAddons({ ...aiAddons, studentHint: v })}
+                />
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                TODO: enforce role-based gating (Admin-only) + approval queue for teacher requests.
+              </div>
+            </div>
+
+            <div className="lg:col-span-5">
+              <BudgetMeter budget={budget} onChange={setBudget} />
+              <div className="mt-3 flex items-center justify-end gap-2">
+                <Button variant="outline" onClick={onEstimate} className="gap-2">
+                  <ShieldDollarSign className="h-4 w-4" /> Estimate Cost
+                </Button>
+                <Button onClick={onRunEnhancements} className="gap-2">
+                  <Sparkles className="h-4 w-4" /> Run AI Enhancements
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AiUsageLogSkeleton />
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border bg-muted/10 p-3">
+      <div className="text-sm">{label}</div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function AiUsageLogSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">AI Usage Log (Skeleton)</CardTitle>
+        <CardDescription>Track every AI run for transparency. Export for finance/audit.</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Timestamp</TableHead>
+                <TableHead>Feature</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead className="text-right">Cost</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                <TableCell className="text-sm text-muted-foreground">No entries yet</TableCell>
+                <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                <TableCell className="text-right text-sm text-muted-foreground">—</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+        <div className="mt-3 text-xs text-muted-foreground">
+          TODO: Wire to /api/forge/ai/usage?range=today
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* -----------------------------
+   Budget Meter (Reusable)
+------------------------------ */
+
+function BudgetMeter({
+  budget,
+  onChange,
+}: {
+  budget: BudgetState;
+  onChange: (b: BudgetState) => void;
+}) {
+  const pctDaily = Math.min(100, Math.round((budget.usageTodayUSD / Math.max(0.01, budget.dailyCapUSD)) * 100));
+  const pctAssessment = Math.min(
+    100,
+    Math.round((budget.usageThisAssessmentUSD / Math.max(0.01, budget.perAssessmentCapUSD)) * 100),
+  );
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ShieldDollarSign className="h-4 w-4" />
+          Budget Guardrails
+        </CardTitle>
+        <CardDescription>Hard caps prevent surprise costs.</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <div className="text-sm font-medium">Enable AI spend</div>
+            <div className="text-xs text-muted-foreground">Off by default</div>
+          </div>
+          <Switch
+            checked={budget.enabled}
+            onCheckedChange={(v) => onChange({ ...budget, enabled: Boolean(v) })}
+          />
+        </div>
+
+        <Separator className="my-4" />
+
+        <div className="grid gap-3">
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Daily cap</span>
+              <span className="font-medium">${budget.dailyCapUSD.toFixed(2)}</span>
+            </div>
+            <Input
+              type="number"
+              value={budget.dailyCapUSD}
+              min={0}
+              step={0.5}
+              disabled={!budget.enabled}
+              onChange={(e) => onChange({ ...budget, dailyCapUSD: Number(e.target.value || 0) })}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Per-assessment cap</span>
+              <span className="font-medium">${budget.perAssessmentCapUSD.toFixed(2)}</span>
+            </div>
+            <Input
+              type="number"
+              value={budget.perAssessmentCapUSD}
+              min={0}
+              step={0.25}
+              disabled={!budget.enabled}
+              onChange={(e) => onChange({ ...budget, perAssessmentCapUSD: Number(e.target.value || 0) })}
+            />
+          </div>
+
+          <div className="rounded-lg border bg-muted/10 p-3">
+            <div className="grid gap-3">
+              <div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Usage today</span>
+                  <span className="font-medium">
+                    ${budget.usageTodayUSD.toFixed(2)} / ${budget.dailyCapUSD.toFixed(2)}
+                  </span>
+                </div>
+                <Progress value={pctDaily} className="mt-2" />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">This assessment</span>
+                  <span className="font-medium">
+                    ${budget.usageThisAssessmentUSD.toFixed(2)} / ${budget.perAssessmentCapUSD.toFixed(2)}
+                  </span>
+                </div>
+                <Progress value={pctAssessment} className="mt-2" />
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                TODO: show pre-run estimate + “will this exceed cap?” confirmation dialog.
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* -----------------------------
+   Offline Status (Sidebar)
+------------------------------ */
+
+function OfflineStatusCard({ docs, items }: { docs: UploadDoc[]; items: StagedItem[] }) {
+  const parsedDocs = docs.filter((d) => d.status === "Parsed").length;
+  const parsingDocs = docs.filter((d) => d.status === "Parsing").length;
+  const totalItems = items.length;
+
+  const byStatus = React.useMemo(() => {
+    const counts: Record<ReviewStatus, number> = {
+      "Needs Review": 0,
+      Accepted: 0,
+      Edited: 0,
+      Rejected: 0,
+    };
+    for (const it of items) counts[it.reviewStatus] += 1;
+    return counts;
+  }, [items]);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Offline Builder Status</CardTitle>
+        <CardDescription>Quick snapshot of readiness.</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid gap-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Docs parsed</span>
+            <span className="font-medium">{parsedDocs}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Docs parsing</span>
+            <span className="font-medium">{parsingDocs}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Items staged</span>
+            <span className="font-medium">{totalItems}</span>
+          </div>
+        </div>
+
+        <Separator className="my-3" />
+
+        <div className="grid gap-2">
+          <StatusRow label="Needs Review" value={byStatus["Needs Review"]} variant="outline" icon={<AlertTriangle className="h-4 w-4" />} />
+          <StatusRow label="Accepted" value={byStatus["Accepted"]} variant="default" icon={<CheckCircle2 className="h-4 w-4" />} />
+          <StatusRow label="Edited" value={byStatus["Edited"]} variant="secondary" icon={<Wand2 className="h-4 w-4" />} />
+          <StatusRow label="Rejected" value={byStatus["Rejected"]} variant="destructive" icon={<XCircle className="h-4 w-4" />} />
+        </div>
+
+        <div className="mt-3 text-xs text-muted-foreground">
+          TODO: add “Ready to Build” indicator when accepted+edited exceeds minimum item rules.
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatusRow({
+  label,
+  value,
+  variant,
+  icon,
+}: {
+  label: string;
+  value: number;
+  variant: "default" | "secondary" | "destructive" | "outline";
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border bg-muted/10 p-2">
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground">{icon}</span>
+        <span className="text-sm">{label}</span>
+      </div>
+      <Badge variant={variant}>{value}</Badge>
+    </div>
+  );
+}

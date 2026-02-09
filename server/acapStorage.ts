@@ -8,6 +8,7 @@ import {
   acapImpactRuns, acapImpactLevers, acapGenomeTraits, acapGenomeEvents, acapGenomeRecommendations,
   acapTutorAdaptations, acapAccessCodes,
   acapForgeAssessments, acapForgeVersions, acapForgeAttemptEvents, acapForgeOfflineSources,
+  acapForgeRulePacks, acapForgeRules, acapForgeAiUsageLog,
   type AcapStandard, type AcapBlueprint, type AcapPassage, type AcapItem,
   type AcapAssessment, type AcapAssignment, type AcapAttempt, type AcapItemResponse,
   type AcapMasteryTracking, type AcapGrowthSnapshot, type AcapBootcampSession, type AcapAuditLog,
@@ -15,6 +16,7 @@ import {
   type AcapImpactRun, type AcapImpactLever, type AcapGenomeTrait, type AcapGenomeEvent, type AcapGenomeRecommendation,
   type AcapTutorAdaptation, type AcapAccessCode,
   type AcapForgeAssessment, type AcapForgeVersion, type AcapForgeAttemptEvent, type AcapForgeOfflineSource,
+  type AcapForgeRulePack, type AcapForgeRule, type AcapForgeAiUsageLog,
   type InsertAcapStandard, type InsertAcapBlueprint, type InsertAcapPassage, type InsertAcapItem,
   type InsertAcapAssessment, type InsertAcapAssignment, type InsertAcapAttempt, type InsertAcapItemResponse,
   type InsertAcapMasteryTracking, type InsertAcapGrowthSnapshot, type InsertAcapBootcampSession, type InsertAcapAuditLog,
@@ -22,6 +24,7 @@ import {
   type InsertAcapImpactRun, type InsertAcapImpactLever, type InsertAcapGenomeTrait, type InsertAcapGenomeEvent, type InsertAcapGenomeRecommendation,
   type InsertAcapTutorAdaptation, type InsertAcapAccessCode,
   type InsertAcapForgeAssessment, type InsertAcapForgeVersion, type InsertAcapForgeAttemptEvent, type InsertAcapForgeOfflineSource,
+  type InsertAcapForgeRulePack, type InsertAcapForgeRule, type InsertAcapForgeAiUsageLog,
 } from "@shared/schema";
 
 export const acapStorage = {
@@ -574,5 +577,65 @@ export const acapStorage = {
       return { itemId: item.id, stem: (item.stem as any)?.text || '', standardId: item.standardId, dokLevel: item.dokLevel, totalResponses: total, correctCount: correct, accuracy: total > 0 ? Math.round((correct / total) * 100) : 0 };
     });
     return { assessment, versions, items, attempts: forgeAttempts, responses: allResponses, integrityFlags, itemAnalysis, totalStudents: forgeAttempts.length, averageScore: forgeAttempts.length > 0 ? Math.round(forgeAttempts.reduce((s, a) => s + (a.percentCorrect || 0), 0) / forgeAttempts.length) : 0 };
+  },
+
+  // ===== Forge Rule Packs =====
+  async getForgeRulePacks(): Promise<AcapForgeRulePack[]> {
+    return db.select().from(acapForgeRulePacks).orderBy(desc(acapForgeRulePacks.updatedAt));
+  },
+  async createForgeRulePack(data: InsertAcapForgeRulePack): Promise<AcapForgeRulePack> {
+    const [p] = await db.insert(acapForgeRulePacks).values(data).returning();
+    return p;
+  },
+  async updateForgeRulePack(id: number, data: Partial<InsertAcapForgeRulePack>): Promise<AcapForgeRulePack> {
+    const [p] = await db.update(acapForgeRulePacks).set({ ...data, updatedAt: new Date() }).where(eq(acapForgeRulePacks.id, id)).returning();
+    return p;
+  },
+  async deleteForgeRulePack(id: number): Promise<void> {
+    await db.delete(acapForgeRules).where(eq(acapForgeRules.rulePackId, id));
+    await db.delete(acapForgeRulePacks).where(eq(acapForgeRulePacks.id, id));
+  },
+
+  // ===== Forge Rules =====
+  async getForgeRules(rulePackId: number): Promise<AcapForgeRule[]> {
+    return db.select().from(acapForgeRules).where(eq(acapForgeRules.rulePackId, rulePackId)).orderBy(acapForgeRules.id);
+  },
+  async createForgeRule(data: InsertAcapForgeRule): Promise<AcapForgeRule> {
+    const [r] = await db.insert(acapForgeRules).values(data).returning();
+    return r;
+  },
+  async updateForgeRule(id: number, data: Partial<InsertAcapForgeRule>): Promise<AcapForgeRule> {
+    const [r] = await db.update(acapForgeRules).set(data).where(eq(acapForgeRules.id, id)).returning();
+    return r;
+  },
+  async deleteForgeRule(id: number): Promise<void> {
+    await db.delete(acapForgeRules).where(eq(acapForgeRules.id, id));
+  },
+  async bulkUpsertForgeRules(rulePackId: number, rules: InsertAcapForgeRule[]): Promise<AcapForgeRule[]> {
+    await db.delete(acapForgeRules).where(eq(acapForgeRules.rulePackId, rulePackId));
+    if (rules.length === 0) return [];
+    const inserted = await db.insert(acapForgeRules).values(rules.map(r => ({ ...r, rulePackId }))).returning();
+    return inserted;
+  },
+
+  // ===== Forge AI Usage Log =====
+  async getForgeAiUsageLog(range?: string): Promise<AcapForgeAiUsageLog[]> {
+    if (range === "today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return db.select().from(acapForgeAiUsageLog).where(sql`${acapForgeAiUsageLog.createdAt} >= ${today}`).orderBy(desc(acapForgeAiUsageLog.createdAt));
+    }
+    return db.select().from(acapForgeAiUsageLog).orderBy(desc(acapForgeAiUsageLog.createdAt));
+  },
+  async createForgeAiUsageEntry(data: InsertAcapForgeAiUsageLog): Promise<AcapForgeAiUsageLog> {
+    const [e] = await db.insert(acapForgeAiUsageLog).values(data).returning();
+    return e;
+  },
+  async getForgeAiUsageTotals(): Promise<{ todayUsd: number; totalUsd: number }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayResult = await db.select({ total: sql<number>`COALESCE(SUM(${acapForgeAiUsageLog.costUsd}), 0)` }).from(acapForgeAiUsageLog).where(sql`${acapForgeAiUsageLog.createdAt} >= ${today}`);
+    const allResult = await db.select({ total: sql<number>`COALESCE(SUM(${acapForgeAiUsageLog.costUsd}), 0)` }).from(acapForgeAiUsageLog);
+    return { todayUsd: Number(todayResult[0]?.total || 0), totalUsd: Number(allResult[0]?.total || 0) };
   },
 };

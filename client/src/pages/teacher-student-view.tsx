@@ -327,6 +327,19 @@ export default function TeacherStudentView() {
                 Help Quests
               </Button>
               
+              {/* ACAP Skills Button */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
+                onClick={() => {
+                  window.open(`/student-acap?teacherView=true&studentId=${params?.studentId}`, '_blank')
+                }}
+              >
+                <Brain className="h-4 w-4 mr-1" />
+                ACAP Skills
+              </Button>
+              
               {/* SEL Button */}
               <Button 
                 variant="ghost" 

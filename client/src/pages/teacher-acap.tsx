@@ -35,7 +35,15 @@ export default function TeacherAcap() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
-  const teacherId = localStorage.getItem("teacherAuthId") || "";
+  const getTeacherId = () => {
+    const authId = localStorage.getItem("teacherAuthId");
+    if (authId) return authId;
+    try {
+      const data = JSON.parse(localStorage.getItem("teacherData") || "{}");
+      return data?.id || data?.teacherId || "";
+    } catch { return ""; }
+  };
+  const teacherId = getTeacherId();
   const teacherName = localStorage.getItem("teacherName") || "Teacher";
 
   const { data: teacherInfo } = useQuery<TeacherInfo>({
@@ -47,9 +55,12 @@ export default function TeacherAcap() {
       });
       if (!res.ok) throw new Error("Not authenticated");
       const data = await res.json();
+      if (data.teacher?.id && !localStorage.getItem("teacherAuthId")) {
+        localStorage.setItem("teacherAuthId", String(data.teacher.id));
+      }
       return data.teacher;
     },
-    enabled: !!teacherId,
+    enabled: true,
   });
 
   const gradeNumber = teacherInfo?.canSeeGrades?.[0] || extractGradeNumber(teacherInfo?.gradeRole || "");
@@ -315,6 +326,7 @@ function AssignmentsTab({ teacherId, gradeNumber }: { teacherId: string; gradeNu
   const [assessmentType, setAssessmentType] = useState("daily");
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [selectedStandardForAssessment, setSelectedStandardForAssessment] = useState("");
+  const [assessmentSubject, setAssessmentSubject] = useState("ELA");
 
   const createAssessmentMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/acap/assessments", data),
@@ -348,7 +360,7 @@ function AssignmentsTab({ teacherId, gradeNumber }: { teacherId: string; gradeNu
 
   const approvedItems = (items as any[])?.filter((i: any) => i.reviewStatus === "approved") || [];
 
-  const standardItems = selectedStandardForAssessment
+  const standardItems = selectedStandardForAssessment && selectedStandardForAssessment !== "all"
     ? approvedItems.filter((i: any) => String(i.standardId) === selectedStandardForAssessment)
     : approvedItems;
 
@@ -392,17 +404,38 @@ function AssignmentsTab({ teacherId, gradeNumber }: { teacherId: string; gradeNu
                 </Select>
               </div>
             </div>
-            <div>
-              <Label>Filter Items by Standard (Optional)</Label>
-              <Select value={selectedStandardForAssessment} onValueChange={setSelectedStandardForAssessment}>
-                <SelectTrigger><SelectValue placeholder="All approved items..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Standards</SelectItem>
-                  {(standards as any[])?.map((s: any) => (
-                    <SelectItem key={s.id} value={String(s.id)}>{s.code} - {s.domain}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Subject</Label>
+                <Select value={assessmentSubject} onValueChange={setAssessmentSubject}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ELA">ELA</SelectItem>
+                    <SelectItem value="MATH">Math</SelectItem>
+                    <SelectItem value="SCI">Science</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Filter by Standard (auto-selects matching items)</Label>
+                <Select value={selectedStandardForAssessment} onValueChange={(val) => {
+                  setSelectedStandardForAssessment(val);
+                  if (val && val !== "all") {
+                    const matching = approvedItems.filter((i: any) => String(i.standardId) === val).map((i: any) => i.id);
+                    setSelectedItems(matching);
+                  } else {
+                    setSelectedItems([]);
+                  }
+                }}>
+                  <SelectTrigger><SelectValue placeholder="All approved items..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Standards</SelectItem>
+                    {(standards as any[])?.map((s: any) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.code} - {s.domain}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <Label>Select Items to Include ({selectedItems.length} selected)</Label>
@@ -436,7 +469,7 @@ function AssignmentsTab({ teacherId, gradeNumber }: { teacherId: string; gradeNu
               onClick={() => createAssessmentMutation.mutate({
                 title: assessmentTitle,
                 gradeLevel: gradeNumber,
-                subject: "ELA",
+                subject: assessmentSubject,
                 assessmentType,
                 itemIds: selectedItems,
                 totalPoints: selectedItems.length * 10,

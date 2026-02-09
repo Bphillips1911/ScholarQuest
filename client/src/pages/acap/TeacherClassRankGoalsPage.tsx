@@ -36,7 +36,10 @@ export default function TeacherClassRankGoalsPage() {
 
   const recomputeMutation = useMutation({
     mutationFn: async () => {
-      const teacherId = localStorage.getItem("teacherAuthId") || "";
+      let teacherId = localStorage.getItem("teacherAuthId") || "";
+      if (!teacherId) {
+        try { const d = JSON.parse(localStorage.getItem("teacherData") || "{}"); teacherId = d?.id || d?.teacherId || ""; } catch {}
+      }
       const res = await apiRequest("POST", "/api/acap/rankings/recompute", { subject, teacherId });
       return res.json();
     },

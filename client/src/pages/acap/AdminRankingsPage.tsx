@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Download, Settings2, Sparkles, Loader2 } from "lucide-react";
 import RankSettingsModal from "@/components/acap/admin/RankSettingsModal";
-import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 
 type RankingRow = {
   id: string;
@@ -76,7 +75,7 @@ export default function AdminRankingsPage() {
       <div className="border-b bg-gradient-to-r from-slate-900 to-indigo-900 rounded-xl p-6 text-white">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <img src={bhsaCrestPath} alt="BHSA" className="h-10 w-10 object-contain" />
+            <img src="/branding/educap-logo.png" alt="EduCAP" className="h-10 w-auto object-contain" />
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Admin EduCAP Rankings</h1>
               <p className="text-sm text-slate-300">

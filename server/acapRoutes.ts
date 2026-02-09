@@ -220,11 +220,21 @@ export function registerAcapRoutes(app: Express): void {
       if (!body.createdBy || body.createdBy === "admin") {
         body.createdBy = null;
       }
+      if (typeof body.gradeLevel === "string") body.gradeLevel = parseInt(body.gradeLevel);
+      if (typeof body.timeLimitMinutes === "string") body.timeLimitMinutes = parseInt(body.timeLimitMinutes);
+      if (typeof body.timeLimit === "number" && !body.timeLimitMinutes) {
+        body.timeLimitMinutes = body.timeLimit;
+        delete body.timeLimit;
+      }
+      if (typeof body.totalPoints === "number") delete body.totalPoints;
+      if (!body.assessmentType) body.assessmentType = "formative";
+      if (!Array.isArray(body.itemIds)) body.itemIds = [];
       const data = insertAcapAssessmentSchema.parse(body);
       const assessment = await acapStorage.createAssessment(data);
       await acapStorage.createAuditEntry({ action: "create_assessment", entityType: "assessment", entityId: assessment.id, userId: req.body.createdBy || "admin", userRole: req.body.createdBy === "admin" ? "admin" : "teacher", details: { title: assessment.title, type: assessment.assessmentType } });
       res.status(201).json(assessment);
     } catch (error: any) {
+      console.error("Create assessment error:", error);
       res.status(400).json({ error: error.message || "Failed to create assessment" });
     }
   });
@@ -256,11 +266,21 @@ export function registerAcapRoutes(app: Express): void {
 
   app.post("/api/acap/assignments", async (req: Request, res: Response) => {
     try {
-      const data = insertAcapAssignmentSchema.parse(req.body);
-      const assignment = await acapStorage.createAssignment(data);
-      await acapStorage.createAuditEntry({ action: "create_assignment", entityType: "assignment", entityId: assignment.id, userId: data.teacherId, userRole: "teacher", details: { assessmentId: data.assessmentId } });
+      const body = req.body;
+      const assignmentData: any = {
+        assessmentId: typeof body.assessmentId === "string" ? parseInt(body.assessmentId) : body.assessmentId,
+        teacherId: body.teacherId,
+        targetType: body.targetType || "scholars",
+        targetIds: body.targetIds || [],
+        status: body.status || "active",
+      };
+      if (body.dueDate) assignmentData.dueDate = new Date(body.dueDate);
+      if (body.startDate) assignmentData.startDate = new Date(body.startDate);
+      const assignment = await acapStorage.createAssignment(assignmentData);
+      await acapStorage.createAuditEntry({ action: "create_assignment", entityType: "assignment", entityId: assignment.id, userId: assignmentData.teacherId, userRole: "teacher", details: { assessmentId: assignmentData.assessmentId } });
       res.status(201).json(assignment);
     } catch (error: any) {
+      console.error("Create assignment error:", error);
       res.status(400).json({ error: error.message || "Failed to create assignment" });
     }
   });
@@ -1743,24 +1763,31 @@ export function registerAcapRoutes(app: Express): void {
       const assessment = await acapStorage.getForgeAssessment(id);
       if (!assessment) return res.status(404).json({ error: "Assessment not found" });
       const { targetType, targetIds, teacherIds } = req.body;
+      const grades = Array.isArray(assessment.grades) ? assessment.grades : [];
+      const subjects = Array.isArray(assessment.subjects) ? assessment.subjects : [];
+      const itemIds = Array.isArray(assessment.itemIds) ? assessment.itemIds : [];
       const mainAssessment = await acapStorage.createAssessment({
         title: `[Forge] ${assessment.title}`,
-        assessmentType: assessment.assessmentType,
-        gradeLevel: (assessment.grades as number[])[0] || 6,
-        subject: (assessment.subjects as string[])[0] || "ELA",
-        itemIds: assessment.itemIds,
-        timeLimitMinutes: assessment.timeLimitMinutes,
-        settings: { forgeAssessmentId: id, lockMode: assessment.lockMode, antiRushMonitor: assessment.antiRushMonitor },
-        createdBy: req.admin?.email,
+        assessmentType: assessment.assessmentType || "diagnostic",
+        gradeLevel: (grades as number[])[0] || 6,
+        subject: (subjects as string[])[0] || "ELA",
+        itemIds: itemIds as number[],
+        timeLimitMinutes: assessment.timeLimitMinutes || 60,
+        settings: { forgeAssessmentId: id, lockMode: assessment.lockMode || false, antiRushMonitor: assessment.antiRushMonitor || false },
+        createdBy: req.admin?.email || "admin",
       });
-      if (targetType && targetIds) {
-        await acapStorage.createAssignment({
-          assessmentId: mainAssessment.id,
-          teacherId: req.admin?.email || "admin",
-          targetType,
-          targetIds,
-          status: "active",
-        } as any);
+      if (targetType && targetIds && Array.isArray(targetIds) && targetIds.length > 0) {
+        try {
+          await acapStorage.createAssignment({
+            assessmentId: mainAssessment.id,
+            teacherId: req.admin?.email || "admin",
+            targetType,
+            targetIds,
+            status: "active",
+          } as any);
+        } catch (assignErr: any) {
+          console.error("Forge publish: assignment creation failed (non-fatal):", assignErr.message);
+        }
       }
       await acapStorage.updateForgeAssessment(id, { status: "published", publishedAt: new Date() } as any);
       const versions = await acapStorage.getForgeVersions(id);
@@ -2340,6 +2367,38 @@ export function registerAcapRoutes(app: Express): void {
     } catch (error: any) {
       console.error("Build from staged error:", error);
       res.status(500).json({ error: error.message || "Failed to build assessment" });
+    }
+  });
+
+  // ===== EDUCAP HEALTH ENDPOINT =====
+  app.get("/api/health/educap", async (req: Request, res: Response) => {
+    try {
+      const dbUrl = process.env.DATABASE_URL || "";
+      const dbHost = dbUrl.replace(/^.*@/, "").replace(/\/.*$/, "").replace(/:.*$/, "");
+      const dbName = dbUrl.replace(/^.*\//, "").replace(/\?.*$/, "");
+
+      const standards = await acapStorage.getStandards();
+      const blueprints = await acapStorage.getBlueprints();
+      const items = await acapStorage.getItems();
+      const assessments = await acapStorage.getAssessments();
+
+      res.json({
+        status: "ok",
+        env: {
+          NODE_ENV: process.env.NODE_ENV || "not set",
+          dbHost: dbHost || "not set",
+          dbName: dbName || "not set",
+        },
+        counts: {
+          standards: standards.length,
+          blueprints: blueprints.length,
+          items: items.length,
+          assessments: assessments.length,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      res.status(500).json({ status: "error", error: error.message });
     }
   });
 

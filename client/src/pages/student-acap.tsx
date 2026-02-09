@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import StudentRankGoalsPanel from "@/components/acap/student/StudentRankGoalsPanel";
 import AccessCodeEntry from "@/components/acap/student/AccessCodeEntry";
-import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 import { PRODUCT_NAME_PLAIN, TAGLINE } from "@/lib/educapBrand";
 

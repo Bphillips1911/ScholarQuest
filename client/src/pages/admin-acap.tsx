@@ -24,7 +24,6 @@ import StudentGenomeTab from "@/components/admin/StudentGenomeTab";
 import AdminRankingsPage from "@/pages/acap/AdminRankingsPage";
 import ForgeBuilderTab from "@/components/acap/admin/ForgeBuilderTab";
 import ForgeCostControlsTab from "@/components/acap/admin/ForgeCostControlsTab";
-import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 import { Hammer, DollarSign } from "lucide-react";
 import { ADMIN_PORTAL, TAGLINE, DISCLAIMER_ADMIN } from "@/lib/educapBrand";

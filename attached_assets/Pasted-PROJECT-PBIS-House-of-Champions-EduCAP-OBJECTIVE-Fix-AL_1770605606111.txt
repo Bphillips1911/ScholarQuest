@@ -1,0 +1,116 @@
+PROJECT: PBIS House of Champions — EduCAP™
+
+OBJECTIVE:
+Fix ALL prod vs dev mismatches and make EduCAP functional end-to-end in PRODUCTION:
+- Standards dropdowns populate for Teacher/Admin/Forge/AI Settings
+- Blueprints can be assigned and create real assessments with real items
+- Teacher assignment creation works (no “failed to create assignment”)
+- Access codes generate + validate + launch locked assessment player
+- Forge Upload works for PDF/DOCX + Build Test + Differentiate + Publish + View
+- Impact Simulator, Student Genome, Rankings all work with realtime data wiring
+- Replace all ACAP naming with EduCAP branding (logo + “Master the Standards. Earn the Growth.” where appropriate)
+- Fix all misspellings, spacing, and any \u2022 \u2122 display artifacts (escape issues)
+- Use real teacher/student data already in PBIS House of Champions (no mock data), but allow teachers to add students manually too.
+
+NON-NEGOTIABLE ACCEPTANCE TESTS (must pass in PRODUCTION URL after republish):
+1) Teacher → Question Bank: Standard dropdown shows standards for selected grade+subject; Count options are exactly [3,5,10,15,20,25,30].
+2) Teacher → Assignments: selecting standards filter works; creating assignment succeeds; assigned students see it.
+3) Teacher → Access Codes: generate baseline/midpoint/final codes per student; roster lookup/regenerate works; student can login OR enter code (one required, not both).
+4) Student → EduCAP tab is visible from main nav (next to SEL/bell); shows student’s real name; Mastery Map shows standards; Boot Camp + My Growth + Rank & Goals all functional.
+5) Admin → Blueprints & Standards show; AI Settings standard dropdown works; Blueprint “Assign to Class” actually creates an assessment and makes it available to teachers.
+6) Admin → Forge: Upload accepts PDF/DOCX; parsing pipeline queues; Build Test screen not blank; Differentiate generates versions; Publish works; View works.
+7) Admin → Impact Simulator: Run Simulator works (no disabled blank button); Create Action Plan opens + persists.
+8) Admin → Student Genome: replace Houses selector with Teacher selector from real staff data; all Tutor Adaptations toggles work; remove mystery blank button (define it or remove it).
+9) All pages: correct EduCAP logo placement + tagline where appropriate; remove any stray /u2022 or \uXXXX rendering; fix spacing.
+
+PHASE A — DIAGNOSE PROD FAILURES (DO FIRST):
+A1) Add server-side request logging + error boundary logging for all EduCAP endpoints:
+- Log request path, userId, role, schoolId/tenantId, status code, and error message.
+- In client, log failed fetches with endpoint + response body.
+A2) From production, open browser devtools and confirm whether standards endpoints return:
+- 200 + non-empty
+- or 401/403 (auth/cookie)
+- or 500 (server)
+A3) Add a protected /api/health/educap endpoint that reports:
+- NODE_ENV, APP_ENV, DATABASE_URL host/db name (redact password),
+- schema version/migration status,
+- counts: standards, blueprints, items, users
+- current tenant/school count
+This is to confirm prod DB is populated and tenant scoping is correct.
+
+PHASE B — FIX ENV / DB PARITY:
+B1) Ensure PRODUCTION uses the same database (or replicate seed) as dev.
+- If DATABASE_URL differs, either point prod to correct DB or seed prod.
+B2) Ensure migrations run on deploy/repub (Drizzle/Prisma/etc).
+- Add a “postdeploy” or server-start migration check that fails loud if schema mismatch.
+B3) Fix tenant scoping:
+- All standards queries must filter by (schoolId/tenantId, grade, subject).
+- Ensure production users have correct schoolId/tenantId assigned.
+B4) Fix auth cookies in production:
+- If using secure cookies, set SameSite=None; Secure=true only under https.
+- Ensure API calls include credentials (fetch { credentials: "include" }).
+- Ensure CORS allows prod origin if separate.
+
+PHASE C — NORMALIZE API CONTRACTS (REALTIME):
+C1) Create/verify these endpoints (all must work in prod):
+- GET /api/educap/standards?grade=&subject=
+- GET /api/educap/blueprints
+- POST /api/educap/blueprints/:id/assign (creates assessment + assigns to teacher/class)
+- GET /api/educap/assessments?scope=teacher|student|admin
+- POST /api/educap/assignments (teacher assigns to students)
+- POST /api/educap/access-codes (generate per student + window baseline/mid/final)
+- POST /api/educap/access-codes/validate (student enters code to launch)
+- GET /api/educap/items?standardId=&limit=
+- POST /api/educap/items/generate (if AI enabled) — must gracefully disable in prod if no key
+- POST /api/educap/forge/upload (multipart) + GET /api/educap/forge/sources + POST /forge/build + POST /forge/differentiate + POST /forge/publish + GET /forge/:id
+- GET /api/educap/rankings (admin/teacher/student views; role-restricted)
+- GET /api/educap/impact-simulator/run + POST /impact-simulator/action-plan
+- GET /api/educap/genome/teachers + GET /genome/teacher/:teacherId/students + PATCH /genome/adaptations
+C2) Make all UI tabs clickable and wired to these endpoints with TanStack Query (invalidate/refetch on mutations).
+C3) No mock data in production paths. If empty, show “No data yet” with a “Fix data source” admin hint.
+
+PHASE D — FIX FORGE UPLOAD + BUILD TEST:
+D1) Implement file upload:
+- Accept PDF, DOCX
+- Store to object storage or local disk (Replit) with a stable path
+- Persist metadata row (source table)
+- Return parse job id
+D2) Implement parse pipeline (rules-based):
+- Extract candidate items (simple regex-based for now) into staging table
+- Auto-tag standards using rules (keyword→standard map)
+D3) Build Test page:
+- Shows staged items, allows selection, creates assessment
+D4) Differentiate:
+- Create versions by shuffling order + option order + item pools per blueprint constraints
+D5) Publish:
+- Locks assessment versions + generates access codes for assigned students
+
+PHASE E — EDUCAP RENAMING + TAGLINE:
+E1) Replace all user-facing “ACAP” strings with “EduCAP” EXCEPT in legacy internal ids.
+- Nav labels, page titles, headings, descriptions, buttons.
+E2) Tagline:
+- Add “Master the Standards. Earn the Growth.” in these places:
+  - EduCAP Adaptive Skills header (Teacher/Student)
+  - EduCAP Admin Portal header
+  - EduCAP Forge header
+Do not spam it inside tables/forms.
+E3) Add EduCAP logo in headers where logos already exist (no layout shifts).
+E4) Remove/avoid rendering literal escape sequences:
+- Search and fix any strings containing “\u2022”, “\u2122”, “/u2022”.
+- Ensure ™ appears either as actual character or via HTML entity, not escaped.
+
+PHASE F — UI BUGS FROM SCREENSHOTS:
+F1) Student Genome: remove blank button; replace Houses tab with Teachers list.
+F2) Impact Simulator: fix disabled grey button next to Run Simulator; ensure it has label (e.g., “Scenario” or “Notes”) or remove it.
+F3) Fix spacing/overlaps on Rank & Goals and Admin Rankings.
+F4) Ensure user name displays in EduCAP pages:
+- Teacher header shows teacher name
+- Student header shows student name
+- Admin header shows admin name
+
+DELIVERABLES:
+- Code changes committed across server + client
+- A small “PROD DEBUG” admin-only page showing health + counts + last 20 EduCAP errors
+- A written checklist of the acceptance tests with the exact URLs to verify
+
+DO NOT STOP UNTIL ALL ACCEPTANCE TESTS PASS IN PRODUCTION.

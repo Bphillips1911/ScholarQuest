@@ -15,7 +15,6 @@ import {
   AlertTriangle, Wand2, ArrowRight, Search, Users, GraduationCap,
   Target, Zap, Activity, Star
 } from "lucide-react";
-import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 
 type TraitKey = "REASONING_STAMINA" | "MULTISTEP_REASONING" | "VOCAB_TOLERANCE" | "EVIDENCE_JUSTIFICATION" | "RESPONSE_LATENCY" | "ERROR_RECOVERY";
 
@@ -182,7 +181,7 @@ export default function StudentGenomeTab() {
       <div className="border-b bg-gradient-to-r from-slate-900 to-emerald-900 rounded-xl p-6 text-white">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <img src={bhsaCrestPath} alt="BHSA" className="h-10 w-10 object-contain" />
+            <img src="/branding/educap-logo.png" alt="EduCAP" className="h-10 w-auto object-contain" />
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
               <Dna className="h-5 w-5 text-white" />
             </div>

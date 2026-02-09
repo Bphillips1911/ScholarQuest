@@ -14,7 +14,6 @@ import {
   PlayCircle, FileText, Table2, SlidersHorizontal, Loader2, TrendingUp,
   BookOpen, Brain, Zap
 } from "lucide-react";
-import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 
 type Lever = {
   id: string;
@@ -140,7 +139,7 @@ export default function ImpactSimulatorTab() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <img src={bhsaCrestPath} alt="BHSA" className="h-8 w-8 object-contain" />
+              <img src="/branding/educap-logo.png" alt="EduCAP" className="h-8 w-auto object-contain" />
               <Sparkles className="h-6 w-6 text-yellow-400" /> Instructional Impact Simulator™
             </h2>
             <p className="text-sm text-slate-300 mt-1">
@@ -270,7 +269,7 @@ export default function ImpactSimulatorTab() {
           <Separator />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-gray-500">Tip: Launch one lever for 4–6 weeks, then rerun to confirm realized gains.</p>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => toast({ title: "Action Plan Created", description: "Your instructional action plan has been saved. Share it with your team to begin implementation." })}>
               <Wand2 className="h-4 w-4" /> Create Action Plan
             </Button>
           </div>

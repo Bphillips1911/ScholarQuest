@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import TeacherClassRankGoalsPage from "@/pages/acap/TeacherClassRankGoalsPage";
 import AccessCodesManager from "@/components/acap/teacher/AccessCodesManager";
-import bhsaCrestPath from "@assets/BHSA_Crest_1770514411089.jpg";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 import { PRODUCT_NAME_PLAIN, TAGLINE } from "@/lib/educapBrand";
 

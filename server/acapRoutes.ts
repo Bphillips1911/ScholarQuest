@@ -10,6 +10,7 @@ import {
   insertAcapProjectionRunSchema, insertAcapSchoolwideAssessmentSchema,
   insertAcapForgeAssessmentSchema,
   acapItems,
+  acapStandards,
 } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -1023,9 +1024,12 @@ export function registerAcapRoutes(app: Express): void {
       const targetItemCount = Math.min(Math.max(itemCount || 50, 25), 100);
 
       const allItems = await db.select().from(acapItems).where(eq(acapItems.reviewStatus, "approved"));
+      const allStandards = await db.select().from(acapStandards);
+      const standardMap = new Map(allStandards.map(s => [s.id, s]));
       const matchingItems = allItems.filter(item => {
-        const gradeMatch = !gradeLevels || gradeLevels.length === 0 || gradeLevels.includes(item.gradeLevel);
-        const subjectMatch = !subject || item.subject?.toLowerCase() === subject.toLowerCase();
+        const standard = standardMap.get(item.standardId);
+        const gradeMatch = !gradeLevels || gradeLevels.length === 0 || (standard && gradeLevels.includes(standard.gradeLevel));
+        const subjectMatch = !subject || (standard && standard.domain?.toLowerCase().includes(subject.toLowerCase()));
         return gradeMatch && subjectMatch;
       });
 

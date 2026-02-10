@@ -1045,7 +1045,7 @@ export function registerAcapRoutes(app: Express): void {
         itemIds: selectedItemIds,
         timeLimitMinutes: 60,
         isActive: true,
-        createdBy: createdBy || "admin",
+        createdBy: (!createdBy || createdBy === "admin") ? null : createdBy,
       });
 
       const schoolwideAssessment = await acapStorage.createSchoolwideAssessment({

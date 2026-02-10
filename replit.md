@@ -78,6 +78,17 @@ Preferred communication style: Simple, everyday language.
     - Types: client/src/lib/acap/types.ts, API stubs: client/src/lib/acap/api.ts
     - Routes: /teacher/acap/rank-goals, /admin/acap/rankings (standalone), embedded as tabs in student-acap, teacher-acap, admin-acap
   - Files: server/acapRoutes.ts, server/acapStorage.ts, server/services/acapAiService.ts, client/src/pages/teacher-acap.tsx, student-acap.tsx, admin-acap.tsx, client/src/components/admin/ProjectedAcapScoreTab.tsx, client/src/components/admin/ImpactSimulatorTab.tsx, client/src/components/admin/StudentGenomeTab.tsx, client/src/components/acap/student/StudentRankGoalsPanel.tsx, client/src/components/acap/student/AccessCodeEntry.tsx, client/src/components/acap/teacher/GoalReviewQueue.tsx, client/src/components/acap/teacher/AccessCodesManager.tsx, client/src/pages/acap/TeacherClassRankGoalsPage.tsx, client/src/pages/acap/AdminRankingsPage.tsx, client/src/components/acap/admin/RankSettingsModal.tsx, client/src/components/acap/shared/RingKpi.tsx, client/src/hooks/useAcapWebSocket.ts
+- **EduCAP InsightStack Analytics Dashboards**: Comprehensive assessment analytics system with teacher and admin views. Features:
+  - 5 database tables: assessment_windows, insight_student_results, insight_standard_mastery, insight_projections, insight_events
+  - Idempotent seed system generating 3 assessment windows (Baseline/Midpoint/Final), 124 student results, 458 standard mastery records
+  - Teacher Analytics Dashboard: KPI cards (Proficiency/Growth/Off-Track/Leverage), 5x5 Movement Map, Growth/Projections/Standards/Students tabs, Student Drilldown Drawer
+  - Admin Analytics Dashboard: Grade Ladder table, Teacher Impact table, grade filtering, Recompute Projections, all teacher views
+  - Admin Prod Debug page: database counts, data completeness diagnostics, API quick links
+  - Server-side role-based scoping: Teachers filtered by gradeRole, Admins see all grades
+  - Compare Mode: From/To window dropdowns for cross-window analysis
+  - Sigmoid projection model with velocity calculation and probability computation
+  - Routes: /teacher-analytics, /admin-analytics, /admin/prod-debug/educap-analytics
+  - Files: server/insightRoutes.ts, server/seed-insightstack.ts, client/src/pages/teacher-analytics.tsx, client/src/pages/admin-analytics.tsx, client/src/pages/admin-prod-debug.tsx
 
 # External Dependencies
 

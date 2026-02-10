@@ -1643,6 +1643,15 @@ export default function TeacherDashboard() {
               <span className="sm:hidden">EduCAP</span>
             </button>
             <button
+              onClick={() => setLocation('/educap/analytics')}
+              className="px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+              data-testid="tab-analytics"
+            >
+              <Target className="h-4 w-4" />
+              <span className="hidden sm:inline">Analytics</span>
+              <span className="sm:hidden">Analytics</span>
+            </button>
+            <button
               onClick={() => setActiveTab('student-export')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'student-export'

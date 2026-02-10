@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { acapStandards, acapBlueprints, acapItems, acapAssessments, acapAssignments, scholars, teacherAuth } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
+import { seedInsightStack } from "./seed-insightstack";
 
 export async function seedEducapData(): Promise<void> {
   console.log("EDUCAP SEED: Checking EduCAP data...");
@@ -21,6 +22,7 @@ export async function seedEducapData(): Promise<void> {
         await seedAssignments();
       }
       console.log("EDUCAP SEED: All data present. Verified assessments and assignments.");
+      await seedInsightStack();
       return;
     }
 
@@ -48,6 +50,8 @@ export async function seedEducapData(): Promise<void> {
     const finalAssessments = await db.select({ id: acapAssessments.id }).from(acapAssessments);
     const finalAssignments = await db.select({ id: acapAssignments.id }).from(acapAssignments);
     console.log(`EDUCAP SEED: Final counts - Standards: ${finalStandards.length}, Blueprints: ${finalBlueprints.length}, Items: ${finalItems.length}, Assessments: ${finalAssessments.length}, Assignments: ${finalAssignments.length}`);
+
+    await seedInsightStack();
   } catch (error: any) {
     console.error("EDUCAP SEED: Error during seeding:", error.message);
   }

@@ -1,0 +1,297 @@
+PROJECT: PBIS House of Champions → EduCAP
+FEATURE: Build EduCAP InsightStack™ Analytics Dashboards (Teacher + Admin) with Compare Mode
+PRIORITY: Must work identically in DEV and PRODUCTION. No mock data in production paths.
+
+========================
+0) NON-NEGOTIABLE RULES
+========================
+- Data must be tenant-scoped by schoolId/tenantId (resolved from authenticated user server-side).
+- Teacher MUST only see their grade level(s) + roster students. Enforce server-side (NOT UI-only).
+- Admin can see the whole school and drill down grade → teacher → student.
+- All client fetches MUST include credentials and handle errors with logging.
+- No blank screens. Empty states must show “No data yet” + admin hint with link to PROD DEBUG.
+- Do not change existing EduCAP features unless needed; integrate cleanly.
+
+========================
+1) NAV + ROUTES (LOCKED)
+========================
+Teacher:
+- Add EduCAP nav item: “Analytics”
+- Route: /educap/analytics
+
+Admin:
+- Add EduCAP Admin Portal nav item: “Analytics”
+- Route: /admin/educap/analytics
+
+Admin-only debug:
+- Route: /admin/prod-debug/educap-analytics
+
+========================
+2) UI STRUCTURE (LOCKED)
+========================
+Top Controls Bar (always visible):
+- Subject Toggle: ELA | Math
+- Grade Selector:
+  - Teacher: hidden (auto grade scope)
+  - Admin: All Grades + specific grade
+- Assessment Window Selector: Baseline | Midpoint | Final (for “focus window”)
+- Compare Mode:
+  - FromWindow dropdown (Baseline/Midpoint/Final)
+  - ToWindow dropdown (Baseline/Midpoint/Final)
+  - Enforce FromWindow != ToWindow
+- View Mode Tabs:
+  - Snapshot (default)
+  - Growth
+  - Projections
+  - Standards
+  - Students
+
+Snapshot View (Teacher/Admin):
+A) KPI Cards Row (4 cards):
+- Proficiency Now
+- Growth (Movement Growth default)
+- Off Track
+- Leverage Standards (count + top 3)
+
+B) Movement Map Grid (primary visualization):
+- Grid shows student movement from FromWindow band → ToWindow band
+- Click any cell -> opens Students list filtered to that cell
+
+C) “Top Leverage Standards” preview (top 8) with growth attribution
+
+Growth View:
+- Movement Map + Growth Distribution (bars) + “Biggest Movers” list
+
+Projections View:
+- Projection bands + confidence + explanation entry point
+
+Standards View:
+- Standards Growth Attribution Table (sortable; click standard -> evidence panel)
+
+Students View:
+- Student table with filters; click student -> Student Drilldown Drawer
+
+Student Drilldown Drawer (right side):
+- Tabs: Trend | Mastery | Projections | Evidence
+- Trend shows window scores + growth delta + velocity
+- Mastery shows standard mastery map
+- Projections shows band + probability + explanation bullets
+- Evidence shows top standards driving results + item evidence when available
+
+Admin-only add-ons:
+- Grade Ladder table (rows=grades, columns=proficiency/growth/offtrack/completion)
+- Teacher Impact Table (per teacher in selected grade)
+
+========================
+3) MOVEMENT MAP BAND LOGIC (EXACT)
+========================
+Movement Map uses a single “bandScore” per student per window and subject.
+
+bandScore precedence:
+1) If assessment score exists for that subject/window: use scaledPercent = score/maxScore * 100
+2) Else fallback to masteryCoveragePercent (computed from standards mastery)
+3) If neither exists: student is “No Data” bucket
+
+Bands (default; store in DB so admin can adjust later):
+- PRO (Proficient): bandScore >= 70
+- ON (On Track): 50 <= bandScore < 70
+- DEV (Developing): 30 <= bandScore < 50
+- HR (High Risk): bandScore < 30
+- ND (No Data): missing in either window (special handling)
+
+Movement cell keys:
+- fromBand ∈ {PRO, ON, DEV, HR, ND}
+- toBand ∈ {PRO, ON, DEV, HR, ND}
+
+Grid:
+- 5x5 where ND row/col is included (but visually separated)
+Counts shown in each cell.
+Click cell -> returns roster list with fromBand/toBand, plus growth metrics.
+
+Movement Growth (default growth metric):
+- MovementDelta = bandIndex(toBand) - bandIndex(fromBand)
+  where HR=0, DEV=1, ON=2, PRO=3, ND=null
+- MovementDelta categories:
+  - Accelerated: +2 or +3
+  - Typical: +1
+  - Flat: 0
+  - Decline: -1 or less
+- If ND in either window => “Incomplete” (excluded from median growth but counted in completion KPI)
+
+Scaled Growth:
+- scaledPercentTo - scaledPercentFrom (if both exist)
+
+Mastery Growth:
+- masteryCoverageTo - masteryCoverageFrom
+(where masteryCoverage = % of standards in Proficient/Mastered for subject+grade)
+
+========================
+4) PROJECTIONS (MODEL + explanationJSON)
+========================
+Compute per student a projected likelihood of being Proficient by Final window.
+
+Projection inputs:
+- available windows among Baseline/Midpoint/Final
+- score trend (scaledPercent)
+- mastery coverage trend
+- completion + timeOnTask validity
+- recency
+
+Output:
+- probabilityProficient (0..1)
+- projectionBand ∈ {Likely Proficient, On Track, Needs Acceleration, High Risk}
+- confidence ∈ {High, Medium, Low}
+
+Store projection in projection_outputs with explanationJSON (required for transparency):
+
+explanationJSON schema (exact):
+{
+  "modelVersion": "insightstack-proj-v1",
+  "computedAt": "ISO-8601",
+  "scope": { "studentId": "...", "subject": "ELA|Math", "grade": 6|7|8, "schoolId": "..." },
+  "inputs": {
+    "fromWindow": "Baseline|Midpoint",
+    "toWindow": "Midpoint|Final",
+    "availableWindows": ["Baseline","Midpoint","Final"],
+    "scaledPercents": { "Baseline": 0-100|null, "Midpoint": 0-100|null, "Final": 0-100|null },
+    "masteryCoverage": { "Baseline": 0-100|null, "Midpoint": 0-100|null, "Final": 0-100|null },
+    "daysBetween": number|null,
+    "timeOnTaskMinutes": { "Baseline": number|null, "Midpoint": number|null, "Final": number|null },
+    "validityFlags": ["LOW_TIME","MISSING_WINDOW","ANOMALY_SWING", ...]
+  },
+  "outputs": {
+    "probabilityProficient": 0-1,
+    "projectionBand": "Likely Proficient|On Track|Needs Acceleration|High Risk",
+    "confidence": "High|Medium|Low",
+    "projectedFinalPercent": 0-100|null
+  },
+  "rationale": [
+    "bullet string 1",
+    "bullet string 2",
+    "bullet string 3"
+  ],
+  "recommendedNextSteps": [
+    { "type": "standard", "standardId": "...", "label": "...", "why": "..." },
+    { "type": "grouping", "label": "Small group: Evidence & Reasoning", "why": "..." }
+  ]
+}
+
+Projection logic (v1, explainable):
+- If >=2 windows with scaledPercent:
+  - velocity = (to-from)/daysBetween
+  - projectedFinalPercent = currentPercent + velocity*daysUntilFinal
+- Blend with masteryCoverage:
+  - blendedFinal = 0.7*projectedFinalPercent + 0.3*projectedMasteryEquivalent
+- Convert to probability:
+  - prob = sigmoid((blendedFinal - 70)/10)
+- Confidence:
+  - High: >=2 windows + no major validity flags
+  - Medium: >=2 windows + minor flags OR 1 window + strong mastery coverage
+  - Low: missing windows or only mastery fallback
+
+========================
+5) DATA (REAL + TENANT SAFE)
+========================
+Use existing PBIS real users/rosters/classes and EduCAP assessment data.
+
+If missing, create/normalize tables:
+- assessment_windows (id, schoolId, name, startDate, endDate, orderIndex)
+- student_assessment_results (id, schoolId, studentId, windowId, subject, score, maxScore, completedAt, timeOnTaskMinutes, assessmentId, versionId)
+- student_standard_mastery (id, schoolId, studentId, standardId, subject, masteryLevel, updatedAt)
+- projection_outputs (id, schoolId, studentId, subject, fromWindowId, toWindowId, probabilityProficient, projectionBand, confidence, projectedFinalPercent, explanationJSON, computedAt)
+- insight_events (id, schoolId, userId, role, eventType, payloadJSON, createdAt)
+
+Make sure all reads/writes include schoolId/tenantId.
+
+========================
+6) API ENDPOINTS (REQUIRED)
+========================
+All endpoints must enforce role+tenant+scope server-side.
+
+Teacher/Admin shared:
+- GET /api/educap/analytics/overview?subject=&fromWindow=&toWindow=&grade=?
+- GET /api/educap/analytics/movement?subject=&fromWindow=&toWindow=&grade=?
+- GET /api/educap/analytics/standards?subject=&fromWindow=&toWindow=&grade=?
+- GET /api/educap/analytics/students?subject=&fromWindow=&toWindow=&grade=?
+- GET /api/educap/analytics/student/:studentId?subject=&fromWindow=&toWindow=
+
+Admin only:
+- POST /api/educap/analytics/projections/recompute (recompute projections for grade or school)
+
+Response contracts:
+- overview returns KPIs + completion + top leverage standards
+- movement returns grid + cell drilldown support
+- standards returns attribution table + evidence counts
+- students returns roster list with bands + growth + projection
+- student/:id returns detailed window scores + mastery map + projection explanationJSON
+
+========================
+7) TEACHER GRADE SCOPING (SERVER-SIDE ENFORCEMENT)
+========================
+Implement resolveTeacherScope(userId):
+- returns { gradeLevels: number[], studentIds: string[] }
+- gradeLevels from teacher-class assignments OR roster mapping
+- studentIds from current class rosters
+- DO NOT allow teacher to pass grade param to expand scope
+
+For teacher endpoints:
+- ignore grade query param if provided
+- always filter results by:
+  studentId IN teacherStudentIds
+  AND grade IN teacherGradeLevels (if stored on students)
+- If teacher has multiple grades, allow UI to show “My Grades” filter but still within allowed set.
+
+========================
+8) PROD PARITY DEBUG + INSTRUMENTATION
+========================
+A) Server Request Logging middleware for analytics endpoints:
+Log: method, path, status, duration, userId, role, schoolId, errorMessage
+Persist errors to insight_events and server logs.
+
+B) Client fetch wrapper:
+- Always use credentials:"include"
+- On non-200: log endpoint + status + response body to /api/educap/analytics/client-error (admin-only storage is OK; otherwise insight_events)
+
+C) Admin-only PROD DEBUG page: /admin/prod-debug/educap-analytics
+Must show:
+- current user tenant info (redacted)
+- counts: windows, results, mastery rows, projection rows, users, students
+- last 20 insight_events errors
+- quick links to analytics endpoints
+- “Recompute projections” button (admin only)
+- “Data completeness” diagnostics: percent students with baseline/mid/final
+
+D) Add GET /api/educap/analytics/health
+Return:
+- environment, db host/db name (redacted), tenant id,
+- counts above, and schema/migration info if available.
+
+========================
+9) UI IMPLEMENTATION DETAILS
+========================
+Frontend stack: existing React + TypeScript + Tailwind + shadcn/ui + TanStack Query.
+- Use Query keys that include subject/from/to/grade/scope.
+- Invalidate relevant queries on recompute projections.
+
+Empty states:
+- Movement Map: “No results for this compare window yet.”
+- Standards table: “No mastery evidence yet.”
+- Student drawer: show what’s missing + admin hint link.
+
+========================
+10) ACCEPTANCE TESTS (MUST PASS IN PRODUCTION)
+========================
+Teacher:
+- /educap/analytics loads with Snapshot view and Movement Map populated (if data exists).
+- Switching Compare From/To updates Movement Map + Standards Attribution.
+- Clicking Movement cell opens filtered student list and student drawer works.
+- Teacher cannot view any other grade’s students even with direct URL parameters.
+
+Admin:
+- /admin/educap/analytics shows Grade Ladder + Teacher Impact table with real data.
+- Drill down grade/teacher works.
+- Recompute projections works and updates outputs.
+
+Debug:
+- /admin/prod-debug/educap-analytics shows counts + last errors + tenant info.
+- No blank screens; errors are visible and actionable.

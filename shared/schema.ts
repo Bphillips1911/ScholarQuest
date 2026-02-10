@@ -1580,5 +1580,87 @@ export type InsertAcapForgeRulePack = z.infer<typeof insertAcapForgeRulePackSche
 export type InsertAcapForgeRule = z.infer<typeof insertAcapForgeRuleSchema>;
 export type InsertAcapForgeAiUsageLog = z.infer<typeof insertAcapForgeAiUsageLogSchema>;
 
+// ===== INSIGHTSTACK ANALYTICS TABLES =====
+
+export const insightAssessmentWindows = pgTable("insight_assessment_windows", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  orderIndex: integer("order_index").notNull(),
+  gradeLevel: integer("grade_level"),
+  subject: varchar("subject", { length: 50 }),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insightStudentResults = pgTable("insight_student_results", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  windowId: integer("window_id").references(() => insightAssessmentWindows.id).notNull(),
+  subject: varchar("subject", { length: 50 }).notNull(),
+  score: real("score"),
+  maxScore: real("max_score"),
+  scaledPercent: real("scaled_percent"),
+  band: varchar("band", { length: 10 }),
+  timeOnTaskMinutes: real("time_on_task_minutes"),
+  assessmentId: integer("assessment_id").references(() => acapAssessments.id),
+  completedAt: timestamp("completed_at"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insightStandardMastery = pgTable("insight_standard_mastery", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  standardId: integer("standard_id").references(() => acapStandards.id).notNull(),
+  windowId: integer("window_id").references(() => insightAssessmentWindows.id).notNull(),
+  subject: varchar("subject", { length: 50 }).notNull(),
+  masteryLevel: varchar("mastery_level", { length: 30 }).notNull().default("not_started"),
+  masteryScore: real("mastery_score").default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insightProjections = pgTable("insight_projections", {
+  id: serial("id").primaryKey(),
+  scholarId: varchar("scholar_id").references(() => scholars.id).notNull(),
+  subject: varchar("subject", { length: 50 }).notNull(),
+  gradeLevel: integer("grade_level").notNull(),
+  fromWindowId: integer("from_window_id").references(() => insightAssessmentWindows.id),
+  toWindowId: integer("to_window_id").references(() => insightAssessmentWindows.id),
+  probabilityProficient: real("probability_proficient"),
+  projectionBand: varchar("projection_band", { length: 30 }),
+  confidence: varchar("confidence", { length: 20 }),
+  projectedFinalPercent: real("projected_final_percent"),
+  explanationJSON: jsonb("explanation_json").$type<Record<string, any>>().default({}),
+  computedAt: timestamp("computed_at").defaultNow(),
+});
+
+export const insightEvents = pgTable("insight_events", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id"),
+  role: varchar("role", { length: 30 }),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  payloadJSON: jsonb("payload_json").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInsightWindowSchema = createInsertSchema(insightAssessmentWindows).omit({ id: true, createdAt: true });
+export const insertInsightStudentResultSchema = createInsertSchema(insightStudentResults).omit({ id: true, createdAt: true });
+export const insertInsightStandardMasterySchema = createInsertSchema(insightStandardMastery).omit({ id: true });
+export const insertInsightProjectionSchema = createInsertSchema(insightProjections).omit({ id: true });
+export const insertInsightEventSchema = createInsertSchema(insightEvents).omit({ id: true, createdAt: true });
+
+export type InsightAssessmentWindow = typeof insightAssessmentWindows.$inferSelect;
+export type InsightStudentResult = typeof insightStudentResults.$inferSelect;
+export type InsightStandardMastery = typeof insightStandardMastery.$inferSelect;
+export type InsightProjection = typeof insightProjections.$inferSelect;
+export type InsightEvent = typeof insightEvents.$inferSelect;
+export type InsertInsightWindow = z.infer<typeof insertInsightWindowSchema>;
+export type InsertInsightStudentResult = z.infer<typeof insertInsightStudentResultSchema>;
+export type InsertInsightStandardMastery = z.infer<typeof insertInsightStandardMasterySchema>;
+export type InsertInsightProjection = z.infer<typeof insertInsightProjectionSchema>;
+export type InsertInsightEvent = z.infer<typeof insertInsightEventSchema>;
+
 // Re-export chat models for integration
 export { conversations, messages } from "./models/chat";

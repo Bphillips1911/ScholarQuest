@@ -62,6 +62,9 @@ import AdminAcap from "@/pages/admin-acap";
 import TeacherClassRankGoalsPage from "@/pages/acap/TeacherClassRankGoalsPage";
 import AdminRankingsPage from "@/pages/acap/AdminRankingsPage";
 import ForgeTestPlayer from "@/pages/acap/ForgeTestPlayer";
+import TeacherAnalytics from "@/pages/teacher-analytics";
+import AdminAnalytics from "@/pages/admin-analytics";
+import AdminProdDebug from "@/pages/admin-prod-debug";
 
 function Router() {
   return (
@@ -98,6 +101,7 @@ function Router() {
         <Route path="/gamified-learning" component={GamifiedLearning} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/teacher-acap" component={TeacherAcap} />
+        <Route path="/teacher-analytics" component={TeacherAnalytics} />
         <Route path="/teacher-messages" component={TeacherMessages} />
         <Route path="/teacher-student-view/:studentId" component={TeacherStudentView} />
         <Route path="/teacher-student-view" component={TeacherStudentView} />
@@ -109,12 +113,16 @@ function Router() {
         <Route path="/admin-sorting" component={HouseSorting} />
         <Route path="/admin-qr" component={AdminQR} />
         <Route path="/admin-acap" component={AdminAcap} />
+        <Route path="/admin-analytics" component={AdminAnalytics} />
         <Route path="/admin-educap">{() => <Redirect to="/admin-acap" />}</Route>
         <Route path="/teacher-educap">{() => <Redirect to="/teacher-acap" />}</Route>
         <Route path="/student-educap">{() => <Redirect to="/student-acap" />}</Route>
         <Route path="/teacher/acap/rank-goals" component={TeacherClassRankGoalsPage} />
         <Route path="/admin/acap/rankings" component={AdminRankingsPage} />
         <Route path="/acap/forge-test" component={ForgeTestPlayer} />
+        <Route path="/admin/prod-debug/educap-analytics" component={AdminProdDebug} />
+        <Route path="/educap/analytics">{() => <Redirect to="/teacher-analytics" />}</Route>
+        <Route path="/admin/educap/analytics">{() => <Redirect to="/admin-analytics" />}</Route>
         
         {/* Main app routes with navigation */}
         <Route>

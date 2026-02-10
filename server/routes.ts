@@ -27,6 +27,7 @@ import {
 } from "./emailService";
 import { registerSELRoutes } from "./selRoutes";
 import { registerAcapRoutes } from "./acapRoutes";
+import { registerInsightRoutes } from "./insightRoutes";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -263,6 +264,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register ACAP routes
   registerAcapRoutes(app);
+
+  // Register InsightStack analytics routes
+  registerInsightRoutes(app);
 
   // Real-time updates endpoint (Server-Sent Events)
   const clients: { res: any; id: string; type?: string }[] = [];

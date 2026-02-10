@@ -2290,6 +2290,19 @@ export default function AdminNew() {
                     </Button>
                     
                     <Button 
+                      onClick={() => setLocation('/admin/educap/analytics')}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 justify-start h-auto p-4"
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center">
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          EduCAP Analytics
+                        </div>
+                        <p className="text-sm text-purple-200 mt-1">InsightStack analytics & projections dashboard</p>
+                      </div>
+                    </Button>
+                    
+                    <Button 
                       onClick={() => {
                         if (confirm("Are you sure you want to reset all semester points? This action cannot be undone.")) {
                           toast({

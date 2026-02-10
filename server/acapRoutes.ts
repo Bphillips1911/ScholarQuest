@@ -17,10 +17,12 @@ export function registerAcapRoutes(app: Express): void {
   app.get("/api/acap/standards", async (req: Request, res: Response) => {
     try {
       const gradeLevel = req.query.gradeLevel ? parseInt(req.query.gradeLevel as string) : undefined;
+      console.log(`[EDUCAP] GET /api/acap/standards | gradeLevel=${gradeLevel || 'all'} | env=${process.env.NODE_ENV}`);
       const standards = await acapStorage.getStandards(gradeLevel);
+      console.log(`[EDUCAP] Standards returned: ${standards.length}`);
       res.json(standards);
-    } catch (error) {
-      console.error("Error fetching standards:", error);
+    } catch (error: any) {
+      console.error("[EDUCAP] Error fetching standards:", error.message);
       res.status(500).json({ error: "Failed to fetch standards" });
     }
   });
@@ -2382,10 +2384,17 @@ export function registerAcapRoutes(app: Express): void {
       const items = await acapStorage.getItems();
       const assessments = await acapStorage.getAssessments();
 
+      const gradeBreakdown: Record<string, number> = {};
+      for (const s of standards) {
+        const key = `grade${s.gradeLevel}_${s.domain}`;
+        gradeBreakdown[key] = (gradeBreakdown[key] || 0) + 1;
+      }
+
       res.json({
         status: "ok",
         env: {
           NODE_ENV: process.env.NODE_ENV || "not set",
+          REPLIT_ENVIRONMENT: process.env.REPLIT_ENVIRONMENT || "not set",
           dbHost: dbHost || "not set",
           dbName: dbName || "not set",
         },
@@ -2395,9 +2404,11 @@ export function registerAcapRoutes(app: Express): void {
           items: items.length,
           assessments: assessments.length,
         },
+        gradeBreakdown,
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
+      console.error("[EDUCAP HEALTH] Error:", error.message);
       res.status(500).json({ status: "error", error: error.message });
     }
   });

@@ -234,6 +234,16 @@ app.use((req, res, next) => {
     await seedDatabase();
     console.log("STARTUP: Database seeding completed");
     
+    // CRITICAL: Seed EduCAP data (standards, blueprints, items, assessments)
+    // This ensures production has the same data as development
+    try {
+      const { seedEducapData } = await import("./seed-educap");
+      await seedEducapData();
+      console.log("STARTUP: EduCAP data seeding completed");
+    } catch (educapError: any) {
+      console.error("STARTUP: EduCAP seeding error (non-critical):", educapError.message);
+    }
+    
     const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

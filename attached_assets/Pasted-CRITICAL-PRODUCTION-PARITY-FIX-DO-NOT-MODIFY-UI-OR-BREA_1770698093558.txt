@@ -1,0 +1,267 @@
+CRITICAL PRODUCTION PARITY FIX - DO NOT MODIFY UI OR BREAK EXISTING FUNCTIONALITY
+
+CONTEXT:
+Development mode shows 128 standards, 15 approved items, 6 blueprints, 2 assessments.
+Production mode shows 0 standards, 0 items, 0 blueprints, 0 assessments.
+Students and teachers see empty dropdowns and "No standards loaded" in production.
+Admin Forge upload button is disabled/non-functional in production.
+All user-facing features work in dev but fail in prod due to database sync issues.
+
+OBJECTIVE:
+Make production environment mirror development environment exactly. Fix database connectivity, data seeding, API endpoints, and tenant scoping WITHOUT changing any UI components or visual design.
+
+PHASE A - DATABASE DIAGNOSTIC & HEALTH ENDPOINT
+
+A1) Create health check endpoint at /api/health/educap that returns:
+- Environment variables: NODE_ENV, APP_ENV
+- Database connection status and host (redact password)
+- Counts: standards, blueprints, items, assessments, users, students, teachers
+- Current user's schoolId/tenantId
+- Migration status
+Example response:
+{
+  "env": "production",
+  "database": {
+    "connected": true,
+    "host": "postgres://...@host:5432/dbname",
+    "migrationsApplied": true
+  },
+  "counts": {
+    "standards": 128,
+    "blueprints": 6,
+    "items": 15,
+    "assessments": 2,
+    "users": 50
+  },
+  "tenantInfo": {
+    "schoolId": "bhsa_main",
+    "tenantId": "birmingham_city_schools"
+  }
+}
+
+A2) Add comprehensive server-side logging to ALL /api/educap endpoints:
+- Log incoming request: method, path, userId, role, schoolId, query params
+- Log database queries with actual SQL and parameters
+- Log response: status code, data count, errors
+- Format: [EDUCAP] GET /api/educap/standards | user=123 role=teacher | params={grade:6,subject:Math} | results=0 | duration=45ms
+
+A3) Add client-side error logging for all fetch calls in EduCAP components:
+- Log failed responses with full error body
+- Log successful responses with data shape (not full data)
+- Use console.error for failures, console.log for success
+Example:
+console.error('[EduCAP Standards] Fetch failed:', {
+  endpoint: '/api/educap/standards',
+  status: response.status,
+  body: await response.text()
+});
+
+PHASE B - DATABASE SEEDING & MIGRATION
+
+B1) Check if database migrations have been applied in production:
+- Verify all tables exist: standards, blueprints, items, assessments, users, students, teachers, forge_sources
+- If missing, run migrations automatically on server start
+- Add migration check to server startup that fails loudly if schema is incorrect
+
+B2) Create comprehensive seed script at scripts/seed-educap-production.js:
+- Check if data already exists (don't duplicate)
+- Seed 128 Grade 6-8 standards across Math, ELA, Science
+- Seed 6 blueprints (Grade 6 Math Baseline, Grade 6 ELA Baseline, etc.)
+- Seed 15 approved items distributed across standards
+- Seed 2 sample assessments (1 baseline, 1 midpoint)
+- Set ALL seeded data with schoolId=null (global) OR match production schoolId
+- Log each step: "Seeded 41 Grade 6 Math standards", "Seeded 6 blueprints"
+
+B3) Make seed script idempotent:
+- Check if standards exist before inserting
+- If count > 0, skip seeding and log "Standards already exist (count: 128)"
+- If count = 0, proceed with seeding
+- Return summary of what was seeded
+
+B4) Add npm script to package.json:
+"scripts": {
+  "db:seed:educap": "node scripts/seed-educap-production.js",
+  "db:check:educap": "node scripts/check-educap-data.js"
+}
+
+PHASE C - FIX API ENDPOINTS & TENANT SCOPING
+
+C1) Fix /api/educap/standards endpoint:
+CURRENT PROBLEM: Returns empty array in production
+ROOT CAUSE: Query filters by user.schoolId which doesn't match seeded data schoolId
+FIX: Modify query to return standards where:
+  - schoolId matches user.schoolId OR
+  - schoolId is NULL (global standards) OR
+  - status = 'active'
+CRITICAL: Do not change response format, only fix query logic
+
+Example fix:
+// BEFORE (broken in prod)
+const standards = await db.query.standards.findMany({
+  where: eq(standards.schoolId, user.schoolId)
+});
+
+// AFTER (works in prod)
+const standards = await db.query.standards.findMany({
+  where: and(
+    grade ? eq(standards.grade, parseInt(grade)) : undefined,
+    subject ? eq(standards.subject, subject) : undefined,
+    or(
+      isNull(standards.schoolId),
+      eq(standards.schoolId, user.schoolId)
+    )
+  )
+});
+
+C2) Fix /api/educap/blueprints endpoint with same tenant scoping logic
+
+C3) Fix /api/educap/items endpoint with same tenant scoping logic
+
+C4) Fix /api/educap/assessments endpoint with same tenant scoping logic
+
+C5) Ensure ALL fetch calls in client include credentials:
+fetch('/api/educap/standards', {
+  credentials: 'include'  // ← CRITICAL for auth cookies in prod
+})
+
+PHASE D - FIX FORGE UPLOAD & PIPELINE
+
+D1) Debug /api/educap/forge/upload endpoint:
+- Add detailed logging of incoming multipart form data
+- Log file metadata: name, type, size, mimetype
+- Verify file is being received server-side
+- Log database insert success/failure
+- Return detailed error messages
+
+D2) Fix file upload handling:
+- Accept PDF and DOCX file types
+- Validate file type on server (don't trust client)
+- Store file to disk or object storage with stable path
+- Create database record in forge_sources table
+- Return source ID and upload status
+
+D3) Create /api/educap/forge/sources GET endpoint:
+- Return all uploaded sources for current user
+- Include: id, filename, fileType, uploadedAt, status, itemsCount
+- Filter by user.id (uploadedBy column)
+
+D4) Fix "Build Test" button logic:
+- Button should be enabled when sources.length > 0
+- Add visible error message when sources.length === 0: "Upload a source document first"
+- Do NOT modify button UI/styling, only enable/disable logic
+
+D5) Create /api/educap/forge/build endpoint (stub if needed):
+- Accept sourceId parameter
+- Return mock pipeline status for now
+- Log "Build Test called for source: {sourceId}"
+- This can be expanded later but must not crash
+
+PHASE E - FIX STUDENT/TEACHER EMPTY VIEWS
+
+E1) Student Mastery Map shows "No standards loaded":
+FIX: Ensure /api/educap/student/standards endpoint uses same global tenant scoping as C1
+VERIFY: Student user can see same 128 standards as admin
+
+E2) Teacher Question Bank dropdown empty:
+FIX: Ensure /api/educap/teacher/standards endpoint uses same global tenant scoping as C1
+VERIFY: Teacher dropdown shows 128 standards filtered by grade/subject
+
+E3) Student Boot Camp shows "Amazing! You've mastered all standards" when none exist:
+FIX: Check if standards array is empty, show "No standards assigned yet" instead
+DO NOT modify success message UI, only show it when student actually has mastered standards
+
+E4) Teacher Access Codes page:
+VERIFY: /api/educap/access-codes/generate works in production
+ADD: Detailed error logging if code generation fails
+
+PHASE F - ENVIRONMENT VARIABLE VERIFICATION
+
+F1) Verify production Replit Secrets include:
+DATABASE_URL (must point to correct production database)
+NODE_ENV=production
+SCHOOL_ID (must match seeded data OR be null)
+TENANT_ID (must match seeded data OR be null)
+
+F2) If SCHOOL_ID exists in Replit Secrets:
+- Update seed script to use process.env.SCHOOL_ID for all seeded data
+- Ensure consistency between env var and seeded data
+
+F3) Add environment validation on server startup:
+- Check required env vars exist
+- Fail with clear error message if missing
+- Log all env vars (redact sensitive values)
+
+PHASE G - ADD ADMIN DEBUG PAGE (OPTIONAL BUT RECOMMENDED)
+
+G1) Create admin-only debug page at /admin/educap-debug:
+- Show environment info (NODE_ENV, DATABASE_URL host)
+- Show database counts for all tables
+- Show sample standard (first row)
+- Show sample user (current user's info)
+- Show recent API calls with status codes
+- Add "Re-seed Database" button that calls seed script
+- Add "Test Endpoints" button that calls each API endpoint and shows results
+
+G2) Protect debug page with admin role check
+
+ACCEPTANCE CRITERIA - ALL MUST PASS IN PRODUCTION:
+
+1. GET /api/health/educap returns status 200 with counts matching dev:
+   - standards: 128
+   - blueprints: 6
+   - items: 15
+   - assessments: 2
+
+2. Admin → EduCAP → Standards tab shows 128 standards (not 0)
+
+3. Admin → EduCAP → Blueprints shows 6 blueprints (not 0)
+
+4. Teacher → EduCAP → Question Bank dropdown shows standards when grade/subject selected
+
+5. Student → EduCAP → Mastery Map shows standards (not "No standards loaded")
+
+6. Admin → Forge → Upload Source button accepts PDF/DOCX upload
+
+7. Admin → Forge → Uploaded Sources list shows uploaded files
+
+8. Admin → Forge → Build Test button becomes enabled after upload
+
+9. All console.error logs show actual error messages (not generic failures)
+
+10. Browser DevTools Network tab shows /api/educap/* endpoints returning 200 with data
+
+CONSTRAINTS - DO NOT VIOLATE:
+
+❌ DO NOT modify any UI components, styling, or layouts
+❌ DO NOT change any visual design, colors, or spacing
+❌ DO NOT remove existing functionality or features
+❌ DO NOT change component names or file structure
+❌ DO NOT modify navigation or routing
+❌ DO NOT alter user-facing text or labels (except adding error messages)
+✅ DO add logging, error handling, and diagnostics
+✅ DO fix database queries and API logic
+✅ DO add server-side validation
+✅ DO create seed scripts and health checks
+✅ DO fix tenant scoping and auth cookies
+
+DELIVERABLES:
+
+1. Working /api/health/educap endpoint
+2. Seed script at scripts/seed-educap-production.js
+3. Fixed API endpoints with global tenant scoping
+4. Comprehensive logging throughout server and client
+5. Fixed Forge upload with working file handling
+6. All acceptance criteria passing in production
+7. Summary report showing before/after counts
+
+EXECUTION ORDER:
+1. Create health endpoint (A1)
+2. Add logging (A2, A3)
+3. Create seed script (B2, B3)
+4. Run seed script in production
+5. Fix API tenant scoping (C1-C4)
+6. Fix Forge upload (D1-D4)
+7. Verify all endpoints return data
+8. Test in production with admin, teacher, student accounts
+
+START NOW. Do not ask for permission or clarification. Make all changes systematically and report progress after each phase.

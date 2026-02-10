@@ -1,0 +1,494 @@
+EMERGENCY PRODUCTION DATABASE SYNC - FIX ALL EDUCAP FEATURES
+
+CRITICAL CONTEXT:
+Screenshots show dev mode has 128 standards, 15 approved items, 6 blueprints, 2 assessments.
+Production URLs (pbishouseofchampions.com and d1b54ddf-cd02-49a2-b86d.kirk.replit.dev) show 0 counts.
+Admin "Add Standard" form shows but no standards exist in production database.
+All dropdowns empty in production: Standards, Subjects, Grades.
+Forge Upload Source button does nothing when clicked.
+Build Test button grayed out.
+Student Genome has mystery gray button.
+Schoolwide Assessment Builder doesn't create real assessments.
+Students cannot take assigned assessments.
+
+ROOT CAUSES IDENTIFIED:
+1. Production database is completely empty (no seeded data)
+2. API endpoints work in dev but return empty arrays in prod
+3. File upload endpoint not wired correctly
+4. Assessment assignment flow broken
+5. Student assessment player not launching
+
+OBJECTIVE:
+Sync production database to match development. Fix all broken endpoints. Make every feature functional in production WITHOUT changing any UI, styling, or layout.
+
+═══════════════════════════════════════════════════════════
+PHASE 1 - EMERGENCY DATABASE SEED
+═══════════════════════════════════════════════════════════
+
+1A) CREATE scripts/emergency-seed-production.js:
+
+const { db } = require('../db');
+const { standards, blueprints, items, assessments } = require('../db/schema');
+
+async function emergencySeed() {
+  console.log('🚨 EMERGENCY PRODUCTION SEED STARTING...\n');
+  
+  // Check if data exists
+  const existingStandards = await db.select().from(standards);
+  
+  if (existingStandards.length > 0) {
+    console.log(`⚠️  Database already has ${existingStandards.length} standards`);
+    console.log('Skipping seed to avoid duplicates.');
+    return;
+  }
+  
+  console.log('📊 Database is empty. Seeding now...\n');
+  
+  // SEED GRADE 6-8 STANDARDS (128 total)
+  const grade6Math = [
+    { code: '6.NS.4', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Interpret and compute quotients of fractions using visual models and equations to represent problems.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.NS.5', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Fluently divide multi-digit whole numbers using a standard algorithm to solve real-world and mathematical problems.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.NS.6', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Add, subtract, multiply, and divide decimals using a standard algorithm.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.NS.7', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Use the distributive property to express the sum of two whole numbers with a common factor.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.NS.8', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Find the greatest common factor (GCF) and least common multiple (LCM).', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.NS.9', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Use signed numbers to describe quantities having opposite directions or values.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.NS.10', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Locate integers and other rational numbers on a horizontal or vertical line diagram.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.NS.11', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Find the position of pairs of integers and other rational numbers on the coordinate plane.', dokLevels: [2,3,4], status: 'active', schoolId: null },
+    { code: '6.NS.12', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Explain the meaning of absolute value and determine the absolute value of rational numbers.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.NS.13', grade: 6, subject: 'Math', domain: 'Number Systems and Operations', description: 'Compare and order rational numbers and absolute value of rational numbers.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.AF.14', grade: 6, subject: 'Math', domain: 'Algebra and Functions', description: 'Write, evaluate, and compare expressions involving whole number exponents.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.AF.15', grade: 6, subject: 'Math', domain: 'Algebra and Functions', description: 'Write, read, and evaluate expressions in which letters represent numbers in real-world contexts.', dokLevels: [2,3,4], status: 'active', schoolId: null },
+    { code: '6.AF.16', grade: 6, subject: 'Math', domain: 'Algebra and Functions', description: 'Generate equivalent algebraic expressions using properties of operations.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.AF.17', grade: 6, subject: 'Math', domain: 'Algebra and Functions', description: 'Determine whether two expressions are equivalent and justify the reasoning.', dokLevels: [3,4], status: 'active', schoolId: null },
+    { code: '6.AF.18', grade: 6, subject: 'Math', domain: 'Algebra and Functions', description: 'Determine whether a value is a solution to an equation or inequality by substitution.', dokLevels: [2,3], status: 'active', schoolId: null },
+    { code: '6.AF.19', grade: 6, subject: 'Math', domain: 'Algebra and Functions', description: 'Write and solve an equation in the form of x+p=q or px=q for cases in which p, q, and x are all non-negative rational numbers.', dokLevels: [2,3,4], status: 'active', schoolId: null },
+    // ... Continue with all 128 standards
+    // (Abbreviated for length - Agent should generate all 128)
+  ];
+  
+  console.log('Inserting Grade 6 Math standards...');
+  await db.insert(standards).values(grade6Math);
+  console.log(`✅ Inserted ${grade6Math.length} Grade 6 Math standards\n`);
+  
+  // SEED GRADE 6 ELA STANDARDS (35 standards)
+  const grade6ELA = [
+    { code: '6.DL.11', grade: 6, subject: 'ELA', domain: 'Digital Literacy', description: 'Identify and explain an author\'s use of rhetorical choices.', dokLevels: [3,4], status: 'active', schoolId: null },
+    // ... (Agent generates all ELA standards)
+  ];
+  
+  console.log('Inserting Grade 6 ELA standards...');
+  await db.insert(standards).values(grade6ELA);
+  console.log(`✅ Inserted ${grade6ELA.length} Grade 6 ELA standards\n`);
+  
+  // SEED GRADE 7-8 STANDARDS (similar pattern)
+  // ... (Agent generates Grade 7 & 8)
+  
+  // SEED BLUEPRINTS
+  const blueprintData = [
+    {
+      name: 'Grade 6 Math Baseline',
+      subject: 'Math',
+      grade: 6,
+      assessmentType: 'Baseline',
+      itemCount: 35,
+      timeLimitMinutes: 60,
+      status: 'active',
+      schoolId: null
+    },
+    {
+      name: 'Grade 6 ELA Baseline',
+      subject: 'ELA',
+      grade: 6,
+      assessmentType: 'Baseline',
+      itemCount: 35,
+      timeLimitMinutes: 60,
+      status: 'active',
+      schoolId: null
+    },
+    // ... (6 total blueprints)
+  ];
+  
+  console.log('Inserting blueprints...');
+  await db.insert(blueprints).values(blueprintData);
+  console.log(`✅ Inserted ${blueprintData.length} blueprints\n`);
+  
+  // SEED SAMPLE ITEMS (15 approved items)
+  const itemData = [
+    {
+      standardCode: '6.NS.4',
+      itemType: 'multiple_choice',
+      stem: 'What is 2/3 ÷ 1/4?',
+      options: JSON.stringify(['A. 2/12', 'B. 8/3', 'C. 3/8', 'D. 1/6']),
+      correctAnswer: 'B',
+      rationale: 'Divide fractions by multiplying by reciprocal: 2/3 × 4/1 = 8/3',
+      dokLevel: 2,
+      status: 'approved',
+      schoolId: null
+    },
+    // ... (15 total items)
+  ];
+  
+  console.log('Inserting approved items...');
+  await db.insert(items).values(itemData);
+  console.log(`✅ Inserted ${itemData.length} approved items\n`);
+  
+  console.log('🎉 EMERGENCY SEED COMPLETE!\n');
+  console.log('Final counts:');
+  const finalStandards = await db.select().from(standards);
+  const finalBlueprints = await db.select().from(blueprints);
+  const finalItems = await db.select().from(items);
+  console.log(`  Standards: ${finalStandards.length}`);
+  console.log(`  Blueprints: ${finalBlueprints.length}`);
+  console.log(`  Items: ${finalItems.length}`);
+}
+
+emergencySeed()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error('❌ Seed failed:', err);
+    process.exit(1);
+  });
+
+1B) ADD npm script to package.json:
+"scripts": {
+  "seed:emergency": "node scripts/emergency-seed-production.js"
+}
+
+1C) RUN SEED IN PRODUCTION:
+After creating the script, execute in production terminal:
+npm run seed:emergency
+
+═══════════════════════════════════════════════════════════
+PHASE 2 - FIX API ENDPOINTS (TENANT SCOPING)
+═══════════════════════════════════════════════════════════
+
+2A) FIX /api/educap/standards endpoint:
+
+BEFORE (broken - returns empty):
+app.get('/api/educap/standards', async (req, res) => {
+  const standards = await db.query.standards.findMany({
+    where: eq(standards.schoolId, req.user.schoolId)
+  });
+  res.json(standards);
+});
+
+AFTER (fixed - works in production):
+app.get('/api/educap/standards', async (req, res) => {
+  const { grade, subject } = req.query;
+  
+  const standards = await db.query.standards.findMany({
+    where: and(
+      grade ? eq(standards.grade, parseInt(grade)) : undefined,
+      subject ? eq(standards.subject, subject) : undefined,
+      eq(standards.status, 'active'),
+      or(
+        isNull(standards.schoolId),  // ← Global standards
+        eq(standards.schoolId, req.user?.schoolId)
+      )
+    )
+  });
+  
+  console.log(`[EduCAP] GET /api/educap/standards | grade=${grade} subject=${subject} | results=${standards.length}`);
+  
+  res.json(standards);
+});
+
+2B) APPLY SAME FIX to these endpoints:
+- /api/educap/blueprints
+- /api/educap/items
+- /api/educap/assessments
+- /api/educap/teacher/standards
+- /api/educap/student/standards
+
+2C) ENSURE all client fetch calls include credentials:
+Find all fetch('/api/educap/...') calls and add:
+fetch('/api/educap/standards', {
+  credentials: 'include'  // ← CRITICAL
+})
+
+═══════════════════════════════════════════════════════════
+PHASE 3 - FIX FORGE UPLOAD
+═══════════════════════════════════════════════════════════
+
+3A) FIX /api/educap/forge/upload endpoint:
+
+app.post('/api/educap/forge/upload', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    const { displayName, grade, subject } = req.body;
+    
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    console.log('[Forge Upload] File received:', {
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      path: file.path
+    });
+    
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    if (!allowedTypes.includes(file.mimetype)) {
+      return res.status(400).json({ error: 'Only PDF and DOCX files allowed' });
+    }
+    
+    // Save to database
+    const source = await db.insert(forgeSources).values({
+      filename: file.originalname,
+      displayName: displayName || file.originalname,
+      filePath: file.path,
+      fileType: file.mimetype,
+      fileSize: file.size,
+      grade: parseInt(grade),
+      subject: subject,
+      uploadedBy: req.user.id,
+      status: 'queued',
+      createdAt: new Date()
+    }).returning();
+    
+    console.log('[Forge Upload] Source created:', source[0].id);
+    
+    res.json({
+      success: true,
+      sourceId: source[0].id,
+      message: 'File uploaded successfully'
+    });
+    
+  } catch (error) {
+    console.error('[Forge Upload] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+3B) FIX "Upload Source" button in client:
+
+const handleUpload = async () => {
+  if (!selectedFile) {
+    alert('Please select a file first');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+  formData.append('displayName', displayName);
+  formData.append('grade', selectedGrade);
+  formData.append('subject', selectedSubject);
+  
+  setIsUploading(true);
+  
+  try {
+    const response = await fetch('/api/educap/forge/upload', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData  // Don't set Content-Type header - browser sets it
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('Upload successful!');
+      refetchSources();
+    } else {
+      alert('Upload failed: ' + data.error);
+    }
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert('Upload failed: ' + error.message);
+  } finally {
+    setIsUploading(false);
+  }
+};
+
+═══════════════════════════════════════════════════════════
+PHASE 4 - FIX BUILD TEST BUTTON
+═══════════════════════════════════════════════════════════
+
+4A) Enable Build Test when sources exist:
+
+const { data: sources } = useQuery({
+  queryKey: ['forge-sources'],
+  queryFn: async () => {
+    const res = await fetch('/api/educap/forge/sources', { credentials: 'include' });
+    return res.json();
+  }
+});
+
+const canBuildTest = sources && sources.length > 0;
+
+<button
+  disabled={!canBuildTest}
+  className={canBuildTest ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}
+  onClick={handleBuildTest}
+>
+  Build Test
+</button>
+
+{!canBuildTest && (
+  <p className="text-sm text-gray-500 mt-2">
+    Upload a source document first
+  </p>
+)}
+
+═══════════════════════════════════════════════════════════
+PHASE 5 - FIX STUDENT ASSESSMENT PLAYER
+═══════════════════════════════════════════════════════════
+
+5A) FIX assessment assignment flow:
+
+When teacher assigns assessment:
+POST /api/educap/assignments
+{
+  assessmentId: 123,
+  studentIds: [456, 789],
+  dueDate: '2026-02-15',
+  allowedAttempts: 1
+}
+
+Response creates student_assessments records:
+{
+  studentId: 456,
+  assessmentId: 123,
+  status: 'assigned',
+  accessCode: 'ABC-123-XYZ',
+  startedAt: null,
+  completedAt: null
+}
+
+5B) FIX student assessment list:
+
+GET /api/educap/student/assessments
+Returns assessments where:
+- studentId = current user
+- status = 'assigned' OR 'in_progress'
+
+5C) FIX assessment launch:
+
+Student clicks "Start Assessment"
+→ POST /api/educap/student/assessments/:id/start
+→ Sets startedAt timestamp, status = 'in_progress'
+→ Returns assessment with items
+→ Student assessment player loads
+
+5D) VERIFY access code validation works:
+
+POST /api/educap/access-codes/validate
+{ code: 'ABC-123-XYZ', studentId: 456 }
+
+Returns:
+{ valid: true, assessmentId: 123, studentAssessmentId: 789 }
+
+═══════════════════════════════════════════════════════════
+PHASE 6 - FIX SCHOOLWIDE ASSESSMENT BUILDER
+═══════════════════════════════════════════════════════════
+
+6A) FIX "Generate Assessment" button:
+
+When admin clicks "Generate Assessment" in Schoolwide Assessment Builder:
+
+POST /api/educap/assessments/generate
+{
+  contentArea: 'Math',
+  grades: [6, 7, 8],
+  itemCount: 50,
+  dokMix: { dok2: 30, dok3: 50, dok4: 20 },
+  blueprintWeights: {
+    'Proportional Reasoning': 25,
+    'Number Systems': 25,
+    'Algebra': 25,
+    'Data & Statistics': 25
+  }
+}
+
+Backend creates:
+1. Assessment record in assessments table
+2. Selects items from items table matching criteria
+3. Creates assessment_items join records
+4. Returns assessmentId
+
+6B) After generation, redirect to:
+/admin/educap/assessments/:id
+Where admin can:
+- Preview assessment
+- Assign to teachers
+- Assign to classes
+- Generate access codes
+
+═══════════════════════════════════════════════════════════
+PHASE 7 - FIX STUDENT GENOME MYSTERY BUTTON
+═══════════════════════════════════════════════════════════
+
+7A) Identify what the gray button should do:
+
+Possible functions:
+- Save changes?
+- Export report?
+- Refresh data?
+
+If unknown purpose: REMOVE THE BUTTON entirely rather than leave it gray/broken.
+
+In Student Genome component, find the mystery button:
+<button className="bg-gray-400">???</button>
+
+Either:
+A) Define its purpose and wire it to an endpoint
+B) Delete it: <!-- removed mystery button -->
+
+═══════════════════════════════════════════════════════════
+PHASE 8 - VERIFICATION TESTS
+═══════════════════════════════════════════════════════════
+
+After all fixes, verify in PRODUCTION:
+
+✅ Admin → EduCAP → Standards shows 128 standards (not 0)
+✅ Admin → Blueprints & Standards dropdown shows Grade 6/7/8
+✅ Admin → "Add Standard" form dropdowns populate
+✅ Admin → Forge → Upload Source accepts PDF/DOCX
+✅ Admin → Forge → Uploaded Sources shows files
+✅ Admin → Forge → Build Test button enabled after upload
+✅ Admin → Schoolwide Assessment Builder generates real assessment
+✅ Admin → Can assign generated assessment to teachers
+✅ Teacher → EduCAP → Question Bank dropdown shows standards
+✅ Teacher → Can create assignments
+✅ Teacher → Can generate access codes
+✅ Student → EduCAP → Mastery Map shows standards (not "No standards loaded")
+✅ Student → Assessments tab shows assigned assessments
+✅ Student → Can click "Start Assessment" and take test
+✅ Student → Access code entry works
+
+═══════════════════════════════════════════════════════════
+CONSTRAINTS - DO NOT VIOLATE
+═══════════════════════════════════════════════════════════
+
+❌ DO NOT change any UI styling, colors, layouts, spacing
+❌ DO NOT modify component structure or file organization
+❌ DO NOT alter navigation or routing
+❌ DO NOT remove existing features
+❌ DO NOT change user-facing text (except error messages)
+✅ DO fix backend logic and database queries
+✅ DO add comprehensive logging
+✅ DO fix API endpoints
+✅ DO seed database properly
+✅ DO ensure dev and prod use same data
+
+═══════════════════════════════════════════════════════════
+EXECUTION ORDER
+═══════════════════════════════════════════════════════════
+
+1. Create emergency seed script
+2. Run seed in production
+3. Fix API tenant scoping
+4. Fix Forge upload
+5. Fix Build Test button logic
+6. Fix student assessment player
+7. Fix Schoolwide Assessment Builder
+8. Remove or fix mystery gray button
+9. Test all features in production
+10. Report success with before/after counts
+
+START NOW. Execute systematically. Do not ask for confirmation.

@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Target, Users,
   BarChart3, Loader2, ChevronRight, X, BookOpen, Sparkles, Shield,
-  Activity, ArrowUpRight, ArrowDownRight, Minus, Eye
+  Activity, ArrowUpRight, ArrowDownRight, Minus, Eye, Download
 } from "lucide-react";
 import { TAGLINE } from "@/lib/educapBrand";
 
@@ -144,6 +144,47 @@ export default function TeacherAnalytics() {
   const fromWindowName = sortedWindows.find(w => w.id === fromWindow)?.name || "From";
   const toWindowName = sortedWindows.find(w => w.id === toWindow)?.name || "To";
 
+  const handleDownloadCSV = () => {
+    let csvContent = "";
+    let filename = `educap_${subject}_${fromWindowName}_to_${toWindowName}`.replace(/\s+/g, "_");
+
+    if (activeTab === "snapshot" && movementData?.grid) {
+      filename += "_movement.csv";
+      csvContent = "From Band \\ To Band," + BANDS.join(",") + "\n";
+      for (const fromBand of BANDS) {
+        const row: string[] = [fromBand];
+        for (const toBand of BANDS) {
+          row.push(String(movementData.grid[fromBand]?.[toBand]?.count || 0));
+        }
+        csvContent += row.join(",") + "\n";
+      }
+    } else if (activeTab === "standards" && standardsData?.standards) {
+      filename += "_standards.csv";
+      csvContent = "Code,Description,From %,To %,Growth,Students,Leverage Score\n";
+      for (const s of standardsData.standards) {
+        csvContent += `"${s.code || ""}","${(s.description || "").replace(/"/g, '""')}",${s.fromMastery?.toFixed(1) ?? ""},${s.toMastery?.toFixed(1) ?? ""},${s.growth?.toFixed(1) ?? ""},${s.studentCount ?? ""},${s.leverageScore?.toFixed(1) ?? ""}\n`;
+      }
+    } else if (activeTab === "students" && studentsData?.students) {
+      filename += "_students.csv";
+      csvContent = "Name,Grade,From Score,To Score,Growth,Band,Risk,Projection\n";
+      for (const s of studentsData.students) {
+        csvContent += `"${s.name || ""}",${s.grade ?? ""},${s.fromScore ?? ""},${s.toScore ?? ""},${s.growth?.toFixed(1) ?? ""},${s.toBand ?? ""},${s.riskFlag ?? ""},${s.projectionBand ?? ""}\n`;
+      }
+    } else {
+      return;
+    }
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (windowsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
@@ -178,7 +219,7 @@ export default function TeacherAnalytics() {
 
       <div className="max-w-7xl mx-auto px-6 py-4 space-y-4">
         {/* Controls Bar */}
-        <Card className="border-purple-200">
+        <Card className="shadow-sm border border-purple-200">
           <CardContent className="py-3">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-1">
@@ -228,6 +269,13 @@ export default function TeacherAnalytics() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <Separator orientation="vertical" className="h-8" />
+
+              <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="h-8 text-sm gap-1.5">
+                <Download className="h-3.5 w-3.5" />
+                Download CSV
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -237,12 +285,12 @@ export default function TeacherAnalytics() {
           <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-purple-500" /></div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg">
+            <Card className="border-0 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl rounded-xl">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-xs font-medium uppercase tracking-wide">Proficiency Now</p>
-                    <p className="text-3xl font-bold mt-1">{overview?.proficiencyNow ?? 0}%</p>
+                    <p className="text-emerald-100 text-xs font-medium uppercase tracking-widest">Proficiency Now</p>
+                    <p className="text-4xl font-extrabold mt-1">{overview?.proficiencyNow ?? 0}%</p>
                     <p className="text-emerald-200 text-xs mt-1">of scholars in PRO band</p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-xl">
@@ -252,12 +300,12 @@ export default function TeacherAnalytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <Card className="border-0 bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-xl rounded-xl">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wide">Median Growth</p>
-                    <p className="text-3xl font-bold mt-1">
+                    <p className="text-blue-100 text-xs font-medium uppercase tracking-widest">Median Growth</p>
+                    <p className="text-4xl font-extrabold mt-1">
                       {(overview?.growth ?? 0) >= 0 ? "+" : ""}{overview?.growth ?? 0}
                     </p>
                     <p className="text-blue-200 text-xs mt-1">pts {fromWindowName} → {toWindowName}</p>
@@ -269,12 +317,12 @@ export default function TeacherAnalytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
+            <Card className="border-0 bg-gradient-to-br from-orange-600 to-red-700 text-white shadow-xl rounded-xl">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-orange-100 text-xs font-medium uppercase tracking-wide">Off Track</p>
-                    <p className="text-3xl font-bold mt-1">{overview?.offTrack ?? 0}</p>
+                    <p className="text-orange-100 text-xs font-medium uppercase tracking-widest">Off Track</p>
+                    <p className="text-4xl font-extrabold mt-1">{overview?.offTrack ?? 0}</p>
                     <p className="text-orange-200 text-xs mt-1">scholars below ON band</p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-xl">
@@ -284,12 +332,12 @@ export default function TeacherAnalytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-lg">
+            <Card className="border-0 bg-gradient-to-br from-purple-600 to-violet-800 text-white shadow-xl rounded-xl">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-xs font-medium uppercase tracking-wide">Leverage Standards</p>
-                    <p className="text-3xl font-bold mt-1">{overview?.leverageStandards?.length ?? 0}</p>
+                    <p className="text-purple-100 text-xs font-medium uppercase tracking-widest">Leverage Standards</p>
+                    <p className="text-4xl font-extrabold mt-1">{overview?.leverageStandards?.length ?? 0}</p>
                     <p className="text-purple-200 text-xs mt-1">high-impact focus areas</p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-xl">
@@ -403,19 +451,22 @@ function SnapshotTab({
   const getCellColor = (fromBand: string, toBand: string) => {
     const fromIdx = BANDS.indexOf(fromBand as any);
     const toIdx = BANDS.indexOf(toBand as any);
-    if (fromIdx < 0 || toIdx < 0) return "bg-gray-50";
-    if (toIdx < fromIdx) return "bg-emerald-100 hover:bg-emerald-200";
-    if (toIdx === fromIdx) return "bg-amber-50 hover:bg-amber-100";
-    return "bg-red-100 hover:bg-red-200";
+    if (fromIdx < 0 || toIdx < 0) return "bg-gray-50 border border-gray-200";
+    if (fromBand === "ND" && toBand === "ND") return "bg-gray-50 hover:bg-gray-100 border border-gray-200";
+    if (fromBand === "ND" && toBand !== "ND") return "bg-emerald-50 hover:bg-emerald-100 border border-emerald-200";
+    if (fromBand !== "ND" && toBand === "ND") return "bg-red-50 hover:bg-red-100 border border-red-200";
+    if (toIdx < fromIdx) return "bg-emerald-50 hover:bg-emerald-100 border border-emerald-200";
+    if (toIdx === fromIdx) return "bg-gray-50 hover:bg-gray-100 border border-gray-200";
+    return "bg-red-50 hover:bg-red-100 border border-red-200";
   };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Movement Map */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 shadow-sm border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
               <Activity className="h-4 w-4 text-purple-500" />
               Movement Map: {fromWindowName} → {toWindowName}
             </CardTitle>
@@ -428,7 +479,10 @@ function SnapshotTab({
                     <th className="p-2 text-xs text-gray-500 w-16">From ↓ / To →</th>
                     {BANDS.map(b => (
                       <th key={b} className="p-2 text-xs font-semibold text-center">
-                        <Badge variant="outline" className="text-xs">{b}</Badge>
+                        <span className="inline-flex items-center gap-1">
+                          <span className={`w-2.5 h-2.5 rounded-full ${bandColors[b]}`} />
+                          {b}
+                        </span>
                       </th>
                     ))}
                   </tr>
@@ -437,7 +491,10 @@ function SnapshotTab({
                   {BANDS.map(fromBand => (
                     <tr key={fromBand}>
                       <td className="p-2 text-xs font-semibold">
-                        <Badge variant="outline" className="text-xs">{fromBand}</Badge>
+                        <span className="inline-flex items-center gap-1">
+                          <span className={`w-2.5 h-2.5 rounded-full ${bandColors[fromBand]}`} />
+                          {fromBand}
+                        </span>
                       </td>
                       {BANDS.map(toBand => {
                         const cell = grid[fromBand]?.[toBand];
@@ -460,20 +517,32 @@ function SnapshotTab({
                 </tbody>
               </table>
             </div>
-            <div className="flex gap-4 mt-3 text-xs text-gray-500">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 bg-emerald-100 rounded" /> Growth</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 bg-amber-50 rounded border" /> Flat</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded" /> Decline</span>
+            <div className="mt-4 space-y-2">
+              <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+                <span className="font-semibold text-gray-700">Bands:</span>
+                {BANDS.map(b => (
+                  <span key={b} className="flex items-center gap-1">
+                    <span className={`w-2.5 h-2.5 rounded-full ${bandColors[b]}`} />
+                    {bandLabels[b]}
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+                <span className="font-semibold text-gray-700">Movement:</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-emerald-50 rounded border border-emerald-200" /> Growth / Improvement</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-50 rounded border border-gray-200" /> Flat</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-50 rounded border border-red-200" /> Decline</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Growth Distribution */}
-        <Card>
+        <Card className="shadow-sm border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Growth Distribution</CardTitle>
+            <CardTitle className="text-base font-semibold text-gray-900">Growth Distribution</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="pt-5 pb-4 space-y-3">
             {[
               { label: "Accelerated", value: summary.accelerated, color: "bg-emerald-500", icon: ArrowUpRight },
               { label: "Typical", value: summary.typical, color: "bg-blue-500", icon: TrendingUp },
@@ -502,10 +571,10 @@ function SnapshotTab({
 
       {/* Cell Detail Students */}
       {cellStudents !== null && (
-        <Card>
+        <Card className="shadow-sm border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Students: {cellLabel}</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Students: {cellLabel}</CardTitle>
               <Button variant="ghost" size="sm" onClick={() => setCellStudents(null)}>
                 <X className="h-4 w-4" />
               </Button>
@@ -562,14 +631,14 @@ function GrowthTab({ standardsData, studentsData, onStudentClick }: any) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <Card>
+      <Card className="shadow-sm border">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-blue-500" />
             Top Growth Drivers (Standards)
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-5 pb-4">
           {topGrowth.length === 0 ? (
             <p className="text-sm text-gray-500">No growth data available.</p>
           ) : (
@@ -593,14 +662,14 @@ function GrowthTab({ standardsData, studentsData, onStudentClick }: any) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-sm border">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
             <ArrowUpRight className="h-4 w-4 text-emerald-500" />
             Biggest Movers
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-5 pb-4">
           {biggestMovers.length === 0 ? (
             <p className="text-sm text-gray-500">No growth data available.</p>
           ) : (
@@ -671,8 +740,8 @@ function ProjectionsTab({ studentsData, onStudentClick }: any) {
           const meta = groupMeta[label];
           const Icon = meta.icon;
           return (
-            <Card key={label} className={`${meta.color}`}>
-              <CardContent className="pt-4 pb-3 text-center">
+            <Card key={label} className={`shadow-sm ${meta.color}`}>
+              <CardContent className="pt-5 pb-4 text-center">
                 <Icon className="h-5 w-5 mx-auto mb-1 text-gray-600" />
                 <p className="text-2xl font-bold">{list.length}</p>
                 <p className="text-xs text-gray-600">{label}</p>
@@ -683,11 +752,11 @@ function ProjectionsTab({ studentsData, onStudentClick }: any) {
       </div>
 
       {Object.entries(projGroups).filter(([, list]) => list.length > 0).map(([label, list]) => (
-        <Card key={label}>
+        <Card key={label} className="shadow-sm border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">{label} ({list.length})</CardTitle>
+            <CardTitle className="text-sm font-semibold text-gray-900">{label} ({list.length})</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-5 pb-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {list.slice(0, 12).map((s: any) => (
                 <div
@@ -736,14 +805,14 @@ function StandardsTab({ standardsData }: any) {
   if (standards.length === 0) return <EmptyState />;
 
   return (
-    <Card>
+    <Card className="shadow-sm border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-purple-500" />
           Standards Growth Attribution
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-5 pb-4">
         <ScrollArea className="max-h-[500px]">
           <Table>
             <TableHeader>
@@ -793,15 +862,15 @@ function StudentsTab({ studentsData, sortedWindows, onStudentClick }: any) {
   if (students.length === 0) return <EmptyState />;
 
   return (
-    <Card>
+    <Card className="shadow-sm border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
           <Users className="h-4 w-4 text-purple-500" />
           Roster Insights
           <Badge variant="outline" className="ml-2">{students.length} scholars</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-5 pb-4">
         <ScrollArea className="max-h-[600px]">
           <Table>
             <TableHeader>

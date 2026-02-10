@@ -1,0 +1,300 @@
+PROJECT: PBIS House of Champions → EduCAP
+FEATURE: EduCAP InsightStack™ Analytics Dashboards (Teacher + Admin) + Assessment Pipeline Fixes
+PRIORITY: Must work identically in DEV and PRODUCTION (prod parity, no blank screens)
+
+==============================
+NON-NEGOTIABLES (LOCKS)
+==============================
+1) LOCKED UI STRUCTURE
+- Add nav item: Teacher → EduCAP → “Analytics”
+- Add nav item: Admin → EduCAP Admin → “Analytics”
+- Both pages must use the same top control bar layout (same component), with role-based options:
+  Controls (left→right):
+   A) Subject toggle: ELA | Math (required)
+   B) Grade selector:
+      - Teacher: locked to teacher’s assigned grade (read-only chip)
+      - Admin: All Grades + Grade 6 + Grade 7 + Grade 8 (chips)
+   C) Compare Mode selector (required):
+      - From window dropdown (Baseline/Midpoint/Final)
+      - To window dropdown (Baseline/Midpoint/Final)
+      - Enforce From != To
+   D) View Mode tabs: Snapshot | Growth | Projections | Standards | Students
+   E) Download button (PDF + CSV): downloads current view (subject + grade + compare)
+   F) Admin-only: Teacher dropdown filter (All Teachers + individual teacher list)
+      - Selecting a teacher filters all admin tables + drilldowns to that teacher’s roster ONLY.
+
+2) ROLE-BASED DATA SECURITY (SERVER-SIDE ENFORCEMENT)
+- Teacher must NEVER be able to fetch other grades, even if they tamper with query params.
+- Enforce scoping in every analytics endpoint:
+  - Resolve user (userId, role, tenantId, schoolId)
+  - If role=TEACHER:
+      * Determine allowedGradeIds from teacher assignment table (or roster association)
+      * Force gradeId filter to allowed grade(s) only
+      * Ignore/override any client-provided gradeId not in allowed set
+  - If role=ADMIN:
+      * Can access all grades in tenantId+schoolId
+      * Optional filter: teacherId (from dropdown) narrows dataset to that teacher’s roster
+- Return 403 when teacher attempts unauthorized grade access.
+
+3) MOVEMENT MAP BAND LOGIC (DEFINITIONS + COLORS)
+We need two independent concepts:
+(A) Band identity (PRO/ON/DEV/HR/ND) = student status per window
+(B) Movement direction tint = improvement/flat/decline comparing From→To
+
+Band rules:
+- PRO = Proficient (meets/exceeds threshold)
+- ON  = On track (below proficient but on trajectory)
+- DEV = Developing (below on track)
+- HR  = High risk (significantly below)
+- ND  = No data (missing result in either window)
+
+Band assignment must be deterministic, driven by the existing EduCAP scoring model:
+- If your result model already stores a band/level, use it as source of truth.
+- Else compute band from scaledScore/percentCorrect using per-grade cut scores stored in DB.
+
+Movement Map grid:
+- Rows = From band
+- Cols = To band
+- Cell value = count of students moving row→col
+- Cell click opens Student List filtered to that exact movement pair.
+
+Color rules:
+- Band identity uses a color DOT/legend:
+   PRO = Green
+   ON  = Blue
+   DEV = Orange
+   HR  = Red/Pink
+   ND  = Gray
+- Movement direction uses cell background tint:
+   Improvement (To band is higher than From band) = light green tint
+   Flat (same band) = neutral light gray/white
+   Decline (To band is lower) = light red tint
+- Must render a bottom legend:
+   Band Legend (dot+label for PRO/ON/DEV/HR/ND)
+   Movement Legend (improve/flat/decline)
+
+Band ordering (highest→lowest): PRO > ON > DEV > HR > ND
+ND treated specially:
+- If From=ND and To!=ND => treat as improvement tint
+- If From!=ND and To=ND => treat as decline tint
+- ND→ND => flat
+
+4) PROJECTIONS: explanationJSON SCHEMA (TRANSPARENT + STORED)
+Projections must store BOTH numeric outputs and a human-readable explanation payload.
+
+Create/normalize table: projection_outputs
+Columns:
+- id, tenantId, schoolId, studentId, subject, gradeId
+- fromWindowId, toWindowId (comparison used for model)
+- projectedBand (PRO/ON/DEV/HR)
+- probProficient (0..1)
+- probOnTrack (0..1)
+- projectedScaledScore (nullable)
+- computedAt (timestamp)
+- explanationJSON (jsonb, required)
+
+explanationJSON schema (MUST MATCH EXACTLY):
+{
+  "modelVersion": "InsightStack.v1",
+  "inputs": {
+    "fromWindow": "Baseline|Midpoint|Final",
+    "toWindow": "Baseline|Midpoint|Final",
+    "scaledGrowth": number,
+    "movementGrowth": { "fromBand": "PRO|ON|DEV|HR|ND", "toBand": "PRO|ON|DEV|HR|ND", "delta": number },
+    "masteryCoverage": { "attemptedStandards": number, "masteredStandards": number, "coveragePct": number },
+    "recencyDays": number
+  },
+  "drivers": [
+    { "type": "positive|negative|neutral", "label": string, "detail": string, "weight": number }
+  ],
+  "assumptions": [
+    { "label": string, "detail": string }
+  ],
+  "recommendations": [
+    { "standardId": string, "standardLabel": string, "reason": string, "priority": "High|Medium|Low" }
+  ],
+  "confidence": { "score": number, "label": "High|Medium|Low" }
+}
+
+Projection computation rules (v1):
+- probProficient = sigmoid( a*scaledGrowth + b*coveragePct + c*movementDelta + d )
+- coveragePct = masteredStandards / max(1, attemptedStandards)
+- movementDelta numeric mapping: PRO=3, ON=2, DEV=1, HR=0, ND=-1
+- Confidence:
+   High if coveragePct>=0.6 and recencyDays<=30
+   Medium if coveragePct>=0.35
+   Low otherwise
+- Store all driver weights used so results are explainable.
+
+5) DOWNLOADS (TEACHER + ADMIN)
+- Add Download button in top controls:
+  - PDF: print-ready view of current tab with header + filters + timestamp
+  - CSV: exports underlying tables for the current view (movement grid, standards, or students)
+- Teacher download must be parent-shareable: includes student names + IDs only for teacher’s roster.
+- Admin download respects teacher filter if selected.
+
+6) PROD PARITY + DEBUG INSTRUMENTATION
+A) Admin-only “PROD DEBUG → EduCAP Analytics” page:
+- Show counts:
+  - assessment_windows count
+  - student_assessment_results count
+  - student_standard_mastery count
+  - projection_outputs count
+  - users count (by role)
+- Show last 20 analytics errors (server logs table)
+- Show tenant info redacted: tenantId hash, schoolId, environment, build SHA if available
+- Show last successful projection recompute timestamp
+
+B) Server request logging (analytics endpoints only):
+- Log: timestamp, path, method, userId, role, tenantId, schoolId, gradeId, teacherFilterId, status, durationMs, errorMessage
+- Store in DB table: insight_events (jsonb payload + indexed fields)
+
+C) Client-side error boundary logging:
+- Any failed fetch in Analytics module logs to /api/educap/analytics/client-error (POST)
+- Include route, filters, status, error stack (redact PII)
+
+==============================
+DATA MODEL (ADD/NORMALIZE)
+==============================
+Ensure tenant-scoped tables exist (tenantId + schoolId always present):
+1) assessment_windows
+- id, tenantId, schoolId, name (Baseline/Midpoint/Final), startDate, endDate, isActive, subject, gradeScope
+
+2) student_assessment_results
+- id, tenantId, schoolId, studentId, subject, gradeId, windowId
+- scaledScore, percentCorrect, band (PRO/ON/DEV/HR) [optional but preferred], createdAt
+
+3) student_standard_mastery
+- id, tenantId, schoolId, studentId, subject, gradeId, windowId
+- standardId, attempts, correct, masteryPct, isMastered, updatedAt
+
+4) projection_outputs (defined above)
+
+5) insight_events (server logging + client error logs)
+- id, tenantId, schoolId, userId, role, type, path, status, payloadJSON, createdAt
+
+Also ensure teacher-to-grade mapping exists (one source of truth):
+- teacher_grade_assignments OR derive from roster memberships
+- Must be queryable server-side for scoping.
+
+==============================
+API ENDPOINTS (MUST IMPLEMENT)
+==============================
+All endpoints must:
+- Use auth cookies correctly in PROD (credentials: "include")
+- Enforce tenantId/schoolId scoping
+- Enforce teacher scoping server-side
+- Return empty states (not errors) when no data
+
+1) GET /api/educap/analytics/overview
+Returns KPI cards + high-level counts for current filters
+
+2) GET /api/educap/analytics/movement
+Returns movement grid + studentIds per cell (or a cell key to fetch students)
+
+3) GET /api/educap/analytics/standards
+Returns standards attribution:
+- growth contribution (delta mastery)
+- sortable columns
+- clicking a standard returns evidence list (items/questions tagged to that standard if available)
+
+4) GET /api/educap/analytics/students
+Returns roster list with bands in both windows + growth metrics + projection summary
+
+5) GET /api/educap/analytics/student/:studentId
+Returns student drilldown:
+- trend line (baseline/midpoint/final)
+- mastery map by standard
+- projection explanationJSON rendered cleanly
+
+6) POST /api/educap/analytics/projections/recompute (ADMIN ONLY)
+- recompute projections for selected scope:
+   subject + grade (or all grades) + optional teacher filter
+- log result to insight_events
+- must not crash in production; return partial success + error list if any
+
+7) POST /api/educap/analytics/client-error
+- store client error payload into insight_events
+
+==============================
+UI IMPLEMENTATION (KEEP STYLE, MORE PROFESSIONAL)
+==============================
+Keep existing styling language, but:
+- Sharper tiles: reduce blur, increase contrast, consistent padding, stronger typography hierarchy
+- Movement Map must show band colors + legend (required)
+- Add Download button on Teacher + Admin
+- Admin: Teacher dropdown + Subject selection in same control area; selecting changes data immediately
+- Admin: Compare grade levels against each other:
+   - Add “Compare Grades” mode (admin only) under Growth view:
+      * shows side-by-side KPIs and movement summaries for selected grades
+      * does not leak teacher-only data; admin already authorized
+
+Empty states:
+- Render “No data yet” with admin hint (e.g., “No results found for Midpoint. Confirm students completed window.”)
+
+==============================
+CRITICAL BUG FIXES (PIPELINE + ACCESS + PUBLISH)
+==============================
+A) Teacher-created assessments not showing under Student → Assessments tab
+- Fix assignment write path:
+  - When teacher clicks “Assign to Students”, ensure:
+    1) creates assignment record
+    2) creates student_assessment_assignments join rows for each selected student
+    3) student portal query reads the same table(s) filtered by studentId
+- Student → Assessments tab must display all assigned assessments that are:
+  - admin-published baseline/midpoint/final (Forge)
+  - teacher-made tests (renamed categories below)
+- Ensure routing: /student-acap?studentId=... loads assigned list.
+
+B) ACCESS CODES
+- Admin-only can create + publish official windows:
+  - Rename admin set: Baseline, Midpoint, Final (OFFICIAL)
+  - Admin generates access codes for each official window
+- Teachers can generate access codes ONLY for teacher-made categories:
+  - Teacher Made, Daily Practice, Homework, Midpoint Check, Formative Assessment
+- Enforce:
+  - A teacher cannot generate an access code for official baseline/midpoint/final
+  - Students entering access code resolves to the correct assessment + window + subject + grade
+
+C) Forge publish fails (“Failed to publish”)
+- Implement a deterministic publish pipeline:
+  - Validate assessment has items, metadata, window mapping (Baseline/Midpoint/Final), grade+subject
+  - On publish:
+     1) set status=PUBLISHED
+     2) generate accessCode
+     3) write a “Teacher Distribution record” so admin can share to teachers
+     4) log in insight_events
+- Create Admin → “Published Library” page where published assessments live:
+  - filters: window, grade, subject
+  - actions: copy access code, assign to teachers (creates teacher distribution records)
+
+D) Cost Controls → Upload Sources page is non-interactive; status stuck queued
+- Implement functional actions:
+  - View, Assign to Teachers, Send to Teacher Inbox, Retry Parse, Delete
+- Fix auto-tag settings button, select pack dropdown, apply rules:
+  - If packs are empty, return empty state + instruction to create pack
+  - Apply rules triggers server job that updates item tags and statuses
+- Item staging queue must display queued items and progress
+- Build Test → Build Assessment tab must be enabled once enough accepted items exist
+- DOK Distribution sliders must write to build configuration AND be applied in final assembled assessment
+- AI Add-ons: RUN AI must execute selected operations and update items (and spend guardrails)
+  - Ensure all AI actions are optional and off by default
+
+==============================
+ACCEPTANCE TESTS (PRODUCTION MUST PASS)
+==============================
+1) Teacher: Compare Baseline vs Midpoint shows Movement Map; clicking cell opens student list; drilldown works.
+2) Teacher: Standards Attribution updates correctly when switching comparisons.
+3) Teacher: Download PDF produces a print-ready report for current view; CSV exports correct rows.
+4) Admin: Grade Ladder + Teacher Impact show real data; teacher filter dropdown works.
+5) Admin: Recompute projections works; errors logged; debug page shows correct counts.
+6) Student: Assigned assessments appear under Student Assessments tab via access code and direct assignment.
+7) Admin: Forge Publish works; published assessments appear in Published Library with share actions.
+8) No blank screens; empty states show “No data yet” + admin hint.
+
+DELIVERABLES:
+- New pages + routes (Teacher Analytics, Admin Analytics, Admin PROD DEBUG, Admin Published Library)
+- DB migrations
+- API endpoints
+- Server + client logging
+- Verified in DEV and PRODUCTION with credentials included in fetches

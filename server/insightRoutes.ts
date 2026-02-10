@@ -31,7 +31,7 @@ function sigmoid(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }
 
-async function getScopedStudentIds(scope: any, gradeFilter?: number): Promise<string[]> {
+async function getScopedStudentIds(scope: any, gradeFilter?: number, teacherIdFilter?: string): Promise<string[]> {
   let conditions: any[] = [];
 
   if (scope.grades && scope.grades.length > 0) {
@@ -39,6 +39,9 @@ async function getScopedStudentIds(scope: any, gradeFilter?: number): Promise<st
   }
   if (gradeFilter) {
     conditions.push(eq(scholars.grade, gradeFilter));
+  }
+  if (teacherIdFilter) {
+    conditions.push(eq(scholars.teacherId, teacherIdFilter));
   }
 
   const students = await db.select({ id: scholars.id }).from(scholars)
@@ -118,6 +121,7 @@ export function registerInsightRoutes(app: Express) {
       const fromWindowId = parseInt(req.query.fromWindow as string);
       const toWindowId = parseInt(req.query.toWindow as string);
       const gradeFilter = req.query.grade ? parseInt(req.query.grade as string) : undefined;
+      const teacherIdFilter = req.userRole === "admin" && req.query.teacherId ? req.query.teacherId as string : undefined;
 
       if (!subject || isNaN(fromWindowId) || isNaN(toWindowId)) {
         return res.json({
@@ -127,7 +131,7 @@ export function registerInsightRoutes(app: Express) {
       }
 
       const effectiveGrade = req.userRole === "admin" ? gradeFilter : undefined;
-      const studentIds = await getScopedStudentIds(req.userScope, effectiveGrade);
+      const studentIds = await getScopedStudentIds(req.userScope, effectiveGrade, teacherIdFilter);
 
       if (studentIds.length === 0) {
         return res.json({
@@ -216,13 +220,14 @@ export function registerInsightRoutes(app: Express) {
       const fromWindowId = parseInt(req.query.fromWindow as string);
       const toWindowId = parseInt(req.query.toWindow as string);
       const gradeFilter = req.query.grade ? parseInt(req.query.grade as string) : undefined;
+      const teacherIdFilter = req.userRole === "admin" && req.query.teacherId ? req.query.teacherId as string : undefined;
 
       if (!subject || isNaN(fromWindowId) || isNaN(toWindowId)) {
         return res.json({ grid: {}, movementSummary: { accelerated: 0, typical: 0, flat: 0, decline: 0 } });
       }
 
       const effectiveGrade = req.userRole === "admin" ? gradeFilter : undefined;
-      const studentIds = await getScopedStudentIds(req.userScope, effectiveGrade);
+      const studentIds = await getScopedStudentIds(req.userScope, effectiveGrade, teacherIdFilter);
 
       if (studentIds.length === 0) {
         return res.json({ grid: {}, movementSummary: { accelerated: 0, typical: 0, flat: 0, decline: 0 } });
@@ -353,13 +358,14 @@ export function registerInsightRoutes(app: Express) {
       const fromWindowId = parseInt(req.query.fromWindow as string);
       const toWindowId = parseInt(req.query.toWindow as string);
       const gradeFilter = req.query.grade ? parseInt(req.query.grade as string) : undefined;
+      const teacherIdFilter = req.userRole === "admin" && req.query.teacherId ? req.query.teacherId as string : undefined;
 
       if (!subject || isNaN(fromWindowId) || isNaN(toWindowId)) {
         return res.json({ standards: [] });
       }
 
       const effectiveGrade = req.userRole === "admin" ? gradeFilter : undefined;
-      const studentIds = await getScopedStudentIds(req.userScope, effectiveGrade);
+      const studentIds = await getScopedStudentIds(req.userScope, effectiveGrade, teacherIdFilter);
 
       if (studentIds.length === 0) return res.json({ standards: [] });
 
@@ -432,13 +438,14 @@ export function registerInsightRoutes(app: Express) {
       const fromWindowId = parseInt(req.query.fromWindow as string);
       const toWindowId = parseInt(req.query.toWindow as string);
       const gradeFilter = req.query.grade ? parseInt(req.query.grade as string) : undefined;
+      const teacherIdFilter = req.userRole === "admin" && req.query.teacherId ? req.query.teacherId as string : undefined;
 
       if (!subject || isNaN(fromWindowId) || isNaN(toWindowId)) {
         return res.json({ students: [] });
       }
 
       const effectiveGrade = req.userRole === "admin" ? gradeFilter : undefined;
-      const studentIds = await getScopedStudentIds(req.userScope, effectiveGrade);
+      const studentIds = await getScopedStudentIds(req.userScope, effectiveGrade, teacherIdFilter);
 
       if (studentIds.length === 0) return res.json({ students: [] });
 
@@ -586,6 +593,25 @@ export function registerInsightRoutes(app: Express) {
     }
   });
 
+  // 7b. GET /api/educap/analytics/teachers (admin only - list teachers for filtering)
+  app.get("/api/educap/analytics/teachers", authenticateInsightUser, async (req: any, res: Response) => {
+    try {
+      if (req.userRole !== "admin") {
+        return res.status(403).json({ error: "Admin only" });
+      }
+
+      const teacherRows = await db.select({
+        id: teacherAuth.id,
+        name: teacherAuth.name,
+        gradeRole: teacherAuth.gradeRole,
+      }).from(teacherAuth).orderBy(teacherAuth.name);
+
+      res.json({ teachers: teacherRows });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch teachers" });
+    }
+  });
+
   // 8. POST /api/educap/analytics/projections/recompute (admin only)
   app.post("/api/educap/analytics/projections/recompute", authenticateInsightUser, async (req: any, res: Response) => {
     try {
@@ -594,11 +620,12 @@ export function registerInsightRoutes(app: Express) {
       }
 
       const { grade, subject } = req.body;
-      if (!grade || !subject) {
-        return res.status(400).json({ error: "grade and subject are required" });
+      if (!subject) {
+        return res.status(400).json({ error: "subject is required" });
       }
 
-      const studentIds = await getScopedStudentIds({ grades: [grade] });
+      const gradesToProcess = grade ? [grade] : [6, 7, 8];
+      const studentIds = await getScopedStudentIds({ grades: gradesToProcess });
       if (studentIds.length === 0) {
         return res.json({ message: "No students found", count: 0 });
       }
@@ -684,7 +711,7 @@ export function registerInsightRoutes(app: Express) {
         await db.insert(insightProjections).values({
           scholarId: sid,
           subject,
-          gradeLevel: grade,
+          gradeLevel: grade || 0,
           fromWindowId: fromWindow.id,
           toWindowId: toWindow.id,
           probabilityProficient: Math.round(probability * 1000) / 1000,

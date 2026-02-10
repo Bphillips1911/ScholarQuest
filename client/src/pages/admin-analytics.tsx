@@ -18,7 +18,7 @@ import {
   ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Target, Users,
   BarChart3, Loader2, ChevronRight, X, BookOpen, Sparkles, Shield,
   Activity, ArrowUpRight, ArrowDownRight, Minus, Eye, MoreHorizontal,
-  RefreshCw, Bug, GraduationCap, Award
+  RefreshCw, Bug, GraduationCap, Award, Download
 } from "lucide-react";
 import { TAGLINE } from "@/lib/educapBrand";
 import { useToast } from "@/hooks/use-toast";
@@ -121,28 +121,29 @@ export default function AdminAnalytics() {
 
   const enabled = !!fromWindow && !!toWindow && fromWindow !== toWindow;
   const gradeParam = grade !== "all" ? `&grade=${grade}` : "";
+  const teacherParam = selectedTeacher ? `&teacherId=${selectedTeacher}` : "";
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
-    queryKey: ["/api/educap/analytics/overview", subject, fromWindow, toWindow, grade],
-    queryFn: () => insightFetch(`/api/educap/analytics/overview?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}`),
+    queryKey: ["/api/educap/analytics/overview", subject, fromWindow, toWindow, grade, selectedTeacher],
+    queryFn: () => insightFetch(`/api/educap/analytics/overview?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}${teacherParam}`),
     enabled,
   });
 
   const { data: movementData, isLoading: movementLoading } = useQuery({
-    queryKey: ["/api/educap/analytics/movement", subject, fromWindow, toWindow, grade],
-    queryFn: () => insightFetch(`/api/educap/analytics/movement?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}`),
+    queryKey: ["/api/educap/analytics/movement", subject, fromWindow, toWindow, grade, selectedTeacher],
+    queryFn: () => insightFetch(`/api/educap/analytics/movement?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}${teacherParam}`),
     enabled,
   });
 
   const { data: standardsData } = useQuery({
-    queryKey: ["/api/educap/analytics/standards", subject, fromWindow, toWindow, grade],
-    queryFn: () => insightFetch(`/api/educap/analytics/standards?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}`),
+    queryKey: ["/api/educap/analytics/standards", subject, fromWindow, toWindow, grade, selectedTeacher],
+    queryFn: () => insightFetch(`/api/educap/analytics/standards?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}${teacherParam}`),
     enabled,
   });
 
   const { data: studentsData } = useQuery({
-    queryKey: ["/api/educap/analytics/students", subject, fromWindow, toWindow, grade],
-    queryFn: () => insightFetch(`/api/educap/analytics/students?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}`),
+    queryKey: ["/api/educap/analytics/students", subject, fromWindow, toWindow, grade, selectedTeacher],
+    queryFn: () => insightFetch(`/api/educap/analytics/students?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}${teacherParam}`),
     enabled,
   });
 
@@ -155,7 +156,7 @@ export default function AdminAnalytics() {
   const { data: teacherImpact, isLoading: impactLoading } = useQuery({
     queryKey: ["/api/educap/analytics/teacher-impact", subject, fromWindow, toWindow, grade],
     queryFn: () => insightFetch(`/api/educap/analytics/teacher-impact?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}${gradeParam}`),
-    enabled: enabled && grade !== "all",
+    enabled: enabled,
   });
 
   const { data: studentDetail } = useQuery({
@@ -171,7 +172,11 @@ export default function AdminAnalytics() {
     }),
     onSuccess: () => {
       toast({ title: "Projections recomputed", description: "All projection data has been refreshed." });
-      queryClient.invalidateQueries({ queryKey: ["/api/educap/analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/educap/analytics/overview"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/educap/analytics/students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/educap/analytics/standards"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/educap/analytics/grade-ladder"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/educap/analytics/teacher-impact"] });
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to recompute projections.", variant: "destructive" });
@@ -185,6 +190,54 @@ export default function AdminAnalytics() {
 
   const fromWindowName = sortedWindows.find(w => w.id === fromWindow)?.name || "From";
   const toWindowName = sortedWindows.find(w => w.id === toWindow)?.name || "To";
+
+  const handleDownloadCSV = () => {
+    let csvContent = "";
+    let filename = `educap_${subject}_${fromWindowName}_to_${toWindowName}`;
+    if (grade !== "all") filename += `_grade${grade}`;
+
+    if (activeTab === "students" && studentsData?.students) {
+      csvContent = "Name,Grade,From Score,To Score,Growth,Band,Risk,Projection\n";
+      for (const s of studentsData.students) {
+        csvContent += `"${s.name}",${s.grade},${s.fromScore ?? ""},${s.toScore ?? ""},${s.growth ?? ""},${s.toBand ?? ""},${s.riskFlag ?? ""},${s.projectionBand ?? ""}\n`;
+      }
+      filename += "_students";
+    } else if (activeTab === "standards" && standardsData?.standards) {
+      csvContent = "Code,Description,From Mastery %,To Mastery %,Growth %,Students,Leverage Score\n";
+      for (const s of standardsData.standards) {
+        csvContent += `"${s.code}","${s.description ?? ""}",${s.fromMastery?.toFixed(1) ?? ""},${s.toMastery?.toFixed(1) ?? ""},${s.growth?.toFixed(1) ?? ""},${s.studentCount ?? ""},${s.leverageScore?.toFixed(1) ?? ""}\n`;
+      }
+      filename += "_standards";
+    } else if (activeTab === "snapshot" && movementData?.grid) {
+      csvContent = "From Band,To Band,Count\n";
+      for (const fromBand of BANDS) {
+        for (const toBand of BANDS) {
+          const count = movementData.grid[fromBand]?.[toBand]?.count || 0;
+          csvContent += `${fromBand},${toBand},${count}\n`;
+        }
+      }
+      filename += "_movement";
+    } else if (activeTab === "growth" && studentsData?.students) {
+      csvContent = "Name,Grade,From Band,To Band,Growth\n";
+      const sorted = [...studentsData.students].filter((s: any) => s.growth !== null).sort((a: any, b: any) => (b.growth || 0) - (a.growth || 0));
+      for (const s of sorted) {
+        csvContent += `"${s.name}",${s.grade},${s.fromBand ?? ""},${s.toBand ?? ""},${s.growth ?? ""}\n`;
+      }
+      filename += "_growth";
+    } else {
+      toast({ title: "No data to export", description: "No data available for the current tab.", variant: "destructive" });
+      return;
+    }
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${filename}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "CSV Downloaded", description: `Exported ${filename}.csv` });
+  };
 
   if (windowsLoading) {
     return (
@@ -264,6 +317,23 @@ export default function AdminAnalytics() {
               <Separator orientation="vertical" className="h-8" />
 
               <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-600">Teacher:</span>
+                <Select value={selectedTeacher || "all"} onValueChange={v => setSelectedTeacher(v === "all" ? null : v)}>
+                  <SelectTrigger className="w-44 h-8 text-sm">
+                    <SelectValue placeholder="All Teachers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Teachers</SelectItem>
+                    {(teacherImpact?.teachers || []).map((t: any) => (
+                      <SelectItem key={t.teacherId} value={t.teacherId}>{t.name || t.teacherName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator orientation="vertical" className="h-8" />
+
+              <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-600">Compare:</span>
                 <Select value={fromWindow?.toString() || ""} onValueChange={v => setFromWindow(parseInt(v))}>
                   <SelectTrigger className="w-40 h-8 text-sm">
@@ -291,6 +361,10 @@ export default function AdminAnalytics() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
+                <Download className="h-4 w-4 mr-1" /> Download CSV
+              </Button>
 
               <div className="ml-auto">
                 <DropdownMenu>
@@ -322,12 +396,12 @@ export default function AdminAnalytics() {
           <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-purple-500" /></div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg">
+            <Card className="border-0 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl rounded-xl">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-xs font-medium uppercase tracking-wide">Proficiency Now</p>
-                    <p className="text-3xl font-bold mt-1">{overview?.proficiencyNow ?? 0}%</p>
+                    <p className="text-emerald-100 text-xs font-medium uppercase tracking-widest">Proficiency Now</p>
+                    <p className="text-4xl font-extrabold mt-1">{overview?.proficiencyNow ?? 0}%</p>
                     <p className="text-emerald-200 text-xs mt-1">of scholars in PRO band</p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-xl">
@@ -337,12 +411,12 @@ export default function AdminAnalytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <Card className="border-0 bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-xl rounded-xl">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wide">Median Growth</p>
-                    <p className="text-3xl font-bold mt-1">
+                    <p className="text-blue-100 text-xs font-medium uppercase tracking-widest">Median Growth</p>
+                    <p className="text-4xl font-extrabold mt-1">
                       {(overview?.growth ?? 0) >= 0 ? "+" : ""}{overview?.growth ?? 0}
                     </p>
                     <p className="text-blue-200 text-xs mt-1">pts {fromWindowName} → {toWindowName}</p>
@@ -354,12 +428,12 @@ export default function AdminAnalytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
+            <Card className="border-0 bg-gradient-to-br from-orange-600 to-red-700 text-white shadow-xl rounded-xl">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-orange-100 text-xs font-medium uppercase tracking-wide">Off Track</p>
-                    <p className="text-3xl font-bold mt-1">{overview?.offTrack ?? 0}</p>
+                    <p className="text-orange-100 text-xs font-medium uppercase tracking-widest">Off Track</p>
+                    <p className="text-4xl font-extrabold mt-1">{overview?.offTrack ?? 0}</p>
                     <p className="text-orange-200 text-xs mt-1">scholars below ON band</p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-xl">
@@ -369,12 +443,12 @@ export default function AdminAnalytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-lg">
+            <Card className="border-0 bg-gradient-to-br from-purple-600 to-violet-800 text-white shadow-xl rounded-xl">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-xs font-medium uppercase tracking-wide">Leverage Standards</p>
-                    <p className="text-3xl font-bold mt-1">{overview?.leverageStandards?.length ?? 0}</p>
+                    <p className="text-purple-100 text-xs font-medium uppercase tracking-widest">Leverage Standards</p>
+                    <p className="text-4xl font-extrabold mt-1">{overview?.leverageStandards?.length ?? 0}</p>
                     <p className="text-purple-200 text-xs mt-1">high-impact focus areas</p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-xl">
@@ -702,10 +776,13 @@ function SnapshotTab({
   const getCellColor = (fromBand: string, toBand: string) => {
     const fromIdx = BANDS.indexOf(fromBand as any);
     const toIdx = BANDS.indexOf(toBand as any);
-    if (fromIdx < 0 || toIdx < 0) return "bg-gray-50";
-    if (toIdx < fromIdx) return "bg-emerald-100 hover:bg-emerald-200";
-    if (toIdx === fromIdx) return "bg-amber-50 hover:bg-amber-100";
-    return "bg-red-100 hover:bg-red-200";
+    if (fromIdx < 0 || toIdx < 0) return "bg-gray-50 border border-gray-200";
+    if (fromBand === "ND" && toBand === "ND") return "bg-gray-50 hover:bg-gray-100 border border-gray-200";
+    if (fromBand === "ND" && toBand !== "ND") return "bg-emerald-50 hover:bg-emerald-100 border border-emerald-200";
+    if (fromBand !== "ND" && toBand === "ND") return "bg-red-50 hover:bg-red-100 border border-red-200";
+    if (toIdx < fromIdx) return "bg-emerald-50 hover:bg-emerald-100 border border-emerald-200";
+    if (toIdx === fromIdx) return "bg-gray-50 hover:bg-gray-100 border border-gray-200";
+    return "bg-red-50 hover:bg-red-100 border border-red-200";
   };
 
   return (
@@ -724,18 +801,29 @@ function SnapshotTab({
                 <thead>
                   <tr>
                     <th className="p-2 text-xs text-gray-500 w-16">From ↓ / To →</th>
-                    {BANDS.map(b => (
-                      <th key={b} className="p-2 text-xs font-semibold text-center">
-                        <Badge variant="outline" className="text-xs">{b}</Badge>
-                      </th>
-                    ))}
+                    {BANDS.map(b => {
+                      const dotColor = b === "PRO" ? "bg-emerald-500" : b === "ON" ? "bg-blue-500" : b === "DEV" ? "bg-amber-500" : b === "HR" ? "bg-red-500" : "bg-gray-400";
+                      return (
+                        <th key={b} className="p-2 text-xs font-semibold text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className={`inline-block w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                            <Badge variant="outline" className="text-xs">{b}</Badge>
+                          </div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
-                  {BANDS.map(fromBand => (
+                  {BANDS.map(fromBand => {
+                    const dotColor = fromBand === "PRO" ? "bg-emerald-500" : fromBand === "ON" ? "bg-blue-500" : fromBand === "DEV" ? "bg-amber-500" : fromBand === "HR" ? "bg-red-500" : "bg-gray-400";
+                    return (
                     <tr key={fromBand}>
                       <td className="p-2 text-xs font-semibold">
-                        <Badge variant="outline" className="text-xs">{fromBand}</Badge>
+                        <div className="flex items-center gap-1">
+                          <span className={`inline-block w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                          <Badge variant="outline" className="text-xs">{fromBand}</Badge>
+                        </div>
                       </td>
                       {BANDS.map(toBand => {
                         const cell = grid[fromBand]?.[toBand];
@@ -754,14 +842,26 @@ function SnapshotTab({
                         );
                       })}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-            <div className="flex gap-4 mt-3 text-xs text-gray-500">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 bg-emerald-100 rounded" /> Growth</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 bg-amber-50 rounded border" /> Flat</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded" /> Decline</span>
+            <div className="mt-4 space-y-2">
+              <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+                <span className="font-semibold text-gray-700 mr-1">Bands:</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" /> Proficient</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500" /> On Track</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500" /> Developing</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500" /> High Risk</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400" /> No Data</span>
+              </div>
+              <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+                <span className="font-semibold text-gray-700 mr-1">Movement:</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-emerald-100 border border-emerald-200 rounded" /> Growth / Improvement</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-100 border border-gray-200 rounded" /> Flat</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 border border-red-200 rounded" /> Decline</span>
+              </div>
             </div>
           </CardContent>
         </Card>

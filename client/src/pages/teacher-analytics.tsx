@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Target, Users,
   BarChart3, Loader2, ChevronRight, X, BookOpen, Sparkles, Shield,
-  Activity, ArrowUpRight, ArrowDownRight, Minus, Eye, Download
+  Activity, ArrowUpRight, ArrowDownRight, Minus, Eye, Download, Printer
 } from "lucide-react";
 import { TAGLINE } from "@/lib/educapBrand";
 
@@ -97,7 +97,7 @@ export default function TeacherAnalytics() {
     return [...windows].sort((a, b) => a.orderIndex - b.orderIndex);
   }, [windows]);
 
-  useMemo(() => {
+  useEffect(() => {
     if (sortedWindows.length >= 2 && fromWindow === null && toWindow === null) {
       setFromWindow(sortedWindows[0].id);
       setToWindow(sortedWindows[sortedWindows.length - 1].id);
@@ -275,6 +275,11 @@ export default function TeacherAnalytics() {
               <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="h-8 text-sm gap-1.5">
                 <Download className="h-3.5 w-3.5" />
                 Download CSV
+              </Button>
+
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8 text-sm gap-1.5">
+                <Printer className="h-3.5 w-3.5" />
+                Print / PDF
               </Button>
             </div>
           </CardContent>

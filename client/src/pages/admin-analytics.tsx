@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -25,11 +25,12 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 
 function insightFetch(url: string, options?: RequestInit) {
-  const token = localStorage.getItem("adminToken");
+  const token = localStorage.getItem("adminToken") || "";
   return fetch(url, {
     ...options,
     headers: {
-      "x-admin-token": token || "",
+      "x-admin-token": token,
+      "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
       ...(options?.headers || {})
     },
@@ -112,7 +113,7 @@ export default function AdminAnalytics() {
     return [...windows].sort((a, b) => a.orderIndex - b.orderIndex);
   }, [windows]);
 
-  useMemo(() => {
+  useEffect(() => {
     if (sortedWindows.length >= 2 && fromWindow === null && toWindow === null) {
       setFromWindow(sortedWindows[0].id);
       setToWindow(sortedWindows[sortedWindows.length - 1].id);
@@ -483,6 +484,7 @@ export default function AdminAnalytics() {
             <TabsTrigger value="projections">Projections</TabsTrigger>
             <TabsTrigger value="standards">Standards</TabsTrigger>
             <TabsTrigger value="students">Students</TabsTrigger>
+            <TabsTrigger value="gradeCompare">Grade Comparison</TabsTrigger>
           </TabsList>
 
           <TabsContent value="snapshot" className="mt-4 space-y-4">
@@ -521,6 +523,16 @@ export default function AdminAnalytics() {
               sortedWindows={sortedWindows}
               onStudentClick={openDrawer}
               selectedTeacher={selectedTeacher}
+            />
+          </TabsContent>
+
+          <TabsContent value="gradeCompare" className="mt-4">
+            <GradeComparisonTab
+              subject={subject}
+              fromWindow={fromWindow}
+              toWindow={toWindow}
+              fromWindowName={fromWindowName}
+              toWindowName={toWindowName}
             />
           </TabsContent>
         </Tabs>
@@ -1176,6 +1188,184 @@ function StandardsTab({ standardsData }: any) {
         </ScrollArea>
       </CardContent>
     </Card>
+  );
+}
+
+function GradeComparisonTab({ subject, fromWindow, toWindow, fromWindowName, toWindowName }: any) {
+  const enabled = !!fromWindow && !!toWindow && fromWindow !== toWindow;
+
+  const { data: grade6, isLoading: loading6 } = useQuery({
+    queryKey: ["/api/educap/analytics/overview", subject, fromWindow, toWindow, "6", "gradeCompare"],
+    queryFn: () => insightFetch(`/api/educap/analytics/overview?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}&grade=6`),
+    enabled,
+  });
+  const { data: grade7, isLoading: loading7 } = useQuery({
+    queryKey: ["/api/educap/analytics/overview", subject, fromWindow, toWindow, "7", "gradeCompare"],
+    queryFn: () => insightFetch(`/api/educap/analytics/overview?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}&grade=7`),
+    enabled,
+  });
+  const { data: grade8, isLoading: loading8 } = useQuery({
+    queryKey: ["/api/educap/analytics/overview", subject, fromWindow, toWindow, "8", "gradeCompare"],
+    queryFn: () => insightFetch(`/api/educap/analytics/overview?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}&grade=8`),
+    enabled,
+  });
+
+  const { data: move6 } = useQuery({
+    queryKey: ["/api/educap/analytics/movement", subject, fromWindow, toWindow, "6", "gradeCompare"],
+    queryFn: () => insightFetch(`/api/educap/analytics/movement?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}&grade=6`),
+    enabled,
+  });
+  const { data: move7 } = useQuery({
+    queryKey: ["/api/educap/analytics/movement", subject, fromWindow, toWindow, "7", "gradeCompare"],
+    queryFn: () => insightFetch(`/api/educap/analytics/movement?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}&grade=7`),
+    enabled,
+  });
+  const { data: move8 } = useQuery({
+    queryKey: ["/api/educap/analytics/movement", subject, fromWindow, toWindow, "8", "gradeCompare"],
+    queryFn: () => insightFetch(`/api/educap/analytics/movement?subject=${subject}&fromWindow=${fromWindow}&toWindow=${toWindow}&grade=8`),
+    enabled,
+  });
+
+  if (loading6 || loading7 || loading8) {
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-purple-500" /></div>;
+  }
+
+  const grades = [
+    { label: "Grade 6", data: grade6, movement: move6, color: "blue" },
+    { label: "Grade 7", data: grade7, movement: move7, color: "purple" },
+    { label: "Grade 8", data: grade8, movement: move8, color: "emerald" },
+  ];
+
+  const colorMap: Record<string, { bg: string; text: string; border: string }> = {
+    blue: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+    purple: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
+    emerald: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="shadow-sm border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-purple-600" />
+            Grade-Level Comparison — {subject} ({fromWindowName} → {toWindowName})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {grades.map(g => {
+              const c = colorMap[g.color];
+              const d = g.data;
+              const summary = g.movement?.movementSummary;
+              return (
+                <Card key={g.label} className={`${c.bg} ${c.border} border-2`}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className={`text-lg font-bold ${c.text}`}>{g.label}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Proficiency</p>
+                        <p className={`text-2xl font-extrabold ${c.text}`}>{d?.proficiencyNow ?? 0}%</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Growth</p>
+                        <p className={`text-2xl font-extrabold ${c.text}`}>
+                          {(d?.growth ?? 0) >= 0 ? "+" : ""}{d?.growth ?? 0}
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Off Track</p>
+                        <p className="text-2xl font-extrabold text-red-600">{d?.offTrack ?? 0}</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Scholars</p>
+                        <p className="text-2xl font-extrabold text-gray-700">{d?.totalStudents ?? 0}</p>
+                      </div>
+                    </div>
+                    {summary && (
+                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Movement</p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                            <span>Accelerated: <strong>{summary.accelerated}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                            <span>Typical: <strong>{summary.typical}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+                            <span>Flat: <strong>{summary.flat}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                            <span>Decline: <strong>{summary.decline}</strong></span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {d?.leverageStandards > 0 && (
+                      <div className="text-sm text-gray-600 bg-white rounded-lg p-2 shadow-sm">
+                        <Sparkles className="h-3.5 w-3.5 inline mr-1 text-amber-500" />
+                        {d.leverageStandards} leverage standard{d.leverageStandards > 1 ? "s" : ""}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="mt-6">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Side-by-Side Summary</h4>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Metric</TableHead>
+                  <TableHead className="text-center text-blue-700">Grade 6</TableHead>
+                  <TableHead className="text-center text-purple-700">Grade 7</TableHead>
+                  <TableHead className="text-center text-emerald-700">Grade 8</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">Proficiency Rate</TableCell>
+                  <TableCell className="text-center font-bold">{grade6?.proficiencyNow ?? 0}%</TableCell>
+                  <TableCell className="text-center font-bold">{grade7?.proficiencyNow ?? 0}%</TableCell>
+                  <TableCell className="text-center font-bold">{grade8?.proficiencyNow ?? 0}%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Median Growth</TableCell>
+                  <TableCell className="text-center font-bold">{(grade6?.growth ?? 0) >= 0 ? "+" : ""}{grade6?.growth ?? 0}</TableCell>
+                  <TableCell className="text-center font-bold">{(grade7?.growth ?? 0) >= 0 ? "+" : ""}{grade7?.growth ?? 0}</TableCell>
+                  <TableCell className="text-center font-bold">{(grade8?.growth ?? 0) >= 0 ? "+" : ""}{grade8?.growth ?? 0}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Off Track Students</TableCell>
+                  <TableCell className="text-center font-bold text-red-600">{grade6?.offTrack ?? 0}</TableCell>
+                  <TableCell className="text-center font-bold text-red-600">{grade7?.offTrack ?? 0}</TableCell>
+                  <TableCell className="text-center font-bold text-red-600">{grade8?.offTrack ?? 0}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Total Scholars</TableCell>
+                  <TableCell className="text-center">{grade6?.totalStudents ?? 0}</TableCell>
+                  <TableCell className="text-center">{grade7?.totalStudents ?? 0}</TableCell>
+                  <TableCell className="text-center">{grade8?.totalStudents ?? 0}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Completion Rate</TableCell>
+                  <TableCell className="text-center">{grade6?.completionRate ?? 0}%</TableCell>
+                  <TableCell className="text-center">{grade7?.completionRate ?? 0}%</TableCell>
+                  <TableCell className="text-center">{grade8?.completionRate ?? 0}%</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

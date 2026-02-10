@@ -9,7 +9,39 @@ import {
   insertAcapItemSchema, insertAcapAssessmentSchema, insertAcapAssignmentSchema,
   insertAcapProjectionRunSchema, insertAcapSchoolwideAssessmentSchema,
   insertAcapForgeAssessmentSchema,
+  acapItems,
 } from "@shared/schema";
+import multer from "multer";
+import path from "path";
+import fs from "fs/promises";
+import { eq, and, inArray } from "drizzle-orm";
+
+const docUploadDir = path.join(process.cwd(), 'uploads', 'documents');
+fs.mkdir(docUploadDir, { recursive: true }).catch(() => {});
+
+const docStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, docUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `forge-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const docUpload = multer({
+  storage: docStorage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|docx|doc|txt|text/;
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+    const mimeOk = /pdf|msword|wordprocessingml|text/.test(file.mimetype);
+    if (allowedTypes.test(ext) || mimeOk) {
+      return cb(null, true);
+    }
+    cb(new Error('Only PDF, DOCX, and TXT files are allowed!'));
+  }
+});
 
 export function registerAcapRoutes(app: Express): void {
 
@@ -987,20 +1019,54 @@ export function registerAcapRoutes(app: Express): void {
   app.post("/api/acap/schoolwide-assessments", async (req: Request, res: Response) => {
     try {
       const { title, gradeLevels, subject, itemCount, dokMix, domainWeights, writingTypes, blueprintId, settings, createdBy } = req.body;
-      const assessment = await acapStorage.createSchoolwideAssessment({
-        title: title || `Schoolwide ${subject} Assessment`,
+      const assessmentTitle = title || `Schoolwide ${subject} Assessment`;
+      const targetItemCount = Math.min(Math.max(itemCount || 50, 25), 100);
+
+      const allItems = await db.select().from(acapItems).where(eq(acapItems.reviewStatus, "approved"));
+      const matchingItems = allItems.filter(item => {
+        const gradeMatch = !gradeLevels || gradeLevels.length === 0 || gradeLevels.includes(item.gradeLevel);
+        const subjectMatch = !subject || item.subject?.toLowerCase() === subject.toLowerCase();
+        return gradeMatch && subjectMatch;
+      });
+
+      const fallbackItems = matchingItems.length > 0 ? matchingItems : allItems;
+      const selectedItems = fallbackItems.slice(0, targetItemCount);
+      const selectedItemIds = selectedItems.map(item => item.id);
+
+      if (selectedItemIds.length === 0) {
+        return res.status(400).json({ error: "No items found matching the specified criteria. Please add items to the question bank first." });
+      }
+
+      const regularAssessment = await acapStorage.createAssessment({
+        title: assessmentTitle,
+        assessmentType: "summative",
+        gradeLevel: (gradeLevels && gradeLevels[0]) || 6,
+        subject: subject || "ELA",
+        itemIds: selectedItemIds,
+        timeLimitMinutes: 60,
+        isActive: true,
+        createdBy: createdBy || "admin",
+      });
+
+      const schoolwideAssessment = await acapStorage.createSchoolwideAssessment({
+        title: assessmentTitle,
         gradeLevels: gradeLevels || [],
         subject: subject || "ELA",
-        itemCount: Math.min(Math.max(itemCount || 50, 25), 100),
+        itemCount: targetItemCount,
         dokMix: dokMix || { dok2: 30, dok3: 50, dok4: 20 },
         domainWeights: domainWeights || {},
         writingTypes: writingTypes || [],
         blueprintId: blueprintId || null,
-        settings: settings || {},
+        settings: { ...settings, linkedAssessmentId: regularAssessment.id },
         status: "draft",
         createdBy: createdBy || "admin",
       });
-      res.status(201).json(assessment);
+
+      res.status(201).json({
+        ...schoolwideAssessment,
+        linkedAssessment: regularAssessment,
+        matchedItemCount: selectedItemIds.length,
+      });
     } catch (error: any) {
       console.error("Error creating schoolwide assessment:", error);
       res.status(500).json({ error: error.message || "Failed to create schoolwide assessment" });
@@ -2226,16 +2292,42 @@ export function registerAcapRoutes(app: Express): void {
   });
 
   // ===== Offline Source File Upload (multipart) =====
-  app.post("/api/acap/forge/offline/upload", authenticateForgeAdmin, async (req: any, res: Response) => {
+  app.post("/api/acap/forge/offline/upload", authenticateForgeAdmin, (req: any, res: Response, next: any) => {
+    docUpload.single('file')(req, res, (err: any) => {
+      if (err) return res.status(400).json({ error: err.message || "File upload failed" });
+      next();
+    });
+  }, async (req: any, res: Response) => {
     try {
-      const { filename, originalName, fileType, gradeLevel, subject, rawContent } = req.body;
-      if (!filename) return res.status(400).json({ error: "filename required" });
+      let filename: string;
+      let originalName: string;
+      let fileType: string;
+      let gradeLevel: number;
+      let subject: string;
+
+      if (req.file) {
+        filename = req.file.filename;
+        originalName = req.body.originalName || req.file.originalname;
+        const ext = path.extname(req.file.originalname).toLowerCase().replace('.', '');
+        fileType = req.body.fileType || ext || "txt";
+        gradeLevel = req.body.gradeLevel ? parseInt(req.body.gradeLevel) : 6;
+        subject = req.body.subject || "Math";
+      } else {
+        filename = req.body.filename;
+        originalName = req.body.originalName || req.body.filename;
+        fileType = req.body.fileType || "txt";
+        gradeLevel = req.body.gradeLevel ? parseInt(req.body.gradeLevel) : 6;
+        subject = req.body.subject || "Math";
+      }
+
+      if (!filename) return res.status(400).json({ error: "filename or file required" });
+
       const source = await acapStorage.createForgeOfflineSource({
         filename,
         originalName: originalName || filename,
         fileType: fileType || "txt",
-        gradeLevel: gradeLevel ? parseInt(gradeLevel) : 6,
-        subject: subject || "Math",
+        gradeLevel,
+        subject,
         uploadedBy: req.admin?.email,
         parseStatus: "queued",
         detectedItems: [],
@@ -2243,6 +2335,7 @@ export function registerAcapRoutes(app: Express): void {
       });
       res.json(source);
     } catch (error) {
+      console.error("Upload error:", error);
       res.status(500).json({ error: "Failed to upload source" });
     }
   });

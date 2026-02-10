@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { acapStandards, acapBlueprints, acapItems, acapAssessments } from "@shared/schema";
+import { acapStandards, acapBlueprints, acapItems, acapAssessments, acapAssignments, scholars, teacherAuth } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 
 export async function seedEducapData(): Promise<void> {
@@ -13,8 +13,14 @@ export async function seedEducapData(): Promise<void> {
 
     console.log(`EDUCAP SEED: Current counts - Standards: ${existingStandards.length}, Blueprints: ${existingBlueprints.length}, Items: ${existingItems.length}, Assessments: ${existingAssessments.length}`);
 
+    const existingAssignmentsCheck = await db.select({ id: acapAssignments.id }).from(acapAssignments);
+
     if (existingStandards.length >= 128 && existingBlueprints.length >= 6 && existingItems.length >= 15) {
-      console.log("EDUCAP SEED: All data present. Skipping seed.");
+      await seedAssessments();
+      if (existingAssignmentsCheck.length === 0) {
+        await seedAssignments();
+      }
+      console.log("EDUCAP SEED: All data present. Verified assessments and assignments.");
       return;
     }
 
@@ -34,11 +40,14 @@ export async function seedEducapData(): Promise<void> {
       await seedAssessments();
     }
 
+    await seedAssignments();
+
     const finalStandards = await db.select({ id: acapStandards.id }).from(acapStandards).where(eq(acapStandards.isActive, true));
     const finalBlueprints = await db.select({ id: acapBlueprints.id }).from(acapBlueprints).where(eq(acapBlueprints.isActive, true));
     const finalItems = await db.select({ id: acapItems.id }).from(acapItems);
     const finalAssessments = await db.select({ id: acapAssessments.id }).from(acapAssessments);
-    console.log(`EDUCAP SEED: Final counts - Standards: ${finalStandards.length}, Blueprints: ${finalBlueprints.length}, Items: ${finalItems.length}, Assessments: ${finalAssessments.length}`);
+    const finalAssignments = await db.select({ id: acapAssignments.id }).from(acapAssignments);
+    console.log(`EDUCAP SEED: Final counts - Standards: ${finalStandards.length}, Blueprints: ${finalBlueprints.length}, Items: ${finalItems.length}, Assessments: ${finalAssessments.length}, Assignments: ${finalAssignments.length}`);
   } catch (error: any) {
     console.error("EDUCAP SEED: Error during seeding:", error.message);
   }
@@ -256,7 +265,18 @@ async function seedAssessments() {
 
   const existingAssessments = await db.select({ id: acapAssessments.id }).from(acapAssessments);
   if (existingAssessments.length >= 1) {
-    console.log("EDUCAP SEED: Assessments already exist, skipping");
+    const items = await db.select({ id: acapItems.id }).from(acapItems);
+    const itemIds = items.map(i => i.id);
+    if (itemIds.length > 0) {
+      for (const assess of existingAssessments) {
+        const fullAssess = await db.select().from(acapAssessments).where(eq(acapAssessments.id, assess.id));
+        if (fullAssess[0] && (!fullAssess[0].itemIds || (fullAssess[0].itemIds as number[]).length === 0)) {
+          await db.update(acapAssessments).set({ itemIds }).where(eq(acapAssessments.id, assess.id));
+          console.log(`EDUCAP SEED: Updated assessment ${assess.id} with ${itemIds.length} item IDs`);
+        }
+      }
+    }
+    console.log("EDUCAP SEED: Assessments already exist, verified item IDs");
     return;
   }
 
@@ -274,4 +294,48 @@ async function seedAssessments() {
   });
 
   console.log("EDUCAP SEED: Seeded 1 assessment");
+}
+
+async function seedAssignments() {
+  console.log("EDUCAP SEED: Checking assignments...");
+
+  const existingAssignments = await db.select({ id: acapAssignments.id }).from(acapAssignments);
+  if (existingAssignments.length > 0) {
+    console.log(`EDUCAP SEED: ${existingAssignments.length} assignments already exist, skipping`);
+    return;
+  }
+
+  const assessments = await db.select().from(acapAssessments);
+  if (assessments.length === 0) {
+    console.log("EDUCAP SEED: No assessments found, cannot seed assignments");
+    return;
+  }
+
+  const allScholars = await db.select({ id: scholars.id, grade: scholars.grade }).from(scholars);
+  if (allScholars.length === 0) {
+    console.log("EDUCAP SEED: No scholars found, cannot seed assignments");
+    return;
+  }
+
+  const allTeachers = await db.select({ id: teacherAuth.id }).from(teacherAuth);
+  const teacherIdForAssignment = allTeachers.length > 0 ? allTeachers[0].id : "system";
+
+  const scholarIds = allScholars.map(s => s.id);
+
+  for (const assessment of assessments) {
+    try {
+      await db.insert(acapAssignments).values({
+        assessmentId: assessment.id,
+        teacherId: teacherIdForAssignment,
+        targetType: "scholars",
+        targetIds: scholarIds,
+        status: "active",
+      });
+      console.log(`EDUCAP SEED: Created assignment for assessment "${assessment.title}" → ${scholarIds.length} scholars`);
+    } catch (err: any) {
+      console.error(`EDUCAP SEED: Failed to create assignment for assessment ${assessment.id}:`, err.message);
+    }
+  }
+
+  console.log("EDUCAP SEED: Assignments seeded");
 }

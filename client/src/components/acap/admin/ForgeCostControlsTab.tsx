@@ -150,13 +150,32 @@ export default function ForgeCostControlsTab() {
 
   const uploadMutation = useMutation({
     mutationFn: async (body: any) => {
-      const res = await fetch("/api/acap/forge/offline/upload", { method: "POST", headers: authHeaders, body: JSON.stringify(body) });
+      const formData = new FormData();
+      if (body.file) {
+        formData.append('file', body.file);
+      }
+      formData.append('originalName', body.originalName || '');
+      formData.append('fileType', body.fileType || 'txt');
+      formData.append('gradeLevel', String(body.gradeLevel || 6));
+      formData.append('subject', body.subject || 'Math');
+      if (!body.file) {
+        formData.append('filename', body.filename || '');
+      }
+      const res = await fetch("/api/acap/forge/offline/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: formData,
+      });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/offline-sources"] });
       toast({ title: "Source Added", description: "File uploaded. Ready for parsing." });
+      setUploadFile(null);
+      setUploadFileName("");
+      setUploadOriginalName("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -281,9 +300,11 @@ export default function ForgeCostControlsTab() {
   const filteredItems = useMemo(() => stagedItems.filter(it => it.subject === subject && it.grade === grade), [stagedItems, subject, grade]);
   const acceptedAboveThreshold = useMemo(() => filteredItems.filter(it => (it.suggestedStandards?.[0]?.confidence ?? it.confidence) >= confidenceThreshold).length, [filteredItems, confidenceThreshold]);
 
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadFileName, setUploadFileName] = useState("");
   const [uploadOriginalName, setUploadOriginalName] = useState("");
   const [uploadFileType, setUploadFileType] = useState("pdf");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [localRules, setLocalRules] = useState<RuleRow[]>([]);
   const prevRulePackRef = useRef<number>(0);
 
@@ -339,8 +360,25 @@ export default function ForgeCostControlsTab() {
                       <div className="grid gap-3 rounded-lg border bg-muted/20 p-4">
                         <div className="grid gap-3 md:grid-cols-2">
                           <div>
-                            <Label className="text-xs">Filename</Label>
-                            <Input className="mt-1" placeholder="e.g. math-items-bank.pdf" value={uploadFileName} onChange={e => setUploadFileName(e.target.value)} />
+                            <Label className="text-xs">Select File</Label>
+                            <Input
+                              ref={fileInputRef}
+                              className="mt-1"
+                              type="file"
+                              accept=".pdf,.docx,.txt"
+                              onChange={e => {
+                                const file = e.target.files?.[0] || null;
+                                setUploadFile(file);
+                                if (file) {
+                                  setUploadFileName(file.name);
+                                  const ext = file.name.split('.').pop()?.toLowerCase() || 'txt';
+                                  if (ext === 'pdf') setUploadFileType('pdf');
+                                  else if (ext === 'docx' || ext === 'doc') setUploadFileType('docx');
+                                  else setUploadFileType('txt');
+                                  if (!uploadOriginalName) setUploadOriginalName(file.name.replace(/\.[^/.]+$/, ''));
+                                }
+                              }}
+                            />
                           </div>
                           <div>
                             <Label className="text-xs">Display Name</Label>
@@ -384,9 +422,15 @@ export default function ForgeCostControlsTab() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Button onClick={() => {
-                            if (!uploadFileName.trim()) { toast({ title: "Validation", description: "Filename required.", variant: "destructive" }); return; }
-                            uploadMutation.mutate({ filename: uploadFileName.trim(), originalName: uploadOriginalName.trim() || uploadFileName.trim(), fileType: uploadFileType, gradeLevel: parseInt(grade), subject });
-                            setUploadFileName(""); setUploadOriginalName("");
+                            if (!uploadFile && !uploadFileName.trim()) { toast({ title: "Validation", description: "Please select a file to upload.", variant: "destructive" }); return; }
+                            uploadMutation.mutate({
+                              file: uploadFile,
+                              filename: uploadFileName.trim(),
+                              originalName: uploadOriginalName.trim() || uploadFileName.trim(),
+                              fileType: uploadFileType,
+                              gradeLevel: parseInt(grade),
+                              subject,
+                            });
                           }} disabled={uploadMutation.isPending} className="gap-2">
                             {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload Source
                           </Button>

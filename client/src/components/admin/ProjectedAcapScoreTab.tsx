@@ -591,6 +591,16 @@ export default function ProjectedAcapScoreTab() {
                         }}>
                           Preview
                         </Button>
+                        {sa.settings?.linkedAssessmentId && (
+                          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => {
+                            toast({
+                              title: "Linked Assessment",
+                              description: `Assessment ID #${sa.settings.linkedAssessmentId} is ready. Go to the Assessments tab in Admin EduCAP to assign it to teachers and scholars.`,
+                            });
+                          }}>
+                            <Users className="h-3 w-3" /> Assign
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

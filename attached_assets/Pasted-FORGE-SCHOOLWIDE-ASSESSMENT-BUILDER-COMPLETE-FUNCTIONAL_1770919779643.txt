@@ -1,0 +1,1188 @@
+FORGE & SCHOOLWIDE ASSESSMENT BUILDER - COMPLETE FUNCTIONAL FIX
+
+CRITICAL ISSUES TO FIX:
+
+1. Remove "Diagnostic" from Assessment Type dropdown (only show Baseline, Midpoint, Final)
+2. Add subject filter toggle (All/ELA/Math) to Item Blueprint & Sources
+3. Fix "Publish" button error in Existing Forge Assessment
+4. Make Differentiate cards persist after clicking publish
+5. Enable interaction with Uploaded Sources (view file, move from "queued" to "parsed")
+6. Activate Build Test tab - auto-generate assessment from uploaded source
+7. Move Schoolwide Assessment Builder results to Assessment tab
+8. Make Schoolwide Assessment Builder generate REAL assessments with chosen item count
+9. Create downloadable assessment for teachers
+
+═══════════════════════════════════════════════════════════
+PHASE 1 - FIX FORGE ASSESSMENT TYPE DROPDOWN
+═══════════════════════════════════════════════════════════
+
+1A) LOCATE Forge Assessment Setup component (likely client/src/pages/admin/Forge.tsx or similar)
+
+FIND this code:
+<select name="assessmentType">
+  <option value="Diagnostic">Diagnostic</option>
+  <option value="Baseline">Baseline</option>
+  <option value="Midpoint">Midpoint</option>
+  <option value="Final">Final</option>
+</select>
+
+REPLACE WITH:
+<select name="assessmentType" defaultValue="Baseline">
+  <option value="Baseline">Baseline</option>
+  <option value="Midpoint">Midpoint</option>
+  <option value="Final">Final</option>
+</select>
+
+1B) UPDATE database schema if assessmentType column has "Diagnostic" as default:
+
+ALTER TABLE assessments 
+ALTER COLUMN assessment_type 
+SET DEFAULT 'Baseline';
+
+═══════════════════════════════════════════════════════════
+PHASE 2 - ADD SUBJECT FILTER TO ITEM BLUEPRINT & SOURCES
+═══════════════════════════════════════════════════════════
+
+2A) ADD subject filter dropdown to Forge page:
+
+In Item Blueprint & Sources section, ADD this UI:
+
+<div className="filter-section mb-4">
+  <label className="block text-sm font-semibold mb-2">Filter by Subject</label>
+  <select 
+    value={selectedSubject}
+    onChange={(e) => setSelectedSubject(e.target.value)}
+    className="w-full p-2 border rounded"
+  >
+    <option value="All">All Standards</option>
+    <option value="Math">Math Only</option>
+    <option value="ELA">ELA Only</option>
+  </select>
+</div>
+
+2B) UPDATE standards filter logic:
+
+const filteredStandards = useMemo(() => {
+  let filtered = allStandards;
+  
+  // Filter by subject
+  if (selectedSubject !== 'All') {
+    filtered = filtered.filter(s => s.subject === selectedSubject);
+  }
+  
+  // Filter by DOK
+  if (selectedDOK !== 'All') {
+    filtered = filtered.filter(s => s.dokLevels.includes(parseInt(selectedDOK)));
+  }
+  
+  // Group by grade level
+  const grouped = {};
+  filtered.forEach(standard => {
+    const grade = `Grade ${standard.grade}`;
+    if (!grouped[grade]) grouped[grade] = [];
+    grouped[grade].push(standard);
+  });
+  
+  return grouped;
+}, [allStandards, selectedSubject, selectedDOK]);
+
+2C) DISPLAY grouped standards:
+
+<div className="standards-list">
+  {Object.entries(filteredStandards).map(([grade, standards]) => (
+    <div key={grade} className="grade-group mb-6">
+      <h3 className="font-bold text-lg mb-3">{grade}</h3>
+      <div className="standards-grid grid grid-cols-1 gap-2">
+        {standards.map(standard => (
+          <div key={standard.code} className="standard-card p-3 border rounded hover:bg-gray-50">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <span className="font-semibold text-blue-600">{standard.code}</span>
+                <p className="text-sm text-gray-700 mt-1">{standard.description}</p>
+                <div className="flex gap-2 mt-2">
+                  <span className="text-xs bg-blue-100 px-2 py-1 rounded">DOK {standard.dokLevels.join(',')}</span>
+                  <span className="text-xs bg-purple-100 px-2 py-1 rounded">{standard.domain}</span>
+                </div>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={selectedStandards.includes(standard.code)}
+                onChange={() => toggleStandard(standard.code)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ))}
+</div>
+
+═══════════════════════════════════════════════════════════
+PHASE 3 - FIX PUBLISH BUTTON IN EXISTING FORGE ASSESSMENT
+═══════════════════════════════════════════════════════════
+
+3A) ADD comprehensive error logging to publish endpoint:
+
+app.post('/api/educap/forge/assessments/:id/publish', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log('[Forge Publish] Publishing assessment:', id);
+    
+    // Get assessment
+    const assessment = await db.query.forgeAssessments.findFirst({
+      where: eq(forgeAssessments.id, parseInt(id)),
+      with: {
+        items: true,
+        differentiatedVersions: true
+      }
+    });
+    
+    if (!assessment) {
+      console.error('[Forge Publish] Assessment not found:', id);
+      return res.status(404).json({ error: 'Assessment not found' });
+    }
+    
+    console.log('[Forge Publish] Assessment found:', {
+      id: assessment.id,
+      itemCount: assessment.items?.length || 0,
+      versionCount: assessment.differentiatedVersions?.length || 0
+    });
+    
+    // Validate assessment has items
+    if (!assessment.items || assessment.items.length === 0) {
+      console.error('[Forge Publish] No items in assessment');
+      return res.status(400).json({ 
+        error: 'Cannot publish assessment with no items. Please add items first.' 
+      });
+    }
+    
+    // Update status to published
+    const published = await db.update(forgeAssessments)
+      .set({ 
+        status: 'published',
+        publishedAt: new Date(),
+        publishedBy: req.user.id
+      })
+      .where(eq(forgeAssessments.id, parseInt(id)))
+      .returning();
+    
+    console.log('[Forge Publish] Assessment published successfully:', published[0].id);
+    
+    // Create main assessment record in assessments table
+    const mainAssessment = await db.insert(assessments).values({
+      title: assessment.name,
+      subject: assessment.subject,
+      grade: assessment.grade,
+      assessmentType: assessment.assessmentType,
+      itemCount: assessment.items.length,
+      timeLimitMinutes: assessment.timeLimitMinutes || 60,
+      status: 'active',
+      createdBy: req.user.id,
+      forgeAssessmentId: assessment.id,
+      createdAt: new Date()
+    }).returning();
+    
+    console.log('[Forge Publish] Main assessment created:', mainAssessment[0].id);
+    
+    // Copy items to main assessments
+    const assessmentItems = assessment.items.map((item, index) => ({
+      assessmentId: mainAssessment[0].id,
+      itemId: item.id,
+      orderNumber: index + 1
+    }));
+    
+    await db.insert(assessmentItemsJoin).values(assessmentItems);
+    
+    console.log('[Forge Publish] Items linked to assessment');
+    
+    res.json({
+      success: true,
+      message: 'Assessment published successfully',
+      assessmentId: mainAssessment[0].id,
+      forgeAssessmentId: assessment.id,
+      itemCount: assessment.items.length,
+      redirectUrl: `/admin/educap/assessments/${mainAssessment[0].id}`
+    });
+    
+  } catch (error) {
+    console.error('[Forge Publish] Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to publish assessment',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+3B) UPDATE frontend to handle publish success:
+
+const handlePublish = async (assessmentId) => {
+  setIsPublishing(true);
+  setPublishError(null);
+  
+  try {
+    const response = await fetch(`/api/educap/forge/assessments/${assessmentId}/publish`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || data.details || 'Publish failed');
+    }
+    
+    // Show success message
+    alert(`Assessment published successfully! ${data.itemCount} items included.`);
+    
+    // Redirect to assessment view
+    if (data.assessmentId) {
+      window.location.href = `/admin/educap/assessments/${data.assessmentId}`;
+    } else {
+      // Refresh the page to show updated status
+      window.location.reload();
+    }
+    
+  } catch (error) {
+    console.error('Publish error:', error);
+    setPublishError(error.message);
+    alert(`Publish failed: ${error.message}`);
+  } finally {
+    setIsPublishing(false);
+  }
+};
+
+3C) DISPLAY publish error clearly:
+
+{publishError && (
+  <div className="bg-red-50 border border-red-200 rounded p-4 mb-4">
+    <h4 className="text-red-800 font-semibold mb-2">⚠️ Publish Failed</h4>
+    <p className="text-red-700 text-sm">{publishError}</p>
+    <p className="text-red-600 text-xs mt-2">
+      Check browser console (F12) for detailed error information.
+    </p>
+  </div>
+)}
+
+═══════════════════════════════════════════════════════════
+PHASE 4 - FIX DIFFERENTIATE CARDS PERSISTENCE
+═══════════════════════════════════════════════════════════
+
+4A) CREATE differentiated_versions table if not exists:
+
+CREATE TABLE IF NOT EXISTS differentiated_versions (
+  id SERIAL PRIMARY KEY,
+  forge_assessment_id INTEGER REFERENCES forge_assessments(id),
+  version_code VARCHAR(10) NOT NULL,
+  version_name VARCHAR(100),
+  item_order JSONB,
+  option_order JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+4B) SAVE differentiated versions to database:
+
+app.post('/api/educap/forge/assessments/:id/differentiate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { versionCount = 3 } = req.body;
+    
+    console.log(`[Forge Differentiate] Creating ${versionCount} versions for assessment ${id}`);
+    
+    // Get assessment with items
+    const assessment = await db.query.forgeAssessments.findFirst({
+      where: eq(forgeAssessments.id, parseInt(id)),
+      with: { items: true }
+    });
+    
+    if (!assessment || !assessment.items || assessment.items.length === 0) {
+      return res.status(400).json({ error: 'Assessment has no items to differentiate' });
+    }
+    
+    const versions = [];
+    const versionCodes = ['A', 'B', 'C', 'D', 'E', 'F'];
+    
+    for (let i = 0; i < versionCount; i++) {
+      // Shuffle item order
+      const shuffledItems = [...assessment.items].sort(() => Math.random() - 0.5);
+      const itemOrder = shuffledItems.map(item => item.id);
+      
+      // Shuffle option order for each item
+      const optionOrder = {};
+      shuffledItems.forEach(item => {
+        if (item.itemType === 'multiple_choice') {
+          const options = JSON.parse(item.options);
+          const shuffled = options.sort(() => Math.random() - 0.5);
+          optionOrder[item.id] = shuffled.map((_, idx) => idx);
+        }
+      });
+      
+      // Save version to database
+      const version = await db.insert(differentiatedVersions).values({
+        forgeAssessmentId: parseInt(id),
+        versionCode: versionCodes[i],
+        versionName: `Version ${versionCodes[i]}`,
+        itemOrder: JSON.stringify(itemOrder),
+        optionOrder: JSON.stringify(optionOrder),
+        createdAt: new Date()
+      }).returning();
+      
+      versions.push({
+        id: version[0].id,
+        code: versionCodes[i],
+        name: `Version ${versionCodes[i]}`,
+        itemCount: shuffledItems.length
+      });
+    }
+    
+    console.log(`[Forge Differentiate] Created ${versions.length} versions`);
+    
+    res.json({
+      success: true,
+      versions,
+      message: `Created ${versions.length} differentiated versions`
+    });
+    
+  } catch (error) {
+    console.error('[Forge Differentiate] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+4C) PERSIST differentiated version cards in UI:
+
+const [differentiatedVersions, setDifferentiatedVersions] = useState([]);
+
+// Load existing versions on mount
+useEffect(() => {
+  if (assessment?.id) {
+    loadDifferentiatedVersions(assessment.id);
+  }
+}, [assessment?.id]);
+
+const loadDifferentiatedVersions = async (assessmentId) => {
+  try {
+    const response = await fetch(`/api/educap/forge/assessments/${assessmentId}/versions`);
+    const data = await response.json();
+    setDifferentiatedVersions(data.versions || []);
+  } catch (error) {
+    console.error('Error loading versions:', error);
+  }
+};
+
+const handleDifferentiate = async () => {
+  try {
+    const response = await fetch(`/api/educap/forge/assessments/${assessment.id}/differentiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ versionCount: 3 })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      setDifferentiatedVersions(data.versions);
+      alert(`Created ${data.versions.length} versions successfully!`);
+    }
+  } catch (error) {
+    console.error('Differentiate error:', error);
+    alert('Failed to create versions: ' + error.message);
+  }
+};
+
+// Display persisted versions
+<div className="differentiated-versions grid grid-cols-3 gap-4">
+  {differentiatedVersions.map(version => (
+    <div key={version.id} className="version-card border-2 border-blue-500 rounded-lg p-4 bg-blue-50">
+      <h4 className="font-bold text-xl mb-2">Version {version.code}</h4>
+      <p className="text-sm text-gray-600">{version.itemCount} items</p>
+      <p className="text-xs text-gray-500 mt-2">ID: {version.code}-{String(version.id).padStart(4, '0')}</p>
+      <button 
+        onClick={() => previewVersion(version.id)}
+        className="mt-3 w-full bg-blue-600 text-white px-3 py-2 rounded text-sm"
+      >
+        Preview Version
+      </button>
+    </div>
+  ))}
+</div>
+
+═══════════════════════════════════════════════════════════
+PHASE 5 - ENABLE UPLOADED SOURCES INTERACTION
+═══════════════════════════════════════════════════════════
+
+5A) CREATE parse endpoint to move source from "queued" to "parsed":
+
+app.post('/api/educap/forge/sources/:id/parse', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log('[Forge Parse] Parsing source:', id);
+    
+    // Get source
+    const source = await db.query.forgeSources.findFirst({
+      where: eq(forgeSources.id, parseInt(id))
+    });
+    
+    if (!source) {
+      return res.status(404).json({ error: 'Source not found' });
+    }
+    
+    console.log('[Forge Parse] Source found:', source.filename);
+    
+    // Update status to parsing
+    await db.update(forgeSources)
+      .set({ status: 'parsing' })
+      .where(eq(forgeSources.id, parseInt(id)));
+    
+    // Run parse logic (simplified - extracts items from PDF/DOCX)
+    const extractedItems = await parseSourceFile(source);
+    
+    console.log('[Forge Parse] Extracted items:', extractedItems.length);
+    
+    // Save extracted items to staging
+    const stagedItems = [];
+    for (const item of extractedItems) {
+      const staged = await db.insert(stagedItems).values({
+        forgeSourceId: source.id,
+        itemType: item.type,
+        stem: item.stem,
+        options: JSON.stringify(item.options),
+        standardCode: item.suggestedStandard,
+        dokLevel: item.suggestedDOK,
+        status: 'pending_review'
+      }).returning();
+      
+      stagedItems.push(staged[0]);
+    }
+    
+    // Update source status to parsed
+    await db.update(forgeSources)
+      .set({ 
+        status: 'parsed',
+        itemsExtracted: extractedItems.length,
+        parsedAt: new Date()
+      })
+      .where(eq(forgeSources.id, parseInt(id)));
+    
+    console.log('[Forge Parse] Parse complete');
+    
+    res.json({
+      success: true,
+      itemsExtracted: extractedItems.length,
+      sourceId: source.id
+    });
+    
+  } catch (error) {
+    console.error('[Forge Parse] Error:', error);
+    
+    // Update source status to error
+    await db.update(forgeSources)
+      .set({ status: 'error', errorMessage: error.message })
+      .where(eq(forgeSources.id, parseInt(req.params.id)));
+    
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Simple parse function (can be enhanced with AI)
+async function parseSourceFile(source) {
+  // This is a simplified version - real implementation would use PDF parsing
+  // For now, return sample extracted items
+  
+  return [
+    {
+      type: 'multiple_choice',
+      stem: 'Sample question extracted from uploaded file',
+      options: ['A. Option 1', 'B. Option 2', 'C. Option 3', 'D. Option 4'],
+      suggestedStandard: '6.NS.4',
+      suggestedDOK: 2
+    }
+    // ... more items
+  ];
+}
+
+5B) ADD "Parse" button to Uploaded Sources:
+
+<div className="uploaded-sources">
+  <h3>📂 Uploaded Sources</h3>
+  
+  <table className="w-full">
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Status</th>
+        <th>Items</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {sources.map(source => (
+        <tr key={source.id}>
+          <td>
+            <div>
+              <p className="font-semibold">{source.displayName}</p>
+              <p className="text-xs text-gray-500">{source.filename}</p>
+            </div>
+          </td>
+          <td>
+            <span className={`px-2 py-1 rounded text-sm ${
+              source.status === 'queued' ? 'bg-yellow-100 text-yellow-800' :
+              source.status === 'parsing' ? 'bg-blue-100 text-blue-800' :
+              source.status === 'parsed' ? 'bg-green-100 text-green-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {source.status}
+            </span>
+          </td>
+          <td>{source.itemsExtracted || 0}</td>
+          <td>
+            <div className="flex gap-2">
+              {source.status === 'queued' && (
+                <button
+                  onClick={() => parseSource(source.id)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  Parse File
+                </button>
+              )}
+              
+              {source.status === 'parsed' && (
+                <button
+                  onClick={() => viewExtractedItems(source.id)}
+                  className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  View Items ({source.itemsExtracted})
+                </button>
+              )}
+              
+              <button
+                onClick={() => deleteSource(source.id)}
+                className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+═══════════════════════════════════════════════════════════
+PHASE 6 - ACTIVATE BUILD TEST TAB
+═══════════════════════════════════════════════════════════
+
+6A) CREATE Build Test page/component that shows extracted items:
+
+// When user clicks "Build Test" after parsing
+const BuildTestPage = () => {
+  const [stagedItems, setStagedItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [assessmentName, setAssessmentName] = useState('');
+  
+  useEffect(() => {
+    loadStagedItems();
+  }, []);
+  
+  const loadStagedItems = async () => {
+    const response = await fetch('/api/educap/forge/staged-items');
+    const data = await response.json();
+    setStagedItems(data.items);
+  };
+  
+  const createAssessment = async () => {
+    if (selectedItems.length === 0) {
+      alert('Please select at least one item');
+      return;
+    }
+    
+    const response = await fetch('/api/educap/forge/assessments/build', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: assessmentName,
+        itemIds: selectedItems,
+        assessmentType: 'Baseline',
+        grade: 6,
+        subject: 'Math'
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`Assessment created with ${selectedItems.length} items!`);
+      window.location.href = `/admin/educap/forge/assessments/${data.assessmentId}`;
+    }
+  };
+  
+  return (
+    <div className="build-test-page">
+      <h2>🔨 Build Test from Uploaded Sources</h2>
+      
+      <div className="mb-6">
+        <label className="block font-semibold mb-2">Assessment Name</label>
+        <input
+          type="text"
+          value={assessmentName}
+          onChange={(e) => setAssessmentName(e.target.value)}
+          placeholder="e.g., Grade 6 Math Baseline"
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      
+      <div className="items-list">
+        <h3 className="font-semibold mb-3">
+          Select Items ({selectedItems.length} selected)
+        </h3>
+        
+        {stagedItems.map(item => (
+          <div key={item.id} className="item-card border rounded p-4 mb-3 hover:bg-gray-50">
+            <div className="flex items-start gap-4">
+              <input
+                type="checkbox"
+                checked={selectedItems.includes(item.id)}
+                onChange={() => toggleItem(item.id)}
+                className="mt-1"
+              />
+              <div className="flex-1">
+                <div className="flex gap-2 mb-2">
+                  <span className="text-xs bg-blue-100 px-2 py-1 rounded">{item.standardCode}</span>
+                  <span className="text-xs bg-purple-100 px-2 py-1 rounded">DOK {item.dokLevel}</span>
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">{item.itemType}</span>
+                </div>
+                <p className="font-medium mb-2">{item.stem}</p>
+                {item.itemType === 'multiple_choice' && (
+                  <div className="text-sm text-gray-600">
+                    {JSON.parse(item.options).map((opt, idx) => (
+                      <div key={idx}>{opt}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <button
+        onClick={createAssessment}
+        disabled={selectedItems.length === 0}
+        className="bg-blue-600 text-white px-6 py-3 rounded font-semibold disabled:bg-gray-400"
+      >
+        Create Assessment ({selectedItems.length} items)
+      </button>
+    </div>
+  );
+};
+
+6B) CREATE build endpoint:
+
+app.post('/api/educap/forge/assessments/build', async (req, res) => {
+  try {
+    const { name, itemIds, assessmentType, grade, subject } = req.body;
+    
+    console.log('[Forge Build] Creating assessment:', { name, itemCount: itemIds.length });
+    
+    // Create forge assessment
+    const assessment = await db.insert(forgeAssessments).values({
+      name,
+      assessmentType,
+      grade,
+      subject,
+      status: 'draft',
+      createdBy: req.user.id,
+      createdAt: new Date()
+    }).returning();
+    
+    // Link items to assessment
+    const itemLinks = itemIds.map((itemId, index) => ({
+      forgeAssessmentId: assessment[0].id,
+      itemId: parseInt(itemId),
+      orderNumber: index + 1
+    }));
+    
+    await db.insert(forgeAssessmentItems).values(itemLinks);
+    
+    console.log('[Forge Build] Assessment created:', assessment[0].id);
+    
+    res.json({
+      success: true,
+      assessmentId: assessment[0].id,
+      itemCount: itemIds.length
+    });
+    
+  } catch (error) {
+    console.error('[Forge Build] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+═══════════════════════════════════════════════════════════
+PHASE 7 - MOVE SCHOOLWIDE ASSESSMENT BUILDER TO ASSESSMENT TAB
+═══════════════════════════════════════════════════════════
+
+7A) CREATE "Generate Assessment" button in Assessment tab:
+
+// In /admin/educap page, Assessments tab
+<div className="assessments-tab">
+  <div className="flex justify-between items-center mb-6">
+    <h2 className="text-2xl font-bold">Assessments</h2>
+    <button
+      onClick={() => setShowSchoolwideBuilder(true)}
+      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2"
+    >
+      <span>✨</span>
+      Schoolwide Assessment Builder
+    </button>
+  </div>
+  
+  {/* Existing assessments list */}
+  <div className="assessments-list">
+    {/* ... */}
+  </div>
+</div>
+
+7B) CREATE Schoolwide Assessment Builder modal/page:
+
+{showSchoolwideBuilder && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-screen overflow-y-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">🏫 Schoolwide Assessment Builder</h2>
+        <button onClick={() => setShowSchoolwideBuilder(false)} className="text-gray-500 text-2xl">×</button>
+      </div>
+      
+      <SchoolwideAssessmentBuilder onComplete={handleAssessmentCreated} />
+    </div>
+  </div>
+)}
+
+═══════════════════════════════════════════════════════════
+PHASE 8 - MAKE SCHOOLWIDE ASSESSMENT BUILDER GENERATE REAL ASSESSMENTS
+═══════════════════════════════════════════════════════════
+
+8A) CREATE real-time assessment generation with Claude API:
+
+const SchoolwideAssessmentBuilder = ({ onComplete }) => {
+  const [config, setConfig] = useState({
+    contentArea: 'Math',
+    grades: [],
+    itemCount: 50,
+    dokMix: { dok2: 30, dok3: 50, dok4: 20 },
+    blueprintWeights: {}
+  });
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedAssessment, setGeneratedAssessment] = useState(null);
+  
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    
+    try {
+      const response = await fetch('/api/educap/schoolwide/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(config)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setGeneratedAssessment(data.assessment);
+        alert(`Generated ${data.itemCount} items successfully!`);
+      } else {
+        throw new Error(data.error);
+      }
+      
+    } catch (error) {
+      console.error('Generation error:', error);
+      alert('Failed to generate assessment: ' + error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
+  return (
+    <div className="schoolwide-builder">
+      
+      {/* Configuration */}
+      <div className="config-section mb-6">
+        <h3 className="font-semibold mb-3">Content Area</h3>
+        <select 
+          value={config.contentArea}
+          onChange={(e) => setConfig({...config, contentArea: e.target.value})}
+          className="w-full p-2 border rounded"
+        >
+          <option value="Math">Math</option>
+          <option value="ELA">ELA</option>
+          <option value="Science">Science</option>
+        </select>
+      </div>
+      
+      <div className="config-section mb-6">
+        <h3 className="font-semibold mb-3">Grades</h3>
+        <div className="flex gap-4">
+          {[6, 7, 8].map(grade => (
+            <label key={grade} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={config.grades.includes(grade)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setConfig({...config, grades: [...config.grades, grade]});
+                  } else {
+                    setConfig({...config, grades: config.grades.filter(g => g !== grade)});
+                  }
+                }}
+              />
+              Grade {grade}
+            </label>
+          ))}
+        </div>
+      </div>
+      
+      <div className="config-section mb-6">
+        <h3 className="font-semibold mb-3">Item Count</h3>
+        <input
+          type="range"
+          min="10"
+          max="100"
+          step="5"
+          value={config.itemCount}
+          onChange={(e) => setConfig({...config, itemCount: parseInt(e.target.value)})}
+          className="w-full"
+        />
+        <p className="text-center font-bold text-2xl mt-2">{config.itemCount} items</p>
+      </div>
+      
+      <div className="config-section mb-6">
+        <h3 className="font-semibold mb-3">DOK Mix</h3>
+        {['dok2', 'dok3', 'dok4'].map(dok => (
+          <div key={dok} className="mb-3">
+            <div className="flex justify-between mb-1">
+              <label>DOK {dok.slice(-1)}</label>
+              <span>{config.dokMix[dok]}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={config.dokMix[dok]}
+              onChange={(e) => setConfig({
+                ...config,
+                dokMix: {...config.dokMix, [dok]: parseInt(e.target.value)}
+              })}
+              className="w-full"
+            />
+          </div>
+        ))}
+      </div>
+      
+      <button
+        onClick={handleGenerate}
+        disabled={isGenerating || config.grades.length === 0}
+        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-lg font-bold text-lg disabled:opacity-50"
+      >
+        {isGenerating ? (
+          <>
+            <div className="inline-block animate-spin mr-2">⚙️</div>
+            Generating {config.itemCount} Items...
+          </>
+        ) : (
+          <>✨ Generate Assessment</>
+        )}
+      </button>
+      
+      {generatedAssessment && (
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded">
+          <h4 className="font-bold text-green-800 mb-2">✅ Assessment Generated!</h4>
+          <p>ID: {generatedAssessment.id}</p>
+          <p>Items: {generatedAssessment.itemCount}</p>
+          <button
+            onClick={() => onComplete(generatedAssessment.id)}
+            className="mt-3 bg-green-600 text-white px-4 py-2 rounded"
+          >
+            View Assessment →
+          </button>
+        </div>
+      )}
+      
+    </div>
+  );
+};
+
+8B) CREATE real generation endpoint with Claude API:
+
+app.post('/api/educap/schoolwide/generate', async (req, res) => {
+  try {
+    const { contentArea, grades, itemCount, dokMix, blueprintWeights } = req.body;
+    
+    console.log('[Schoolwide] Generating assessment:', { contentArea, grades, itemCount });
+    
+    // Calculate items per DOK level
+    const dok2Count = Math.round((itemCount * dokMix.dok2) / 100);
+    const dok3Count = Math.round((itemCount * dokMix.dok3) / 100);
+    const dok4Count = itemCount - dok2Count - dok3Count;
+    
+    console.log('[Schoolwide] DOK distribution:', { dok2Count, dok3Count, dok4Count });
+    
+    // Get available standards for selected grades
+    const standards = await db.query.standards.findMany({
+      where: and(
+        eq(standards.subject, contentArea),
+        inArray(standards.grade, grades),
+        eq(standards.status, 'active')
+      )
+    });
+    
+    console.log('[Schoolwide] Found ${standards.length} standards');
+    
+    // Generate items using Claude API
+    const generatedItems = [];
+    const itemsPerDOK = [
+      { dok: 2, count: dok2Count },
+      { dok: 3, count: dok3Count },
+      { dok: 4, count: dok4Count }
+    ];
+    
+    for (const { dok, count } of itemsPerDOK) {
+      if (count === 0) continue;
+      
+      // Select random standards for this DOK level
+      const selectedStandards = standards
+        .filter(s => s.dokLevels.includes(dok))
+        .sort(() => Math.random() - 0.5)
+        .slice(0, Math.min(count, standards.length));
+      
+      // Generate items for each standard
+      for (const standard of selectedStandards) {
+        const prompt = `Generate 1 ACAP-style ${contentArea} question for:
+
+Standard: ${standard.code}
+Description: ${standard.description}
+DOK Level: ${dok}
+Grade: ${standard.grade}
+
+Requirements:
+- Multiple choice with 4 options
+- Real-world context
+- Realistic distractors based on common errors
+- Include correct answer
+
+Return as JSON:
+{
+  "stem": "question text",
+  "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+  "correctAnswer": "B",
+  "rationale": "explanation"
+}`;
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        
+        const data = await response.json();
+        const itemData = JSON.parse(data.content[0].text);
+        
+        // Save item to database
+        const item = await db.insert(items).values({
+          standardCode: standard.code,
+          itemType: 'multiple_choice',
+          stem: itemData.stem,
+          options: JSON.stringify(itemData.options),
+          correctAnswer: itemData.correctAnswer,
+          rationale: itemData.rationale,
+          dokLevel: dok,
+          status: 'approved',
+          generatedBy: 'claude-api',
+          createdAt: new Date()
+        }).returning();
+        
+        generatedItems.push(item[0]);
+        
+        // Stop if we've generated enough
+        if (generatedItems.length >= count) break;
+      }
+    }
+    
+    console.log('[Schoolwide] Generated ${generatedItems.length} items');
+    
+    // Create assessment
+    const assessment = await db.insert(assessments).values({
+      title: `${contentArea} Schoolwide Assessment - ${grades.join(', ')}`,
+      subject: contentArea,
+      grade: grades[0], // Primary grade
+      assessmentType: 'Baseline',
+      itemCount: generatedItems.length,
+      timeLimitMinutes: generatedItems.length * 1.5, // 1.5 min per item
+      status: 'active',
+      createdBy: req.user.id,
+      generatedVia: 'schoolwide-builder',
+      createdAt: new Date()
+    }).returning();
+    
+    // Link items to assessment
+    const itemLinks = generatedItems.map((item, index) => ({
+      assessmentId: assessment[0].id,
+      itemId: item.id,
+      orderNumber: index + 1
+    }));
+    
+    await db.insert(assessmentItemsJoin).values(itemLinks);
+    
+    console.log('[Schoolwide] Assessment created:', assessment[0].id);
+    
+    res.json({
+      success: true,
+      assessment: assessment[0],
+      itemCount: generatedItems.length
+    });
+    
+  } catch (error) {
+    console.error('[Schoolwide] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+═══════════════════════════════════════════════════════════
+PHASE 9 - CREATE DOWNLOADABLE ASSESSMENT FOR TEACHERS
+═══════════════════════════════════════════════════════════
+
+9A) ADD download endpoint for assessments:
+
+app.get('/api/educap/assessments/:id/download', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { format = 'pdf' } = req.query;
+    
+    // Get assessment with items
+    const assessment = await db.query.assessments.findFirst({
+      where: eq(assessments.id, parseInt(id)),
+      with: {
+        items: {
+          with: { item: true }
+        }
+      }
+    });
+    
+    if (!assessment) {
+      return res.status(404).json({ error: 'Assessment not found' });
+    }
+    
+    // Generate PDF or DOCX
+    if (format === 'pdf') {
+      const pdfBuffer = await generateAssessmentPDF(assessment);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="assessment-${id}.pdf"`);
+      res.send(pdfBuffer);
+    } else {
+      // Generate text format for now
+      const text = generateAssessmentText(assessment);
+      
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="assessment-${id}.txt"`);
+      res.send(text);
+    }
+    
+  } catch (error) {
+    console.error('[Download] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function generateAssessmentText(assessment) {
+  let text = `${assessment.title}\n`;
+  text += `${'='.repeat(60)}\n\n`;
+  text += `Subject: ${assessment.subject}\n`;
+  text += `Grade: ${assessment.grade}\n`;
+  text += `Type: ${assessment.assessmentType}\n`;
+  text += `Items: ${assessment.itemCount}\n`;
+  text += `Time Limit: ${assessment.timeLimitMinutes} minutes\n\n`;
+  text += `${'='.repeat(60)}\n\n`;
+  
+  assessment.items.forEach((link, index) => {
+    const item = link.item;
+    text += `QUESTION ${index + 1}\n`;
+    text += `Standard: ${item.standardCode} | DOK ${item.dokLevel}\n\n`;
+    text += `${item.stem}\n\n`;
+    
+    if (item.itemType === 'multiple_choice') {
+      const options = JSON.parse(item.options);
+      options.forEach(opt => {
+        text += `${opt}\n`;
+      });
+    }
+    
+    text += `\n${'-'.repeat(60)}\n\n`;
+  });
+  
+  return text;
+}
+
+9B) ADD download button to assessment view:
+
+<div className="assessment-actions">
+  <button
+    onClick={() => window.open(`/api/educap/assessments/${assessment.id}/download?format=pdf`, '_blank')}
+    className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
+  >
+    <span>📥</span>
+    Download PDF
+  </button>
+  
+  <button
+    onClick={() => window.open(`/api/educap/assessments/${assessment.id}/download?format=text`, '_blank')}
+    className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+  >
+    <span>📄</span>
+    Download Text
+  </button>
+</div>
+
+═══════════════════════════════════════════════════════════
+CONSTRAINTS - DO NOT VIOLATE
+═══════════════════════════════════════════════════════════
+
+❌ DO NOT change UI styling, colors, or layouts
+❌ DO NOT modify existing working features
+❌ DO NOT alter navigation structure
+✅ DO fix all broken functionality
+✅ DO add comprehensive logging
+✅ DO create real, functional features
+✅ DO ensure all buttons and interactions work
+
+═══════════════════════════════════════════════════════════
+ACCEPTANCE TESTS - ALL MUST PASS
+═══════════════════════════════════════════════════════════
+
+1. Assessment Type dropdown shows ONLY: Baseline, Midpoint, Final (NO Diagnostic)
+2. Item Blueprint has subject filter: All/ELA/Math with all standards displayed
+3. Publish button in Forge Assessment works without error
+4. Differentiate creates persistent version cards that don't disappear
+5. Uploaded Sources "Parse" button moves status from queued → parsed
+6. Parsed sources show "View Items" button with item count
+7. Build Test tab becomes active and shows extracted items
+8. Selecting items and clicking "Create Assessment" generates real assessment
+9. Schoolwide Assessment Builder modal opens from Assessment tab
+10. Clicking "Generate Assessment" creates REAL assessment with chosen item count
+11. Generated assessment appears in Assessment tab list
+12. Download buttons export assessment as PDF/text
+
+START NOW. Execute systematically. Report progress after each phase.

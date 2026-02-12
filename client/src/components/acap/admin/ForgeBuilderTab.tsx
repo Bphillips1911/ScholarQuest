@@ -18,12 +18,13 @@ export default function ForgeBuilderTab() {
   const [title, setTitle] = useState("");
   const [selectedGrades, setSelectedGrades] = useState<number[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const [assessmentType, setAssessmentType] = useState("diagnostic");
+  const [assessmentType, setAssessmentType] = useState("baseline");
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(60);
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
   const [selectedStandardIds, setSelectedStandardIds] = useState<number[]>([]);
   const [dokFilter, setDokFilter] = useState<string>("all");
   const [standardFilter, setStandardFilter] = useState<string>("all");
+  const [subjectFilter, setSubjectFilter] = useState<string>("all");
   const [expandedAssessmentId, setExpandedAssessmentId] = useState<number | null>(null);
   const [publishTargetGrades, setPublishTargetGrades] = useState<number[]>([]);
 
@@ -74,7 +75,7 @@ export default function ForgeBuilderTab() {
       setTitle("");
       setSelectedGrades([]);
       setSelectedSubjects([]);
-      setAssessmentType("diagnostic");
+      setAssessmentType("baseline");
       setTimeLimitMinutes(60);
       setSelectedItemIds([]);
       setSelectedStandardIds([]);
@@ -117,11 +118,15 @@ export default function ForgeBuilderTab() {
         },
         body: JSON.stringify({ targetGrades }),
       });
-      if (!res.ok) throw new Error("Failed to publish");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: "Failed to publish" }));
+        throw new Error(errData.error || errData.details || "Failed to publish assessment");
+      }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/assessments"] });
+      setExpandedAssessmentId(variables.id);
       toast({ title: "Published", description: "Assessment is now live and assigned." });
     },
     onError: (err: any) => {
@@ -189,16 +194,23 @@ export default function ForgeBuilderTab() {
     }
   };
 
-  const filteredItems = approvedItems.filter((item: any) => {
-    if (dokFilter !== "all" && item.dokLevel !== parseInt(dokFilter)) return false;
-    if (standardFilter !== "all" && item.standardId !== parseInt(standardFilter)) return false;
-    return true;
-  });
-
   const standardMap = standards.reduce((acc: Record<number, any>, s: any) => {
     acc[s.id] = s;
     return acc;
   }, {});
+
+  const filteredItems = approvedItems.filter((item: any) => {
+    if (dokFilter !== "all" && item.dokLevel !== parseInt(dokFilter)) return false;
+    if (standardFilter !== "all" && item.standardId !== parseInt(standardFilter)) return false;
+    if (subjectFilter !== "all" && standards.length > 0) {
+      const std = standardMap[item.standardId];
+      if (!std) return true;
+      const domain = ((std.domain || "") + " " + (std.code || "")).toLowerCase();
+      if (subjectFilter === "ELA" && !domain.includes("ela") && !domain.includes("reading") && !domain.includes("writing") && !domain.includes("language") && !domain.includes("rl") && !domain.includes("ri") && !domain.includes("w.") && !domain.includes("l.")) return false;
+      if (subjectFilter === "Math" && !domain.includes("math") && !domain.includes("ns") && !domain.includes("rp") && !domain.includes("ee") && !domain.includes("g.") && !domain.includes("sp") && !domain.includes("f.")) return false;
+    }
+    return true;
+  });
 
   const handleCreate = () => {
     if (!title.trim()) {
@@ -313,7 +325,6 @@ export default function ForgeBuilderTab() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="diagnostic">Diagnostic</SelectItem>
                   <SelectItem value="baseline">Baseline</SelectItem>
                   <SelectItem value="midpoint">Midpoint</SelectItem>
                   <SelectItem value="final">Final</SelectItem>
@@ -358,6 +369,19 @@ export default function ForgeBuilderTab() {
                       {s.code}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-gray-500">Subject</Label>
+              <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subjects</SelectItem>
+                  <SelectItem value="ELA">ELA</SelectItem>
+                  <SelectItem value="Math">Math</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -638,6 +662,45 @@ export default function ForgeBuilderTab() {
                       <div className="text-xs text-gray-500">
                         {(v.itemOrder || []).length} items in order
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs border-green-300 text-green-700 hover:bg-green-50 mt-2 w-full"
+                        onClick={() => {
+                          const assessment = forgeAssessments.find((a: any) => a.id === expandedAssessmentId);
+                          const orderIds = v.itemOrder || assessment?.itemIds || [];
+                          const items = orderIds.map((id: number) => approvedItems.find((i: any) => i.id === id)).filter(Boolean);
+                          const printContent = `
+                            <html><head><title>${assessment?.title || "Assessment"} - Version ${v.versionLabel}</title>
+                            <style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px}
+                            h1{font-size:20px;border-bottom:2px solid #333;padding-bottom:10px}
+                            .item{margin:20px 0;page-break-inside:avoid}
+                            .stem{font-weight:bold;margin-bottom:8px}
+                            .option{margin:4px 0 4px 20px}
+                            .header{display:flex;justify-content:space-between;margin-bottom:20px}
+                            .code{font-family:monospace;font-size:14px;background:#f0f0f0;padding:4px 8px;border-radius:4px}
+                            @media print{body{margin:20px}}</style></head>
+                            <body>
+                            <div class="header">
+                              <div><h1>${assessment?.title || "Assessment"} - Version ${v.versionLabel}</h1>
+                              <p>Access Code: <span class="code">${v.accessCode || "N/A"}</span></p></div>
+                            </div>
+                            <p>Name: _________________________________ Date: _____________</p>
+                            ${items.map((item: any, idx: number) => `
+                              <div class="item">
+                                <div class="stem">${idx + 1}. ${item.stem}</div>
+                                ${(item.options || []).map((opt: any, oi: number) => `
+                                  <div class="option">${String.fromCharCode(65 + oi)}. ${typeof opt === 'object' ? opt.text : opt}</div>
+                                `).join('')}
+                              </div>
+                            `).join('')}
+                            </body></html>`;
+                          const w = window.open('', '_blank');
+                          if (w) { w.document.write(printContent); w.document.close(); w.print(); }
+                        }}
+                      >
+                        <Download className="h-3 w-3 mr-1" /> Print
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}

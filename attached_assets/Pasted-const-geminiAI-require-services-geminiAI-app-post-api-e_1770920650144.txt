@@ -1,0 +1,131 @@
+const geminiAI = require('../services/geminiAI');
+
+app.post('/api/educap/schoolwide/generate', async (req, res) => {
+  try {
+    const { contentArea, grades, itemCount, dokMix } = req.body;
+    
+    console.log('[Schoolwide] Generating assessment with Gemini:', { 
+      contentArea, 
+      grades, 
+      itemCount 
+    });
+    
+    // Get available standards for selected grades
+    const standards = await db.query.standards.findMany({
+      where: and(
+        eq(standards.subject, contentArea),
+        inArray(standards.grade, grades),
+        eq(standards.status, 'active')
+      )
+    });
+    
+    if (standards.length === 0) {
+      return res.status(400).json({ 
+        error: 'No standards found for selected criteria' 
+      });
+    }
+    
+    console.log(`[Schoolwide] Found ${standards.length} standards`);
+    
+    // Generate items using Gemini
+    const generatedItems = await geminiAI.generateAssessment({
+      contentArea,
+      grade: grades[0],
+      itemCount,
+      dokMix,
+      standards
+    });
+    
+    console.log(`[Schoolwide] Generated ${generatedItems.length} items`);
+    
+    // Save items to database
+    const savedItems = [];
+    for (const itemData of generatedItems) {
+      const item = await db.insert(items).values({
+        standardCode: itemData.standard?.code || standards[0].code,
+        itemType: 'multiple_choice',
+        stem: itemData.stem,
+        options: JSON.stringify(itemData.options),
+        correctAnswer: itemData.correctAnswer,
+        rationale: itemData.rationale,
+        dokLevel: itemData.dokLevel || 2,
+        status: 'approved',
+        generatedBy: 'gemini-ai',
+        createdAt: new Date()
+      }).returning();
+      
+      savedItems.push(item[0]);
+    }
+    
+    // Create assessment
+    const assessment = await db.insert(assessments).values({
+      title: `${contentArea} Schoolwide Assessment - Grades ${grades.join(', ')}`,
+      subject: contentArea,
+      grade: grades[0],
+      assessmentType: 'Baseline',
+      itemCount: savedItems.length,
+      timeLimitMinutes: savedItems.length * 1.5,
+      status: 'active',
+      createdBy: req.user.id,
+      generatedVia: 'schoolwide-builder-gemini',
+      createdAt: new Date()
+    }).returning();
+    
+    // Link items to assessment
+    const itemLinks = savedItems.map((item, index) => ({
+      assessmentId: assessment[0].id,
+      itemId: item.id,
+      orderNumber: index + 1
+    }));
+    
+    await db.insert(assessmentItemsJoin).values(itemLinks);
+    
+    console.log('[Schoolwide] Assessment created:', assessment[0].id);
+    
+    res.json({
+      success: true,
+      assessment: assessment[0],
+      itemCount: savedItems.length,
+      message: `Generated ${savedItems.length} items using Google Gemini AI (FREE)`
+    });
+    
+  } catch (error) {
+    console.error('[Schoolwide] Error:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: 'Check server logs for more information'
+    });
+  }
+});
+```
+
+---
+
+## 📋 STEP 5: TEST THE INTEGRATION
+
+### **5A) Restart Your Replit App:**
+
+1. Click the **"Stop"** button (if app is running)
+2. Click the **"Run"** button to restart
+3. Wait for app to fully start (you'll see "Server running on port..." in console)
+
+### **5B) Test Question Generation:**
+
+1. **In Production:** Go to your live site (e.g., pbishouseofchampions.com)
+2. **Login as Admin** (Bobby Phillips account)
+3. **Navigate to:** EduCAP → Assessments tab
+4. **Click:** "Schoolwide Assessment Builder" button
+5. **Configure:**
+   - Content Area: **Math**
+   - Grades: **Check "Grade 6"**
+   - Item Count: **10** (start small for testing)
+   - DOK Mix: Leave default
+6. **Click:** "Generate Assessment" button
+7. **Wait:** 30-60 seconds (generating 10 questions)
+8. **Check Console Logs** in Replit for:
+```
+[Gemini] Generating 10 item assessment for Grade 6 Math
+[Gemini] Generated question for 6.NS.4
+[Gemini] Generated question for 6.NS.5
+...
+[Schoolwide] Assessment created: 123

@@ -1,0 +1,157 @@
+// server/services/geminiAI.js
+
+class GeminiAIService {
+  constructor() {
+    this.apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+    this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models';
+    this.model = 'gemini-1.5-flash'; // Free tier model
+  }
+
+  // ------------------------------
+  // ACAP Proficiency Scoring Scales (from uploaded PDF)
+  // ------------------------------
+  // NOTE:
+  // - "summative" scale = ACAP Summative
+  // - "alternate" scale = ACAP Alternate
+  // - subjects supported: ELA, Math, Science (case-insensitive handling below)
+  // - grades supported: 6, 7, 8
+  //
+  // Source: ACAP Proficiency Levels PDF :contentReference[oaicite:2]{index=2}
+  static ACAP_SCALES = {
+    summative: {
+      ela: {
+        6: { 1: [255, 443], 2: [444, 501], 3: [502, 542], 4: [543, 750] },
+        7: { 1: [279, 457], 2: [458, 512], 3: [513, 552], 4: [553, 750] },
+        8: { 1: [298, 466], 2: [467, 517], 3: [518, 555], 4: [556, 750] }
+      },
+      math: {
+        6: { 1: [256, 448], 2: [449, 506], 3: [507, 547], 4: [548, 750] },
+        7: { 1: [272, 451], 2: [452, 508], 3: [509, 549], 4: [550, 750] },
+        8: { 1: [278, 454], 2: [455, 509], 3: [510, 551], 4: [552, 750] }
+      },
+      science: {
+        6: { 1: [222, 413], 2: [414, 478], 3: [479, 528], 4: [529, 750] },
+        7: { 1: [244, 416], 2: [417, 479], 3: [480, 528], 4: [529, 750] },
+        8: { 1: [225, 423], 2: [424, 483], 3: [484, 531], 4: [532, 750] }
+      }
+    },
+
+    // Included for completeness based on the attachment.
+    // If you want to use it, pass studentData.assessmentProgram = "alternate".
+    alternate: {
+      ela: {
+        6: { 1: [360, 398], 2: [399, 420], 3: [421, 437], 4: [438, 750] },
+        7: { 1: [386, 421], 2: [422, 441], 3: [442, 456], 4: [457, 750] },
+        8: { 1: [395, 432], 2: [433, 452], 3: [453, 467], 4: [468, 750] }
+      },
+      math: {
+        6: { 1: [360, 400], 2: [401, 422], 3: [423, 438], 4: [439, 750] },
+        7: { 1: [386, 423], 2: [424, 445], 3: [446, 461], 4: [462, 750] },
+        8: { 1: [395, 429], 2: [430, 449], 3: [450, 464], 4: [465, 750] }
+      },
+      science: {
+        6: { 1: [360, 404], 2: [405, 429], 3: [430, 449], 4: [450, 750] },
+        7: { 1: [386, 422], 2: [423, 443], 3: [444, 460], 4: [461, 750] },
+        8: { 1: [395, 428], 2: [429, 448], 3: [449, 463], 4: [464, 750] }
+      }
+    }
+  };
+
+  normalizeSubject(subjectRaw) {
+    const s = String(subjectRaw || "").trim().toLowerCase();
+    if (s === "ela" || s === "english" || s === "reading" || s === "language arts" || s === "english language arts") return "ela";
+    if (s === "math" || s === "mathematics") return "math";
+    if (s === "science") return "science";
+    return "ela"; // safe default
+  }
+
+  normalizeProgram(programRaw) {
+    const p = String(programRaw || "summative").trim().toLowerCase();
+    return p === "alternate" ? "alternate" : "summative";
+  }
+
+  getAcapScale(studentData) {
+    const grade = Number(studentData?.grade);
+    const subject = this.normalizeSubject(studentData?.subject);
+    const program = this.normalizeProgram(studentData?.assessmentProgram); // "summative" | "alternate"
+    const byProgram = GeminiAIService.ACAP_SCALES[program] || GeminiAIService.ACAP_SCALES.summative;
+    const bySubject = byProgram[subject] || byProgram.ela;
+    const byGrade = bySubject[grade];
+
+    // Fallbacks: if grade isn't 6/7/8, use closest available (6)
+    return byGrade || bySubject[6];
+  }
+
+  getAcapScaleLines(studentData) {
+    const scale = this.getAcapScale(studentData);
+    // You can rename these labels, but keep the ranges exact.
+    return [
+      `- Level 1: ${scale[1][0]}-${scale[1][1]}`,
+      `- Level 2: ${scale[2][0]}-${scale[2][1]}`,
+      `- Level 3: ${scale[3][0]}-${scale[3][1]}`,
+      `- Level 4: ${scale[4][0]}-${scale[4][1]}`
+    ].join("\n");
+  }
+
+  // ... keep your other methods as-is ...
+
+  /**
+   * Generate Scholar Success Prediction
+   */
+  async generateSuccessPrediction(studentData) {
+    const acapScaleLines = this.getAcapScaleLines(studentData);
+    const programName = this.normalizeProgram(studentData?.assessmentProgram) === "alternate" ? "ACAP ALTERNATE" : "ACAP SUMMATIVE";
+    const subjectName = this.normalizeSubject(studentData?.subject).toUpperCase();
+
+    const prompt = `You are an educational data scientist. Analyze this student's performance data and predict their ACAP proficiency.
+
+STUDENT DATA:
+- Grade: ${studentData.grade}
+- Subject: ${studentData.subject}
+- EduCAP Mastery: ${studentData.educapMastery}%
+- Time on Task: ${studentData.timeOnTask} min/day
+- Boot Camp Progress: ${studentData.bootCampProgress}%
+- Attendance: ${studentData.attendance}%
+- Days Until ACAP: ${studentData.daysUntilTest}
+
+${programName} SCORING SCALE (${subjectName}, Grade ${studentData.grade}):
+${acapScaleLines}
+
+Predict the student's ACAP scaled score and proficiency level (1-4) and provide intervention recommendations.
+Also ensure:
+- predictedLevel must be an integer 1-4 based on the scale above.
+- levelName should be one of: "Level 1", "Level 2", "Level 3", "Level 4".
+- confidence is 0-100.
+
+Return ONLY valid JSON (no markdown):
+{
+  "predictedScore": 485,
+  "predictedLevel": 2,
+  "levelName": "Level 2",
+  "confidence": 85,
+  "riskLevel": "Medium",
+  "weakestStandards": [
+    {
+      "code": "6.NS.8",
+      "currentMastery": 15,
+      "targetMastery": 70,
+      "pointImpact": 12
+    }
+  ],
+  "interventionSummary": "Focus on priority gaps aligned to weakest standards. Recommend targeted Boot Camp + small-group reteach.",
+  "projectedImprovement": 15
+}`;
+
+    try {
+      const response = await this.callGeminiAPI(prompt);
+      return this.parseJSON(response);
+    } catch (error) {
+      console.error('[Gemini] Prediction error:', error);
+      throw error;
+    }
+  }
+
+  // ... keep the rest of your file as-is ...
+}
+
+module.exports = new GeminiAIService();

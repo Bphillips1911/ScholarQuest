@@ -1,6 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
 export interface GeminiGeneratedItem {
   itemType: string;
@@ -141,7 +144,7 @@ Set difficulty between 0.3 and 0.9 based on item complexity. Assign each item to
 Return ONLY the JSON array, no other text.`;
 }
 
-function parseGeminiResponse(text: string): GeminiGeneratedItem[] {
+function parseAIResponse(text: string): GeminiGeneratedItem[] {
   let cleaned = text.trim();
   const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
   if (jsonMatch) {
@@ -164,14 +167,14 @@ function parseGeminiResponse(text: string): GeminiGeneratedItem[] {
       standardCode: item.standardCode || "",
     }));
   } catch (e) {
-    console.error("Failed to parse Gemini response:", e);
+    console.error("Failed to parse AI response:", e);
     return [];
   }
 }
 
 export async function generateSchoolwideAssessment(params: BuilderParams): Promise<GeminiGeneratedItem[]> {
-  if (!process.env.GOOGLE_GEMINI_API_KEY) {
-    throw new Error("Gemini API key is not configured. Please add the GOOGLE_GEMINI_API_KEY secret.");
+  if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY || !process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
+    throw new Error("OpenAI API is not configured. Please ensure the AI integration is set up.");
   }
 
   const totalPct = (params.dokMix.dok2 || 0) + (params.dokMix.dok3 || 0) + (params.dokMix.dok4 || 0);
@@ -190,7 +193,6 @@ export async function generateSchoolwideAssessment(params: BuilderParams): Promi
     .map(([d]) => d);
   const domains = activeDomains.length > 0 ? activeDomains : Object.keys(SUBJECT_DOMAINS[params.subject] || {});
 
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   const allItems: GeminiGeneratedItem[] = [];
 
   const batches: { dok: number; count: number }[] = [];
@@ -201,24 +203,32 @@ export async function generateSchoolwideAssessment(params: BuilderParams): Promi
   for (const batch of batches) {
     const prompt = buildPrompt(params, batch.dok, batch.count, domains);
     let retries = 3;
-    let delay = 5000;
+    let delay = 3000;
     while (retries > 0) {
       try {
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
-        const items = parseGeminiResponse(text);
+        console.log(`OpenAI: Generating ${batch.count} DOK ${batch.dok} items for ${params.subject}...`);
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: "You are an expert educational assessment item writer. Always respond with valid JSON arrays only." },
+            { role: "user", content: prompt }
+          ],
+          max_completion_tokens: 8192,
+        });
+        const text = response.choices[0]?.message?.content || "";
+        const items = parseAIResponse(text);
         allItems.push(...items);
-        console.log(`Gemini generated ${items.length}/${batch.count} DOK ${batch.dok} items for ${params.subject}`);
+        console.log(`OpenAI generated ${items.length}/${batch.count} DOK ${batch.dok} items for ${params.subject}`);
         break;
       } catch (error: any) {
         retries--;
-        const isRateLimit = error.message?.includes("429") || error.message?.includes("quota") || error.message?.includes("Too Many Requests");
+        const isRateLimit = error.status === 429 || error.message?.includes("429") || error.message?.includes("rate");
         if (isRateLimit && retries > 0) {
-          console.log(`Gemini rate limited for DOK ${batch.dok}, retrying in ${delay / 1000}s (${retries} retries left)`);
+          console.log(`OpenAI rate limited for DOK ${batch.dok}, retrying in ${delay / 1000}s (${retries} retries left)`);
           await new Promise(resolve => setTimeout(resolve, delay));
           delay *= 2;
         } else {
-          console.error(`Gemini generation error for DOK ${batch.dok}:`, error.message);
+          console.error(`OpenAI generation error for DOK ${batch.dok}:`, error.message || error);
           if (!isRateLimit) break;
         }
       }
@@ -226,7 +236,7 @@ export async function generateSchoolwideAssessment(params: BuilderParams): Promi
   }
 
   if (allItems.length === 0) {
-    throw new Error("Gemini AI could not generate items at this time. This may be due to API rate limits — please wait a minute and try again, or reduce the item count.");
+    throw new Error("OpenAI could not generate assessment items at this time. Please try again in a moment.");
   }
 
   return allItems;

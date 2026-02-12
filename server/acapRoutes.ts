@@ -1770,7 +1770,7 @@ export function registerAcapRoutes(app: Express): void {
       const grades = Array.isArray(gradeLevels) ? gradeLevels : [6, 7, 8];
       const subj = subject || "ELA";
 
-      console.log(`Schoolwide Builder: Generating ${targetItemCount} ${subj} items for grades ${grades.join(",")} via Gemini AI`);
+      console.log(`Schoolwide Builder: Generating ${targetItemCount} ${subj} items for grades ${grades.join(",")} via OpenAI`);
 
       const generatedItems = await generateSchoolwideAssessment({
         subject: subj,
@@ -1831,7 +1831,7 @@ export function registerAcapRoutes(app: Express): void {
           difficulty: item.difficulty,
           aiGenerated: true,
           reviewStatus: "approved",
-          reviewedBy: "gemini-ai-schoolwide",
+          reviewedBy: "openai-schoolwide",
           metadata: { source: "schoolwide-builder", subject: subj, grades },
         }).returning();
 

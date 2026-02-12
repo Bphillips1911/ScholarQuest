@@ -791,7 +791,7 @@ function AssessmentsTab() {
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-emerald-600" /> Schoolwide Assessment Builder
               </CardTitle>
-              <CardDescription>Configure and generate assessment items using Gemini AI. Items are automatically created, saved to the question bank, and bundled into a Forge assessment draft.</CardDescription>
+              <CardDescription>Configure and generate assessment items using AI. Items are automatically created, saved to the question bank, and bundled into a Forge assessment draft.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -905,12 +905,12 @@ function AssessmentsTab() {
                 {schoolwideBuilderMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Gemini AI is generating {swItemCount} items... This may take 30-60 seconds
+                    AI is generating {swItemCount} items... This may take 30-60 seconds
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Assessment with Gemini AI
+                    Generate Assessment with AI
                   </>
                 )}
               </Button>

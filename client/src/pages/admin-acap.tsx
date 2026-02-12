@@ -791,7 +791,7 @@ function AssessmentsTab() {
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-emerald-600" /> Schoolwide Assessment Builder
               </CardTitle>
-              <CardDescription>Configure and generate a Forge assessment draft with auto-filled blueprint, DOK mix, and domain weights</CardDescription>
+              <CardDescription>Configure and generate assessment items using Gemini AI. Items are automatically created, saved to the question bank, and bundled into a Forge assessment draft.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -888,6 +888,7 @@ function AssessmentsTab() {
                 onClick={() => {
                   const grades = swGrades.split("-").map(Number).filter(Boolean);
                   const gradeLevels = grades.length === 2 ? Array.from({ length: grades[1] - grades[0] + 1 }, (_, i) => grades[0] + i) : grades;
+                  setSwCreatedDraft(null);
                   schoolwideBuilderMutation.mutate({
                     subject: swSubject,
                     gradeLevels,
@@ -901,8 +902,17 @@ function AssessmentsTab() {
                 disabled={schoolwideBuilderMutation.isPending}
                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 text-sm font-bold shadow-lg"
               >
-                {schoolwideBuilderMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                Generate Assessment
+                {schoolwideBuilderMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Gemini AI is generating {swItemCount} items... This may take 30-60 seconds
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Assessment with Gemini AI
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -921,7 +931,7 @@ function AssessmentsTab() {
                     <p className="text-sm font-semibold text-gray-800">{swCreatedDraft.forgeAssessment?.title}</p>
                   </div>
                   <div className="bg-white rounded-lg p-3 border">
-                    <p className="text-xs text-gray-500">Items Matched</p>
+                    <p className="text-xs text-gray-500">AI-Generated Items</p>
                     <p className="text-lg font-bold text-emerald-700">{swCreatedDraft.matchedItemCount}</p>
                   </div>
                   <div className="bg-white rounded-lg p-3 border">

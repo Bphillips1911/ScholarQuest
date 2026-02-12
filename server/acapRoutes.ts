@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { acapStorage } from "./acapStorage";
 import { db } from "./db";
 import { generateItems, generatePassage, autoGradeResponse, bootcampTutor } from "./services/acapAiService";
+import { generateSchoolwideAssessment } from "./services/geminiAssessmentService";
 import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import {
@@ -1769,47 +1770,84 @@ export function registerAcapRoutes(app: Express): void {
       const grades = Array.isArray(gradeLevels) ? gradeLevels : [6, 7, 8];
       const subj = subject || "ELA";
 
-      const allItems = await db.select().from(acapItems).where(eq(acapItems.reviewStatus, "approved"));
-      const allStandards = await db.select().from(acapStandards);
-      const standardMap = new Map(allStandards.map(s => [s.id, s]));
+      console.log(`Schoolwide Builder: Generating ${targetItemCount} ${subj} items for grades ${grades.join(",")} via Gemini AI`);
 
-      let matchingItems = allItems.filter(item => {
-        const standard = standardMap.get(item.standardId);
-        const gradeMatch = !grades.length || (standard && grades.includes(standard.gradeLevel));
-        const subjectMatch = !subj || (standard && (standard.domain || "").toLowerCase().includes(subj.toLowerCase()));
-        return gradeMatch && subjectMatch;
+      const generatedItems = await generateSchoolwideAssessment({
+        subject: subj,
+        gradeLevels: grades,
+        itemCount: targetItemCount,
+        dokMix: dokMix || { dok2: 30, dok3: 50, dok4: 20 },
+        domainWeights: domainWeights || {},
+        writingTypes: writingTypes,
       });
 
-      if (dokMix && (dokMix.dok2 || dokMix.dok3 || dokMix.dok4)) {
-        const totalPct = (dokMix.dok2 || 0) + (dokMix.dok3 || 0) + (dokMix.dok4 || 0);
-        if (totalPct > 0) {
-          const dok2Count = Math.round((dokMix.dok2 / totalPct) * targetItemCount);
-          const dok3Count = Math.round((dokMix.dok3 / totalPct) * targetItemCount);
-          const dok4Count = targetItemCount - dok2Count - dok3Count;
-          const byDok: Record<number, any[]> = { 2: [], 3: [], 4: [] };
-          matchingItems.forEach(item => {
-            if (byDok[item.dokLevel]) byDok[item.dokLevel].push(item);
-          });
-          const selected = [
-            ...byDok[2].slice(0, dok2Count),
-            ...byDok[3].slice(0, dok3Count),
-            ...byDok[4].slice(0, dok4Count),
-          ];
-          if (selected.length > 0) matchingItems = selected;
+      const allStandards = await db.select().from(acapStandards);
+      const subjectStandards = allStandards.filter(s => 
+        s.domain.toLowerCase() === subj.toLowerCase() || 
+        s.domain.toLowerCase().includes(subj.toLowerCase())
+      );
+      const standardPool = subjectStandards.length > 0 ? subjectStandards : allStandards;
+      
+      if (standardPool.length === 0) {
+        return res.status(400).json({ error: "No standards found in the database. Please add standards first." });
+      }
+
+      const standardsByGrade = new Map<number, any[]>();
+      standardPool.forEach(s => {
+        const arr = standardsByGrade.get(s.gradeLevel) || [];
+        arr.push(s);
+        standardsByGrade.set(s.gradeLevel, arr);
+      });
+
+      const savedItemIds: number[] = [];
+      const savedStandardIds = new Set<number>();
+
+      for (let i = 0; i < generatedItems.length; i++) {
+        const item = generatedItems[i];
+        const gradePool = grades.length > 0 
+          ? grades.flatMap(g => standardsByGrade.get(g) || [])
+          : standardPool;
+        const pool = gradePool.length > 0 ? gradePool : standardPool;
+        
+        let standardId = pool[i % pool.length].id;
+        if (item.domain) {
+          const domainLower = item.domain.toLowerCase();
+          const domainMatch = pool.find(s => 
+            s.description?.toLowerCase().includes(domainLower) ||
+            s.subdomain?.toLowerCase().includes(domainLower) ||
+            s.code?.toLowerCase().includes(domainLower)
+          );
+          if (domainMatch) standardId = domainMatch.id;
+        }
+
+        const saved = await db.insert(acapItems).values({
+          standardId,
+          itemType: item.itemType || "MC",
+          dokLevel: item.dokLevel,
+          stem: item.stem,
+          options: item.options,
+          correctAnswer: item.correctAnswer,
+          explanation: item.explanation,
+          difficulty: item.difficulty,
+          aiGenerated: true,
+          reviewStatus: "approved",
+          reviewedBy: "gemini-ai-schoolwide",
+          metadata: { source: "schoolwide-builder", subject: subj, grades },
+        }).returning();
+
+        if (saved[0]) {
+          savedItemIds.push(saved[0].id);
+          savedStandardIds.add(standardId);
         }
       }
 
-      const fallbackItems = matchingItems.length > 0 ? matchingItems : allItems;
-      const selectedItems = fallbackItems.slice(0, targetItemCount);
-      const selectedItemIds = selectedItems.map(item => item.id);
-      const selectedStandardIds = Array.from(new Set(selectedItems.map(item => item.standardId)));
-
-      if (selectedItemIds.length === 0) {
-        return res.status(400).json({ error: "No items found matching criteria. Add items to the question bank first." });
+      if (savedItemIds.length === 0) {
+        return res.status(400).json({ error: "AI failed to generate assessment items. Please try again." });
       }
 
+      const savedItems = await db.select({ dokLevel: acapItems.dokLevel }).from(acapItems).where(inArray(acapItems.id, savedItemIds));
       const actualDokDist: Record<string, number> = {};
-      selectedItems.forEach(item => {
+      savedItems.forEach(item => {
         const key = `dok${item.dokLevel}`;
         actualDokDist[key] = (actualDokDist[key] || 0) + 1;
       });
@@ -1823,9 +1861,9 @@ export function registerAcapRoutes(app: Express): void {
         timeLimitMinutes: 60,
         lockMode: true,
         antiRushMonitor: true,
-        itemIds: selectedItemIds,
-        standardIds: selectedStandardIds,
-        dokDistribution: dokMix || actualDokDist,
+        itemIds: savedItemIds,
+        standardIds: Array.from(savedStandardIds),
+        dokDistribution: actualDokDist,
         writingConfig: writingTypes ? { types: writingTypes } : {},
         versionGroupId: `schoolwide-${Date.now()}`,
         status: "draft",
@@ -1837,7 +1875,7 @@ export function registerAcapRoutes(app: Express): void {
         const versionCount = typeof generateVersions === "number" ? generateVersions : 4;
         const labels = ["A", "B", "C", "D", "E", "F", "G", "H"].slice(0, versionCount);
         for (const label of labels) {
-          const itemOrder = [...selectedItemIds];
+          const itemOrder = [...savedItemIds];
           if (label !== "A") {
             for (let i = itemOrder.length - 1; i > 0; i--) {
               const j = Math.floor(Math.random() * (i + 1));
@@ -1871,14 +1909,17 @@ export function registerAcapRoutes(app: Express): void {
       await acapStorage.createAuditEntry({
         action: "schoolwide_builder_create", entityType: "forge_assessment", entityId: forgeAssessment.id,
         userId: req.admin?.email, userRole: "admin",
-        details: { subject: subj, grades, itemCount: selectedItemIds.length, versionCount: versions.length },
+        details: { subject: subj, grades, itemCount: savedItemIds.length, versionCount: versions.length, aiGenerated: true },
       });
+
+      console.log(`Schoolwide Builder: Created forge assessment ${forgeAssessment.id} with ${savedItemIds.length} AI-generated items`);
 
       res.status(201).json({
         forgeAssessment: { ...forgeAssessment, status: versions.length > 0 ? "versioned" : "draft" },
         versions,
-        matchedItemCount: selectedItemIds.length,
+        matchedItemCount: savedItemIds.length,
         dokDistribution: actualDokDist,
+        aiGenerated: true,
       });
     } catch (error: any) {
       console.error("Schoolwide builder error:", error);

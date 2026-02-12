@@ -49,6 +49,8 @@ export async function apiRequest(
     headers.Authorization = `Bearer ${adminToken}`;
   } else if ((url.startsWith('/api/pbis') || url.startsWith('/api/houses/') || url.startsWith('/api/sorting/')) && (teacherToken || adminToken)) {
     headers.Authorization = `Bearer ${adminToken || teacherToken}`;
+  } else if (url.startsWith('/api/acap/') && (adminToken || teacherToken)) {
+    headers.Authorization = `Bearer ${adminToken || teacherToken}`;
   }
   
   const res = await fetch(url, {
@@ -111,6 +113,8 @@ export const getQueryFn: <T>(options: {
     } else if (url.includes('/api/admin/') && adminToken) {
       headers.Authorization = `Bearer ${adminToken}`;
     } else if ((url.includes('/api/pbis') || url.includes('/api/houses/') || url.includes('/api/sorting/')) && (teacherToken || adminToken)) {
+      headers.Authorization = `Bearer ${adminToken || teacherToken}`;
+    } else if (url.includes('/api/acap/') && (adminToken || teacherToken)) {
       headers.Authorization = `Bearer ${adminToken || teacherToken}`;
     }
     

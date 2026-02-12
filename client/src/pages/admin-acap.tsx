@@ -657,6 +657,7 @@ function QuestionBankTab() {
 
 function AssessmentsTab() {
   const { toast } = useToast();
+  const [subTab, setSubTab] = useState<"assessments" | "schoolwide-builder">("assessments");
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
   const [assessmentType, setAssessmentType] = useState("formative");
@@ -673,6 +674,18 @@ function AssessmentsTab() {
   const [selectedScholarIds, setSelectedScholarIds] = useState<string[]>([]);
   const [viewAssessment, setViewAssessment] = useState<any>(null);
   const [itemFilter, setItemFilter] = useState("approved");
+
+  const [swSubject, setSwSubject] = useState("Math");
+  const [swGrades, setSwGrades] = useState("6-8");
+  const [swItemCount, setSwItemCount] = useState(50);
+  const [swDok2, setSwDok2] = useState(30);
+  const [swDok3, setSwDok3] = useState(50);
+  const [swDok4, setSwDok4] = useState(20);
+  const [swWritingType, setSwWritingType] = useState("argumentative");
+  const [swDomainWeights, setSwDomainWeights] = useState<Record<string, number>>({});
+  const [swGenerateVersions, setSwGenerateVersions] = useState(true);
+  const [swVersionCount, setSwVersionCount] = useState(4);
+  const [swCreatedDraft, setSwCreatedDraft] = useState<any>(null);
 
   const { data: assessments, isLoading: loadingAssessments } = useQuery<any[]>({ queryKey: ["/api/acap/assessments"] });
   const { data: items } = useQuery<any[]>({ queryKey: ["/api/acap/items"] });
@@ -713,6 +726,34 @@ function AssessmentsTab() {
     onError: () => toast({ title: "Failed to assign assessment", variant: "destructive" }),
   });
 
+  const schoolwideBuilderMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/acap/schoolwide-builder", data);
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/forge/assessments"] });
+      setSwCreatedDraft(data);
+      toast({ title: "Forge Draft Created", description: `${data.matchedItemCount} items matched. ${data.versions?.length || 0} versions generated. Ready for publish in Forge tab.` });
+    },
+    onError: async (err: any) => {
+      let msg = err.message || "Failed to create schoolwide assessment";
+      try { const body = await err.json?.(); if (body?.error) msg = body.error; } catch {}
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const { data: standards } = useQuery<any[]>({ queryKey: ["/api/acap/standards"] });
+
+  useEffect(() => {
+    if (standards && standards.length > 0 && Object.keys(swDomainWeights).length === 0) {
+      const domains = Array.from(new Set((standards || []).map((s: any) => s.domain).filter(Boolean)));
+      const weights: Record<string, number> = {};
+      domains.forEach(d => { weights[d] = Math.round(100 / domains.length); });
+      setSwDomainWeights(weights);
+    }
+  }, [standards]);
+
   const toggleItem = (id: number) => {
     setSelectedItemIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
   };
@@ -728,6 +769,201 @@ function AssessmentsTab() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 mb-4">
+        <button
+          onClick={() => setSubTab("assessments")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${subTab === "assessments" ? "bg-indigo-700 text-white shadow" : "text-gray-600 hover:bg-gray-200"}`}
+        >
+          <ClipboardList className="h-4 w-4" /> Assessments
+        </button>
+        <button
+          onClick={() => setSubTab("schoolwide-builder")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${subTab === "schoolwide-builder" ? "bg-emerald-700 text-white shadow" : "text-gray-600 hover:bg-gray-200"}`}
+        >
+          <BookOpen className="h-4 w-4" /> Schoolwide Builder
+        </button>
+      </div>
+
+      {subTab === "schoolwide-builder" && (
+        <div className="space-y-6">
+          <Card className="border-emerald-200 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-emerald-600" /> Schoolwide Assessment Builder
+              </CardTitle>
+              <CardDescription>Configure and generate a Forge assessment draft with auto-filled blueprint, DOK mix, and domain weights</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700">Content Area</Label>
+                  <Select value={swSubject} onValueChange={setSwSubject}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Math">Math</SelectItem>
+                      <SelectItem value="ELA">ELA</SelectItem>
+                      <SelectItem value="Science">Science</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700">Grades</Label>
+                  <Input value={swGrades} onChange={(e) => setSwGrades(e.target.value)} placeholder="6-8" className="mt-1 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700">Item Count</Label>
+                  <div className="flex items-center gap-3 mt-1">
+                    <input type="range" min={10} max={100} value={swItemCount} onChange={(e) => setSwItemCount(parseInt(e.target.value))} className="flex-1 h-2 bg-gradient-to-r from-emerald-200 to-emerald-500 rounded-lg appearance-none cursor-pointer" />
+                    <span className="text-sm font-bold text-emerald-700 w-8">{swItemCount}</span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700">Versions</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Checkbox checked={swGenerateVersions} onCheckedChange={(v) => setSwGenerateVersions(!!v)} />
+                    <span className="text-xs text-gray-600">Generate</span>
+                    {swGenerateVersions && (
+                      <Select value={String(swVersionCount)} onValueChange={(v) => setSwVersionCount(parseInt(v))}>
+                        <SelectTrigger className="w-20 h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="4">4</SelectItem>
+                          <SelectItem value="6">6</SelectItem>
+                          <SelectItem value="8">8</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-semibold text-gray-700">DOK Mix</Label>
+                <div className="space-y-2 mt-2">
+                  {[
+                    { label: "DOK 2", val: swDok2, set: setSwDok2, color: "from-blue-200 to-blue-500" },
+                    { label: "DOK 3", val: swDok3, set: setSwDok3, color: "from-green-200 to-green-500" },
+                    { label: "DOK 4", val: swDok4, set: setSwDok4, color: "from-purple-200 to-purple-500" },
+                  ].map((d) => (
+                    <div key={d.label} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-600 w-14">{d.label}</span>
+                      <input type="range" min={0} max={100} value={d.val} onChange={(e) => d.set(parseInt(e.target.value))} className={`flex-1 h-2 bg-gradient-to-r ${d.color} rounded-lg appearance-none cursor-pointer`} />
+                      <span className="text-xs font-bold text-gray-700 w-10">{d.val}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {Object.keys(swDomainWeights).length > 0 && (
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700">Blueprint Domain Weights</Label>
+                  <div className="space-y-2 mt-2">
+                    {Object.entries(swDomainWeights).map(([domain, weight]) => (
+                      <div key={domain} className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600 flex-1 truncate">{domain}</span>
+                        <input type="range" min={0} max={100} value={weight} onChange={(e) => setSwDomainWeights((prev) => ({ ...prev, [domain]: parseInt(e.target.value) }))} className="w-24 h-2 bg-gradient-to-r from-gray-200 to-gray-500 rounded-lg appearance-none cursor-pointer" />
+                        <span className="text-xs font-bold text-gray-700 w-10">{weight}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {swSubject === "ELA" && (
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700">Writing Task Type</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                    {["Argumentative", "Persuasive", "Informational", "Research"].map((type) => (
+                      <label key={type} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${swWritingType === type.toLowerCase() ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-gray-300"}`}>
+                        <input type="radio" name="swWritingType" value={type.toLowerCase()} checked={swWritingType === type.toLowerCase()} onChange={(e) => setSwWritingType(e.target.value)} className="accent-emerald-600" />
+                        <span className="text-xs font-medium text-gray-700">{type}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={() => {
+                  const grades = swGrades.split("-").map(Number).filter(Boolean);
+                  const gradeLevels = grades.length === 2 ? Array.from({ length: grades[1] - grades[0] + 1 }, (_, i) => grades[0] + i) : grades;
+                  schoolwideBuilderMutation.mutate({
+                    subject: swSubject,
+                    gradeLevels,
+                    itemCount: swItemCount,
+                    dokMix: { dok2: swDok2, dok3: swDok3, dok4: swDok4 },
+                    domainWeights: swDomainWeights,
+                    writingTypes: [swWritingType],
+                    generateVersions: swGenerateVersions ? swVersionCount : false,
+                  });
+                }}
+                disabled={schoolwideBuilderMutation.isPending}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 text-sm font-bold shadow-lg"
+              >
+                {schoolwideBuilderMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                Generate Assessment
+              </Button>
+            </CardContent>
+          </Card>
+
+          {swCreatedDraft && (
+            <Card className="border-emerald-300 bg-emerald-50/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-emerald-800">
+                  <CheckCircle className="h-5 w-5" /> Forge Draft Created
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-xs text-gray-500">Title</p>
+                    <p className="text-sm font-semibold text-gray-800">{swCreatedDraft.forgeAssessment?.title}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-xs text-gray-500">Items Matched</p>
+                    <p className="text-lg font-bold text-emerald-700">{swCreatedDraft.matchedItemCount}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-xs text-gray-500">Versions</p>
+                    <p className="text-lg font-bold text-indigo-700">{swCreatedDraft.versions?.length || 0}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-xs text-gray-500">Status</p>
+                    <Badge className="bg-amber-100 text-amber-700 mt-1">{swCreatedDraft.forgeAssessment?.status}</Badge>
+                  </div>
+                </div>
+                {swCreatedDraft.dokDistribution && (
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-xs text-gray-500 mb-1">DOK Distribution</p>
+                    <div className="flex gap-3">
+                      {Object.entries(swCreatedDraft.dokDistribution).map(([dok, count]: [string, any]) => (
+                        <Badge key={dok} variant="outline" className="text-xs">{dok.toUpperCase()}: {count}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(swCreatedDraft.versions || []).length > 0 && (
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-xs text-gray-500 mb-2">Version Access Codes</p>
+                    <div className="flex flex-wrap gap-2">
+                      {swCreatedDraft.versions.map((v: any) => (
+                        <Badge key={v.id} className="bg-indigo-100 text-indigo-700 font-mono text-xs">
+                          {v.versionLabel}: {v.accessCode}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-gray-500">Go to the <span className="font-semibold text-indigo-600">Forge</span> tab to publish this assessment and generate printable versions.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {subTab === "assessments" && (
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-800">Assessment Management</h2>
         <Button onClick={() => setShowCreate(!showCreate)} className="bg-indigo-700 hover:bg-indigo-800">
@@ -925,6 +1161,8 @@ function AssessmentsTab() {
           </CardContent>
         </Card>
       )}
+
+      </div>)}
 
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

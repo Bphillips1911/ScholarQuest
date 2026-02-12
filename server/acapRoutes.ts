@@ -1761,6 +1761,131 @@ export function registerAcapRoutes(app: Express): void {
     }
   });
 
+  // ===== SCHOOLWIDE BUILDER → FORGE DRAFT =====
+  app.post("/api/acap/schoolwide-builder", authenticateForgeAdmin, async (req: any, res: Response) => {
+    try {
+      const { subject, gradeLevels, itemCount, dokMix, domainWeights, writingTypes, generateVersions } = req.body;
+      const targetItemCount = Math.min(Math.max(itemCount || 50, 10), 100);
+      const grades = Array.isArray(gradeLevels) ? gradeLevels : [6, 7, 8];
+      const subj = subject || "ELA";
+
+      const allItems = await db.select().from(acapItems).where(eq(acapItems.reviewStatus, "approved"));
+      const allStandards = await db.select().from(acapStandards);
+      const standardMap = new Map(allStandards.map(s => [s.id, s]));
+
+      let matchingItems = allItems.filter(item => {
+        const standard = standardMap.get(item.standardId);
+        const gradeMatch = !grades.length || (standard && grades.includes(standard.gradeLevel));
+        const subjectMatch = !subj || (standard && (standard.domain || "").toLowerCase().includes(subj.toLowerCase()));
+        return gradeMatch && subjectMatch;
+      });
+
+      if (dokMix && (dokMix.dok2 || dokMix.dok3 || dokMix.dok4)) {
+        const totalPct = (dokMix.dok2 || 0) + (dokMix.dok3 || 0) + (dokMix.dok4 || 0);
+        if (totalPct > 0) {
+          const dok2Count = Math.round((dokMix.dok2 / totalPct) * targetItemCount);
+          const dok3Count = Math.round((dokMix.dok3 / totalPct) * targetItemCount);
+          const dok4Count = targetItemCount - dok2Count - dok3Count;
+          const byDok: Record<number, any[]> = { 2: [], 3: [], 4: [] };
+          matchingItems.forEach(item => {
+            if (byDok[item.dokLevel]) byDok[item.dokLevel].push(item);
+          });
+          const selected = [
+            ...byDok[2].slice(0, dok2Count),
+            ...byDok[3].slice(0, dok3Count),
+            ...byDok[4].slice(0, dok4Count),
+          ];
+          if (selected.length > 0) matchingItems = selected;
+        }
+      }
+
+      const fallbackItems = matchingItems.length > 0 ? matchingItems : allItems;
+      const selectedItems = fallbackItems.slice(0, targetItemCount);
+      const selectedItemIds = selectedItems.map(item => item.id);
+      const selectedStandardIds = Array.from(new Set(selectedItems.map(item => item.standardId)));
+
+      if (selectedItemIds.length === 0) {
+        return res.status(400).json({ error: "No items found matching criteria. Add items to the question bank first." });
+      }
+
+      const actualDokDist: Record<string, number> = {};
+      selectedItems.forEach(item => {
+        const key = `dok${item.dokLevel}`;
+        actualDokDist[key] = (actualDokDist[key] || 0) + 1;
+      });
+
+      const forgeAssessment = await acapStorage.createForgeAssessment({
+        title: `Schoolwide ${subj} Assessment — Grades ${grades.join(", ")}`,
+        grades,
+        subjects: [subj],
+        assessmentType: "baseline",
+        window: "baseline",
+        timeLimitMinutes: 60,
+        lockMode: true,
+        antiRushMonitor: true,
+        itemIds: selectedItemIds,
+        standardIds: selectedStandardIds,
+        dokDistribution: dokMix || actualDokDist,
+        writingConfig: writingTypes ? { types: writingTypes } : {},
+        versionGroupId: `schoolwide-${Date.now()}`,
+        status: "draft",
+        createdBy: req.admin?.email || "admin",
+      });
+
+      let versions: any[] = [];
+      if (generateVersions) {
+        const versionCount = typeof generateVersions === "number" ? generateVersions : 4;
+        const labels = ["A", "B", "C", "D", "E", "F", "G", "H"].slice(0, versionCount);
+        for (const label of labels) {
+          const itemOrder = [...selectedItemIds];
+          if (label !== "A") {
+            for (let i = itemOrder.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [itemOrder[i], itemOrder[j]] = [itemOrder[j], itemOrder[i]];
+            }
+          }
+          const optionShuffles: Record<string, number[]> = {};
+          if (label !== "A") {
+            for (const itemId of itemOrder) {
+              const shuffle = [0, 1, 2, 3];
+              for (let i = shuffle.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffle[i], shuffle[j]] = [shuffle[j], shuffle[i]];
+              }
+              optionShuffles[String(itemId)] = shuffle;
+            }
+          }
+          const code = Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+          const version = await acapStorage.createForgeVersion({
+            forgeAssessmentId: forgeAssessment.id,
+            versionLabel: label,
+            itemOrder,
+            optionShuffles,
+            accessCode: code,
+          });
+          versions.push(version);
+        }
+        await acapStorage.updateForgeAssessment(forgeAssessment.id, { status: "versioned" } as any);
+      }
+
+      await acapStorage.createAuditEntry({
+        action: "schoolwide_builder_create", entityType: "forge_assessment", entityId: forgeAssessment.id,
+        userId: req.admin?.email, userRole: "admin",
+        details: { subject: subj, grades, itemCount: selectedItemIds.length, versionCount: versions.length },
+      });
+
+      res.status(201).json({
+        forgeAssessment: { ...forgeAssessment, status: versions.length > 0 ? "versioned" : "draft" },
+        versions,
+        matchedItemCount: selectedItemIds.length,
+        dokDistribution: actualDokDist,
+      });
+    } catch (error: any) {
+      console.error("Schoolwide builder error:", error);
+      res.status(500).json({ error: error.message || "Failed to create schoolwide assessment" });
+    }
+  });
+
   app.patch("/api/acap/forge/assessments/:id", authenticateForgeAdmin, async (req: any, res: Response) => {
     try {
       const id = parseInt(req.params.id);

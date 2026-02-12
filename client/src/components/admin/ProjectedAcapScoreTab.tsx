@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import {
   Target, TrendingUp, Users, Award, Download, FileText, Zap,
-  BarChart3, Settings, Loader2, X, ChevronRight, Shield, Activity,
-  BookOpen, Sparkles, PieChart, Layers
+  BarChart3, Settings, Loader2, ChevronRight, Shield, Activity,
+  PieChart, Layers
 } from "lucide-react";
 
 export default function ProjectedAcapScoreTab() {
@@ -30,20 +30,8 @@ export default function ProjectedAcapScoreTab() {
   const [slider5, setSlider5] = useState(25);
   const [attendanceSlider, setAttendanceSlider] = useState(0.6);
 
-  const [showBuilder, setShowBuilder] = useState(false);
-  const [builderSubject, setBuilderSubject] = useState("Math");
-  const [builderGrades, setBuilderGrades] = useState("6-8");
-  const [builderItemCount, setBuilderItemCount] = useState(50);
-  const [builderDok2, setBuilderDok2] = useState(30);
-  const [builderDok3, setBuilderDok3] = useState(50);
-  const [builderDok4, setBuilderDok4] = useState(20);
-  const [builderWritingType, setBuilderWritingType] = useState("argumentative");
-  const [builderDomainWeights, setBuilderDomainWeights] = useState<Record<string, number>>({});
 
   const { data: projections, isLoading: loadingProjections } = useQuery<any[]>({ queryKey: ["/api/acap/projections"] });
-  const { data: schoolwideAssessments } = useQuery<any[]>({ queryKey: ["/api/acap/schoolwide-assessments"] });
-  const { data: standards } = useQuery<any[]>({ queryKey: ["/api/acap/standards"] });
-  const { data: items } = useQuery<any[]>({ queryKey: ["/api/acap/items"] });
 
   const latestRun = projections?.[0];
 
@@ -71,17 +59,6 @@ export default function ProjectedAcapScoreTab() {
     },
   });
 
-  const createSchoolwideAssessmentMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/acap/schoolwide-assessments", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/acap/schoolwide-assessments"] });
-      setShowBuilder(false);
-      toast({ title: "Assessment Created", description: "Schoolwide assessment has been generated." });
-    },
-  });
 
   const handleGenerateReport = () => {
     generateProjectionMutation.mutate({
@@ -188,20 +165,6 @@ export default function ProjectedAcapScoreTab() {
     window.print();
   };
 
-  const subjectDomains: Record<string, string[]> = {
-    Math: ["Proportional Reasoning", "Ratios & Number Systems", "Expressions & Equations", "Data & Statistics"],
-    ELA: ["Reading Literature", "Reading Informational", "Writing", "Language"],
-    Science: ["Physical Science", "Life Science", "Earth Science"],
-  };
-
-  useEffect(() => {
-    const domains = subjectDomains[builderSubject] || [];
-    const weight = domains.length > 0 ? Math.round(100 / domains.length) : 0;
-    const w: Record<string, number> = {};
-    domains.forEach((d) => { w[d] = weight; });
-    setBuilderDomainWeights(w);
-  }, [builderSubject]);
-
   return (
     <div className="space-y-6 relative">
       <div className="flex items-center justify-between">
@@ -228,9 +191,6 @@ export default function ProjectedAcapScoreTab() {
           </Button>
           <Button variant="outline" onClick={handleExportPDF} className="border-blue-300 text-blue-700 hover:bg-blue-50">
             <FileText className="h-4 w-4 mr-1" /> Export PDF
-          </Button>
-          <Button onClick={() => setShowBuilder(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Sparkles className="h-4 w-4 mr-1" /> Generate Assessment
           </Button>
           <Button onClick={handleGenerateReport} disabled={generateProjectionMutation.isPending} className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-lg">
             {generateProjectionMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Zap className="h-4 w-4 mr-1" />}
@@ -558,57 +518,6 @@ export default function ProjectedAcapScoreTab() {
             </Card>
           )}
 
-          {/* Schoolwide Assessments List */}
-          {(schoolwideAssessments || []).length > 0 && (
-            <Card className="border-2 border-indigo-100 shadow-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-indigo-600" /> Created Schoolwide Assessments ({(schoolwideAssessments || []).length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {(schoolwideAssessments || []).map((sa: any) => (
-                    <div key={sa.id} className="flex items-center justify-between bg-white rounded-lg border p-3 hover:shadow-sm transition-shadow">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                          <BookOpen className="h-5 w-5 text-indigo-600" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-gray-800">{sa.title}</div>
-                          <div className="flex gap-1.5 mt-0.5">
-                            <Badge variant="secondary" className="text-[10px]">{sa.subject}</Badge>
-                            <Badge variant="outline" className="text-[10px]">Grades {(sa.gradeLevels || []).join(", ")}</Badge>
-                            <Badge variant="outline" className="text-[10px]">{sa.itemCount} items</Badge>
-                            {sa.status && <Badge className="text-[10px] bg-emerald-100 text-emerald-700">{sa.status}</Badge>}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">{sa.createdAt ? new Date(sa.createdAt).toLocaleDateString() : ""}</span>
-                        <Button variant="outline" size="sm" className="text-xs" onClick={() => {
-                          toast({ title: "Assessment Details", description: `${sa.title} — ${sa.itemCount} items, DOK Mix: ${JSON.stringify(sa.dokMix || {})}` });
-                        }}>
-                          Preview
-                        </Button>
-                        {sa.settings?.linkedAssessmentId && (
-                          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => {
-                            toast({
-                              title: "Linked Assessment",
-                              description: `Assessment ID #${sa.settings.linkedAssessmentId} is ready. Go to the Assessments tab in Admin EduCAP to assign it to teachers and scholars.`,
-                            });
-                          }}>
-                            <Users className="h-3 w-3" /> Assign
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Action Buttons */}
           <div className="flex gap-3 items-center">
             <Button onClick={handleGenerateReport} disabled={generateProjectionMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6">
@@ -644,116 +553,6 @@ export default function ProjectedAcapScoreTab() {
         </div>
       </div>
 
-      {/* Schoolwide Assessment Builder Sidebar */}
-      {showBuilder && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/30 cursor-pointer" role="button" aria-label="Close sidebar" onClick={() => setShowBuilder(false)} />
-          <div className="w-[420px] bg-white shadow-2xl border-l border-gray-200 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-emerald-600" /> Schoolwide Assessment Builder
-              </h3>
-              <Button variant="ghost" size="sm" aria-label="Close" onClick={() => setShowBuilder(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="p-5 space-y-5">
-              <div>
-                <Label className="text-sm font-semibold text-gray-700">Content Area</Label>
-                <Select value={builderSubject} onValueChange={setBuilderSubject}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Math">Math</SelectItem>
-                    <SelectItem value="ELA">ELA</SelectItem>
-                    <SelectItem value="Science">Science</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm font-semibold text-gray-700">Grades</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Input value={builderGrades} onChange={(e) => setBuilderGrades(e.target.value)} placeholder="6-8" className="text-sm" />
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-semibold text-gray-700">Item Count</Label>
-                <div className="flex items-center gap-3 mt-1">
-                  <input type="range" min={25} max={100} value={builderItemCount} onChange={(e) => setBuilderItemCount(parseInt(e.target.value))} className="flex-1 h-2 bg-gradient-to-r from-emerald-200 to-emerald-500 rounded-lg appearance-none cursor-pointer" />
-                  <span className="text-sm font-bold text-emerald-700 w-8">{builderItemCount}</span>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-semibold text-gray-700">DOK Mix</Label>
-                <div className="space-y-2 mt-2">
-                  {[
-                    { label: "DOK 2", key: "dok2", val: builderDok2, set: setBuilderDok2, color: "from-blue-200 to-blue-500" },
-                    { label: "DOK 3", key: "dok3", val: builderDok3, set: setBuilderDok3, color: "from-green-200 to-green-500" },
-                    { label: "DOK 4", key: "dok4", val: builderDok4, set: setBuilderDok4, color: "from-purple-200 to-purple-500" },
-                  ].map((d) => (
-                    <div key={d.key} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-600 w-14">{d.label}</span>
-                      <input type="range" min={0} max={100} value={d.val} onChange={(e) => d.set(parseInt(e.target.value))} className={`flex-1 h-2 bg-gradient-to-r ${d.color} rounded-lg appearance-none cursor-pointer`} />
-                      <span className="text-xs font-bold text-gray-700 w-10">{d.val}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-semibold text-gray-700">Blueprint Domain Weights</Label>
-                <div className="space-y-2 mt-2">
-                  {Object.entries(builderDomainWeights).map(([domain, weight]) => (
-                    <div key={domain} className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600 flex-1">{domain}</span>
-                      <input type="range" min={0} max={100} value={weight} onChange={(e) => setBuilderDomainWeights((prev) => ({ ...prev, [domain]: parseInt(e.target.value) }))} className="w-24 h-2 bg-gradient-to-r from-gray-200 to-gray-500 rounded-lg appearance-none cursor-pointer" />
-                      <span className="text-xs font-bold text-gray-700 w-10">{weight}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {builderSubject === "ELA" && (
-              <div>
-                <Label className="text-sm font-semibold text-gray-700">Writing Task Type</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {["Argumentative", "Persuasive", "Informational", "Research"].map((type) => (
-                    <label key={type} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${builderWritingType === type.toLowerCase() ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-gray-300"}`}>
-                      <input type="radio" name="writingType" value={type.toLowerCase()} checked={builderWritingType === type.toLowerCase()} onChange={(e) => setBuilderWritingType(e.target.value)} className="accent-emerald-600" />
-                      <span className="text-xs font-medium text-gray-700">{type}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              )}
-
-              <Button
-                onClick={() => {
-                  const grades = builderGrades.split("-").map(Number).filter(Boolean);
-                  const gradeLevels = grades.length === 2 ? Array.from({ length: grades[1] - grades[0] + 1 }, (_, i) => grades[0] + i) : grades;
-                  createSchoolwideAssessmentMutation.mutate({
-                    title: `Schoolwide ${builderSubject} Assessment — Grades ${builderGrades}`,
-                    gradeLevels,
-                    subject: builderSubject,
-                    itemCount: builderItemCount,
-                    dokMix: { dok2: builderDok2, dok3: builderDok3, dok4: builderDok4 },
-                    domainWeights: builderDomainWeights,
-                    writingTypes: [builderWritingType],
-                    createdBy: "admin",
-                  });
-                }}
-                disabled={createSchoolwideAssessmentMutation.isPending}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 text-sm font-bold shadow-lg"
-              >
-                {createSchoolwideAssessmentMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                Generate Assessment <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

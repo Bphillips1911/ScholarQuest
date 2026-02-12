@@ -83,65 +83,32 @@ const SUBJECT_DOMAINS: Record<string, Record<string, string[]>> = {
   },
 };
 
-function buildPrompt(params: BuilderParams, batchDok: number, batchCount: number, domains: string[]): string {
+function buildPrompt(params: BuilderParams, dokDistribution: { dok: number; count: number }[], domains: string[]): string {
   const domainDescriptions = domains.map(d => {
     const standards = SUBJECT_DOMAINS[params.subject]?.[d] || [];
     return `- ${d}: ${standards.join("; ")}`;
   }).join("\n");
 
   const gradeText = params.gradeLevels.join(", ");
+  const totalCount = dokDistribution.reduce((sum, d) => sum + d.count, 0);
+  const dokBreakdown = dokDistribution.map(d => `${d.count} items at DOK ${d.dok}`).join(", ");
 
   let writingInstruction = "";
   if (params.subject === "ELA" && params.writingTypes && params.writingTypes.length > 0) {
     writingInstruction = `\nInclude writing-related items covering these types: ${params.writingTypes.join(", ")}. These may be grammar, revision, or editing items aligned to writing standards.`;
   }
 
-  return `You are an expert assessment item writer for the Alabama Comprehensive Assessment Program (ACAP) for grades ${gradeText} ${params.subject}.
+  return `Generate exactly ${totalCount} multiple-choice assessment items for grades ${gradeText} ${params.subject} (ACAP-aligned).
 
-Generate exactly ${batchCount} multiple-choice assessment items at DOK Level ${batchDok} (Webb's Depth of Knowledge).
+DOK distribution: ${dokBreakdown}.
+DOK 2=Skill/Concept, DOK 3=Strategic Thinking, DOK 4=Extended Thinking.
 
-DOK Level Guidelines:
-- DOK 2: Skill/Concept — requires mental processing beyond recall; compare, classify, organize, estimate, interpret
-- DOK 3: Strategic Thinking — requires reasoning, planning, using evidence, complex/abstract thinking, multi-step
-- DOK 4: Extended Thinking — requires investigation, complex reasoning, applying concepts across multiple contexts
-
-Subject: ${params.subject}
-Grade Levels: ${gradeText}
-Target Domains (distribute items across these proportionally):
-${domainDescriptions}
+Domains: ${domainDescriptions}
 ${writingInstruction}
 
-REQUIREMENTS:
-1. Each item MUST have exactly 4 answer options (A, B, C, D)
-2. Exactly ONE correct answer per item
-3. All distractors must be plausible but clearly incorrect
-4. Items must be grade-appropriate and standards-aligned
-5. Stems should be clear and unambiguous
-6. Avoid "all of the above" or "none of the above"
-7. Include varied cognitive demands matching DOK ${batchDok}
-8. Each item must have a brief explanation of why the correct answer is right
+Rules: 4 options (A-D), 1 correct, plausible distractors, grade-appropriate, no "all/none of the above".
 
-Respond ONLY with a valid JSON array. Each object must have these exact fields:
-[
-  {
-    "itemType": "MC",
-    "dokLevel": ${batchDok},
-    "stem": "The question text here",
-    "options": [
-      {"key": "A", "text": "Option A text"},
-      {"key": "B", "text": "Option B text"},
-      {"key": "C", "text": "Option C text"},
-      {"key": "D", "text": "Option D text"}
-    ],
-    "correctAnswer": "A",
-    "explanation": "Brief explanation of why this answer is correct",
-    "difficulty": 0.5,
-    "domain": "Domain Name"
-  }
-]
-
-Set difficulty between 0.3 and 0.9 based on item complexity. Assign each item to one of the target domains listed above.
-Return ONLY the JSON array, no other text.`;
+JSON array only. Each object: {"itemType":"MC","dokLevel":N,"stem":"...","options":[{"key":"A","text":"..."},{"key":"B","text":"..."},{"key":"C","text":"..."},{"key":"D","text":"..."}],"correctAnswer":"A","explanation":"...","difficulty":0.5,"domain":"..."}`;
 }
 
 function parseAIResponse(text: string): GeminiGeneratedItem[] {
@@ -193,44 +160,41 @@ export async function generateSchoolwideAssessment(params: BuilderParams): Promi
     .map(([d]) => d);
   const domains = activeDomains.length > 0 ? activeDomains : Object.keys(SUBJECT_DOMAINS[params.subject] || {});
 
-  const allItems: GeminiGeneratedItem[] = [];
+  const dokDistribution: { dok: number; count: number }[] = [];
+  if (dok2Count > 0) dokDistribution.push({ dok: 2, count: dok2Count });
+  if (dok3Count > 0) dokDistribution.push({ dok: 3, count: dok3Count });
+  if (dok4Count > 0) dokDistribution.push({ dok: 4, count: dok4Count });
 
-  const batches: { dok: number; count: number }[] = [];
-  if (dok2Count > 0) batches.push({ dok: 2, count: dok2Count });
-  if (dok3Count > 0) batches.push({ dok: 3, count: dok3Count });
-  if (dok4Count > 0) batches.push({ dok: 4, count: dok4Count });
+  const prompt = buildPrompt(params, dokDistribution, domains);
+  let allItems: GeminiGeneratedItem[] = [];
+  let retries = 3;
+  let delay = 3000;
 
-  for (const batch of batches) {
-    const prompt = buildPrompt(params, batch.dok, batch.count, domains);
-    let retries = 3;
-    let delay = 3000;
-    while (retries > 0) {
-      try {
-        console.log(`OpenAI: Generating ${batch.count} DOK ${batch.dok} items for ${params.subject}...`);
-        const response = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            { role: "system", content: "You are an expert educational assessment item writer. Always respond with valid JSON arrays only." },
-            { role: "user", content: prompt }
-          ],
-          max_completion_tokens: 8192,
-        });
-        const text = response.choices[0]?.message?.content || "";
-        const items = parseAIResponse(text);
-        allItems.push(...items);
-        console.log(`OpenAI generated ${items.length}/${batch.count} DOK ${batch.dok} items for ${params.subject}`);
-        break;
-      } catch (error: any) {
-        retries--;
-        const isRateLimit = error.status === 429 || error.message?.includes("429") || error.message?.includes("rate");
-        if (isRateLimit && retries > 0) {
-          console.log(`OpenAI rate limited for DOK ${batch.dok}, retrying in ${delay / 1000}s (${retries} retries left)`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2;
-        } else {
-          console.error(`OpenAI generation error for DOK ${batch.dok}:`, error.message || error);
-          if (!isRateLimit) break;
-        }
+  while (retries > 0) {
+    try {
+      console.log(`OpenAI: Generating ${params.itemCount} items for ${params.subject} (single call)...`);
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are an expert educational assessment item writer. Always respond with valid JSON arrays only. No markdown, no explanation." },
+          { role: "user", content: prompt }
+        ],
+        max_completion_tokens: 8192,
+      });
+      const text = response.choices[0]?.message?.content || "";
+      allItems = parseAIResponse(text);
+      console.log(`OpenAI generated ${allItems.length}/${params.itemCount} items for ${params.subject}`);
+      break;
+    } catch (error: any) {
+      retries--;
+      const isRateLimit = error.status === 429 || error.message?.includes("429") || error.message?.includes("rate");
+      if (isRateLimit && retries > 0) {
+        console.log(`OpenAI rate limited, retrying in ${delay / 1000}s (${retries} retries left)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+      } else {
+        console.error(`OpenAI generation error:`, error.message || error);
+        if (!isRateLimit) break;
       }
     }
   }

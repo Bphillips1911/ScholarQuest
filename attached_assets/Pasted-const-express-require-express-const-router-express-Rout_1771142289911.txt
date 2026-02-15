@@ -1,0 +1,106 @@
+const express = require("express");
+const router = express.Router();
+const { db } = require("../db"); // adjust
+
+function normalizeCode(code) {
+  return String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+router.post("/api/educap/access-codes/validate", async (req, res) => {
+  try {
+    const { code, studentId } = req.body;
+    const clean = normalizeCode(code);
+
+    if (!clean) return res.status(400).json({ error: "Code required" });
+
+    const row = await db
+      .selectFrom("access_codes")
+      .selectAll()
+      .where("code", "=", clean)
+      .where("active", "=", true)
+      .executeTakeFirst();
+
+    if (!row) return res.status(404).json({ error: "Invalid access code" });
+
+    // Expiration enforcement
+    if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
+      return res.status(410).json({ error: "Access code expired" });
+    }
+
+    // Teacher assignment code -> open assignment for this student
+    if (row.code_type === "teacher_assignment") {
+      if (!studentId) return res.status(400).json({ error: "studentId required" });
+
+      const existing = await db
+        .selectFrom("assignment_students")
+        .selectAll()
+        .where("assignment_id", "=", row.assignment_id)
+        .where("student_id", "=", studentId)
+        .executeTakeFirst();
+
+      if (!existing) {
+        // If teacher assigned but student row missing, repair it automatically
+        const inserted = await db.insertInto("assignment_students").values({
+          assignment_id: row.assignment_id,
+          student_id: studentId,
+          status: "assigned",
+        }).returningAll().executeTakeFirst();
+
+        return res.json({
+          ok: true,
+          type: "teacher_assignment",
+          assignmentStudentId: inserted.id,
+          redirectUrl: `/student-acap/assessment/${inserted.id}`,
+        });
+      }
+
+      return res.json({
+        ok: true,
+        type: "teacher_assignment",
+        assignmentStudentId: existing.id,
+        redirectUrl: `/student-acap/assessment/${existing.id}`,
+      });
+    }
+
+    // Forge version code -> create a one-off assignment for this student (so it shows up too)
+    if (row.code_type === "forge_version") {
+      if (!studentId) return res.status(400).json({ error: "studentId required" });
+
+      const version = await db
+        .selectFrom("forge_versions")
+        .selectAll()
+        .where("id", "=", row.forge_version_id)
+        .executeTakeFirst();
+
+      if (!version) return res.status(404).json({ error: "Forge version not found" });
+
+      // Build a one-off assignment from the forge version’s assessment_id
+      const assignment = await db.insertInto("assignments").values({
+        assessment_id: version.assessment_id,
+        teacher_id: row.created_by,
+        title: version.title || "Forge Differentiated Assessment",
+        status: "active",
+      }).returningAll().executeTakeFirst();
+
+      const as = await db.insertInto("assignment_students").values({
+        assignment_id: assignment.id,
+        student_id: studentId,
+        status: "assigned",
+      }).returningAll().executeTakeFirst();
+
+      return res.json({
+        ok: true,
+        type: "forge_version",
+        assignmentStudentId: as.id,
+        redirectUrl: `/student-acap/assessment/${as.id}?forgeVersionId=${version.id}`,
+      });
+    }
+
+    return res.status(400).json({ error: "Unsupported code type" });
+  } catch (e) {
+    console.error("validate access code", e);
+    res.status(500).json({ error: "Access code validation failed" });
+  }
+});
+
+module.exports = router;

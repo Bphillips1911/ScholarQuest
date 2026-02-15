@@ -1519,12 +1519,37 @@ export function registerAcapRoutes(app: Express): void {
       if (!teacherId || !window || !gradeLevel || !subject) {
         return res.status(400).json({ error: "teacherId, window, gradeLevel, subject are required" });
       }
+      let resolvedAssessmentId = assessmentId || null;
+      if (!resolvedAssessmentId) {
+        const allAssessments = await acapStorage.getAssessments();
+        const match = allAssessments.find((a: any) => {
+          const subjectMatch = a.subject?.toUpperCase() === subject.toUpperCase();
+          const gradeMatch = a.gradeLevel === parseInt(String(gradeLevel));
+          const typeMatch = a.assessmentType?.toLowerCase().includes(window.toLowerCase());
+          return subjectMatch && gradeMatch && (typeMatch || !a.assessmentType);
+        });
+        if (match) {
+          resolvedAssessmentId = match.id;
+          console.log(`[AccessCode] Auto-linked to assessment ${match.id} (${match.title})`);
+        } else {
+          const firstMatch = allAssessments.find((a: any) => {
+            return a.subject?.toUpperCase() === subject.toUpperCase() && a.gradeLevel === parseInt(String(gradeLevel));
+          });
+          if (firstMatch) {
+            resolvedAssessmentId = firstMatch.id;
+            console.log(`[AccessCode] Fallback linked to assessment ${firstMatch.id} (${firstMatch.title})`);
+          }
+        }
+      }
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const accessCode = await acapStorage.createAccessCode({
-        code, assessmentId: assessmentId || null, teacherId, window, gradeLevel, subject,
+        code, assessmentId: resolvedAssessmentId, teacherId, window, gradeLevel, subject,
         isActive: true,
+        source: "teacher",
+        createdBy: teacherId,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       });
+      console.log(`[AccessCode] Created code=${code} assessmentId=${resolvedAssessmentId} teacher=${teacherId}`);
       res.json(accessCode);
     } catch (error: any) {
       console.error("Access code creation error:", error);
@@ -1558,15 +1583,28 @@ export function registerAcapRoutes(app: Express): void {
         if (accessCode.expiresAt && new Date(accessCode.expiresAt) < new Date()) {
           return res.status(410).json({ error: "Access code has expired" });
         }
+        let resolvedAssessmentId = accessCode.assessmentId;
+        if (!resolvedAssessmentId) {
+          const allAssessments = await acapStorage.getAssessments();
+          const match = allAssessments.find((a: any) => {
+            const subjectMatch = a.subject?.toUpperCase() === (accessCode!.subject || "").toUpperCase();
+            const gradeMatch = a.gradeLevel === accessCode!.gradeLevel;
+            return subjectMatch && gradeMatch;
+          });
+          if (match) {
+            resolvedAssessmentId = match.id;
+            console.log(`[CodeValidate] Auto-resolved assessmentId=${match.id} for code ${normalizedCode}`);
+          }
+        }
         let instanceId: number | null = null;
-        if (studentId && accessCode.assessmentId) {
-          const existing = await acapStorage.getStudentInstanceByAssessment(studentId, accessCode.assessmentId);
+        if (studentId && resolvedAssessmentId) {
+          const existing = await acapStorage.getStudentInstanceByAssessment(studentId, resolvedAssessmentId);
           if (existing) {
             instanceId = existing.id;
           } else {
             const inst = await acapStorage.createStudentInstance({
               studentId,
-              assessmentId: accessCode.assessmentId,
+              assessmentId: resolvedAssessmentId,
               forgeAssessmentId: accessCode.forgeAssessmentId || null,
               accessCodeId: accessCode.id,
               assignedBy: accessCode.createdBy || accessCode.teacherId || "code",
@@ -1576,11 +1614,11 @@ export function registerAcapRoutes(app: Express): void {
             instanceId = inst.id;
           }
         }
-        console.log(`[CodeValidate] code found source=${accessCode.source}, assessmentId=${accessCode.assessmentId}, instanceId=${instanceId}`);
-        res.json({
+        console.log(`[CodeValidate] code=${normalizedCode} source=${accessCode.source}, assessmentId=${resolvedAssessmentId}, instanceId=${instanceId}`);
+        return res.json({
           valid: true,
-          accessCode,
-          assessmentId: accessCode.assessmentId,
+          accessCode: { ...accessCode, assessmentId: resolvedAssessmentId },
+          assessmentId: resolvedAssessmentId,
           forgeAssessmentId: accessCode.forgeAssessmentId,
           versionId: accessCode.versionId,
           instanceId,
@@ -1612,7 +1650,7 @@ export function registerAcapRoutes(app: Express): void {
           }
         }
         console.log(`[CodeValidate] forge version match, forgeAssessmentId=${forgeMatch.assessment.id}, versionId=${forgeMatch.version.id}, instanceId=${instanceId}`);
-        res.json({
+        return res.json({
           valid: true,
           accessCode: {
             id: 0,
@@ -1632,6 +1670,7 @@ export function registerAcapRoutes(app: Express): void {
           launchUrl: `/student-acap/forge/${normalizedCode}`,
         });
       }
+      return res.status(404).json({ error: "Invalid access code" });
     } catch (error) {
       console.error("Access code validation error:", error);
       res.status(500).json({ error: "Failed to validate access code" });

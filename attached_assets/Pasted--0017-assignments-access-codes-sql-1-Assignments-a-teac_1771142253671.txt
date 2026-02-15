@@ -1,0 +1,58 @@
+-- 0017_assignments_access_codes.sql
+
+-- 1) Assignments (a teacher assigns an assessment)
+CREATE TABLE IF NOT EXISTS assignments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assessment_id UUID NOT NULL,
+  teacher_id UUID NOT NULL,
+  title TEXT,
+  due_at TIMESTAMPTZ NULL,
+  status TEXT NOT NULL DEFAULT 'active', -- active | archived | cancelled
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_assignments_teacher ON assignments(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_assessment ON assignments(assessment_id);
+
+-- 2) Assignment-to-students (what scholars see)
+CREATE TABLE IF NOT EXISTS assignment_students (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assignment_id UUID NOT NULL,
+  student_id UUID NOT NULL,
+  status TEXT NOT NULL DEFAULT 'assigned', -- assigned | started | submitted | closed
+  started_at TIMESTAMPTZ NULL,
+  submitted_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (assignment_id, student_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_as_student ON assignment_students(student_id);
+CREATE INDEX IF NOT EXISTS idx_as_assignment ON assignment_students(assignment_id);
+
+-- 3) Access Codes (teacher codes + forge codes)
+CREATE TABLE IF NOT EXISTS access_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT NOT NULL UNIQUE,
+  code_type TEXT NOT NULL, -- teacher_assignment | forge_version
+  assignment_id UUID NULL,
+  forge_version_id UUID NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  expires_at TIMESTAMPTZ NULL,
+  created_by UUID NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_access_codes_assignment ON access_codes(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_access_codes_forge_version ON access_codes(forge_version_id);
+
+-- 4) Forge versions must be publishable (if missing)
+ALTER TABLE forge_versions
+  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'draft'; -- draft | published
+
+ALTER TABLE forge_versions
+  ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ NULL;
+
+-- 5) Foreign keys (only add if your schema allows; adjust table names/ids)
+-- (If you already have FK constraints, skip these)
+-- ALTER TABLE assignments ADD CONSTRAINT fk_assign_assessment FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE;
+-- ALTER TABLE assignment_students ADD CONSTRAINT fk_as_assignment FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE;

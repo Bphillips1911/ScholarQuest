@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,17 +34,21 @@ export default function AccessCodeEntry({ onValidCode, studentId }: { onValidCod
   const [error, setError] = useState("");
 
   const validateMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<ValidatedResult> => {
       if (!code.trim()) throw new Error("Please enter an access code");
-      const res = await apiRequest("POST", "/api/acap/access-codes/validate", {
-        code: code.trim(),
-        studentId: studentId || undefined,
+      const res = await fetch("/api/acap/access-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: code.trim(),
+          studentId: studentId || undefined,
+        }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Invalid code");
+        throw new Error(data.error || "Invalid access code");
       }
-      return res.json() as Promise<ValidatedResult>;
+      return data as ValidatedResult;
     },
     onSuccess: (data: ValidatedResult) => {
       setValidated(data);

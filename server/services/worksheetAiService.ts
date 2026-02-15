@@ -1,6 +1,6 @@
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || "";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,14 +24,19 @@ async function callGeminiAPI(prompt: string): Promise<string> {
           temperature: 0.8,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 8192,
+          maxOutputTokens: 65536,
+          responseMimeType: "application/json",
         },
       }),
     });
 
     if (resp.ok) {
       const data = await resp.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const candidate = data?.candidates?.[0];
+      if (candidate?.finishReason === "MAX_TOKENS") {
+        console.warn("[Gemini] Response truncated by MAX_TOKENS");
+      }
+      const text = candidate?.content?.parts?.[0]?.text;
       if (!text) throw new Error("Gemini returned empty content");
       return text;
     }

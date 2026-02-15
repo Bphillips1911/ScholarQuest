@@ -303,8 +303,9 @@ export function registerAcapRoutes(app: Express): void {
   app.post("/api/acap/assignments", async (req: Request, res: Response) => {
     try {
       const body = req.body;
+      const assessmentId = typeof body.assessmentId === "string" ? parseInt(body.assessmentId) : body.assessmentId;
       const assignmentData: any = {
-        assessmentId: typeof body.assessmentId === "string" ? parseInt(body.assessmentId) : body.assessmentId,
+        assessmentId,
         teacherId: body.teacherId,
         targetType: body.targetType || "scholars",
         targetIds: body.targetIds || [],
@@ -313,11 +314,50 @@ export function registerAcapRoutes(app: Express): void {
       if (body.dueDate) assignmentData.dueDate = new Date(body.dueDate);
       if (body.startDate) assignmentData.startDate = new Date(body.startDate);
       const assignment = await acapStorage.createAssignment(assignmentData);
-      await acapStorage.createAuditEntry({ action: "create_assignment", entityType: "assignment", entityId: assignment.id, userId: assignmentData.teacherId, userRole: "teacher", details: { assessmentId: assignmentData.assessmentId } });
-      res.status(201).json(assignment);
+      const studentIds = body.targetIds || [];
+      let insertedCount = 0;
+      for (const studentId of studentIds) {
+        try {
+          const existing = await acapStorage.getStudentInstanceByAssessment(studentId, assessmentId);
+          if (!existing) {
+            await acapStorage.createStudentInstance({
+              studentId,
+              assessmentId,
+              assignedBy: body.teacherId,
+              dueAt: body.dueDate ? new Date(body.dueDate) : null,
+              status: "assigned",
+              attemptNumber: 1,
+            });
+            insertedCount++;
+          }
+        } catch (instanceErr: any) {
+          console.error(`[Assign] Failed to create instance for student ${studentId}:`, instanceErr.message);
+        }
+      }
+      console.log(`[Assign] inserted ${insertedCount} student instances for assessment ${assessmentId}`);
+      await acapStorage.createAuditEntry({ action: "create_assignment", entityType: "assignment", entityId: assignment.id, userId: assignmentData.teacherId, userRole: "teacher", details: { assessmentId, studentCount: insertedCount } });
+      res.status(201).json({ ...assignment, insertedStudentInstances: insertedCount });
     } catch (error: any) {
       console.error("Create assignment error:", error);
       res.status(400).json({ error: error.message || "Failed to create assignment" });
+    }
+  });
+
+  // Student assessments list (from student_assessment_instances)
+  app.get("/api/acap/student/assessments/:studentId", async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const instances = await acapStorage.getStudentInstances(studentId);
+      const enriched = await Promise.all(instances.map(async (inst) => {
+        const assessment = await acapStorage.getAssessment(inst.assessmentId);
+        const attempts = await acapStorage.getAttempts(studentId, inst.assessmentId);
+        return { ...inst, assessment, attempts };
+      }));
+      console.log(`[StudentAssessments] returned ${enriched.length} items for student ${studentId}`);
+      res.json(enriched);
+    } catch (error) {
+      console.error("Student assessments error:", error);
+      res.status(500).json({ error: "Failed to fetch student assessments" });
     }
   });
 
@@ -1491,16 +1531,106 @@ export function registerAcapRoutes(app: Express): void {
 
   app.post("/api/acap/access-codes/validate", async (req: Request, res: Response) => {
     try {
-      const { code } = req.body;
+      const { code, studentId } = req.body;
       if (!code) return res.status(400).json({ error: "code is required" });
-      const accessCode = await acapStorage.getAccessCodeByCode(code.toUpperCase());
-      if (!accessCode) return res.status(404).json({ error: "Invalid access code" });
-      if (!accessCode.isActive) return res.status(410).json({ error: "Access code has been deactivated" });
-      if (accessCode.expiresAt && new Date(accessCode.expiresAt) < new Date()) {
-        return res.status(410).json({ error: "Access code has expired" });
+      const normalizedCode = code.trim().toUpperCase().replace(/\s/g, "");
+      let accessCode = await acapStorage.getAccessCodeByCode(normalizedCode);
+      let forgeMatch: { assessment: any; version: any } | null = null;
+      if (!accessCode) {
+        const allForge = await acapStorage.getForgeAssessments("published");
+        for (const fa of allForge) {
+          const versions = await acapStorage.getForgeVersions(fa.id);
+          const match = versions.find(v => v.accessCode === normalizedCode);
+          if (match) {
+            forgeMatch = { assessment: fa, version: match };
+            break;
+          }
+        }
+        if (!forgeMatch) {
+          return res.status(404).json({ error: "Invalid access code" });
+        }
       }
-      res.json({ valid: true, accessCode });
+      if (accessCode) {
+        if (!accessCode.isActive) return res.status(410).json({ error: "Access code has been deactivated" });
+        if (accessCode.expiresAt && new Date(accessCode.expiresAt) < new Date()) {
+          return res.status(410).json({ error: "Access code has expired" });
+        }
+        let instanceId: number | null = null;
+        if (studentId && accessCode.assessmentId) {
+          const existing = await acapStorage.getStudentInstanceByAssessment(studentId, accessCode.assessmentId);
+          if (existing) {
+            instanceId = existing.id;
+          } else {
+            const inst = await acapStorage.createStudentInstance({
+              studentId,
+              assessmentId: accessCode.assessmentId,
+              forgeAssessmentId: accessCode.forgeAssessmentId || null,
+              accessCodeId: accessCode.id,
+              assignedBy: accessCode.createdBy || accessCode.teacherId || "code",
+              status: "assigned",
+              attemptNumber: 1,
+            });
+            instanceId = inst.id;
+          }
+        }
+        console.log(`[CodeValidate] code found source=${accessCode.source}, assessmentId=${accessCode.assessmentId}, instanceId=${instanceId}`);
+        res.json({
+          valid: true,
+          accessCode,
+          assessmentId: accessCode.assessmentId,
+          forgeAssessmentId: accessCode.forgeAssessmentId,
+          versionId: accessCode.versionId,
+          instanceId,
+          launchUrl: accessCode.forgeAssessmentId
+            ? `/student-acap/forge/${normalizedCode}`
+            : `/student-acap`,
+        });
+      } else if (forgeMatch) {
+        let instanceId: number | null = null;
+        const mainAssessments = await acapStorage.getAssessments();
+        const linked = mainAssessments.find(a => {
+          const s = a.settings as any;
+          return s?.forgeAssessmentId === forgeMatch!.assessment.id;
+        });
+        if (studentId && linked) {
+          const existing = await acapStorage.getStudentInstanceByAssessment(studentId, linked.id);
+          if (existing) {
+            instanceId = existing.id;
+          } else {
+            const inst = await acapStorage.createStudentInstance({
+              studentId,
+              assessmentId: linked.id,
+              forgeAssessmentId: forgeMatch.assessment.id,
+              assignedBy: "forge_code",
+              status: "assigned",
+              attemptNumber: 1,
+            });
+            instanceId = inst.id;
+          }
+        }
+        console.log(`[CodeValidate] forge version match, forgeAssessmentId=${forgeMatch.assessment.id}, versionId=${forgeMatch.version.id}, instanceId=${instanceId}`);
+        res.json({
+          valid: true,
+          accessCode: {
+            id: 0,
+            code: normalizedCode,
+            assessmentId: linked?.id || null,
+            forgeAssessmentId: forgeMatch.assessment.id,
+            versionId: forgeMatch.version.id,
+            source: "forge",
+            window: forgeMatch.assessment.window || "assessment",
+            gradeLevel: (forgeMatch.assessment.grades as number[])?.[0] || null,
+            subject: (forgeMatch.assessment.subjects as string[])?.[0] || null,
+          },
+          assessmentId: linked?.id || null,
+          forgeAssessmentId: forgeMatch.assessment.id,
+          versionId: forgeMatch.version.id,
+          instanceId,
+          launchUrl: `/student-acap/forge/${normalizedCode}`,
+        });
+      }
     } catch (error) {
+      console.error("Access code validation error:", error);
       res.status(500).json({ error: "Failed to validate access code" });
     }
   });
@@ -2030,9 +2160,27 @@ export function registerAcapRoutes(app: Express): void {
       await acapStorage.updateForgeAssessment(id, { status: "published", publishedAt: new Date() } as any);
       const versions = await acapStorage.getForgeVersions(id);
       for (const version of versions) {
-        if (!version.accessCode) {
-          const code = Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
-          await acapStorage.updateForgeVersion(version.id, { accessCode: code } as any);
+        let versionCode = version.accessCode;
+        if (!versionCode) {
+          versionCode = Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+          await acapStorage.updateForgeVersion(version.id, { accessCode: versionCode } as any);
+        }
+        try {
+          const existingCode = await acapStorage.getAccessCodeByCode(versionCode);
+          if (!existingCode) {
+            await acapStorage.createAccessCode({
+              code: versionCode,
+              assessmentId: mainAssessment.id,
+              forgeAssessmentId: id,
+              versionId: version.id,
+              source: "forge",
+              createdBy: req.admin?.email || "admin",
+              isActive: true,
+            } as any);
+            console.log(`[ForgePublish] Persisted access code ${versionCode} for version ${version.versionLabel}`);
+          }
+        } catch (codeErr: any) {
+          console.error(`[ForgePublish] Failed to persist code ${versionCode}:`, codeErr.message);
         }
       }
       await acapStorage.createAuditEntry({

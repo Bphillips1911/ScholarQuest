@@ -1,4 +1,4 @@
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, sql, or } from "drizzle-orm";
 import { db } from "./db";
 import {
   acapStandards, acapBlueprints, acapPassages, acapItems,
@@ -6,7 +6,7 @@ import {
   acapMasteryTracking, acapGrowthSnapshots, acapBootcampSessions, acapAuditLog,
   acapProjectionRuns, acapProjectionSnapshots, acapSchoolwideAssessments, acapSchoolwideResults,
   acapImpactRuns, acapImpactLevers, acapGenomeTraits, acapGenomeEvents, acapGenomeRecommendations,
-  acapTutorAdaptations, acapAccessCodes,
+  acapTutorAdaptations, acapAccessCodes, studentAssessmentInstances,
   acapForgeAssessments, acapForgeVersions, acapForgeAttemptEvents, acapForgeOfflineSources,
   acapForgeRulePacks, acapForgeRules, acapForgeAiUsageLog,
   type AcapStandard, type AcapBlueprint, type AcapPassage, type AcapItem,
@@ -14,7 +14,7 @@ import {
   type AcapMasteryTracking, type AcapGrowthSnapshot, type AcapBootcampSession, type AcapAuditLog,
   type AcapProjectionRun, type AcapProjectionSnapshot, type AcapSchoolwideAssessment, type AcapSchoolwideResult,
   type AcapImpactRun, type AcapImpactLever, type AcapGenomeTrait, type AcapGenomeEvent, type AcapGenomeRecommendation,
-  type AcapTutorAdaptation, type AcapAccessCode,
+  type AcapTutorAdaptation, type AcapAccessCode, type StudentAssessmentInstance,
   type AcapForgeAssessment, type AcapForgeVersion, type AcapForgeAttemptEvent, type AcapForgeOfflineSource,
   type AcapForgeRulePack, type AcapForgeRule, type AcapForgeAiUsageLog,
   type InsertAcapStandard, type InsertAcapBlueprint, type InsertAcapPassage, type InsertAcapItem,
@@ -22,7 +22,7 @@ import {
   type InsertAcapMasteryTracking, type InsertAcapGrowthSnapshot, type InsertAcapBootcampSession, type InsertAcapAuditLog,
   type InsertAcapProjectionRun, type InsertAcapProjectionSnapshot, type InsertAcapSchoolwideAssessment, type InsertAcapSchoolwideResult,
   type InsertAcapImpactRun, type InsertAcapImpactLever, type InsertAcapGenomeTrait, type InsertAcapGenomeEvent, type InsertAcapGenomeRecommendation,
-  type InsertAcapTutorAdaptation, type InsertAcapAccessCode,
+  type InsertAcapTutorAdaptation, type InsertAcapAccessCode, type InsertStudentAssessmentInstance,
   type InsertAcapForgeAssessment, type InsertAcapForgeVersion, type InsertAcapForgeAttemptEvent, type InsertAcapForgeOfflineSource,
   type InsertAcapForgeRulePack, type InsertAcapForgeRule, type InsertAcapForgeAiUsageLog,
 } from "@shared/schema";
@@ -637,5 +637,53 @@ export const acapStorage = {
     const todayResult = await db.select({ total: sql<number>`COALESCE(SUM(${acapForgeAiUsageLog.costUsd}), 0)` }).from(acapForgeAiUsageLog).where(sql`${acapForgeAiUsageLog.createdAt} >= ${today}`);
     const allResult = await db.select({ total: sql<number>`COALESCE(SUM(${acapForgeAiUsageLog.costUsd}), 0)` }).from(acapForgeAiUsageLog);
     return { todayUsd: Number(todayResult[0]?.total || 0), totalUsd: Number(allResult[0]?.total || 0) };
+  },
+
+  // ===== Student Assessment Instances =====
+  async getStudentInstances(studentId: string): Promise<StudentAssessmentInstance[]> {
+    return db.select().from(studentAssessmentInstances)
+      .where(and(
+        eq(studentAssessmentInstances.studentId, studentId),
+        or(
+          eq(studentAssessmentInstances.status, "assigned"),
+          eq(studentAssessmentInstances.status, "in_progress"),
+          eq(studentAssessmentInstances.status, "submitted"),
+          eq(studentAssessmentInstances.status, "scored")
+        )
+      ))
+      .orderBy(desc(studentAssessmentInstances.assignedAt));
+  },
+  async getStudentInstance(id: number): Promise<StudentAssessmentInstance | undefined> {
+    const [i] = await db.select().from(studentAssessmentInstances).where(eq(studentAssessmentInstances.id, id));
+    return i;
+  },
+  async getStudentInstanceByAssessment(studentId: string, assessmentId: number): Promise<StudentAssessmentInstance | undefined> {
+    const [i] = await db.select().from(studentAssessmentInstances)
+      .where(and(
+        eq(studentAssessmentInstances.studentId, studentId),
+        eq(studentAssessmentInstances.assessmentId, assessmentId),
+        or(
+          eq(studentAssessmentInstances.status, "assigned"),
+          eq(studentAssessmentInstances.status, "in_progress")
+        )
+      ));
+    return i;
+  },
+  async createStudentInstance(data: InsertStudentAssessmentInstance): Promise<StudentAssessmentInstance> {
+    const [i] = await db.insert(studentAssessmentInstances).values(data).returning();
+    return i;
+  },
+  async updateStudentInstance(id: number, data: Partial<StudentAssessmentInstance>): Promise<StudentAssessmentInstance> {
+    const [i] = await db.update(studentAssessmentInstances).set(data).where(eq(studentAssessmentInstances.id, id)).returning();
+    return i;
+  },
+  async getAccessCodeByForgeVersion(forgeAssessmentId: number, versionId: number): Promise<AcapAccessCode | undefined> {
+    const [c] = await db.select().from(acapAccessCodes)
+      .where(and(
+        eq(acapAccessCodes.forgeAssessmentId, forgeAssessmentId),
+        eq(acapAccessCodes.versionId, versionId),
+        eq(acapAccessCodes.isActive, true)
+      ));
+    return c;
   },
 };

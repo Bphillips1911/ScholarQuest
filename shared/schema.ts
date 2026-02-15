@@ -1404,18 +1404,41 @@ export const insertAcapTutorAdaptationSchema = createInsertSchema(acapTutorAdapt
 
 export const acapAccessCodes = pgTable("acap_access_codes", {
   id: serial("id").primaryKey(),
-  code: varchar("code", { length: 12 }).notNull().unique(),
+  code: varchar("code", { length: 16 }).notNull().unique(),
   assessmentId: integer("assessment_id").references(() => acapAssessments.id),
-  teacherId: varchar("teacher_id").notNull(),
-  window: varchar({ length: 20 }).notNull(),
-  gradeLevel: integer("grade_level").notNull(),
-  subject: varchar("subject", { length: 20 }).notNull(),
+  forgeAssessmentId: integer("forge_assessment_id"),
+  versionId: integer("version_id"),
+  source: varchar("source", { length: 32 }).notNull().default("teacher"),
+  createdBy: varchar("created_by"),
+  teacherId: varchar("teacher_id"),
+  window: varchar({ length: 20 }),
+  gradeLevel: integer("grade_level"),
+  subject: varchar("subject", { length: 20 }),
   isActive: boolean("is_active").default(true).notNull(),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertAcapAccessCodeSchema = createInsertSchema(acapAccessCodes).omit({ id: true, createdAt: true });
+
+export const studentAssessmentInstances = pgTable("student_assessment_instances", {
+  id: serial("id").primaryKey(),
+  studentId: varchar("student_id").references(() => scholars.id).notNull(),
+  assessmentId: integer("assessment_id").references(() => acapAssessments.id).notNull(),
+  forgeAssessmentId: integer("forge_assessment_id"),
+  accessCodeId: integer("access_code_id"),
+  assignedBy: varchar("assigned_by"),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  dueAt: timestamp("due_at"),
+  status: varchar("status", { length: 20 }).notNull().default("assigned"),
+  attemptNumber: integer("attempt_number").notNull().default(1),
+  startedAt: timestamp("started_at"),
+  submittedAt: timestamp("submitted_at"),
+  score: real("score"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertStudentAssessmentInstanceSchema = createInsertSchema(studentAssessmentInstances).omit({ id: true, createdAt: true, assignedAt: true });
 
 // ===== ACAP Forge Tables =====
 export const acapForgeAssessments = pgTable("acap_forge_assessments", {
@@ -1661,6 +1684,9 @@ export type InsertInsightStudentResult = z.infer<typeof insertInsightStudentResu
 export type InsertInsightStandardMastery = z.infer<typeof insertInsightStandardMasterySchema>;
 export type InsertInsightProjection = z.infer<typeof insertInsightProjectionSchema>;
 export type InsertInsightEvent = z.infer<typeof insertInsightEventSchema>;
+
+export type StudentAssessmentInstance = typeof studentAssessmentInstances.$inferSelect;
+export type InsertStudentAssessmentInstance = z.infer<typeof insertStudentAssessmentInstanceSchema>;
 
 // Re-export chat models for integration
 export { conversations, messages } from "./models/chat";

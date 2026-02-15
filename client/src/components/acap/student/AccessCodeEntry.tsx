@@ -6,40 +6,53 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Key, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Key, Loader2, CheckCircle2, AlertTriangle, Play } from "lucide-react";
 
-interface ValidatedCode {
+interface ValidatedResult {
   valid: boolean;
   accessCode: {
     id: number;
     code: string;
-    assessmentId: number;
-    window: string;
-    gradeLevel: number;
-    subject: string;
+    assessmentId: number | null;
+    forgeAssessmentId?: number | null;
+    versionId?: number | null;
+    window?: string;
+    gradeLevel?: number;
+    subject?: string;
+    source?: string;
   };
+  assessmentId?: number | null;
+  forgeAssessmentId?: number | null;
+  versionId?: number | null;
+  instanceId?: number | null;
+  launchUrl?: string;
 }
 
-export default function AccessCodeEntry({ onValidCode }: { onValidCode: (data: ValidatedCode) => void }) {
+export default function AccessCodeEntry({ onValidCode, studentId }: { onValidCode: (data: ValidatedResult) => void; studentId?: string }) {
   const { toast } = useToast();
   const [code, setCode] = useState("");
-  const [validated, setValidated] = useState<ValidatedCode | null>(null);
+  const [validated, setValidated] = useState<ValidatedResult | null>(null);
   const [error, setError] = useState("");
 
   const validateMutation = useMutation({
     mutationFn: async () => {
       if (!code.trim()) throw new Error("Please enter an access code");
-      const res = await apiRequest("POST", "/api/acap/access-codes/validate", { code: code.trim() });
+      const res = await apiRequest("POST", "/api/acap/access-codes/validate", {
+        code: code.trim(),
+        studentId: studentId || undefined,
+      });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Invalid code");
       }
-      return res.json();
+      return res.json() as Promise<ValidatedResult>;
     },
-    onSuccess: (data: ValidatedCode) => {
+    onSuccess: (data: ValidatedResult) => {
       setValidated(data);
       setError("");
-      toast({ title: "Access Code Validated", description: `You are cleared to take the ${data.accessCode.window.toLowerCase()} assessment.` });
+      const source = data.accessCode?.source || "teacher";
+      const label = source === "forge" ? "Forge assessment" : (data.accessCode?.window?.toLowerCase() || "assessment");
+      toast({ title: "Access Code Validated", description: `You are cleared to take the ${label}.` });
     },
     onError: (err: any) => {
       setError(err.message || "Invalid access code");
@@ -73,7 +86,8 @@ export default function AccessCodeEntry({ onValidCode }: { onValidCode: (data: V
             onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(""); setValidated(null); }}
             placeholder="Enter code (e.g. ABC123)"
             className="text-center text-2xl font-mono tracking-[0.3em] h-14"
-            maxLength={8}
+            maxLength={12}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
           />
         </div>
 
@@ -88,10 +102,11 @@ export default function AccessCodeEntry({ onValidCode }: { onValidCode: (data: V
           <div className="flex flex-col items-center gap-2 bg-emerald-50 rounded-lg p-4">
             <CheckCircle2 className="h-6 w-6 text-emerald-600" />
             <span className="text-sm font-semibold text-emerald-700">Code Verified</span>
-            <div className="flex gap-2">
-              <Badge variant="secondary">{validated.accessCode.subject}</Badge>
-              <Badge variant="outline">Grade {validated.accessCode.gradeLevel}</Badge>
-              <Badge variant="outline">{validated.accessCode.window}</Badge>
+            <div className="flex gap-2 flex-wrap justify-center">
+              {validated.accessCode?.subject && <Badge variant="secondary">{validated.accessCode.subject}</Badge>}
+              {validated.accessCode?.gradeLevel && <Badge variant="outline">Grade {validated.accessCode.gradeLevel}</Badge>}
+              {validated.accessCode?.source === "forge" && <Badge className="bg-purple-100 text-purple-700">Forge</Badge>}
+              {validated.accessCode?.window && <Badge variant="outline">{validated.accessCode.window}</Badge>}
             </div>
           </div>
         )}
@@ -104,7 +119,7 @@ export default function AccessCodeEntry({ onValidCode }: { onValidCode: (data: V
           {validateMutation.isPending ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Validating...</>
           ) : validated ? (
-            <><CheckCircle2 className="h-4 w-4" /> Start Assessment</>
+            <><Play className="h-4 w-4" /> Start Assessment</>
           ) : (
             <><Key className="h-4 w-4" /> Validate Code</>
           )}

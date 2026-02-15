@@ -1,0 +1,154 @@
+TITLE: EduCAP Assignments + Access Codes End-to-End Repair Sprint (Admin → Teacher → Scholar)
+
+GOAL:
+Fix assessment delivery so that:
+1) When an Admin creates an assessment and sends to Teacher, Teacher can assign to scholars and scholars see it in Student/My Assessments.
+2) Scholar can enter Access Codes from BOTH:
+   a) Teacher-created access codes
+   b) Forge Differentiated Versions access codes
+3) Remove infinite “Validating…” spinner and replace with correct UX + error handling.
+4) Ensure Forge differentiated codes persist after publish and validate correctly.
+
+PRIMARY SYMPTOMS:
+- Student dashboard shows “No assessments assigned yet” even after teacher assigns.
+- Student access code validation spins then returns 404 invalid access code.
+- Forge differentiated version cards show a code but code disappears / doesn’t validate after publish.
+- “Publish”/assignment appears successful in admin/teacher UIs but doesn’t reach students.
+
+REQUIREMENTS:
+- Persist ALL access codes server-side in a single access_codes table.
+- Persist ALL student deliveries in a single student_assessment_instances table.
+- Student UI must query student_assessment_instances.
+- Validate code endpoint must check access_codes and resolve to an assessment launch payload.
+- Ensure assignment creation writes per-student records.
+
+PHASE 1 — DATABASE AUDIT + MIGRATIONS
+1) Search codebase for existing tables:
+   - assessments, assessment_items_join, assignments, studentAssignments, accessCodes, forgeVersions, differentiatedVersions
+2) If access_codes table does not exist, add it:
+   Columns:
+     id (uuid or serial primary key)
+     code (varchar unique, uppercase)
+     assessment_id (fk to assessments.id)
+     version_id (nullable, fk to assessment_versions.id OR forge_versions.id depending on schema)
+     source (enum/varchar: 'teacher'|'forge'|'admin'|'schoolwide')
+     created_by (user id)
+     status (varchar: 'active'|'revoked')
+     expires_at (nullable timestamp)
+     created_at timestamp default now()
+
+3) If student_assessment_instances table does not exist, add it:
+   Columns:
+     id
+     student_id (fk users/students table)
+     assessment_id (fk assessments.id)
+     access_code_id (nullable fk access_codes.id)
+     assigned_by (user id)
+     assigned_at timestamp default now()
+     due_at nullable timestamp
+     status (varchar: 'assigned'|'in_progress'|'submitted'|'scored'|'archived')
+     attempt_number int default 1
+     started_at nullable timestamp
+     submitted_at nullable timestamp
+     score nullable numeric
+     created_at timestamp default now()
+
+4) Add indexes:
+   - student_assessment_instances(student_id, status)
+   - access_codes(code)
+   - student_assessment_instances(assessment_id)
+
+PHASE 2 — SERVER API FIXES
+A) ASSIGNMENT API (Teacher Assign → Student delivery)
+1) Find teacher “Assign to Students” endpoint (e.g. POST /api/teacher/assign or /api/educap/assignments/create).
+2) Ensure endpoint does ALL of:
+   - validates teacher has rights to assessment
+   - receives studentIds[], assessmentId, dueAt optional
+   - inserts one row per student in student_assessment_instances
+   - returns created count
+
+Pseudo:
+for each studentId in studentIds:
+  upsert into student_assessment_instances
+    where student_id=studentId AND assessment_id=assessmentId AND status IN ('assigned','in_progress')
+    else insert new row status='assigned'
+
+B) ACCESS CODE VALIDATION API
+1) Implement POST /api/educap/access-codes/validate
+Input: { code: string, studentId?: string }
+Output: { assessmentId, versionId?, launchUrl, meta }
+2) Server must:
+   - normalize code (trim, uppercase, remove spaces)
+   - lookup access_codes by code
+   - if not found return 404 {error:"Invalid access code"}
+   - ensure status active and not expired
+   - create or update student_assessment_instances for that student if studentId provided:
+       - if instance exists status assigned/in_progress, reuse it
+       - else create assigned instance linked to access_code_id
+   - respond with assessment launch payload:
+       - assessmentId, instanceId, version details, startRoute
+
+C) STUDENT “MY ASSESSMENTS” API
+1) Ensure student dashboard loads from GET /api/student/assessments
+2) Query must read student_assessment_instances joined to assessments
+Return active + in_progress + assigned (not archived).
+
+D) FORGE DIFFERENTIATED VERSION CODE PERSISTENCE
+1) Locate Forge “Differentiate” and “Publish” handlers.
+2) On create differentiated version:
+   - create forge_version row
+   - generate code
+   - insert access_codes row with source='forge', assessment_id, version_id, status='active'
+3) On publish:
+   - do NOT delete codes
+   - ensure code remains active
+   - ensure publish updates assessment.status but does not remove version rows
+
+PHASE 3 — FRONTEND FIXES
+A) Student “Enter Access Code” modal
+1) Make it call POST /api/educap/access-codes/validate
+2) Always resolve loading:
+   - setLoading(true) before request
+   - finally setLoading(false)
+3) On success:
+   - navigate to /student/assessment/:instanceId (or whatever route used)
+4) On error:
+   - show message from server
+   - do NOT stay spinning
+
+B) Student “My Assessments” list
+1) Render list returned by /api/student/assessments
+2) Empty state only if list length = 0
+
+C) Teacher “Access Codes” / Forge codes UI
+1) Ensure UI reads from access_codes table (not client state)
+2) Do not allow “disappearing codes”
+
+PHASE 4 — TEST PLAN (E2E)
+1) Admin creates assessment → verify exists in assessments.
+2) Admin sends to teacher (whatever your workflow) → teacher sees it.
+3) Teacher assigns to 2 students → verify 2 rows inserted in student_assessment_instances.
+4) Login as student → My Assessments shows item.
+5) Generate Forge differentiated version → access code stored in access_codes.
+6) Login student → enter Forge code → validate returns payload and launches assessment, no 404.
+
+OUTPUTS REQUIRED:
+- DB migration files or drizzle/sql migrations
+- Updated server routes for:
+  POST /api/educap/access-codes/validate
+  POST /api/teacher/assignments/assign
+  GET /api/student/assessments
+- Updated Forge publish/differentiate persistence logic
+- Updated student access code modal logic (loading, errors, navigation)
+- Confirmed E2E flow with logs
+
+DO NOT:
+- Introduce Replit/OpenAI credits usage changes
+- Add new UI tabs unrelated to assignment delivery
+- Rename existing routes unless required; keep backward compatibility if possible
+
+LOGGING:
+Add server logs:
+- [Assign] inserted N student instances
+- [CodeValidate] code found source=..., assessmentId=..., studentInstanceId=...
+- [StudentAssessments] returned N items

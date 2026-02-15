@@ -191,11 +191,37 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showCodeEntry, setShowCodeEntry] = useState(false);
 
-  const { data: assignments, isLoading } = useQuery({
+  const { data: studentInstances, isLoading: instancesLoading } = useQuery({
+    queryKey: ["/api/acap/student/assessments", scholarId],
+    queryFn: () => fetch(`/api/acap/student/assessments/${scholarId}`).then((r) => r.json()),
+    enabled: !!scholarId,
+  });
+
+  const { data: assignments, isLoading: assignmentsLoading } = useQuery({
     queryKey: ["/api/acap/assignments/scholar", scholarId],
     queryFn: () => fetch(`/api/acap/assignments/scholar/${scholarId}`).then((r) => r.json()),
     enabled: !!scholarId,
   });
+
+  const allAssessments = (() => {
+    const instanceItems = (studentInstances as any[]) || [];
+    const assignmentItems = (assignments as any[]) || [];
+    const seen = new Set<number>();
+    const merged: any[] = [];
+    for (const inst of instanceItems) {
+      seen.add(inst.assessmentId);
+      merged.push({ ...inst, sourceType: "instance" });
+    }
+    for (const a of assignmentItems) {
+      if (!seen.has(a.assessmentId)) {
+        seen.add(a.assessmentId);
+        merged.push({ ...a, sourceType: "assignment" });
+      }
+    }
+    return merged;
+  })();
+
+  const isLoading = instancesLoading || assignmentsLoading;
 
   const startMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/acap/attempts", data),
@@ -220,6 +246,7 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
     onSuccess: () => {
       toast({ title: "Assessment completed! Great work!" });
       setActiveAttempt(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/acap/student/assessments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/acap/assignments/scholar"] });
       queryClient.invalidateQueries({ queryKey: ["/api/acap/mastery"] });
     },
@@ -353,11 +380,22 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
       <h2 className="text-xl font-bold text-gray-800">My Assessments</h2>
       {showCodeEntry && (
         <div className="mb-4">
-          <AccessCodeEntry onValidCode={(data) => {
-            setShowCodeEntry(false);
-            toast({ title: "Access Granted", description: `Starting ${data.accessCode.window.toLowerCase()} assessment.` });
-            startMutation.mutate({ assessmentId: data.accessCode.assessmentId, scholarId });
-          }} />
+          <AccessCodeEntry
+            studentId={scholarId}
+            onValidCode={(data) => {
+              setShowCodeEntry(false);
+              queryClient.invalidateQueries({ queryKey: ["/api/acap/student/assessments"] });
+              if (data.forgeAssessmentId && data.launchUrl) {
+                toast({ title: "Access Granted", description: "Launching Forge assessment..." });
+                window.location.href = data.launchUrl;
+              } else if (data.assessmentId) {
+                toast({ title: "Access Granted", description: "Starting assessment..." });
+                startMutation.mutate({ assessmentId: data.assessmentId, scholarId });
+              } else {
+                toast({ title: "Code Validated", description: "Assessment unlocked." });
+              }
+            }}
+          />
           <div className="flex justify-center mt-2">
             <Button variant="ghost" size="sm" onClick={() => setShowCodeEntry(false)}>Cancel</Button>
           </div>
@@ -374,24 +412,36 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
 
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div>
-      ) : (assignments as any[])?.length > 0 ? (
+      ) : allAssessments.length > 0 ? (
         <div className="space-y-3">
-          {(assignments as any[]).map((a: any) => {
+          {allAssessments.map((a: any, idx: number) => {
             const hasCompleted = a.attempts?.some((t: any) => t.status === "completed");
+            const isSubmitted = a.status === "submitted" || a.status === "scored";
+            const dueDate = a.dueAt || a.dueDate;
             return (
-              <Card key={a.id} className={`hover:shadow-md transition-shadow ${hasCompleted ? "border-green-200" : "border-blue-200"}`}>
+              <Card key={`${a.sourceType}-${a.id}-${idx}`} className={`hover:shadow-md transition-shadow ${hasCompleted || isSubmitted ? "border-green-200" : "border-blue-200"}`}>
                 <CardContent className="pt-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{a.assessment?.title || `Assessment #${a.assessmentId}`}</p>
                       <p className="text-sm text-gray-500">{a.assessment?.assessmentType} | {a.assessment?.subject}</p>
-                      {a.dueDate && <p className="text-xs text-gray-400">Due: {new Date(a.dueDate).toLocaleDateString()}</p>}
+                      {dueDate && <p className="text-xs text-gray-400">Due: {new Date(dueDate).toLocaleDateString()}</p>}
+                      {a.sourceType === "instance" && a.status && (
+                        <span className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
+                          a.status === "assigned" ? "bg-blue-100 text-blue-700" :
+                          a.status === "in_progress" ? "bg-yellow-100 text-yellow-700" :
+                          a.status === "submitted" ? "bg-green-100 text-green-700" :
+                          "bg-gray-100 text-gray-600"
+                        }`}>{a.status}</span>
+                      )}
                     </div>
-                    {hasCompleted ? (
+                    {hasCompleted || isSubmitted ? (
                       <div className="flex items-center gap-2 text-green-600">
                         <CheckCircle className="h-5 w-5" />
                         <span className="text-sm font-medium">
-                          {Math.round(a.attempts.find((t: any) => t.status === "completed")?.percentCorrect || 0)}%
+                          {a.score != null ? `${Math.round(a.score)}%` : 
+                           a.attempts?.find((t: any) => t.status === "completed")?.percentCorrect != null ? 
+                           `${Math.round(a.attempts.find((t: any) => t.status === "completed").percentCorrect)}%` : "Done"}
                         </span>
                       </div>
                     ) : (
@@ -402,7 +452,7 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
                         className="bg-blue-600 hover:bg-blue-700"
                       >
                         {startMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Play className="h-4 w-4 mr-1" />}
-                        Start
+                        {a.status === "in_progress" ? "Continue" : "Start"}
                       </Button>
                     )}
                   </div>
@@ -414,7 +464,7 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
       ) : (
         <Card className="border-dashed"><CardContent className="text-center py-8 text-gray-500">
           <BookOpen className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-          No assessments assigned yet. Check back soon!
+          No assessments assigned yet. Ask your teacher for an access code or check back soon!
         </CardContent></Card>
       )}
     </div>

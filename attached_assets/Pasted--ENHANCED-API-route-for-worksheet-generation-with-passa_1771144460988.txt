@@ -1,0 +1,451 @@
+// ENHANCED: API route for worksheet generation with passages and visuals
+// Location: app/api/admin/worksheet/generate/route.js
+
+import { NextResponse } from 'next/server';
+
+export async function POST(request) {
+  try {
+    const { standard, dokLevel, itemCount, subject, grade } = await request.json();
+
+    if (!standard || !dokLevel || !itemCount) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    const isELA = subject === 'ELA' || subject === 'English Language Arts';
+    const isMath = subject === 'Math' || subject === 'Mathematics';
+
+    console.log('Generating enhanced worksheet with visuals...');
+
+    const prompt = buildEnhancedPrompt(subject, grade, standard, dokLevel, itemCount, isELA, isMath);
+
+    // Use Gemini 1.5 Flash for better results
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.8,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 8192,
+          }
+        })
+      }
+    );
+
+    if (!geminiResponse.ok) {
+      const errorData = await geminiResponse.json();
+      console.error('Gemini API Error:', errorData);
+      
+      if (geminiResponse.status === 429) {
+        return NextResponse.json(
+          { 
+            error: 'Rate limit reached. Please wait a moment and try again.',
+            retryAfter: 60
+          },
+          { status: 429 }
+        );
+      }
+      
+      throw new Error(errorData.error?.message || 'Gemini API request failed');
+    }
+
+    const geminiData = await geminiResponse.json();
+    
+    if (!geminiData.candidates || !geminiData.candidates[0]) {
+      throw new Error('No response from Gemini AI');
+    }
+
+    const generatedText = geminiData.candidates[0].content.parts[0].text;
+    
+    // Clean up response
+    let cleanedText = generatedText.trim();
+    cleanedText = cleanedText.replace(/```json\s*/g, '');
+    cleanedText = cleanedText.replace(/```\s*/g, '');
+    
+    // Extract JSON
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('Failed to parse JSON from:', generatedText.substring(0, 500));
+      throw new Error('Could not extract valid JSON from AI response');
+    }
+    
+    const worksheet = JSON.parse(jsonMatch[0]);
+
+    // Validate worksheet structure
+    if (!worksheet.questions || !Array.isArray(worksheet.questions)) {
+      throw new Error('Invalid worksheet structure');
+    }
+
+    console.log(`Successfully generated ${worksheet.questions.length} questions with ${isELA ? 'passage' : 'visuals'}`);
+
+    return NextResponse.json({
+      success: true,
+      worksheet: worksheet
+    });
+
+  } catch (error) {
+    console.error('Error generating worksheet:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to generate worksheet', 
+        details: error.message 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+function buildEnhancedPrompt(subject, grade, standard, dokLevel, itemCount, isELA, isMath) {
+  let prompt = `You are an expert Alabama educator creating EduCAP assessment materials.
+
+Create a ${subject} worksheet for Grade ${grade} aligned to standard: ${standard}
+
+Requirements:
+- Generate EXACTLY ${itemCount} questions
+- All questions must be DOK Level ${dokLevel}
+- Include diverse question types appropriate for the standard
+
+DOK Level ${dokLevel} Guidelines:
+${getDokGuidance(dokLevel)}
+
+`;
+
+  if (isELA) {
+    prompt += `
+ELA-SPECIFIC REQUIREMENTS:
+1. Include a FULL-LENGTH reading passage (at least 400-600 words for grades 6-8)
+2. The passage should:
+   - Be engaging and grade-appropriate
+   - Match the genre/style specified in the standard (narrative, informational, argumentative)
+   - Build reading stamina
+   - Include vocabulary appropriate for the grade level
+   - Be at least one full page when printed
+
+3. Questions should reference the passage with:
+   - Textual evidence questions (cite line numbers or paragraphs)
+   - Inference questions
+   - Main idea/theme questions
+   - Author's purpose questions
+   - Vocabulary in context
+
+4. Include these question types:
+   - Multiple choice (4 options)
+   - Multiple select (select all that apply - at least 2)
+   - Short constructed response (2-3 sentences with text evidence)
+   - Extended response (full paragraph analysis)
+
+JSON FORMAT:
+{
+  "title": "EduCAP Worksheet - ${standard}",
+  "subject": "${subject}",
+  "grade": ${grade},
+  "standardDescription": "Brief description of this standard",
+  "directions": "Read the passage carefully and answer all questions. Use evidence from the text to support your answers.",
+  "passage": {
+    "title": "Engaging passage title",
+    "author": "Author name (can be original)",
+    "genre": "narrative/informational/argumentative",
+    "text": "FULL PASSAGE TEXT HERE - at least 400-600 words. Make this engaging and grade-appropriate. Include multiple paragraphs. This should be substantial enough to build reading stamina.",
+    "wordCount": 500
+  },
+  "questions": [
+    {
+      "number": 1,
+      "type": "multiple_choice",
+      "text": "According to paragraph 3, which statement best describes...?",
+      "options": ["A) First option", "B) Second option", "C) Third option", "D) Fourth option"],
+      "correctAnswer": "B",
+      "explanation": "Detailed explanation with passage reference",
+      "passageReference": "Paragraph 3, lines 15-18"
+    },
+    {
+      "number": 2,
+      "type": "multiple_select",
+      "text": "Select ALL statements that are supported by evidence in the passage.",
+      "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+      "correctAnswers": ["B", "C"],
+      "explanation": "Why B and C are correct with text evidence"
+    },
+    {
+      "number": 3,
+      "type": "short_response",
+      "text": "Based on the passage, explain the author's main purpose. Use evidence from the text.",
+      "sampleAnswer": "Example strong response with text citations",
+      "rubric": "2 points: Clear purpose stated with specific text evidence. 1 point: Purpose stated but vague evidence. 0 points: No evidence or incorrect purpose.",
+      "linesProvided": 4
+    },
+    {
+      "number": 4,
+      "type": "extended_response",
+      "text": "Analyze how the author develops the central idea throughout the passage. Support your analysis with specific evidence.",
+      "sampleAnswer": "Multi-paragraph example response",
+      "rubric": "4 points: Thorough analysis with multiple pieces of evidence. 3 points: Good analysis with some evidence. 2 points: Basic analysis with limited evidence. 1 point: Minimal analysis. 0 points: Off-topic or no evidence.",
+      "linesProvided": 10
+    }
+  ]
+}
+`;
+  } else if (isMath) {
+    prompt += `
+MATH-SPECIFIC REQUIREMENTS:
+1. Include ACTUAL visual representations for appropriate questions:
+   - Graphs (coordinate planes, bar graphs, line graphs)
+   - Diagrams (geometric shapes, fraction models)
+   - Charts (tables, data displays)
+   - Number lines
+   - Area models
+   - Visual fraction representations
+
+2. CRITICAL: Describe visuals in detail so they can be rendered. Include:
+   - Exact coordinates for graphs
+   - Specific measurements for diagrams
+   - Actual data for charts
+   - Clear ASCII art representation when possible
+
+3. At least 40% of questions should include a visual element
+
+4. Question types:
+   - Multiple choice with visual analysis
+   - Multiple select (select all that apply)
+   - Short response with work shown
+   - Extended response requiring multi-step solutions
+
+JSON FORMAT:
+{
+  "title": "EduCAP Worksheet - ${standard}",
+  "subject": "${subject}",
+  "grade": ${grade},
+  "standardDescription": "Brief description of this standard",
+  "directions": "Show all work. Use the provided diagrams and graphs to solve problems.",
+  "questions": [
+    {
+      "number": 1,
+      "type": "multiple_choice",
+      "text": "The number line below shows four points: A, B, C, and D. Which point represents an irrational number?",
+      "visual": {
+        "type": "number_line",
+        "description": "Number line from -3 to 3 with tick marks at every integer",
+        "points": [
+          {"label": "A", "value": -2.5},
+          {"label": "B", "value": -1},
+          {"label": "C", "value": 0.75},
+          {"label": "D", "value": 2}
+        ],
+        "asciiArt": "
+    A       B           C               D
+-3 -2.5 -2 -1  0  0.75  1   2   3
+|----|----|----|----|----|----|----|----|
+        "
+      },
+      "options": ["A) Point A", "B) Point B", "C) Point C", "D) Point D"],
+      "correctAnswer": "A",
+      "explanation": "Point A is at -2.5, and when checking if this could represent √(-6.25), we find it's irrational."
+    },
+    {
+      "number": 2,
+      "type": "multiple_choice",
+      "text": "The coordinate plane shows several plotted points. Which point has at least one irrational coordinate?",
+      "visual": {
+        "type": "coordinate_plane",
+        "description": "Coordinate plane with x-axis from -5 to 5, y-axis from -5 to 5",
+        "gridLines": true,
+        "points": [
+          {"label": "A", "x": 3, "y": 5},
+          {"label": "B", "x": -2, "y": 0},
+          {"label": "C", "x": 1.5, "y": -3},
+          {"label": "D", "x": 0, "y": "sqrt(7)"}
+        ],
+        "asciiArt": "
+    5 |        A
+    4 |
+    3 |
+    2 |
+    1 |
+y   0 |---B-----------
+   -1 |
+   -2 |
+   -3 |      C
+   -4 |
+   -5 |________________
+      -5  -2  0  1.5 3 5
+            x
+        "
+      },
+      "options": ["A) (3, 5)", "B) (-2, 0)", "C) (1.5, -3)", "D) (0, √7)"],
+      "correctAnswer": "D",
+      "explanation": "Point D has √7 as the y-coordinate, which is irrational."
+    },
+    {
+      "number": 3,
+      "type": "multiple_choice",
+      "text": "The table shows several numbers. Which correctly classifies the number represented by sqrt(2)?",
+      "visual": {
+        "type": "table",
+        "headers": ["Number", "Type"],
+        "rows": [
+          ["1/3", "empty cell for students to fill"],
+          ["0.5", "empty cell for students to fill"],
+          ["sqrt(2)", "empty cell for students to fill"],
+          ["4", "empty cell for students to fill"]
+        ],
+        "asciiArt": "
+┌─────────┬──────────────────┐
+│ Number  │ Type             │
+├─────────┼──────────────────┤
+│  1/3    │                  │
+│  0.5    │                  │
+│ √2      │                  │
+│  4      │                  │
+└─────────┴──────────────────┘
+        "
+      },
+      "options": [
+        "A) Rational number because its decimal expansion terminates.",
+        "B) Irrational number because its decimal expansion does not terminate and does not repeat.",
+        "C) Rational number because it can be written as a fraction.",
+        "D) Irrational number because it is a negative number."
+      ],
+      "correctAnswer": "B",
+      "explanation": "√2 ≈ 1.414213... has a decimal that never terminates or repeats, making it irrational."
+    },
+    {
+      "number": 4,
+      "type": "multiple_choice",
+      "text": "The Venn diagram illustrates the relationship between rational and irrational numbers. Which statement describes numbers in the 'Irrational Numbers' circle?",
+      "visual": {
+        "type": "venn_diagram",
+        "description": "Two non-overlapping circles within a rectangle labeled 'Real Numbers'",
+        "leftCircle": "Rational Numbers",
+        "rightCircle": "Irrational Numbers",
+        "asciiArt": "
+Real Numbers
+┌─────────────────────────────────┐
+│                                  │
+│   ┌──────────┐    ┌──────────┐ │
+│   │ Rational │    │Irrational│ │
+│   │ Numbers  │    │ Numbers  │ │
+│   │          │    │          │ │
+│   └──────────┘    └──────────┘ │
+│                                  │
+└─────────────────────────────────┘
+        "
+      },
+      "options": [
+        "A) Numbers whose decimal expansions terminate or repeat.",
+        "B) Numbers that can be expressed as a fraction p/q, where p and q are integers and q is not zero.",
+        "C) Numbers whose decimal expansions are non-terminating and non-repeating.",
+        "D) Numbers that are always positive integers."
+      ],
+      "correctAnswer": "C",
+      "explanation": "Irrational numbers have decimal expansions that never end and never repeat."
+    },
+    {
+      "number": 5,
+      "type": "short_response",
+      "text": "A list of numbers is shown: 2/3, -0.8, pi, 5, sqrt(9). Examine the list. Which number is an irrational number? Explain your reasoning.",
+      "visual": {
+        "type": "list",
+        "items": ["2/3", "-0.8", "π", "5", "√9"],
+        "asciiArt": "
+Numbers:
+• 2/3
+• -0.8
+• π (pi)
+• 5
+• √9
+        "
+      },
+      "sampleAnswer": "π (pi) is the only irrational number in the list. While 2/3 is a rational fraction, -0.8 can be written as -4/5, 5 is an integer, and √9 = 3 (also an integer), π cannot be expressed as a ratio of integers and its decimal representation never terminates or repeats (3.14159...).",
+      "rubric": "2 points: Correctly identifies π and provides clear reasoning. 1 point: Identifies π but weak explanation. 0 points: Incorrect or no reasoning.",
+      "linesProvided": 5
+    }
+  ]
+}
+`;
+  } else {
+    // Science or Social Studies
+    prompt += `
+GENERAL REQUIREMENTS:
+1. Include relevant visuals when appropriate:
+   - Diagrams for science concepts
+   - Maps for social studies
+   - Charts showing data
+   - Timelines for history
+
+2. Question types:
+   - Multiple choice
+   - Multiple select
+   - Short constructed response
+   - Extended response for analysis
+
+JSON FORMAT:
+{
+  "title": "EduCAP Worksheet - ${standard}",
+  "subject": "${subject}",
+  "grade": ${grade},
+  "standardDescription": "Brief description of this standard",
+  "directions": "Answer all questions completely. Show your thinking.",
+  "questions": [
+    {
+      "number": 1,
+      "type": "multiple_choice",
+      "text": "Question text here",
+      "visual": {
+        "type": "diagram/chart/map",
+        "description": "Detailed description of visual",
+        "asciiArt": "ASCII representation if applicable"
+      },
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "correctAnswer": "B",
+      "explanation": "Why this is correct"
+    }
+  ]
+}
+`;
+  }
+
+  prompt += `
+CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no extra text. Just pure JSON.`;
+
+  return prompt;
+}
+
+function getDokGuidance(level) {
+  const guidance = {
+    2: `DOK 2 - Skills and Concepts:
+- Apply concepts and procedures
+- Make observations and inferences
+- Organize and compare data
+- Use models and representations
+- Interpret information from graphs/charts`,
+    
+    3: `DOK 3 - Strategic Thinking:
+- Analyze patterns and relationships
+- Draw conclusions from evidence
+- Justify reasoning with multiple sources
+- Solve non-routine multi-step problems
+- Support claims with evidence`,
+    
+    4: `DOK 4 - Extended Thinking:
+- Synthesize information across contexts
+- Critique and evaluate arguments
+- Design solutions to complex problems
+- Connect concepts across disciplines
+- Create original analysis or interpretation`
+  };
+  
+  return guidance[level] || guidance[2];
+}

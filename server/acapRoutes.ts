@@ -2926,7 +2926,7 @@ export function registerAcapRoutes(app: Express): void {
 
   app.post("/api/acap/worksheets", authenticateWorksheetUser, async (req: any, res: Response) => {
     try {
-      const { title, subject, grade, standardCode, dokLevel, itemCount, language } = req.body;
+      const { title, subject, grade, standardCode, dokLevel, itemCount, language, includeTextDependentWriting } = req.body;
       if (!title || !subject || !grade || !standardCode || !dokLevel || !itemCount) {
         return res.status(400).json({ error: "Missing required fields" });
       }
@@ -2938,6 +2938,7 @@ export function registerAcapRoutes(app: Express): void {
       const items = await generateWorksheetItems({
         subject, grade, standardCode, standardDescription,
         dokLevel, itemCount, language: language || "en",
+        includeTextDependentWriting: !!includeTextDependentWriting,
       });
 
       const [worksheet] = await db.insert(acapWorksheets).values({

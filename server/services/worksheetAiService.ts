@@ -1,13 +1,13 @@
-const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || "";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const GEMINI_MODEL = "gemini-1.5-flash";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function callGeminiAPI(prompt: string): Promise<string> {
-  if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY missing");
+  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
 
   const url = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
   const maxAttempts = 5;
@@ -21,10 +21,10 @@ async function callGeminiAPI(prompt: string): Promise<string> {
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.4,
-          topK: 30,
-          topP: 0.9,
-          maxOutputTokens: 8000,
+          temperature: 0.8,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 8192,
         },
       }),
     });
@@ -57,6 +57,13 @@ export interface WorksheetItem {
   options: Record<string, string>;
   correctAnswer: string;
   rationale: string;
+  type?: string;
+  passageReference?: string;
+  sampleAnswer?: string;
+  rubric?: string;
+  linesProvided?: number;
+  visual?: any;
+  correctAnswers?: string[];
 }
 
 function isElaReadingStandard(subject: string, standardCode: string, standardDescription: string): boolean {
@@ -71,17 +78,39 @@ function isElaReadingStandard(subject: string, standardCode: string, standardDes
   return false;
 }
 
-function needsDiagramOrChart(subject: string, standardCode: string, standardDescription: string): boolean {
+function isElaWritingStandard(subject: string, standardCode: string, standardDescription: string): boolean {
+  if (subject !== "ELA") return false;
   const code = standardCode.toLowerCase();
+  const desc = standardDescription.toLowerCase();
+  if (code.includes("w.") || code.includes("cl.")) return true;
+  if (desc.includes("write") || desc.includes("writing") || desc.includes("argument") ||
+      desc.includes("narrative") || desc.includes("informative") || desc.includes("explanatory") ||
+      desc.includes("claim") || desc.includes("evidence") || desc.includes("opinion") ||
+      desc.includes("compose") || desc.includes("draft") || desc.includes("essay")) return true;
+  return false;
+}
+
+function needsDiagramOrChart(subject: string, standardCode: string, standardDescription: string): boolean {
   const desc = standardDescription.toLowerCase();
   if (desc.includes("graph") || desc.includes("chart") || desc.includes("diagram") ||
       desc.includes("table") || desc.includes("map") || desc.includes("plot") ||
       desc.includes("coordinate") || desc.includes("number line") || desc.includes("visual") ||
       desc.includes("data") || desc.includes("display") || desc.includes("represent") ||
       desc.includes("model") || desc.includes("figure") || desc.includes("illustration")) return true;
-  if (subject === "Math" && (code.includes("sp.") || code.includes("g.") || code.includes("ns."))) return true;
+  const code = standardCode.toLowerCase();
+  if (subject === "Math" && (code.includes("sp.") || code.includes("dsp.") || code.includes("g.") || code.includes("gm.") || code.includes("ns."))) return true;
   if (subject === "Science") return true;
   return false;
+}
+
+function getDokGuidance(dokLevel: number): string {
+  switch (dokLevel) {
+    case 1: return "Recall and Reproduction: Facts, definitions, simple procedures.";
+    case 2: return "Skills/Concepts: Classify, compare, organize, estimate, interpret.";
+    case 3: return "Strategic Thinking: Analyze, evaluate, justify, cite evidence, draw conclusions, formulate hypotheses. Requires reasoning and planning.";
+    case 4: return "Extended Thinking: Synthesize across sources, design investigations, apply concepts in novel contexts, connect and relate ideas across disciplines.";
+    default: return "";
+  }
 }
 
 export async function generateWorksheetItems(params: {
@@ -92,62 +121,176 @@ export async function generateWorksheetItems(params: {
   dokLevel: number;
   itemCount: number;
   language: string;
+  includeTextDependentWriting?: boolean;
 }): Promise<WorksheetItem[]> {
   const langInstr = params.language === "es"
     ? "Generate ALL content (stems, options, rationale, passages) in Spanish."
     : "Generate all content in English.";
 
+  const isELA = params.subject === "ELA";
+  const isMath = params.subject === "Math";
   const requiresPassage = isElaReadingStandard(params.subject, params.standardCode, params.standardDescription);
+  const requiresWriting = isElaWritingStandard(params.subject, params.standardCode, params.standardDescription);
   const requiresDiagram = needsDiagramOrChart(params.subject, params.standardCode, params.standardDescription);
+  const includeTDW = params.includeTextDependentWriting || (isELA && params.dokLevel >= 3);
 
-  let passageInstructions = "";
-  let diagramInstructions = "";
-  let extraJsonFields = "";
+  let prompt = `You are an expert Alabama educator creating EduCAP assessment materials aligned to ACAP standards.
 
-  if (requiresPassage) {
-    passageInstructions = `
-IMPORTANT: This is a reading standard. You MUST include a reading passage for the questions.
-- Generate a grade-appropriate reading passage (150-250 words) that is relevant to the standard.
-- For literary standards (RL): create a short fiction excerpt, poem, or narrative.
-- For informational standards (RI): create a nonfiction passage (science article, biography, historical text).
-- All questions must be answerable ONLY from the passage.
-- Include the passage in a "passage" field in your JSON response.
-- Group questions around the same passage (one passage for all items).`;
-    extraJsonFields = `"passage": "The full reading passage text here...",`;
+Create a ${params.subject} worksheet for Grade ${params.grade} aligned to standard: ${params.standardCode} — ${params.standardDescription}
+
+Requirements:
+- Generate EXACTLY ${params.itemCount} questions
+- All questions must be DOK Level ${params.dokLevel}
+- ${langInstr}
+
+DOK Level ${params.dokLevel} Guidelines:
+${getDokGuidance(params.dokLevel)}
+
+`;
+
+  if (isELA && (requiresPassage || requiresWriting || includeTDW)) {
+    prompt += `
+ELA-SPECIFIC REQUIREMENTS:
+1. Include a FULL-LENGTH reading passage (400-600 words for grades 6-8)
+2. The passage should be engaging, grade-appropriate, and build reading stamina
+3. Match the genre/style specified in the standard (narrative, informational, argumentative)
+4. Include vocabulary appropriate for the grade level
+
+5. Questions should reference the passage with:
+   - Textual evidence questions (cite paragraphs)
+   - Inference questions
+   - Main idea/theme questions
+   - Author's purpose questions
+   - Vocabulary in context
+
+6. Include diverse question types:
+   - Multiple choice (4 options) — at least 60% of items
+   - Multiple select (select all that apply) — at least 1 item
+   - Short constructed response (2-3 sentences with text evidence) — at least 1 item
+`;
+
+    if (includeTDW) {
+      prompt += `
+TEXT-DEPENDENT WRITING (REQUIRED — DOK ${params.dokLevel}):
+Include at least 1 Text-Dependent Writing prompt as the LAST question.
+This must be DOK Level 3-4 extended writing that:
+- Requires students to analyze, evaluate, or synthesize information from the passage
+- Demands textual evidence and citations from the passage
+- Requires a multi-paragraph response (introduction, body, conclusion)
+- Includes a detailed scoring rubric (4-point scale)
+- Provides a sample/model response
+- The prompt type should match the standard:
+  * Argumentative: take a position and defend with evidence
+  * Informative/Explanatory: explain a concept using text evidence
+  * Narrative: write a continuation or response to the passage
+`;
+    }
+
+    prompt += `
+Return ONLY valid JSON (no markdown, no extra text). Use this exact structure:
+{
+  "passage": {
+    "title": "Engaging title",
+    "author": "Author name",
+    "genre": "narrative/informational/argumentative",
+    "text": "FULL passage text, 400-600 words, multiple paragraphs",
+    "wordCount": 500
+  },
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "stem": "According to paragraph 3, which statement best describes...?",
+      "options": {"A": "option", "B": "option", "C": "option", "D": "option"},
+      "correctAnswer": "B",
+      "rationale": "Explanation with passage reference",
+      "passageReference": "Paragraph 3"
+    },
+    {
+      "type": "multiple_select",
+      "stem": "Select ALL statements supported by evidence in the passage.",
+      "options": {"A": "opt1", "B": "opt2", "C": "opt3", "D": "opt4"},
+      "correctAnswers": ["B", "C"],
+      "correctAnswer": "B,C",
+      "rationale": "Why B and C are correct"
+    },
+    {
+      "type": "short_response",
+      "stem": "Based on the passage, explain the author's main purpose. Use evidence from the text.",
+      "sampleAnswer": "Example strong response",
+      "rubric": "2 points: Clear with evidence. 1 point: Vague. 0 points: No evidence.",
+      "correctAnswer": "See rubric",
+      "rationale": "Key points to look for",
+      "linesProvided": 6
+    }${includeTDW ? `,
+    {
+      "type": "text_dependent_writing",
+      "stem": "Write a multi-paragraph response analyzing [topic from passage]. Use specific evidence from the text to support your analysis.",
+      "sampleAnswer": "Multi-paragraph model response with introduction, body paragraphs with evidence, and conclusion",
+      "rubric": "4: Thorough analysis with multiple text evidence. 3: Good analysis with some evidence. 2: Basic with limited evidence. 1: Minimal. 0: Off-topic.",
+      "correctAnswer": "See rubric",
+      "rationale": "Key analytical points and evidence to include",
+      "linesProvided": 20
+    }` : ''}
+  ]
+}`;
+  } else if (isMath) {
+    prompt += `
+MATH-SPECIFIC REQUIREMENTS:
+1. Include visual representations for at least 40% of questions:
+   - Graphs, coordinate planes, bar/line graphs
+   - Diagrams, geometric shapes, fraction models
+   - Charts, tables, data displays
+   - Number lines, area models
+
+2. Describe visuals in detail so teachers can reproduce them. Include exact coordinates, measurements, and data values.
+
+3. Question types:
+   - Multiple choice with visual analysis
+   - Multiple select (at least 1)
+   - Short response requiring work shown (at least 1)
+
+Return ONLY valid JSON (no markdown, no extra text). Use this exact structure:
+{
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "stem": "Question text referencing the visual",
+      "diagramDescription": "Detailed visual: A bar graph showing...",
+      "options": {"A": "opt1", "B": "opt2", "C": "opt3", "D": "opt4"},
+      "correctAnswer": "B",
+      "rationale": "Explanation"
+    },
+    {
+      "type": "short_response",
+      "stem": "Show your work to solve...",
+      "diagramDescription": "Visual description if needed",
+      "sampleAnswer": "Step-by-step solution",
+      "correctAnswer": "The answer",
+      "rationale": "Solution steps",
+      "linesProvided": 6
+    }
+  ]
+}`;
+  } else {
+    prompt += `
+Include diagram/visual descriptions where appropriate for Science standards.
+
+Return ONLY valid JSON (no markdown, no extra text). Use this exact structure:
+{
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "stem": "Question text",
+      "diagramDescription": "Visual description if applicable",
+      "options": {"A": "opt1", "B": "opt2", "C": "opt3", "D": "opt4"},
+      "correctAnswer": "B",
+      "rationale": "Explanation"
+    }
+  ]
+}`;
   }
 
-  if (requiresDiagram) {
-    diagramInstructions = `
-IMPORTANT: This standard involves visual/graphical elements. For each question:
-- Include a "diagramDescription" field that describes a diagram, chart, graph, table, number line, coordinate plane, or map that the student would reference.
-- Write the description in clear detail so a teacher can draw/reproduce it. Example: "A bar graph showing rainfall in inches for January (3), February (2), March (5), April (7), May (4)."
-- Questions MUST reference the described visual element.`;
-    extraJsonFields += `"diagramDescription": "Detailed description of the visual element...",`;
-  }
-
-  const prompt = `You are an expert ACAP (Alabama Comprehensive Assessment Program) assessment writer.
-Generate exactly ${params.itemCount} multiple-choice items for a printable worksheet.
-
-Subject: ${params.subject}
-Grade: ${params.grade}
-Standard: ${params.standardCode} — ${params.standardDescription}
-DOK Level: ${params.dokLevel}
-${langInstr}
-${passageInstructions}
-${diagramInstructions}
-
-Return ONLY valid JSON (no markdown fences, no extra text). The response must be a JSON array of objects:
-[
-  {
-    ${extraJsonFields}
-    "stem": "the question text",
-    "options": {"A": "option text", "B": "option text", "C": "option text", "D": "option text"},
-    "correctAnswer": "A",
-    "rationale": "brief explanation"
-  }
-]`;
-
-  console.log(`[Worksheet AI] Generating ${params.itemCount} items via Gemini (${GEMINI_MODEL}) for ${params.standardCode}, passage=${requiresPassage}, diagram=${requiresDiagram}`);
+  console.log(`[Worksheet AI] Generating ${params.itemCount} items via Gemini (${GEMINI_MODEL}) for ${params.standardCode}, passage=${requiresPassage}, diagram=${requiresDiagram}, TDW=${includeTDW}`);
 
   const raw = await callGeminiAPI(prompt);
   let cleaned = raw.replace(/^```json?\n?/i, "").replace(/\n?```$/i, "").trim();
@@ -173,26 +316,49 @@ Return ONLY valid JSON (no markdown fences, no extra text). The response must be
     return result;
   }
 
-  let items: any[];
+  let parsed: any;
   try {
-    items = JSON.parse(cleaned);
+    parsed = JSON.parse(cleaned);
   } catch (e1: any) {
     try {
-      items = JSON.parse(sanitizeJsonString(cleaned));
+      parsed = JSON.parse(sanitizeJsonString(cleaned));
     } catch (e2: any) {
-      console.error("Worksheet AI parse error:", e2.message, "Raw:", raw.substring(0, 300));
-      throw new Error("Failed to generate worksheet items. Please try again.");
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(sanitizeJsonString(jsonMatch[0]));
+        } catch (e3: any) {
+          console.error("Worksheet AI parse error:", e3.message, "Raw:", raw.substring(0, 400));
+          throw new Error("Failed to generate worksheet items. Please try again.");
+        }
+      } else {
+        console.error("Worksheet AI parse error:", e2.message, "Raw:", raw.substring(0, 400));
+        throw new Error("Failed to generate worksheet items. Please try again.");
+      }
     }
   }
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error("AI returned empty or non-array response");
+
+  const questions = parsed.questions || parsed;
+  const items: any[] = Array.isArray(questions) ? questions : [];
+  if (items.length === 0) {
+    throw new Error("AI returned empty or invalid response");
   }
+
+  const passageData = parsed.passage || null;
+
   return items.map((item: any) => ({
-    stem: item.stem || "",
-    passage: item.passage || undefined,
-    diagramDescription: item.diagramDescription || undefined,
+    stem: item.stem || item.text || "",
+    passage: passageData ? (typeof passageData === 'string' ? passageData : passageData.text) : (item.passage || undefined),
+    diagramDescription: item.diagramDescription || (item.visual?.description) || undefined,
     options: item.options || {},
-    correctAnswer: item.correctAnswer || "A",
-    rationale: item.rationale || "",
+    correctAnswer: item.correctAnswer || (item.correctAnswers ? item.correctAnswers.join(",") : "A"),
+    rationale: item.rationale || item.explanation || "",
+    type: item.type || "multiple_choice",
+    passageReference: item.passageReference || undefined,
+    sampleAnswer: item.sampleAnswer || undefined,
+    rubric: item.rubric || undefined,
+    linesProvided: item.linesProvided || undefined,
+    visual: item.visual || undefined,
+    correctAnswers: item.correctAnswers || undefined,
   }));
 }

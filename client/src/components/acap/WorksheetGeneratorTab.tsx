@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileText, Loader2 } from "lucide-react";
+import { Download, FileText, Loader2, PenLine } from "lucide-react";
 
 type Std = { code: string; grade: number; subject: string; description?: string; domain?: string };
 
@@ -26,32 +27,41 @@ export default function WorksheetGeneratorTab() {
   const [dokLevel, setDokLevel] = useState<2 | 3 | 4>(2);
   const [itemCount, setItemCount] = useState<5 | 10 | 15 | 20>(10);
   const [title, setTitle] = useState("ACAP Worksheet");
+  const [includeTextDependentWriting, setIncludeTextDependentWriting] = useState(false);
 
   const [creating, setCreating] = useState(false);
   const [createdId, setCreatedId] = useState<number | null>(null);
 
-  async function loadStandards(nextSubject = subject, nextGrade = grade) {
+  const loadStandards = useCallback(async (nextSubject: string, nextGrade: number) => {
     setLoadingStandards(true);
+    setStandards([]);
+    setStandardCode("");
     try {
       const res = await fetch(`/api/acap/standards/list?subject=${encodeURIComponent(nextSubject)}&grades=${nextGrade}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const stds = data.standards || [];
+      const stds: Std[] = data.standards || [];
       setStandards(stds);
-      setStandardCode(stds[0]?.code || "");
+      if (stds.length > 0) {
+        setStandardCode(stds[0].code);
+      }
     } catch (e: any) {
+      console.error("Standards load error:", e);
       toast({ title: "Standards load failed", description: e.message, variant: "destructive" });
     } finally {
       setLoadingStandards(false);
     }
-  }
-
-  useEffect(() => {
-    loadStandards();
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     loadStandards(subject, grade);
-  }, [subject, grade]);
+  }, [subject, grade, loadStandards]);
+
+  useEffect(() => {
+    if (subject === "ELA" && dokLevel >= 3) {
+      setIncludeTextDependentWriting(true);
+    }
+  }, [subject, dokLevel]);
 
   async function createWorksheet() {
     if (!standardCode) {
@@ -70,6 +80,7 @@ export default function WorksheetGeneratorTab() {
         dokLevel,
         itemCount,
         language,
+        includeTextDependentWriting: subject === "ELA" ? includeTextDependentWriting : false,
       };
 
       const res = await apiRequest("POST", "/api/acap/worksheets", payload);
@@ -131,19 +142,24 @@ export default function WorksheetGeneratorTab() {
 
           <div className="space-y-2 md:col-span-2">
             <Label>ACAP Standard</Label>
-            <Select value={standardCode} onValueChange={setStandardCode}>
+            <Select value={standardCode} onValueChange={setStandardCode} disabled={loadingStandards}>
               <SelectTrigger>
-                <SelectValue placeholder={loadingStandards ? "Loading standards..." : "Select a standard"} />
+                <SelectValue placeholder={loadingStandards ? "Loading standards..." : standards.length === 0 ? "No standards found" : "Select a standard"} />
               </SelectTrigger>
               <SelectContent className="max-h-[320px]">
+                {loadingStandards && (
+                  <div className="px-3 py-2 text-sm text-gray-400 flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Loading standards...
+                  </div>
+                )}
+                {!loadingStandards && standards.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-gray-400">No standards found for {subject} Grade {grade}</div>
+                )}
                 {standards.map((s) => (
                   <SelectItem key={s.code} value={s.code}>
                     {s.code} — {(s.description || "Standard").slice(0, 70)}
                   </SelectItem>
                 ))}
-                {standards.length === 0 && !loadingStandards && (
-                  <div className="px-3 py-2 text-sm text-gray-400">No standards found for {subject} Grade {grade}</div>
-                )}
               </SelectContent>
             </Select>
           </div>
@@ -185,8 +201,29 @@ export default function WorksheetGeneratorTab() {
           </div>
         </div>
 
+        {subject === "ELA" && (
+          <div className="mt-4 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="tdw"
+                checked={includeTextDependentWriting}
+                onCheckedChange={(checked) => setIncludeTextDependentWriting(!!checked)}
+              />
+              <div>
+                <label htmlFor="tdw" className="text-sm font-semibold text-indigo-800 flex items-center gap-2 cursor-pointer">
+                  <PenLine className="w-4 h-4" />
+                  Include Text-Dependent Writing (DOK 3-4)
+                </label>
+                <p className="text-xs text-indigo-600 mt-0.5">
+                  Adds an extended writing prompt requiring multi-paragraph analysis with textual evidence, scoring rubric, and model response.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3 mt-6">
-          <Button onClick={createWorksheet} disabled={creating || !standardCode} className="bg-indigo-600 hover:bg-indigo-700">
+          <Button onClick={createWorksheet} disabled={creating || !standardCode || loadingStandards} className="bg-indigo-600 hover:bg-indigo-700">
             {creating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

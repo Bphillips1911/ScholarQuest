@@ -1,10 +1,18 @@
 import PDFDocument from "pdfkit";
 import * as fs from "fs";
 import * as path from "path";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const SVGtoPDF = require("svg-to-pdfkit");
+const { buildVisualSVG } = require("./visuals/worksheetVisuals");
 
 const BRAND_BLUE = "#3B5BDB";
 const BRAND_LIGHT = "#E8EDFF";
 const BRAND_DARK = "#1E3A8A";
+
+const WORKSHEET_TITLE = "EduCAP Worksheet";
+const SCHOOL_LINE = "Bush Hills STEAM Academy";
+const TAGLINE_LINE = "Full STEAM Ahead";
 
 function getLogoPath(): string | null {
   const candidates = [
@@ -16,6 +24,10 @@ function getLogoPath(): string | null {
     if (fs.existsSync(p)) return p;
   }
   return null;
+}
+
+function drawSvg(doc: any, svgString: string, x: number, y: number, w: number) {
+  SVGtoPDF(doc, svgString, x, y, { width: w });
 }
 
 export async function renderWorksheetPdf(opts: {
@@ -65,20 +77,19 @@ export async function renderWorksheetPdf(opts: {
   }
 
   doc.fillColor("#FFFFFF").fontSize(20).font("Helvetica-Bold")
-    .text("EduCAP\u2122 Worksheet", headerTextX, 18, { width: contentWidth - 70 });
-  doc.fontSize(10).font("Helvetica")
-    .text("Alabama Comprehensive Assessment Program", headerTextX, 42, { width: contentWidth - 70 });
+    .text(WORKSHEET_TITLE, headerTextX, 18, { width: contentWidth - 70 });
+  doc.moveDown(0.2);
 
   doc.fillColor("#FFFFFF").fontSize(8).font("Helvetica")
-    .text("Bush Hills STEAM Academy", pageWidth - marginRight - 160, 18, { width: 160, align: "right" });
-  doc.text("Full STEAM Ahead", pageWidth - marginRight - 160, 30, { width: 160, align: "right" });
+    .text(SCHOOL_LINE, pageWidth - marginRight - 160, 18, { width: 160, align: "right" });
+  doc.text(TAGLINE_LINE, pageWidth - marginRight - 160, 30, { width: 160, align: "right" });
 
   doc.y = 90;
   doc.fillColor("#000");
 
   doc.rect(marginLeft, doc.y, contentWidth, 40).fill(BRAND_LIGHT);
   doc.fillColor(BRAND_DARK).fontSize(12).font("Helvetica-Bold")
-    .text(opts.title, marginLeft + 10, doc.y + 5, { width: contentWidth - 20 });
+    .text(`${WORKSHEET_TITLE} \u2014 ${opts.subject} G${opts.grade}`, marginLeft + 10, doc.y + 5, { width: contentWidth - 20 });
   doc.fontSize(9).font("Helvetica").fillColor("#444")
     .text(`Subject: ${opts.subject}   |   Grade: ${opts.grade}   |   DOK Level: ${opts.dokLevel}   |   Standard: ${opts.standardCode}`, marginLeft + 10, doc.y + 22, { width: contentWidth - 20 });
 
@@ -119,26 +130,39 @@ export async function renderWorksheetPdf(opts: {
 
   opts.items.forEach((it, idx) => {
     const itemType = it.type || "multiple_choice";
+    const hasVisual = !!(it.visual || it.diagramDescription);
     const needsSpace = itemType === "text_dependent_writing" ? 300 :
                        itemType === "short_response" ? 200 :
-                       (it.diagramDescription ? 200 : 120);
+                       (hasVisual ? 280 : 120);
     if (doc.y > doc.page.height - needsSpace) {
       doc.addPage();
     }
 
-    if (it.diagramDescription) {
-      doc.rect(marginLeft + 20, doc.y, contentWidth - 40, 0);
-      const diagStartY = doc.y;
-      doc.fontSize(9).font("Helvetica-Bold").fillColor(BRAND_DARK)
-        .text(`[Visual Element for Question ${idx + 1}]`, marginLeft + 26, doc.y + 4);
-      doc.fontSize(9).font("Helvetica").fillColor("#555")
-        .text(it.diagramDescription, marginLeft + 26, doc.y + 4, { width: contentWidth - 60, lineGap: 2 });
-      const diagEndY = doc.y + 6;
-      doc.rect(marginLeft + 20, diagStartY, contentWidth - 40, diagEndY - diagStartY)
-        .lineWidth(0.5).dash(3, { space: 3 }).stroke("#888");
-      doc.undash();
-      doc.y = diagEndY + 6;
-      doc.fillColor("#000");
+    const svgVisual = buildVisualSVG(it);
+    if (svgVisual) {
+      try {
+        const x = marginLeft;
+        const y = doc.y + 6;
+        drawSvg(doc, svgVisual, x, y, contentWidth);
+        doc.y = y + 140;
+        doc.moveDown(0.5);
+      } catch (e: any) {
+        console.warn(`[PDF] SVG render error for Q${idx + 1}:`, e.message);
+        if (it.diagramDescription) {
+          doc.rect(marginLeft + 20, doc.y, contentWidth - 40, 0);
+          const diagStartY = doc.y;
+          doc.fontSize(9).font("Helvetica-Bold").fillColor(BRAND_DARK)
+            .text(`[Visual for Question ${idx + 1}]`, marginLeft + 26, doc.y + 4);
+          doc.fontSize(9).font("Helvetica").fillColor("#555")
+            .text(it.diagramDescription, marginLeft + 26, doc.y + 4, { width: contentWidth - 60, lineGap: 2 });
+          const diagEndY = doc.y + 6;
+          doc.rect(marginLeft + 20, diagStartY, contentWidth - 40, diagEndY - diagStartY)
+            .lineWidth(0.5).dash(3, { space: 3 }).stroke("#888");
+          doc.undash();
+          doc.y = diagEndY + 6;
+          doc.fillColor("#000");
+        }
+      }
     }
 
     if (itemType === "text_dependent_writing") {
@@ -146,7 +170,7 @@ export async function renderWorksheetPdf(opts: {
 
       doc.rect(marginLeft, doc.y, contentWidth, 22).fill("#4338CA");
       doc.fillColor("#FFF").fontSize(11).font("Helvetica-Bold")
-        .text(`  \u270D  Text-Dependent Writing — Question ${idx + 1}`, marginLeft + 6, doc.y + 4);
+        .text(`  \u270D  Text-Dependent Writing \u2014 Question ${idx + 1}`, marginLeft + 6, doc.y + 4);
       doc.y += 26;
       doc.fillColor("#000");
 
@@ -216,7 +240,7 @@ export async function renderWorksheetPdf(opts: {
     doc.fillColor("#FFF").fontSize(16).font("Helvetica-Bold")
       .text("Answer Key", marginLeft, 14);
     doc.fontSize(9).font("Helvetica")
-      .text(`${opts.title}  |  ${opts.standardCode}`, marginLeft, 34);
+      .text(`${WORKSHEET_TITLE} \u2014 ${opts.subject} G${opts.grade}  |  ${opts.standardCode}`, marginLeft, 34);
 
     doc.y = 60;
     doc.fillColor("#000");
@@ -259,7 +283,7 @@ export async function renderWorksheetPdf(opts: {
 
   const footerY = doc.page.height - 30;
   doc.fontSize(7).fillColor("#999").font("Helvetica")
-    .text("EduCAP\u2122 \u2014 Bush Hills STEAM Academy  |  Full STEAM Ahead  |  Generated by AI  |  For instructional use only", marginLeft, footerY, {
+    .text(`${WORKSHEET_TITLE} \u2014 ${SCHOOL_LINE}  |  ${TAGLINE_LINE}  |  Generated by AI  |  For instructional use only`, marginLeft, footerY, {
       width: contentWidth,
       align: "center",
     });

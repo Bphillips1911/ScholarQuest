@@ -241,15 +241,15 @@ Return ONLY valid JSON (no markdown, no extra text). Use this exact structure:
   } else if (isMath) {
     prompt += `
 MATH-SPECIFIC REQUIREMENTS:
-1. Include visual representations for at least 40% of questions:
-   - Graphs, coordinate planes, bar/line graphs
-   - Diagrams, geometric shapes, fraction models
-   - Charts, tables, data displays
-   - Number lines, area models
-
-2. Describe visuals in detail so teachers can reproduce them. Include exact coordinates, measurements, and data values.
-
-3. Question types:
+1. Include structured visual data for at least 50% of questions. When a question benefits from a visual (table, bar chart, number line, coordinate plane), include a "visual" object in JSON with structured data the renderer can use.
+2. Supported visual types:
+   - "table": { "type": "table", "title": "Title", "columns": ["Col1","Col2"], "rows": [["val1","val2"]] }
+   - "bar_chart": { "type": "bar_chart", "title": "Title", "labels": ["A","B","C"], "values": [10,20,30] }
+   - "number_line": { "type": "number_line", "title": "Title", "min": -5, "max": 5, "points": [{"value": 2, "label": "P"}] }
+   - "coordinate_plane": { "type": "coordinate_plane", "title": "Title", "points": [{"x": 3, "y": 4}, {"x": -1, "y": 2}] }
+3. If a question does not need a visual, omit the "visual" field entirely.
+4. Also include a "diagramDescription" text field describing the visual for accessibility.
+5. Question types:
    - Multiple choice with visual analysis
    - Multiple select (at least 1)
    - Short response requiring work shown (at least 1)
@@ -260,10 +260,31 @@ Return ONLY valid JSON (no markdown, no extra text). Use this exact structure:
     {
       "type": "multiple_choice",
       "stem": "Question text referencing the visual",
-      "diagramDescription": "Detailed visual: A bar graph showing...",
+      "visual": {
+        "type": "bar_chart",
+        "title": "Population Data",
+        "labels": ["A","B","C","D"],
+        "values": [75000,210000,15000,180000]
+      },
+      "diagramDescription": "A bar graph showing population data for groups A, B, C, D",
       "options": {"A": "opt1", "B": "opt2", "C": "opt3", "D": "opt4"},
       "correctAnswer": "B",
       "rationale": "Explanation"
+    },
+    {
+      "type": "multiple_select",
+      "stem": "Select ALL true statements based on the table.",
+      "visual": {
+        "type": "table",
+        "title": "Data Table",
+        "columns": ["Item", "Value"],
+        "rows": [["X", "100"], ["Y", "250"]]
+      },
+      "diagramDescription": "A data table with items and values",
+      "options": {"A": "opt1", "B": "opt2", "C": "opt3", "D": "opt4", "E": "opt5"},
+      "correctAnswers": ["A", "C"],
+      "correctAnswer": "A,C",
+      "rationale": "Why A and C are correct"
     },
     {
       "type": "short_response",

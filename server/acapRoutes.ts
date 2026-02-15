@@ -3,6 +3,8 @@ import { acapStorage } from "./acapStorage";
 import { db } from "./db";
 import { generateItems, generatePassage, autoGradeResponse, bootcampTutor } from "./services/acapAiService";
 import { generateSchoolwideAssessment } from "./services/geminiAssessmentService";
+import { generateWorksheetItems } from "./services/worksheetAiService";
+import { renderWorksheetPdf } from "./services/pdfWorksheet";
 import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import {
@@ -12,6 +14,7 @@ import {
   insertAcapForgeAssessmentSchema,
   acapItems,
   acapStandards,
+  acapWorksheets,
 } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -2835,6 +2838,121 @@ export function registerAcapRoutes(app: Express): void {
       res.json({ csv: headers + rows });
     } catch (error) {
       res.status(500).json({ error: "Failed to export report" });
+    }
+  });
+
+  // ===== ACAP WORKSHEETS =====
+
+  const authenticateWorksheetUser = async (req: any, res: any, next: any) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token provided" });
+    try {
+      const decoded: any = jwt.verify(token, "bhsa-admin-secret-2025-stable");
+      const session = await storage.getAdminSession(token);
+      if (session) {
+        const admin = await storage.getAdministratorByEmail(decoded.email);
+        if (admin) { req.user = { id: admin.id || admin.email, role: "admin" }; return next(); }
+      }
+    } catch {}
+    try {
+      const decoded: any = jwt.verify(token, "bhsa-teacher-jwt-secret-2025");
+      if (decoded.teacherId) { req.user = { id: decoded.teacherId, role: "teacher" }; return next(); }
+    } catch {}
+    return res.status(401).json({ error: "Invalid token" });
+  };
+
+  app.get("/api/acap/standards/list", async (req: Request, res: Response) => {
+    try {
+      const subject = String(req.query.subject || "");
+      const gradesParam = String(req.query.grades || "");
+      if (!subject || !gradesParam) return res.json({ standards: [] });
+      const gradeLevel = parseInt(gradesParam);
+      if (isNaN(gradeLevel)) return res.json({ standards: [] });
+      const rows = await db.select().from(acapStandards)
+        .where(and(eq(acapStandards.gradeLevel, gradeLevel), eq(acapStandards.isActive, true)));
+      const filtered = rows.filter(r => {
+        const domain = (r.domain || "").toLowerCase();
+        if (subject === "ELA") return domain.includes("reading") || domain.includes("writing") || domain.includes("literacy") || domain.includes("ela") || domain.includes("language");
+        if (subject === "Math") return domain.includes("math") || domain.includes("algebra") || domain.includes("geometry") || domain.includes("number") || domain.includes("ratio") || domain.includes("statistic") || domain.includes("expression") || domain.includes("function");
+        if (subject === "Science") return domain.includes("science") || domain.includes("physical") || domain.includes("life") || domain.includes("earth");
+        return true;
+      });
+      res.json({ standards: filtered.map(s => ({ code: s.code, grade: s.gradeLevel, subject, description: s.description, domain: s.domain })) });
+    } catch (error) {
+      console.error("Standards list error:", error);
+      res.status(500).json({ error: "Failed to load standards" });
+    }
+  });
+
+  app.post("/api/acap/worksheets", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const { title, subject, grade, standardCode, dokLevel, itemCount, language } = req.body;
+      if (!title || !subject || !grade || !standardCode || !dokLevel || !itemCount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const std = await db.select().from(acapStandards)
+        .where(eq(acapStandards.code, standardCode))
+        .limit(1);
+      const standardDescription = std[0]?.description || standardCode;
+
+      const items = await generateWorksheetItems({
+        subject, grade, standardCode, standardDescription,
+        dokLevel, itemCount, language: language || "en",
+      });
+
+      const [worksheet] = await db.insert(acapWorksheets).values({
+        title,
+        subject,
+        grade,
+        standardCode,
+        dokLevel,
+        itemCount,
+        language: language || "en",
+        items,
+        createdBy: req.user?.id || "unknown",
+      }).returning();
+
+      res.json({ worksheet });
+    } catch (error: any) {
+      console.error("Create worksheet error:", error);
+      res.status(500).json({ error: error.message || "Failed to create worksheet" });
+    }
+  });
+
+  app.get("/api/acap/worksheets/:id/pdf", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid worksheet ID" });
+      const rows = await db.select().from(acapWorksheets).where(eq(acapWorksheets.id, id));
+      if (!rows.length) return res.status(404).json({ error: "Worksheet not found" });
+      const ws = rows[0];
+
+      const pdfBuf = await renderWorksheetPdf({
+        title: ws.title,
+        subject: ws.subject,
+        grade: ws.grade,
+        standardCode: ws.standardCode,
+        dokLevel: ws.dokLevel,
+        items: ws.items as any[],
+        includeAnswerKey: true,
+      });
+
+      const safeName = ws.title.replace(/[^a-z0-9\- ]/gi, "").trim().replace(/\s+/g, "_").slice(0, 80) || "worksheet";
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}.pdf"`);
+      res.send(pdfBuf);
+    } catch (error: any) {
+      console.error("PDF generation error:", error);
+      res.status(500).json({ error: "Failed to generate PDF" });
+    }
+  });
+
+  app.get("/api/acap/worksheets", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const rows = await db.select().from(acapWorksheets).orderBy(acapWorksheets.id);
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load worksheets" });
     }
   });
 

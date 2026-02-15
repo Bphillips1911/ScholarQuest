@@ -17,10 +17,11 @@ import {
 } from "lucide-react";
 import TeacherClassRankGoalsPage from "@/pages/acap/TeacherClassRankGoalsPage";
 import AccessCodesManager from "@/components/acap/teacher/AccessCodesManager";
+import WorksheetGeneratorTab from "@/components/acap/WorksheetGeneratorTab";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 import { PRODUCT_NAME_PLAIN, TAGLINE } from "@/lib/educapBrand";
 
-type Tab = "overview" | "assignments" | "question-bank" | "reports" | "bootcamp" | "rank-goals" | "access-codes";
+type Tab = "overview" | "assignments" | "question-bank" | "acap-worksheets" | "reports" | "bootcamp" | "rank-goals" | "access-codes";
 
 interface TeacherInfo {
   id: string;
@@ -69,6 +70,7 @@ export default function TeacherAcap() {
     { id: "overview" as Tab, label: "Overview", icon: BarChart3 },
     { id: "assignments" as Tab, label: "Assignments", icon: ClipboardList },
     { id: "question-bank" as Tab, label: "Question Bank", icon: BookOpen },
+    { id: "acap-worksheets" as Tab, label: "ACAP Worksheets", icon: FileText },
     { id: "reports" as Tab, label: "Reports", icon: FileText },
     { id: "bootcamp" as Tab, label: "Boot Camp", icon: Brain },
     { id: "rank-goals" as Tab, label: "Rank & Goals", icon: Award },
@@ -117,6 +119,7 @@ export default function TeacherAcap() {
         {activeTab === "overview" && <OverviewTab teacherId={teacherId} gradeNumber={gradeNumber} teacherInfo={teacherInfo} />}
         {activeTab === "assignments" && <AssignmentsTab teacherId={teacherId} gradeNumber={gradeNumber} />}
         {activeTab === "question-bank" && <QuestionBankTab teacherId={teacherId} gradeNumber={gradeNumber} />}
+        {activeTab === "acap-worksheets" && <WorksheetGeneratorTab />}
         {activeTab === "reports" && <ReportsTab teacherId={teacherId} />}
         {activeTab === "bootcamp" && <BootCampTab teacherId={teacherId} gradeNumber={gradeNumber} />}
         {activeTab === "rank-goals" && <TeacherClassRankGoalsPage />}

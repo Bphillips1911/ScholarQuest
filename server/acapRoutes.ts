@@ -2872,9 +2872,10 @@ export function registerAcapRoutes(app: Express): void {
         .where(and(eq(acapStandards.gradeLevel, gradeLevel), eq(acapStandards.isActive, true)));
       const filtered = rows.filter(r => {
         const domain = (r.domain || "").toLowerCase();
-        if (subject === "ELA") return domain.includes("reading") || domain.includes("writing") || domain.includes("literacy") || domain.includes("ela") || domain.includes("language");
-        if (subject === "Math") return domain.includes("math") || domain.includes("algebra") || domain.includes("geometry") || domain.includes("number") || domain.includes("ratio") || domain.includes("statistic") || domain.includes("expression") || domain.includes("function");
-        if (subject === "Science") return domain.includes("science") || domain.includes("physical") || domain.includes("life") || domain.includes("earth");
+        const code = (r.code || "").toLowerCase();
+        if (subject === "ELA") return domain === "ela" || domain.includes("reading") || domain.includes("writing") || domain.includes("literacy") || domain.includes("language") || code.includes("rl.") || code.includes("ri.") || code.includes("cl.") || code.includes("vl.") || code.includes("w.");
+        if (subject === "Math") return domain === "math" || domain.includes("algebra") || domain.includes("geometry") || domain.includes("number") || domain.includes("ratio") || domain.includes("statistic") || domain.includes("expression") || domain.includes("function") || code.includes("ns.") || code.includes("af.") || code.includes("gm.") || code.includes("dsp.");
+        if (subject === "Science") return domain === "science" || domain.includes("physical") || domain.includes("life") || domain.includes("earth");
         return true;
       });
       res.json({ standards: filtered.map(s => ({ code: s.code, grade: s.gradeLevel, subject, description: s.description, domain: s.domain })) });

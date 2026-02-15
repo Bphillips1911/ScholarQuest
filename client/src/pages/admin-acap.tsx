@@ -23,11 +23,11 @@ import ImpactSimulatorTab from "@/components/admin/ImpactSimulatorTab";
 import StudentGenomeTab from "@/components/admin/StudentGenomeTab";
 import AdminRankingsPage from "@/pages/acap/AdminRankingsPage";
 import ForgeBuilderTab from "@/components/acap/admin/ForgeBuilderTab";
-import ForgeCostControlsTab from "@/components/acap/admin/ForgeCostControlsTab";
+import WorksheetGeneratorTab from "@/components/acap/WorksheetGeneratorTab";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
-import { Hammer, DollarSign } from "lucide-react";
+import { Hammer } from "lucide-react";
 import { ADMIN_PORTAL, TAGLINE, DISCLAIMER_ADMIN } from "@/lib/educapBrand";
-type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "forge" | "forge-cost-controls" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome" | "rankings";
+type Tab = "overview" | "blueprints-standards" | "question-bank" | "assessments" | "assessment-completion" | "ai-settings" | "forge" | "acap-worksheets" | "reports" | "bootcamp" | "projected-score" | "impact-simulator" | "student-genome" | "rankings";
 
 export default function AdminAcap() {
   useAcapWebSocket();
@@ -77,7 +77,7 @@ export default function AdminAcap() {
     { id: "assessments", label: "Assessments", icon: ClipboardList },
     { id: "assessment-completion", label: "Completion", icon: CheckCircle },
     { id: "forge", label: "Forge", icon: Hammer },
-    { id: "forge-cost-controls", label: "Cost Controls", icon: DollarSign },
+    { id: "acap-worksheets", label: "ACAP Worksheets", icon: FileText },
     { id: "ai-settings", label: "AI Settings", icon: Brain },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "bootcamp", label: "Boot Camp", icon: GraduationCap },
@@ -135,7 +135,7 @@ export default function AdminAcap() {
         {activeTab === "assessments" && <AssessmentsTab />}
         {activeTab === "assessment-completion" && <AssessmentCompletionTab />}
         {activeTab === "forge" && <ForgeBuilderTab />}
-        {activeTab === "forge-cost-controls" && <ForgeCostControlsTab />}
+        {activeTab === "acap-worksheets" && <WorksheetGeneratorTab />}
         {activeTab === "ai-settings" && <AISettingsTab />}
         {activeTab === "reports" && <ReportsTab />}
         {activeTab === "bootcamp" && <BootCampTab />}

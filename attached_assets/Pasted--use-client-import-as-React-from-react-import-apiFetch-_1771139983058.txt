@@ -1,0 +1,205 @@
+"use client";
+
+import * as React from "react";
+import { apiFetch, API_BASE } from "@/lib/api";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Download } from "lucide-react";
+
+type Std = { code: string; grade: number; subject: string; description?: string };
+
+export default function WorksheetGenerator() {
+  const { toast } = useToast();
+
+  const [subject, setSubject] = React.useState<"ELA" | "Math" | "Science">("Math");
+  const [grade, setGrade] = React.useState<6 | 7 | 8>(6);
+  const [language, setLanguage] = React.useState<"en" | "es">("en");
+
+  const [standards, setStandards] = React.useState<Std[]>([]);
+  const [standardCode, setStandardCode] = React.useState<string>("");
+
+  const [dokLevel, setDokLevel] = React.useState<2 | 3 | 4>(2);
+  const [itemCount, setItemCount] = React.useState<5 | 10 | 15 | 20>(10);
+  const [title, setTitle] = React.useState("ACAP Worksheet");
+
+  const [creating, setCreating] = React.useState(false);
+  const [createdId, setCreatedId] = React.useState<string | null>(null);
+
+  async function loadStandards(nextSubject = subject, nextGrade = grade) {
+    try {
+      const data = await apiFetch<{ standards: Std[] }>(
+        `/api/standards/list?subject=${encodeURIComponent(nextSubject)}&grades=${nextGrade}`
+      );
+      setStandards(data.standards || []);
+      setStandardCode(data.standards?.[0]?.code || "");
+    } catch (e: any) {
+      toast({ title: "Standards load failed", description: e.message });
+    }
+  }
+
+  React.useEffect(() => {
+    loadStandards();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  React.useEffect(() => {
+    loadStandards(subject, grade);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subject, grade]);
+
+  async function createWorksheet() {
+    if (!standardCode) {
+      toast({ title: "Select a standard first" });
+      return;
+    }
+    setCreating(true);
+    setCreatedId(null);
+
+    try {
+      const payload = {
+        title: `${title} — ${subject} G${grade}`,
+        subject,
+        grade,
+        standardCode,
+        dokLevel,
+        itemCount,
+        language,
+      };
+
+      const data = await apiFetch<{ worksheet: { id: string } }>("/api/worksheets", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setCreatedId(data.worksheet.id);
+      toast({ title: "Worksheet created", description: "PDF is ready to download." });
+    } catch (e: any) {
+      toast({ title: "Create failed", description: e.message });
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  const pdfHref = createdId ? `${API_BASE}/api/worksheets/${createdId}/pdf` : "#";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Worksheet Generator</h1>
+        <p className="text-sm text-muted-foreground">
+          Select a standard, DOK level, and item count. Generate a printable EduCAP worksheet.
+        </p>
+      </div>
+
+      <Card className="p-6">
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ACAP Worksheet" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Subject</Label>
+            <Select value={subject} onValueChange={(v: any) => setSubject(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ELA">ELA</SelectItem>
+                <SelectItem value="Math">Math</SelectItem>
+                <SelectItem value="Science">Science</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Grade</Label>
+            <Select value={String(grade)} onValueChange={(v) => setGrade(Number(v) as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6">Grade 6</SelectItem>
+                <SelectItem value="7">Grade 7</SelectItem>
+                <SelectItem value="8">Grade 8</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label>ACAP Standard</Label>
+            <Select value={standardCode} onValueChange={setStandardCode}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a standard" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[320px]">
+                {standards.map((s) => (
+                  <SelectItem key={s.code} value={s.code}>
+                    {s.code} — {s.description?.slice(0, 70) || "Standard"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Language</Label>
+            <Select value={language} onValueChange={(v: any) => setLanguage(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="es">Spanish</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>DOK Level</Label>
+            <Select value={String(dokLevel)} onValueChange={(v) => setDokLevel(Number(v) as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">DOK 2</SelectItem>
+                <SelectItem value="3">DOK 3</SelectItem>
+                <SelectItem value="4">DOK 4</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Item Count</Label>
+            <Select value={String(itemCount)} onValueChange={(v) => setItemCount(Number(v) as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="15">15</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 mt-6">
+          <Button onClick={createWorksheet} disabled={creating}>
+            {creating ? "Generating..." : "Generate Worksheet"}
+          </Button>
+
+          <Button asChild variant="outline" disabled={!createdId}>
+            <a href={pdfHref} target="_blank" rel="noreferrer">
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </a>
+          </Button>
+
+          {createdId && (
+            <p className="text-sm text-muted-foreground">
+              Worksheet ID: <span className="font-mono">{createdId}</span>
+            </p>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}

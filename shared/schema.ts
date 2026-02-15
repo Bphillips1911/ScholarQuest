@@ -1688,5 +1688,24 @@ export type InsertInsightEvent = z.infer<typeof insertInsightEventSchema>;
 export type StudentAssessmentInstance = typeof studentAssessmentInstances.$inferSelect;
 export type InsertStudentAssessmentInstance = z.infer<typeof insertStudentAssessmentInstanceSchema>;
 
+// ===== ACAP WORKSHEETS =====
+export const acapWorksheets = pgTable("acap_worksheets", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  subject: varchar("subject", { length: 50 }).notNull(),
+  grade: integer("grade").notNull(),
+  standardCode: varchar("standard_code", { length: 50 }).notNull(),
+  dokLevel: integer("dok_level").notNull(),
+  itemCount: integer("item_count").notNull(),
+  language: varchar("language", { length: 10 }).notNull().default("en"),
+  items: jsonb("items").$type<any[]>().notNull().default([]),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAcapWorksheetSchema = createInsertSchema(acapWorksheets).omit({ id: true, createdAt: true });
+export type AcapWorksheet = typeof acapWorksheets.$inferSelect;
+export type InsertAcapWorksheet = z.infer<typeof insertAcapWorksheetSchema>;
+
 // Re-export chat models for integration
 export { conversations, messages } from "./models/chat";

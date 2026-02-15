@@ -1,0 +1,94 @@
+import { Router } from "express";
+import { z } from "zod";
+import { db } from "../db";
+import { worksheets } from "../db/schema/worksheets";
+import { standards } from "../db/schema/standards";
+import { requireRole } from "../middleware/auth";
+import { and, eq } from "drizzle-orm";
+import { generateWorksheet } from "../services/geminiWorksheet";
+import { renderWorksheetPdf } from "../services/pdfWorksheet";
+
+const r = Router();
+
+const CreateWorksheetSchema = z.object({
+  title: z.string().min(3),
+  subject: z.enum(["ELA", "Math", "Science"]),
+  grade: z.number().int().min(6).max(8),
+  standardCode: z.string().min(3),
+  dokLevel: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+  itemCount: z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(20)]),
+  language: z.enum(["en", "es"]).default("en"),
+});
+
+// ✅ Create worksheet (AI generates items + save)
+r.post("/", requireRole("teacher", "admin", "corporate"), async (req, res) => {
+  const parsed = CreateWorksheetSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Invalid payload" });
+
+  const u = req.session.user!;
+  const { title, subject, grade, standardCode, dokLevel, itemCount, language } = parsed.data;
+
+  // Verify standard exists
+  const std = await db.query.standards.findFirst({
+    where: and(eq(standards.code, standardCode), eq(standards.grade, grade), eq(standards.subject, subject)),
+  });
+  if (!std) return res.status(400).json({ error: "Standard not found for subject/grade" });
+
+  // AI generate
+  const items = await generateWorksheet({
+    subject,
+    grade,
+    standard: { code: std.code, description: std.description || "" },
+    dokLevel,
+    itemCount,
+    language,
+  });
+
+  const inserted = await db.insert(worksheets).values({
+    schoolId: String(u.schoolId || "unknown"),
+    createdBy: String(u.id),
+    title,
+    subject,
+    grade,
+    standardCode,
+    dokLevel,
+    itemCount,
+    language,
+    items,
+  }).returning();
+
+  res.json({ worksheet: inserted[0] });
+});
+
+// ✅ PDF download (already referenced earlier)
+r.get("/:id/pdf", requireRole("teacher", "admin", "corporate"), async (req, res) => {
+  const id = req.params.id;
+  const rows = await db.select().from(worksheets).where(eq(worksheets.id, id));
+  if (!rows.length) return res.status(404).json({ error: "Worksheet not found" });
+
+  const ws = rows[0];
+  const u = req.session.user!;
+  if (u.role !== "corporate" && ws.schoolId && String(ws.schoolId) !== String(u.schoolId)) {
+    return res.status(403).json({ error: "Out of scope" });
+  }
+
+  const pdfBuf = await renderWorksheetPdf({
+    title: ws.title,
+    subject: ws.subject,
+    grade: ws.grade,
+    standardCode: ws.standardCode,
+    dokLevel: ws.dokLevel,
+    items: ws.items as any[],
+    includeAnswerKey: true,
+  });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${safe(ws.title)}.pdf"`);
+  res.send(pdfBuf);
+});
+
+function safe(name: string) {
+  return name.replace(/[^a-z0-9\-_ ]/gi, "").trim().replace(/\s+/g, "_").slice(0, 80) || "worksheet";
+}
+
+export default r;

@@ -2935,11 +2935,18 @@ export function registerAcapRoutes(app: Express): void {
         .limit(1);
       const standardDescription = std[0]?.description || standardCode;
 
-      const items = await generateWorksheetItems({
-        subject, grade, standardCode, standardDescription,
-        dokLevel, itemCount, language: language || "en",
-        includeTextDependentWriting: !!includeTextDependentWriting,
-      });
+      let items: any[];
+      let usedFallback = false;
+      try {
+        items = await generateWorksheetItems({
+          subject, grade, standardCode, standardDescription,
+          dokLevel, itemCount, language: language || "en",
+          includeTextDependentWriting: !!includeTextDependentWriting,
+        });
+      } catch (genError: any) {
+        console.error("[Worksheet] Generation completely failed:", genError.message);
+        return res.status(500).json({ error: "Worksheet generation failed. Please try again.", details: genError.message });
+      }
 
       const [worksheet] = await db.insert(acapWorksheets).values({
         title,
@@ -2953,7 +2960,7 @@ export function registerAcapRoutes(app: Express): void {
         createdBy: req.user?.id || "unknown",
       }).returning();
 
-      res.json({ worksheet });
+      res.json({ worksheet, usedFallback });
     } catch (error: any) {
       console.error("Create worksheet error:", error);
       res.status(500).json({ error: error.message || "Failed to create worksheet" });

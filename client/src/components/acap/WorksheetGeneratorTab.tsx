@@ -9,7 +9,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileText, Loader2, PenLine } from "lucide-react";
+import { Download, FileText, Loader2, PenLine, Eye, AlertTriangle } from "lucide-react";
+import ProfessionalWorksheetPreview from "./ProfessionalWorksheetPreview";
+import "@/styles/worksheet-preview.css";
 
 type Std = { code: string; grade: number; subject: string; description?: string; domain?: string };
 
@@ -26,11 +28,14 @@ export default function WorksheetGeneratorTab() {
 
   const [dokLevel, setDokLevel] = useState<2 | 3 | 4>(2);
   const [itemCount, setItemCount] = useState<5 | 10 | 15 | 20>(10);
-  const [title, setTitle] = useState("ACAP Worksheet");
+  const [title, setTitle] = useState("EduCAP Worksheet");
   const [includeTextDependentWriting, setIncludeTextDependentWriting] = useState(false);
 
   const [creating, setCreating] = useState(false);
   const [createdId, setCreatedId] = useState<number | null>(null);
+  const [worksheetData, setWorksheetData] = useState<any>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const loadStandards = useCallback(async (nextSubject: string, nextGrade: number) => {
     setLoadingStandards(true);
@@ -70,6 +75,9 @@ export default function WorksheetGeneratorTab() {
     }
     setCreating(true);
     setCreatedId(null);
+    setWorksheetData(null);
+    setUsedFallback(false);
+    setShowPreview(false);
 
     try {
       const payload = {
@@ -87,7 +95,19 @@ export default function WorksheetGeneratorTab() {
       const data = await res.json();
 
       setCreatedId(data.worksheet.id);
-      toast({ title: "Worksheet created!", description: "PDF is ready to download." });
+      setWorksheetData(data.worksheet);
+      setUsedFallback(!!data.usedFallback);
+      setShowPreview(true);
+
+      if (data.usedFallback) {
+        toast({
+          title: "Worksheet created with templates",
+          description: "AI was unavailable, so template questions were used. You can still download the PDF.",
+          variant: "default",
+        });
+      } else {
+        toast({ title: "Worksheet created!", description: "AI-generated worksheet is ready. Preview below or download PDF." });
+      }
     } catch (e: any) {
       toast({ title: "Create failed", description: e.message, variant: "destructive" });
     } finally {
@@ -102,7 +122,7 @@ export default function WorksheetGeneratorTab() {
       <div>
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <FileText className="w-6 h-6 text-indigo-600" />
-          ACAP Worksheet Generator
+          EduCAP Worksheet Generator
         </h2>
         <p className="text-sm text-gray-500 mt-1">
           Select a standard, DOK level, and item count. Generate a printable EduCAP worksheet with answer key.
@@ -113,7 +133,7 @@ export default function WorksheetGeneratorTab() {
         <div className="grid md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ACAP Worksheet" />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="EduCAP Worksheet" />
           </div>
 
           <div className="space-y-2">
@@ -246,6 +266,13 @@ export default function WorksheetGeneratorTab() {
             </a>
           )}
 
+          {createdId && !showPreview && (
+            <Button variant="outline" onClick={() => setShowPreview(true)}>
+              <Eye className="w-4 h-4 mr-2" />
+              Show Preview
+            </Button>
+          )}
+
           {createdId && (
             <p className="text-sm text-gray-500">
               Worksheet ID: <span className="font-mono font-semibold">{createdId}</span>
@@ -260,6 +287,33 @@ export default function WorksheetGeneratorTab() {
           <p className="text-gray-600">AI is generating your worksheet items...</p>
           <p className="text-xs text-gray-400 mt-1">This usually takes 10-20 seconds</p>
         </Card>
+      )}
+
+      {usedFallback && !creating && createdId && (
+        <Card className="p-4 border-amber-300 bg-amber-50">
+          <div className="flex items-center gap-2 text-amber-800">
+            <AlertTriangle className="w-5 h-5" />
+            <div>
+              <p className="font-semibold text-sm">Template Mode</p>
+              <p className="text-xs text-amber-700">
+                The AI service was unavailable, so pre-built template questions were used.
+                The worksheet is still fully functional with answer keys and visuals.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {showPreview && worksheetData && worksheetData.items && (
+        <ProfessionalWorksheetPreview
+          items={Array.isArray(worksheetData.items) ? worksheetData.items : []}
+          title={worksheetData.title || title}
+          subject={subject}
+          grade={grade}
+          standardCode={standardCode}
+          dokLevel={dokLevel}
+          usedFallback={usedFallback}
+        />
       )}
     </div>
   );

@@ -1,0 +1,156 @@
+// server/services/geminiAI.js
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function isRetryable(status) {
+  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+}
+
+function redactKey(s) {
+  if (!s) return s;
+  return s.replace(/key=([^&]+)/i, "key=REDACTED");
+}
+
+class GeminiAIService {
+  constructor() {
+    this.apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+    this.model = DEFAULT_MODEL;
+  }
+
+  async callGeminiAPI(prompt, { temperature = 0.4, maxOutputTokens = 1400 } = {}) {
+    if (!this.apiKey) {
+      const err = new Error("Missing GOOGLE_GEMINI_API_KEY in server environment");
+      err.status = 500;
+      throw err;
+    }
+
+    const url = `${BASE}/${this.model}:generateContent?key=${this.apiKey}`;
+
+    const payload = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature, maxOutputTokens },
+    };
+
+    const maxAttempts = Number(process.env.GEMINI_MAX_ATTEMPTS || 4);
+    const timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS || 20000);
+
+    let lastError;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        const text = await res.text(); // IMPORTANT: read raw body for debugging
+
+        if (!res.ok) {
+          // Log full error body (but redact key)
+          console.error(
+            `[Gemini] HTTP ${res.status} attempt ${attempt}/${maxAttempts}`,
+            {
+              model: this.model,
+              url: redactKey(url),
+              body: text?.slice(0, 2000),
+            }
+          );
+
+          const err = new Error(`Gemini HTTP ${res.status}`);
+          err.status = res.status;
+          err.body = text;
+
+          // Retry only if retryable
+          if (isRetryable(res.status) && attempt < maxAttempts) {
+            const backoff = Math.min(2000 * Math.pow(2, attempt - 1), 12000);
+            await sleep(backoff);
+            continue;
+          }
+
+          throw err;
+        }
+
+        // Parse success JSON
+        const data = JSON.parse(text);
+
+        const out =
+          data?.candidates?.[0]?.content?.parts?.map((p) => p?.text).join("\n") ||
+          "";
+
+        if (!out.trim()) {
+          console.error("[Gemini] Empty completion", { data });
+          throw new Error("Gemini returned empty completion");
+        }
+
+        return out;
+      } catch (e) {
+        lastError = e;
+
+        const isAbort = e?.name === "AbortError";
+        console.error(
+          `[Gemini] Exception attempt ${attempt}/${maxAttempts}`,
+          {
+            model: this.model,
+            abort: isAbort,
+            message: e?.message,
+          }
+        );
+
+        if (attempt < maxAttempts) {
+          const backoff = Math.min(1500 * Math.pow(2, attempt - 1), 10000);
+          await sleep(backoff);
+          continue;
+        }
+
+        throw lastError;
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
+    throw lastError || new Error("Gemini API failed after retries");
+  }
+
+  parseJSON(text) {
+    // strict JSON only; safe clean
+    const cleaned = String(text || "").replace(/```json|```/g, "").trim();
+    return JSON.parse(cleaned);
+  }
+
+  // Example: generateAssessment should use callGeminiAPI and parseJSON
+  async generateAssessment({ contentArea, grade, itemCount, dokMix, standards }) {
+    const prompt = `Return ONLY valid JSON. Generate ${itemCount} ${contentArea} items for Grade ${grade}.
+DOK mix: ${JSON.stringify(dokMix)}
+Standards: ${standards.map(s => `${s.code}: ${s.description}`).slice(0, 20).join("\n")}
+
+JSON shape:
+[
+  {
+    "dokLevel": 2,
+    "standard": {"code":"...","description":"..."},
+    "stem":"...",
+    "options":["A. ...","B. ...","C. ...","D. ..."],
+    "correctAnswer":"B",
+    "rationale":"..."
+  }
+]`;
+
+    const completion = await this.callGeminiAPI(prompt, {
+      temperature: 0.5,
+      maxOutputTokens: 1800,
+    });
+
+    return this.parseJSON(completion);
+  }
+}
+
+module.exports = new GeminiAIService();

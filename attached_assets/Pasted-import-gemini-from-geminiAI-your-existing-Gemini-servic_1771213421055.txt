@@ -1,0 +1,85 @@
+import gemini from "./geminiAI"; // your existing Gemini service
+import openai from "./openaiAI"; // if you have it
+import { getFromQuestionBank, saveToQuestionBank } from "./questionBank";
+import { safeParseJson } from "./safeJson";
+import { buildTemplateQuestion } from "./templateQuestions";
+
+const state = {
+  geminiFailures: 0,
+  geminiOpenUntil: 0,
+};
+
+function geminiCircuitOpen() {
+  return Date.now() < state.geminiOpenUntil;
+}
+
+function tripGeminiCircuit() {
+  state.geminiFailures += 1;
+  // After 3 failures, open circuit 2 minutes
+  if (state.geminiFailures >= 3) {
+    state.geminiOpenUntil = Date.now() + 2 * 60 * 1000;
+    state.geminiFailures = 0;
+  }
+}
+
+async function withTimeout<T>(p: Promise<T>, ms = 12000): Promise<T> {
+  return await Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error("AI_TIMEOUT")), ms)),
+  ]);
+}
+
+/**
+ * Always returns valid question objects.
+ */
+export async function generateQuestionSafely(input: {
+  subject: string;
+  grade: number;
+  standardCode: string;
+  standardDescription: string;
+  dokLevel: number;
+  wantsVisual?: boolean;
+}) {
+  // 1) Bank first (fast, free, stable)
+  const bankHit = await getFromQuestionBank(input);
+  if (bankHit) return bankHit;
+
+  // 2) Try Gemini (unless circuit open)
+  if (!geminiCircuitOpen()) {
+    try {
+      const raw = await withTimeout(
+        gemini.generateQuestion(input), // must return text/json
+        12000
+      );
+
+      const parsed = safeParseJson(raw);
+      // basic validation
+      if (!parsed?.stem || !parsed?.options || !parsed?.correctAnswer) {
+        throw new Error("AI_BAD_SCHEMA");
+      }
+
+      await saveToQuestionBank(input, parsed);
+      return parsed;
+    } catch (e) {
+      tripGeminiCircuit();
+    }
+  }
+
+  // 3) Try OpenAI (optional fallback)
+  if (openai?.generateQuestion) {
+    try {
+      const raw = await withTimeout(openai.generateQuestion(input), 12000);
+      const parsed = safeParseJson(raw);
+      if (!parsed?.stem || !parsed?.options || !parsed?.correctAnswer) {
+        throw new Error("AI_BAD_SCHEMA");
+      }
+      await saveToQuestionBank(input, parsed);
+      return parsed;
+    } catch (e) {
+      // continue
+    }
+  }
+
+  // 4) Template fallback (guaranteed)
+  return buildTemplateQuestion(input);
+}

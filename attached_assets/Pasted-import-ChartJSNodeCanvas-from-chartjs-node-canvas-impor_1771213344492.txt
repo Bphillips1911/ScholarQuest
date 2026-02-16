@@ -1,0 +1,109 @@
+import { ChartJSNodeCanvas } from "chartjs-node-canvas";
+import sharp from "sharp";
+
+type ChartSpec =
+  | { type: "bar"; title?: string; labels: string[]; data: number[]; yLabel?: string; xLabel?: string }
+  | { type: "line"; title?: string; labels: string[]; data: number[]; yLabel?: string; xLabel?: string }
+  | { type: "scatter"; title?: string; points: { x: number; y: number }[]; xLabel?: string; yLabel?: string }
+  | { type: "number_line"; title?: string; min: number; max: number; points: { label: string; value: number }[] };
+
+const width = 760;   // good for worksheet layout
+const height = 280;
+
+const chartCanvas = new ChartJSNodeCanvas({
+  width,
+  height,
+  backgroundColour: "white",
+});
+
+function baseOptions(title?: string, xLabel?: string, yLabel?: string) {
+  return {
+    responsive: false,
+    plugins: {
+      legend: { display: false },
+      title: { display: !!title, text: title || "" },
+    },
+    scales: {
+      x: { title: { display: !!xLabel, text: xLabel || "" } },
+      y: { title: { display: !!yLabel, text: yLabel || "" } },
+    },
+  };
+}
+
+/**
+ * Render a Chart.js chart into PNG (Buffer), with Sharp normalization.
+ */
+export async function renderChartToPng(spec: ChartSpec): Promise<Buffer> {
+  // Number line is special (we draw it with Chart.js scatter + annotations-ish)
+  if (spec.type === "number_line") {
+    const labels = Array.from({ length: spec.max - spec.min + 1 }, (_, i) => String(spec.min + i));
+    const points = spec.points.map(p => ({ x: p.value, y: 0 }));
+
+    const cfg: any = {
+      type: "scatter",
+      data: {
+        datasets: [
+          {
+            data: points,
+            pointRadius: 6,
+            pointHoverRadius: 6,
+          },
+        ],
+      },
+      options: {
+        ...baseOptions(spec.title, "Number Line", ""),
+        scales: {
+          x: { min: spec.min, max: spec.max, ticks: { stepSize: 1 } },
+          y: { display: false, min: -1, max: 1 },
+        },
+      },
+    };
+
+    const raw = await chartCanvas.renderToBuffer(cfg);
+    return sharp(raw).png().toBuffer();
+  }
+
+  // Standard chart types
+  let cfg: any;
+
+  if (spec.type === "bar") {
+    cfg = {
+      type: "bar",
+      data: {
+        labels: spec.labels,
+        datasets: [{ data: spec.data }],
+      },
+      options: baseOptions(spec.title, spec.xLabel, spec.yLabel),
+    };
+  }
+
+  if (spec.type === "line") {
+    cfg = {
+      type: "line",
+      data: {
+        labels: spec.labels,
+        datasets: [{ data: spec.data, tension: 0.2 }],
+      },
+      options: baseOptions(spec.title, spec.xLabel, spec.yLabel),
+    };
+  }
+
+  if (spec.type === "scatter") {
+    cfg = {
+      type: "scatter",
+      data: {
+        datasets: [{ data: spec.points, pointRadius: 5 }],
+      },
+      options: {
+        ...baseOptions(spec.title, spec.xLabel, spec.yLabel),
+        scales: {
+          x: { title: { display: !!spec.xLabel, text: spec.xLabel || "" } },
+          y: { title: { display: !!spec.yLabel, text: spec.yLabel || "" } },
+        },
+      },
+    };
+  }
+
+  const raw = await chartCanvas.renderToBuffer(cfg);
+  return sharp(raw).png().toBuffer();
+}

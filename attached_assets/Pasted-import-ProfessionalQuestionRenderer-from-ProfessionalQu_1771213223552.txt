@@ -1,0 +1,73 @@
+import ProfessionalQuestionRenderer from "./ProfessionalQuestionRenderer";
+
+export default function InvestorGradeWorksheet({ worksheet, standard }) {
+  return (
+    <div className="worksheet-container">
+      {/* Letterhead */}
+      <header className="worksheet-header">
+        <div className="branding">
+          <h1>EduCAP Worksheet</h1>
+          <p className="academy">Bush Hills STEAM Academy</p>
+          <p className="tagline">Preparing Scholars for Excellence</p>
+        </div>
+
+        <div className="student-info">
+          <div><span>Name:</span> _________________________</div>
+          <div><span>Date:</span> __________</div>
+          <div><span>Period:</span> ______</div>
+        </div>
+      </header>
+
+      {/* Title */}
+      <section className="worksheet-meta">
+        <h2>{worksheet.title}</h2>
+        <div className="meta-grid">
+          <div><strong>Subject:</strong> {worksheet.subject}</div>
+          <div><strong>Grade:</strong> {worksheet.grade}</div>
+          <div><strong>DOK:</strong> {worksheet.dokLevel}</div>
+          <div><strong>Standard:</strong> {worksheet.standardCode}</div>
+        </div>
+      </section>
+
+      {/* Directions */}
+      {worksheet.directions && (
+        <section className="worksheet-directions">
+          <strong>Directions:</strong>
+          <p>{worksheet.directions}</p>
+        </section>
+      )}
+
+      {/* Reading Passage */}
+      {worksheet.passage && (
+        <section className="worksheet-passage">
+          <div className="passage-label">Reading Passage</div>
+
+          {worksheet.passage.image && (
+            <div className="passage-image">
+              <img src={worksheet.passage.image} alt="Passage illustration" />
+            </div>
+          )}
+
+          <h3>{worksheet.passage.title}</h3>
+
+          {worksheet.passage.text.split("\n\n").map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+        </section>
+      )}
+
+      {/* Questions */}
+      <section className="worksheet-questions">
+        {worksheet.questions.map((q, i) => (
+          <ProfessionalQuestionRenderer key={i} question={q} />
+        ))}
+      </section>
+
+      {/* Footer */}
+      <footer className="worksheet-footer">
+        <p>EduCAP – Educational Comprehensive Assessment Platform</p>
+        <p>© {new Date().getFullYear()} Bush Hills STEAM Academy</p>
+      </footer>
+    </div>
+  );
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Layers, Send, Download, Copy, Eye, Trash2 } from "lucide-react";
+import { Loader2, Plus, Layers, Send, Download, Copy, Eye, Trash2, X, ChevronDown, Check } from "lucide-react";
 
 export default function ForgeBuilderTab() {
   const { toast } = useToast();
@@ -23,8 +23,10 @@ export default function ForgeBuilderTab() {
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
   const [selectedStandardIds, setSelectedStandardIds] = useState<number[]>([]);
   const [dokFilter, setDokFilter] = useState<string>("all");
-  const [standardFilter, setStandardFilter] = useState<string>("all");
+  const [selectedStandardFilters, setSelectedStandardFilters] = useState<number[]>([]);
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
+  const [gradeFilter, setGradeFilter] = useState<string>("all");
+  const [standardDropdownOpen, setStandardDropdownOpen] = useState(false);
   const [expandedAssessmentId, setExpandedAssessmentId] = useState<number | null>(null);
   const [publishTargetGrades, setPublishTargetGrades] = useState<number[]>([]);
 
@@ -199,9 +201,38 @@ export default function ForgeBuilderTab() {
     return acc;
   }, {});
 
+  const gradeFilteredStandards = standards.filter((s: any) => {
+    if (gradeFilter !== "all" && s.gradeLevel !== parseInt(gradeFilter)) return false;
+    if (subjectFilter !== "all") {
+      const domain = ((s.domain || "") + " " + (s.code || "")).toLowerCase();
+      if (subjectFilter === "ELA" && !domain.includes("ela") && !domain.includes("reading") && !domain.includes("writing") && !domain.includes("language") && !domain.includes("rl") && !domain.includes("ri") && !domain.includes("w.") && !domain.includes("l.")) return false;
+      if (subjectFilter === "Math" && !domain.includes("math") && !domain.includes("ns") && !domain.includes("rp") && !domain.includes("ee") && !domain.includes("g.") && !domain.includes("sp") && !domain.includes("f.")) return false;
+    }
+    return true;
+  });
+
+  const toggleStandardFilter = (id: number) => {
+    setSelectedStandardFilters((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllFilteredStandards = () => {
+    const ids = gradeFilteredStandards.map((s: any) => s.id);
+    setSelectedStandardFilters(ids);
+  };
+
+  const clearStandardFilters = () => {
+    setSelectedStandardFilters([]);
+  };
+
   const filteredItems = approvedItems.filter((item: any) => {
     if (dokFilter !== "all" && item.dokLevel !== parseInt(dokFilter)) return false;
-    if (standardFilter !== "all" && item.standardId !== parseInt(standardFilter)) return false;
+    if (selectedStandardFilters.length > 0 && !selectedStandardFilters.includes(item.standardId)) return false;
+    if (gradeFilter !== "all" && standards.length > 0) {
+      const std = standardMap[item.standardId];
+      if (std && std.gradeLevel !== parseInt(gradeFilter)) return false;
+    }
     if (subjectFilter !== "all" && standards.length > 0) {
       const std = standardMap[item.standardId];
       if (!std) return true;
@@ -357,24 +388,22 @@ export default function ForgeBuilderTab() {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-end gap-4">
             <div>
-              <Label className="text-xs text-gray-500">Standard Filter</Label>
-              <Select value={standardFilter} onValueChange={setStandardFilter}>
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="All Standards" />
+              <Label className="text-xs text-gray-500">Grade Level</Label>
+              <Select value={gradeFilter} onValueChange={(v) => { setGradeFilter(v); setSelectedStandardFilters([]); }}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="All Grades" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Standards</SelectItem>
-                  {standards.map((s: any) => (
-                    <SelectItem key={s.id} value={String(s.id)}>
-                      {s.code}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="all">All Grades</SelectItem>
+                  <SelectItem value="6">Grade 6</SelectItem>
+                  <SelectItem value="7">Grade 7</SelectItem>
+                  <SelectItem value="8">Grade 8</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label className="text-xs text-gray-500">Subject</Label>
-              <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+              <Select value={subjectFilter} onValueChange={(v) => { setSubjectFilter(v); setSelectedStandardFilters([]); }}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
@@ -400,12 +429,44 @@ export default function ForgeBuilderTab() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="relative">
+              <Label className="text-xs text-gray-500">Standards</Label>
+              <MultiStandardSelect
+                standards={gradeFilteredStandards}
+                selected={selectedStandardFilters}
+                onToggle={toggleStandardFilter}
+                onSelectAll={selectAllFilteredStandards}
+                onClear={clearStandardFilters}
+                open={standardDropdownOpen}
+                setOpen={setStandardDropdownOpen}
+              />
+            </div>
             <div className="ml-auto">
               <Badge variant="outline" className="border-indigo-300 text-indigo-700 px-3 py-1">
                 EduCAP Question Bank: {approvedItems.length} approved items
               </Badge>
             </div>
           </div>
+          {selectedStandardFilters.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <span className="text-xs text-gray-500 self-center mr-1">{selectedStandardFilters.length} standard{selectedStandardFilters.length !== 1 ? "s" : ""} selected:</span>
+              {selectedStandardFilters.slice(0, 12).map((id) => {
+                const std = standardMap[id];
+                return (
+                  <Badge key={id} variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 gap-1 pr-1">
+                    {std?.code || `#${id}`}
+                    <button onClick={() => toggleStandardFilter(id)} className="hover:bg-indigo-200 rounded-full p-0.5">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                );
+              })}
+              {selectedStandardFilters.length > 12 && (
+                <Badge variant="outline" className="text-xs">+{selectedStandardFilters.length - 12} more</Badge>
+              )}
+              <button onClick={clearStandardFilters} className="text-xs text-red-500 hover:text-red-700 ml-2 underline">Clear all</button>
+            </div>
+          )}
 
           <div className="border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
@@ -708,6 +769,94 @@ export default function ForgeBuilderTab() {
             )}
           </CardContent>
         </Card>
+      )}
+    </div>
+  );
+}
+
+function MultiStandardSelect({ standards, selected, onToggle, onSelectAll, onClear, open, setOpen }: {
+  standards: any[];
+  selected: number[];
+  onToggle: (id: number) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
+  open: boolean;
+  setOpen: (v: boolean) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open, setOpen]);
+
+  const filtered = standards.filter((s: any) =>
+    !search || (s.code || "").toLowerCase().includes(search.toLowerCase()) ||
+    (s.description || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const label = selected.length === 0
+    ? "All Standards"
+    : `${selected.length} selected`;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between gap-2 h-10 w-[220px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground"
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-[320px] bg-white border rounded-lg shadow-lg">
+          <div className="p-2 border-b">
+            <Input
+              placeholder="Search standards..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-8 text-sm"
+              autoFocus
+            />
+          </div>
+          <div className="flex items-center justify-between px-3 py-1.5 border-b bg-gray-50">
+            <button onClick={onSelectAll} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+              Select All ({filtered.length})
+            </button>
+            <button onClick={onClear} className="text-xs text-red-500 hover:text-red-700 font-medium">
+              Clear
+            </button>
+          </div>
+          <div className="max-h-[280px] overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="text-center text-gray-400 py-4 text-sm">No standards found</p>
+            ) : (
+              filtered.map((s: any) => (
+                <label
+                  key={s.id}
+                  className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-indigo-50 text-sm ${
+                    selected.includes(s.id) ? "bg-indigo-50" : ""
+                  }`}
+                >
+                  <Checkbox
+                    checked={selected.includes(s.id)}
+                    onCheckedChange={() => onToggle(s.id)}
+                    className="h-4 w-4"
+                  />
+                  <span className="font-mono font-medium text-indigo-700 text-xs min-w-[70px]">{s.code}</span>
+                  <span className="text-gray-600 text-xs truncate">{s.description?.slice(0, 60)}</span>
+                </label>
+              ))
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

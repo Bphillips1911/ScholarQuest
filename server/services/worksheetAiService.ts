@@ -388,3 +388,57 @@ Return ONLY valid JSON (no markdown, no extra text). Use this exact structure:
     correctAnswers: item.correctAnswers || undefined,
   }));
 }
+
+async function callGeminiRaw(prompt: string): Promise<string> {
+  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
+  const url = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 8192,
+      },
+    }),
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Gemini API error ${resp.status}: ${errText}`);
+  }
+  const data = await resp.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini returned empty content for illustration");
+  return text;
+}
+
+export async function generatePassageIllustrationSVG(passageTitle: string, passageText: string): Promise<string | null> {
+  const prompt = `
+Create a simple, student-friendly SVG illustration for this reading passage.
+Rules:
+- Output ONLY raw SVG markup (no backticks, no markdown, no explanation).
+- Size: width="900" height="320"
+- Use simple shapes (rect, circle, line, path, polygon) and 2-4 colors.
+- No text elements inside the SVG at all.
+- Make it appropriate for grades 6-8.
+- Keep it clean and minimal.
+
+TITLE: ${passageTitle}
+STORY (excerpt): ${String(passageText).slice(0, 900)}
+`;
+
+  try {
+    const raw = await callGeminiRaw(prompt);
+    let cleaned = String(raw).replace(/```xml\s*/gi, "").replace(/```svg\s*/gi, "").replace(/```\s*/g, "").trim();
+    const match = cleaned.match(/<svg[\s\S]*<\/svg>/i);
+    if (!match) {
+      console.warn("[Illustration] Gemini did not return valid SVG. Raw (first 300):", cleaned.substring(0, 300));
+      return null;
+    }
+    return match[0];
+  } catch (e: any) {
+    console.warn("[Illustration] Generation error:", e.message);
+    return null;
+  }
+}

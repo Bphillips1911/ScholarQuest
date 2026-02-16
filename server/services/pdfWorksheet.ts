@@ -3,8 +3,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const SVGtoPDF = require("svg-to-pdfkit");
-const { buildVisualSVG } = require("./visuals/worksheetVisuals");
+const { svgToPngBuffer } = require("./pdf/svgRender");
+const { numberLineSVG, barChartSVG, tableSVG, coordinatePlaneSVG } = require("./pdf/visuals");
 
 const BRAND_BLUE = "#3B5BDB";
 const BRAND_LIGHT = "#E8EDFF";
@@ -13,6 +13,18 @@ const BRAND_DARK = "#1E3A8A";
 const WORKSHEET_TITLE = "EduCAP Worksheet";
 const SCHOOL_LINE = "Bush Hills STEAM Academy";
 const TAGLINE_LINE = "Full STEAM Ahead";
+
+const VISUALS_ON = String(process.env.PDF_VISUALS_ENABLED || "true") === "true";
+const ILLUSTRATIONS_ON = String(process.env.PDF_READING_ILLUSTRATIONS_ENABLED || "true") === "true";
+
+function sanitizeHeaderText(input: any): string {
+  const s = String(input ?? "");
+  if (s.includes("\u00D8") || s.includes("\u00DC") || s.includes("\u00D6")) return "Reading Passage";
+  return s
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .replace(/[^\x20-\x7E]/g, "")
+    .trim();
+}
 
 function getLogoPath(): string | null {
   const candidates = [
@@ -26,8 +38,43 @@ function getLogoPath(): string | null {
   return null;
 }
 
-function drawSvg(doc: any, svgString: string, x: number, y: number, w: number) {
-  SVGtoPDF(doc, svgString, x, y, { width: w });
+function buildVisualPng(item: any): Buffer | null {
+  if (!item?.visual || item.visual.type === "none") return null;
+  let svg: string | null = null;
+  try {
+    switch (item.visual.type) {
+      case "number_line":
+        svg = numberLineSVG(item.visual);
+        break;
+      case "bar_chart":
+        svg = barChartSVG(item.visual);
+        break;
+      case "table":
+        svg = tableSVG(item.visual);
+        break;
+      case "coordinate_plane":
+        svg = coordinatePlaneSVG(item.visual);
+        break;
+    }
+    if (!svg) return null;
+    return svgToPngBuffer(svg);
+  } catch (e: any) {
+    console.warn("[PDF] SVG->PNG conversion error:", e.message);
+    return null;
+  }
+}
+
+async function generatePassageIllustrationPng(title: string, passage: string): Promise<Buffer | null> {
+  if (!ILLUSTRATIONS_ON) return null;
+  try {
+    const { generatePassageIllustrationSVG } = await import("./worksheetAiService");
+    const svg = await generatePassageIllustrationSVG(title, passage);
+    if (!svg) return null;
+    return svgToPngBuffer(svg);
+  } catch (e: any) {
+    console.warn("[PDF] Passage illustration error:", e.message);
+    return null;
+  }
 }
 
 export async function renderWorksheetPdf(opts: {
@@ -77,21 +124,21 @@ export async function renderWorksheetPdf(opts: {
   }
 
   doc.fillColor("#FFFFFF").fontSize(20).font("Helvetica-Bold")
-    .text(WORKSHEET_TITLE, headerTextX, 18, { width: contentWidth - 70 });
+    .text(sanitizeHeaderText(WORKSHEET_TITLE), headerTextX, 18, { width: contentWidth - 70 });
   doc.moveDown(0.2);
 
   doc.fillColor("#FFFFFF").fontSize(8).font("Helvetica")
-    .text(SCHOOL_LINE, pageWidth - marginRight - 160, 18, { width: 160, align: "right" });
-  doc.text(TAGLINE_LINE, pageWidth - marginRight - 160, 30, { width: 160, align: "right" });
+    .text(sanitizeHeaderText(SCHOOL_LINE), pageWidth - marginRight - 160, 18, { width: 160, align: "right" });
+  doc.text(sanitizeHeaderText(TAGLINE_LINE), pageWidth - marginRight - 160, 30, { width: 160, align: "right" });
 
   doc.y = 90;
   doc.fillColor("#000");
 
   doc.rect(marginLeft, doc.y, contentWidth, 40).fill(BRAND_LIGHT);
   doc.fillColor(BRAND_DARK).fontSize(12).font("Helvetica-Bold")
-    .text(`${WORKSHEET_TITLE} \u2014 ${opts.subject} G${opts.grade}`, marginLeft + 10, doc.y + 5, { width: contentWidth - 20 });
+    .text(sanitizeHeaderText(`${WORKSHEET_TITLE} - ${opts.subject} G${opts.grade}`), marginLeft + 10, doc.y + 5, { width: contentWidth - 20 });
   doc.fontSize(9).font("Helvetica").fillColor("#444")
-    .text(`Subject: ${opts.subject}   |   Grade: ${opts.grade}   |   DOK Level: ${opts.dokLevel}   |   Standard: ${opts.standardCode}`, marginLeft + 10, doc.y + 22, { width: contentWidth - 20 });
+    .text(sanitizeHeaderText(`Subject: ${opts.subject}   |   Grade: ${opts.grade}   |   DOK Level: ${opts.dokLevel}   |   Standard: ${opts.standardCode}`), marginLeft + 10, doc.y + 22, { width: contentWidth - 20 });
 
   doc.y += 48;
   doc.fillColor("#000");
@@ -105,14 +152,27 @@ export async function renderWorksheetPdf(opts: {
   doc.fillColor("#000");
 
   const passageText = getSharedPassage(opts.items);
+  const passageTitle = getSharedPassageTitle(opts.items);
   if (passageText) {
     if (doc.y > doc.page.height - 250) doc.addPage();
 
     doc.rect(marginLeft, doc.y, contentWidth, 18).fill(BRAND_BLUE);
     doc.fillColor("#FFF").fontSize(10).font("Helvetica-Bold")
-      .text("  \u{1F4D6}  Reading Passage", marginLeft + 6, doc.y + 3);
+      .text(sanitizeHeaderText("Reading Passage"), marginLeft + 6, doc.y + 3);
     doc.y += 22;
     doc.fillColor("#000");
+
+    if (ILLUSTRATIONS_ON) {
+      try {
+        const illPng = await generatePassageIllustrationPng(passageTitle || "Reading Passage", passageText);
+        if (illPng) {
+          doc.image(illPng, marginLeft, doc.y, { width: contentWidth });
+          doc.y += 190 + 12;
+        }
+      } catch (e: any) {
+        console.warn("[PDF] Illustration embed error:", e.message);
+      }
+    }
 
     doc.rect(marginLeft, doc.y, contentWidth, 0).fill("#F8F9FA");
     const passageStartY = doc.y;
@@ -130,7 +190,7 @@ export async function renderWorksheetPdf(opts: {
 
   opts.items.forEach((it, idx) => {
     const itemType = it.type || "multiple_choice";
-    const hasVisual = !!(it.visual || it.diagramDescription);
+    const hasVisual = !!(it.visual && it.visual.type && it.visual.type !== "none");
     const needsSpace = itemType === "text_dependent_writing" ? 300 :
                        itemType === "short_response" ? 200 :
                        (hasVisual ? 280 : 120);
@@ -138,31 +198,21 @@ export async function renderWorksheetPdf(opts: {
       doc.addPage();
     }
 
-    const svgVisual = buildVisualSVG(it);
-    if (svgVisual) {
-      try {
-        const x = marginLeft;
-        const y = doc.y + 6;
-        drawSvg(doc, svgVisual, x, y, contentWidth);
-        doc.y = y + 140;
-        doc.moveDown(0.5);
-      } catch (e: any) {
-        console.warn(`[PDF] SVG render error for Q${idx + 1}:`, e.message);
-        if (it.diagramDescription) {
-          doc.rect(marginLeft + 20, doc.y, contentWidth - 40, 0);
-          const diagStartY = doc.y;
-          doc.fontSize(9).font("Helvetica-Bold").fillColor(BRAND_DARK)
-            .text(`[Visual for Question ${idx + 1}]`, marginLeft + 26, doc.y + 4);
-          doc.fontSize(9).font("Helvetica").fillColor("#555")
-            .text(it.diagramDescription, marginLeft + 26, doc.y + 4, { width: contentWidth - 60, lineGap: 2 });
-          const diagEndY = doc.y + 6;
-          doc.rect(marginLeft + 20, diagStartY, contentWidth - 40, diagEndY - diagStartY)
-            .lineWidth(0.5).dash(3, { space: 3 }).stroke("#888");
-          doc.undash();
-          doc.y = diagEndY + 6;
-          doc.fillColor("#000");
+    if (VISUALS_ON && hasVisual) {
+      const png = buildVisualPng(it);
+      if (png) {
+        try {
+          doc.image(png, marginLeft, doc.y + 6, { width: contentWidth });
+          doc.y += 160 + 12;
+        } catch (e: any) {
+          console.warn(`[PDF] Visual embed error for Q${idx + 1}:`, e.message);
+          renderFallbackDiagram(doc, it, idx, marginLeft, contentWidth);
         }
+      } else {
+        renderFallbackDiagram(doc, it, idx, marginLeft, contentWidth);
       }
+    } else if (it.diagramDescription && !hasVisual) {
+      renderFallbackDiagram(doc, it, idx, marginLeft, contentWidth);
     }
 
     if (itemType === "text_dependent_writing") {
@@ -170,7 +220,7 @@ export async function renderWorksheetPdf(opts: {
 
       doc.rect(marginLeft, doc.y, contentWidth, 22).fill("#4338CA");
       doc.fillColor("#FFF").fontSize(11).font("Helvetica-Bold")
-        .text(`  \u270D  Text-Dependent Writing \u2014 Question ${idx + 1}`, marginLeft + 6, doc.y + 4);
+        .text(sanitizeHeaderText(`Text-Dependent Writing - Question ${idx + 1}`), marginLeft + 6, doc.y + 4);
       doc.y += 26;
       doc.fillColor("#000");
 
@@ -212,7 +262,7 @@ export async function renderWorksheetPdf(opts: {
         .text("     (Select ALL that apply)", { indent: 10 });
       doc.moveDown(0.2);
       Object.entries(it.options || {}).forEach(([k, v]) => {
-        doc.fontSize(10).fillColor("#333").text(`     \u25A1  ${k})  ${v}`, { indent: 10 });
+        doc.fontSize(10).fillColor("#333").text(`     [ ]  ${k})  ${v}`, { indent: 10 });
       });
       doc.moveDown(0.5);
     } else {
@@ -238,9 +288,9 @@ export async function renderWorksheetPdf(opts: {
 
     doc.rect(0, 0, pageWidth, 50).fill(BRAND_BLUE);
     doc.fillColor("#FFF").fontSize(16).font("Helvetica-Bold")
-      .text("Answer Key", marginLeft, 14);
+      .text(sanitizeHeaderText("Answer Key"), marginLeft, 14);
     doc.fontSize(9).font("Helvetica")
-      .text(`${WORKSHEET_TITLE} \u2014 ${opts.subject} G${opts.grade}  |  ${opts.standardCode}`, marginLeft, 34);
+      .text(sanitizeHeaderText(`${WORKSHEET_TITLE} - ${opts.subject} G${opts.grade}  |  ${opts.standardCode}`), marginLeft, 34);
 
     doc.y = 60;
     doc.fillColor("#000");
@@ -275,7 +325,7 @@ export async function renderWorksheetPdf(opts: {
         doc.fillColor(BRAND_DARK).fontSize(11).font("Helvetica-Bold")
           .text(`${idx + 1}. ${it.correctAnswer}`, marginLeft + 6, rowY, { continued: true });
         doc.font("Helvetica").fillColor("#555")
-          .text(`   \u2014  ${it.rationale || ""}`);
+          .text(`   --  ${it.rationale || ""}`);
         doc.moveDown(0.2);
       }
     });
@@ -283,7 +333,7 @@ export async function renderWorksheetPdf(opts: {
 
   const footerY = doc.page.height - 30;
   doc.fontSize(7).fillColor("#999").font("Helvetica")
-    .text(`${WORKSHEET_TITLE} \u2014 ${SCHOOL_LINE}  |  ${TAGLINE_LINE}  |  Generated by AI  |  For instructional use only`, marginLeft, footerY, {
+    .text(sanitizeHeaderText(`${WORKSHEET_TITLE} - ${SCHOOL_LINE}  |  ${TAGLINE_LINE}  |  Generated by AI  |  For instructional use only`), marginLeft, footerY, {
       width: contentWidth,
       align: "center",
     });
@@ -292,10 +342,34 @@ export async function renderWorksheetPdf(opts: {
   return done;
 }
 
+function renderFallbackDiagram(doc: any, it: any, idx: number, marginLeft: number, contentWidth: number) {
+  if (!it.diagramDescription) return;
+  const diagStartY = doc.y;
+  doc.fontSize(9).font("Helvetica-Bold").fillColor(BRAND_DARK)
+    .text(`[Visual for Question ${idx + 1}]`, marginLeft + 26, doc.y + 4);
+  doc.fontSize(9).font("Helvetica").fillColor("#555")
+    .text(it.diagramDescription, marginLeft + 26, doc.y + 4, { width: contentWidth - 60, lineGap: 2 });
+  const diagEndY = doc.y + 6;
+  doc.rect(marginLeft + 20, diagStartY, contentWidth - 40, diagEndY - diagStartY)
+    .lineWidth(0.5).dash(3, { space: 3 }).stroke("#888");
+  doc.undash();
+  doc.y = diagEndY + 6;
+  doc.fillColor("#000");
+}
+
 function getSharedPassage(items: any[]): string | null {
   for (const it of items) {
     if (it.passage) {
       return typeof it.passage === 'object' ? it.passage.text : it.passage;
+    }
+  }
+  return null;
+}
+
+function getSharedPassageTitle(items: any[]): string | null {
+  for (const it of items) {
+    if (it.passage && typeof it.passage === 'object' && it.passage.title) {
+      return it.passage.title;
     }
   }
   return null;

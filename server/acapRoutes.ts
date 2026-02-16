@@ -15,11 +15,15 @@ import {
   acapItems,
   acapStandards,
   acapWorksheets,
+  worksheetTemplates,
+  worksheetAssignments,
+  worksheetSubmissions,
+  scholars,
 } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, desc } from "drizzle-orm";
 
 const docUploadDir = path.join(process.cwd(), 'uploads', 'documents');
 fs.mkdir(docUploadDir, { recursive: true }).catch(() => {});
@@ -2924,49 +2928,154 @@ export function registerAcapRoutes(app: Express): void {
     }
   });
 
+  // ===== PREVIEW SAMPLES (3 items) =====
+  app.post("/api/acap/worksheets/preview", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const { subject, grade, standardCode, dokLevel, language, includeTextDependentWriting, config } = req.body;
+      if (!subject || !grade || !standardCode || !dokLevel) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const std = await db.select().from(acapStandards).where(eq(acapStandards.code, standardCode)).limit(1);
+      const standardDescription = std[0]?.description || standardCode;
+      const domain = std[0]?.domain || "";
+
+      let questions: any[];
+      let usedFallback = false;
+      try {
+        questions = await generateWorksheetItems({
+          subject, grade, standardCode, standardDescription,
+          dokLevel, itemCount: 3, language: language || "en",
+          includeTextDependentWriting: !!includeTextDependentWriting,
+        });
+      } catch (err: any) {
+        console.error("[Preview] AI failed, using fallback:", err.message);
+        questions = (await import("./services/worksheetAiService")).generateFallbackItems({
+          subject, grade, standardCode, standardDescription,
+          dokLevel, itemCount: 3, language: language || "en",
+        });
+        usedFallback = true;
+      }
+
+      const tags: string[] = [];
+      if (standardDescription.toLowerCase().includes("fraction")) tags.push("Fractions");
+      if (standardDescription.toLowerCase().includes("word problem")) tags.push("Word problems");
+      if (standardDescription.toLowerCase().includes("visual") || standardDescription.toLowerCase().includes("model")) tags.push("Visual models");
+      if (standardDescription.toLowerCase().includes("data")) tags.push("Data analysis");
+      if (domain) tags.push(domain);
+      if (tags.length === 0) tags.push(standardDescription.split(" ").slice(0, 3).join(" "));
+
+      res.json({
+        questions,
+        coverage: { tags, standardCode, description: standardDescription },
+        usedFallback,
+      });
+    } catch (error: any) {
+      console.error("Preview error:", error);
+      res.status(500).json({ error: "Preview generation failed" });
+    }
+  });
+
+  // ===== GENERATE FULL WORKSHEET (with config options, batch, variants) =====
   app.post("/api/acap/worksheets", authenticateWorksheetUser, async (req: any, res: Response) => {
     try {
-      const { title, subject, grade, standardCode, dokLevel, itemCount, language, includeTextDependentWriting } = req.body;
+      const {
+        title, subject, grade, standardCode, dokLevel, itemCount, language,
+        includeTextDependentWriting, config: worksheetConfig,
+        batchCount, differentiation,
+      } = req.body;
+
       if (!title || !subject || !grade || !standardCode || !dokLevel || !itemCount) {
         return res.status(400).json({ error: "Missing required fields" });
       }
-      const std = await db.select().from(acapStandards)
-        .where(eq(acapStandards.code, standardCode))
-        .limit(1);
+
+      const std = await db.select().from(acapStandards).where(eq(acapStandards.code, standardCode)).limit(1);
       const standardDescription = std[0]?.description || standardCode;
 
-      let items: any[];
-      let usedFallback = false;
-      try {
-        items = await generateWorksheetItems({
-          subject, grade, standardCode, standardDescription,
-          dokLevel, itemCount, language: language || "en",
-          includeTextDependentWriting: !!includeTextDependentWriting,
-        });
-      } catch (genError: any) {
-        console.error("[Worksheet] Generation completely failed:", genError.message);
-        return res.status(500).json({ error: "Worksheet generation failed. Please try again.", details: genError.message });
+      const effectiveBatchCount = Math.min(batchCount || 1, 10);
+      const variants = differentiation?.enabled && differentiation?.variants?.length
+        ? differentiation.variants.slice(0, 3) : [null];
+
+      const results: any[] = [];
+      let anyFallback = false;
+
+      for (let bIdx = 0; bIdx < effectiveBatchCount; bIdx++) {
+        for (const variant of variants) {
+          let items: any[];
+          let usedFallback = false;
+          try {
+            items = await generateWorksheetItems({
+              subject, grade, standardCode, standardDescription,
+              dokLevel, itemCount, language: language || "en",
+              includeTextDependentWriting: !!includeTextDependentWriting,
+            });
+          } catch (genError: any) {
+            console.error("[Worksheet] Generation failed:", genError.message);
+            items = (await import("./services/worksheetAiService")).generateFallbackItems({
+              subject, grade, standardCode, standardDescription,
+              dokLevel, itemCount, language: language || "en",
+            });
+            usedFallback = true;
+            anyFallback = true;
+          }
+
+          const variantLabel = variant || undefined;
+          const wsTitle = variantLabel
+            ? `${title} — ${subject} G${grade} (${variantLabel})`
+            : `${title} — ${subject} G${grade}`;
+
+          const [worksheet] = await db.insert(acapWorksheets).values({
+            title: effectiveBatchCount > 1 ? `${wsTitle} #${bIdx + 1}` : wsTitle,
+            subject,
+            grade,
+            standardCode,
+            dokLevel,
+            itemCount,
+            language: language || "en",
+            items,
+            config: worksheetConfig || {},
+            variantLabel: variantLabel || null,
+            batchIndex: effectiveBatchCount > 1 ? bIdx : null,
+            usedFallback,
+            createdBy: req.user?.id || "unknown",
+          }).returning();
+
+          results.push({
+            worksheet,
+            label: variantLabel
+              ? `${effectiveBatchCount > 1 ? `Set ${bIdx + 1}` : "Set"} ${variantLabel}`
+              : effectiveBatchCount > 1 ? `Set ${bIdx + 1}` : "Worksheet",
+          });
+        }
       }
 
-      const [worksheet] = await db.insert(acapWorksheets).values({
-        title,
-        subject,
-        grade,
-        standardCode,
-        dokLevel,
-        itemCount,
-        language: language || "en",
-        items,
-        createdBy: req.user?.id || "unknown",
-      }).returning();
-
-      res.json({ worksheet, usedFallback });
+      res.json({
+        worksheets: results,
+        worksheet: results[0]?.worksheet,
+        usedFallback: anyFallback,
+        runId: `run_${Date.now()}`,
+        files: results.map((r) => ({
+          label: r.label,
+          url: `/api/acap/worksheets/${r.worksheet.id}/pdf`,
+          id: r.worksheet.id,
+        })),
+      });
     } catch (error: any) {
       console.error("Create worksheet error:", error);
       res.status(500).json({ error: error.message || "Failed to create worksheet" });
     }
   });
 
+  // ===== LIST WORKSHEETS =====
+  app.get("/api/acap/worksheets", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const rows = await db.select().from(acapWorksheets).orderBy(desc(acapWorksheets.id)).limit(100);
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load worksheets" });
+    }
+  });
+
+  // ===== PDF DOWNLOAD =====
   app.get("/api/acap/worksheets/:id/pdf", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -2974,6 +3083,8 @@ export function registerAcapRoutes(app: Express): void {
       const rows = await db.select().from(acapWorksheets).where(eq(acapWorksheets.id, id));
       if (!rows.length) return res.status(404).json({ error: "Worksheet not found" });
       const ws = rows[0];
+      const includeAnswerKey = req.query.includeAnswerKey !== "false";
+      const studentOnly = req.query.studentOnly === "true";
 
       const pdfBuf = await renderWorksheetPdf({
         title: ws.title,
@@ -2982,7 +3093,7 @@ export function registerAcapRoutes(app: Express): void {
         standardCode: ws.standardCode,
         dokLevel: ws.dokLevel,
         items: ws.items as any[],
-        includeAnswerKey: true,
+        includeAnswerKey: studentOnly ? false : includeAnswerKey,
       });
 
       const safeName = ws.title.replace(/[^a-z0-9\- ]/gi, "").trim().replace(/\s+/g, "_").slice(0, 80) || "worksheet";
@@ -2995,12 +3106,347 @@ export function registerAcapRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/acap/worksheets", authenticateWorksheetUser, async (req: any, res: Response) => {
+  // ===== SAVE TEMPLATE =====
+  app.post("/api/acap/worksheets/templates", authenticateWorksheetUser, async (req: any, res: Response) => {
     try {
-      const rows = await db.select().from(acapWorksheets).orderBy(acapWorksheets.id);
+      const { name, subject, grade, standardCode, dokLevel, itemCount, config } = req.body;
+      if (!name || !subject || !grade || !standardCode) {
+        return res.status(400).json({ error: "Template name and standard required" });
+      }
+      const [template] = await db.insert(worksheetTemplates).values({
+        name, subject, grade, standardCode, dokLevel: dokLevel || 2, itemCount: itemCount || 10,
+        config: config || {},
+        createdBy: req.user?.id || "unknown",
+        createdByRole: req.user?.role || "unknown",
+      }).returning();
+      res.json(template);
+    } catch (error: any) {
+      console.error("Save template error:", error);
+      res.status(500).json({ error: "Failed to save template" });
+    }
+  });
+
+  // ===== LIST TEMPLATES =====
+  app.get("/api/acap/worksheets/templates", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const rows = await db.select().from(worksheetTemplates).orderBy(desc(worksheetTemplates.id)).limit(50);
       res.json(rows);
     } catch (error) {
-      res.status(500).json({ error: "Failed to load worksheets" });
+      res.status(500).json({ error: "Failed to load templates" });
+    }
+  });
+
+  // ===== DELETE TEMPLATE =====
+  app.delete("/api/acap/worksheets/templates/:id", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await db.delete(worksheetTemplates).where(eq(worksheetTemplates.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete template" });
+    }
+  });
+
+  // ===== ASSIGN WORKSHEET (admin->teacher or teacher->students) =====
+  app.post("/api/acap/worksheets/assign", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const { worksheetId, assignedToType, assignedToId, assignedToGrade, title, instructions, dueDate } = req.body;
+      if (!worksheetId || !assignedToType) {
+        return res.status(400).json({ error: "Worksheet ID and assignment type required" });
+      }
+
+      const wsRows = await db.select().from(acapWorksheets).where(eq(acapWorksheets.id, worksheetId));
+      if (!wsRows.length) return res.status(404).json({ error: "Worksheet not found" });
+
+      const [assignment] = await db.insert(worksheetAssignments).values({
+        worksheetId,
+        assignedById: req.user?.id || "unknown",
+        assignedByRole: req.user?.role || "unknown",
+        assignedToType,
+        assignedToId: assignedToId || null,
+        assignedToGrade: assignedToGrade || null,
+        title: title || wsRows[0].title,
+        instructions: instructions || null,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        status: "active",
+      }).returning();
+
+      res.json(assignment);
+    } catch (error: any) {
+      console.error("Assign worksheet error:", error);
+      res.status(500).json({ error: "Failed to assign worksheet" });
+    }
+  });
+
+  // ===== LIST ASSIGNMENTS (for admin/teacher) =====
+  app.get("/api/acap/worksheets/assignments", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      const role = req.user?.role;
+      let rows;
+      if (role === "admin" || role === "principal") {
+        rows = await db.select().from(worksheetAssignments).orderBy(desc(worksheetAssignments.id)).limit(100);
+      } else {
+        rows = await db.select().from(worksheetAssignments)
+          .where(eq(worksheetAssignments.assignedToId, userId || ""))
+          .orderBy(desc(worksheetAssignments.id)).limit(100);
+      }
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load assignments" });
+    }
+  });
+
+  // ===== STUDENT: GET MY ASSIGNED WORKSHEETS =====
+  app.get("/api/acap/worksheets/my-assignments", async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return res.status(401).json({ error: "No token" });
+      const token = authHeader.replace("Bearer ", "");
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET || "bhsa-secret-key-2024");
+      } catch {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+
+      const scholarId = decoded.id || decoded.scholarId;
+      if (!scholarId) return res.status(401).json({ error: "Invalid student token" });
+
+      const scholarRows = await db.select().from(scholars).where(eq(scholars.id, scholarId)).limit(1);
+      if (!scholarRows.length) return res.status(404).json({ error: "Scholar not found" });
+      const scholar = scholarRows[0];
+
+      const allAssignments = await db.select().from(worksheetAssignments)
+        .where(eq(worksheetAssignments.status, "active"))
+        .orderBy(desc(worksheetAssignments.id));
+
+      const myAssignments = allAssignments.filter((a) => {
+        if (a.assignedToType === "scholar" && a.assignedToId === scholarId) return true;
+        if (a.assignedToType === "grade" && a.assignedToGrade === scholar.grade) return true;
+        if (a.assignedToType === "teacher" && a.assignedToId === scholar.teacherId) return true;
+        if (a.assignedToType === "all") return true;
+        return false;
+      });
+
+      const existingSubmissions = await db.select().from(worksheetSubmissions)
+        .where(eq(worksheetSubmissions.scholarId, scholarId));
+      const submissionMap = new Map(existingSubmissions.map(s => [s.assignmentId, s]));
+
+      const enriched = [];
+      for (const a of myAssignments) {
+        const wsRows = await db.select().from(acapWorksheets).where(eq(acapWorksheets.id, a.worksheetId)).limit(1);
+        const ws = wsRows[0];
+        const submission = submissionMap.get(a.id);
+        enriched.push({
+          assignment: a,
+          worksheet: ws ? { id: ws.id, title: ws.title, subject: ws.subject, grade: ws.grade, standardCode: ws.standardCode, dokLevel: ws.dokLevel, itemCount: ws.itemCount } : null,
+          submission: submission ? { id: submission.id, status: submission.status, score: submission.score, totalPoints: submission.totalPoints, percentage: submission.percentage } : null,
+        });
+      }
+
+      res.json(enriched);
+    } catch (error: any) {
+      console.error("My assignments error:", error);
+      res.status(500).json({ error: "Failed to load assignments" });
+    }
+  });
+
+  // ===== STUDENT: GET WORKSHEET FOR TAKING =====
+  app.get("/api/acap/worksheets/:id/take", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const rows = await db.select().from(acapWorksheets).where(eq(acapWorksheets.id, id));
+      if (!rows.length) return res.status(404).json({ error: "Worksheet not found" });
+      const ws = rows[0];
+      const studentItems = (ws.items as any[]).map((item: any, idx: number) => ({
+        index: idx,
+        stem: item.stem,
+        passage: item.passage,
+        diagramDescription: item.diagramDescription,
+        options: item.options || {},
+        type: item.type || "multiple_choice",
+        passageReference: item.passageReference,
+        linesProvided: item.linesProvided,
+        visual: item.visual,
+      }));
+      res.json({
+        id: ws.id,
+        title: ws.title,
+        subject: ws.subject,
+        grade: ws.grade,
+        standardCode: ws.standardCode,
+        dokLevel: ws.dokLevel,
+        itemCount: ws.itemCount,
+        items: studentItems,
+      });
+    } catch (error: any) {
+      console.error("Take worksheet error:", error);
+      res.status(500).json({ error: "Failed to load worksheet" });
+    }
+  });
+
+  // ===== STUDENT: SUBMIT WORKSHEET RESPONSES =====
+  app.post("/api/acap/worksheets/:assignmentId/submit", async (req: Request, res: Response) => {
+    try {
+      const assignmentId = parseInt(req.params.assignmentId);
+      if (isNaN(assignmentId)) return res.status(400).json({ error: "Invalid assignment ID" });
+
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return res.status(401).json({ error: "No token" });
+      const token = authHeader.replace("Bearer ", "");
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET || "bhsa-secret-key-2024");
+      } catch {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+      const scholarId = decoded.id || decoded.scholarId;
+      if (!scholarId) return res.status(401).json({ error: "Invalid student token" });
+
+      const assignmentRows = await db.select().from(worksheetAssignments).where(eq(worksheetAssignments.id, assignmentId));
+      if (!assignmentRows.length) return res.status(404).json({ error: "Assignment not found" });
+
+      const wsRows = await db.select().from(acapWorksheets).where(eq(acapWorksheets.id, assignmentRows[0].worksheetId));
+      if (!wsRows.length) return res.status(404).json({ error: "Worksheet not found" });
+      const worksheetItems = wsRows[0].items as any[];
+
+      const { responses } = req.body;
+      if (!responses || !Array.isArray(responses)) {
+        return res.status(400).json({ error: "Responses array required" });
+      }
+
+      const existing = await db.select().from(worksheetSubmissions)
+        .where(and(eq(worksheetSubmissions.assignmentId, assignmentId), eq(worksheetSubmissions.scholarId, scholarId)));
+      if (existing.length && existing[0].status === "completed") {
+        return res.status(400).json({ error: "Already submitted", submission: existing[0] });
+      }
+
+      let score = 0;
+      let totalPoints = 0;
+      const gradedResponses = responses.map((r: any) => {
+        const itemIdx = r.itemIndex;
+        const item = worksheetItems[itemIdx];
+        if (!item) return { ...r, isCorrect: false, points: 0 };
+
+        totalPoints += 1;
+        let isCorrect = false;
+
+        if (item.type === "multiple_select" && item.correctAnswers) {
+          const studentAnswers = Array.isArray(r.answer) ? r.answer.sort() : [r.answer];
+          const correctAnswers = [...item.correctAnswers].sort();
+          isCorrect = JSON.stringify(studentAnswers) === JSON.stringify(correctAnswers);
+        } else if (item.type === "short_response" || item.type === "text_dependent_writing") {
+          isCorrect = r.answer && String(r.answer).trim().length > 10;
+        } else {
+          isCorrect = String(r.answer).toUpperCase().trim() === String(item.correctAnswer).toUpperCase().trim();
+        }
+
+        if (isCorrect) score++;
+        return { ...r, isCorrect, points: isCorrect ? 1 : 0, correctAnswer: item.correctAnswer };
+      });
+
+      const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
+
+      if (existing.length) {
+        await db.update(worksheetSubmissions)
+          .set({ responses: gradedResponses, score, totalPoints, percentage, status: "completed", submittedAt: new Date() })
+          .where(eq(worksheetSubmissions.id, existing[0].id));
+        const updated = await db.select().from(worksheetSubmissions).where(eq(worksheetSubmissions.id, existing[0].id));
+        return res.json({ submission: updated[0], gradedResponses });
+      }
+
+      const [submission] = await db.insert(worksheetSubmissions).values({
+        assignmentId,
+        scholarId,
+        responses: gradedResponses,
+        score,
+        totalPoints,
+        percentage,
+        status: "completed",
+        submittedAt: new Date(),
+      }).returning();
+
+      res.json({ submission, gradedResponses });
+    } catch (error: any) {
+      console.error("Submit worksheet error:", error);
+      res.status(500).json({ error: "Failed to submit worksheet" });
+    }
+  });
+
+  // ===== GET SUBMISSION RESULTS =====
+  app.get("/api/acap/worksheets/submissions/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const rows = await db.select().from(worksheetSubmissions).where(eq(worksheetSubmissions.id, id));
+      if (!rows.length) return res.status(404).json({ error: "Submission not found" });
+      res.json(rows[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load submission" });
+    }
+  });
+
+  // ===== ADMIN/TEACHER: VIEW SUBMISSIONS FOR AN ASSIGNMENT =====
+  app.get("/api/acap/worksheets/assignments/:id/submissions", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const assignmentId = parseInt(req.params.id);
+      if (isNaN(assignmentId)) return res.status(400).json({ error: "Invalid ID" });
+      const subs = await db.select().from(worksheetSubmissions)
+        .where(eq(worksheetSubmissions.assignmentId, assignmentId))
+        .orderBy(desc(worksheetSubmissions.id));
+
+      const enriched = [];
+      for (const sub of subs) {
+        const scholarRows = await db.select().from(scholars).where(eq(scholars.id, sub.scholarId)).limit(1);
+        enriched.push({
+          ...sub,
+          scholarName: scholarRows[0]?.name || "Unknown",
+          scholarGrade: scholarRows[0]?.grade,
+        });
+      }
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load submissions" });
+    }
+  });
+
+  // ===== STANDARD COVERAGE / BREAKDOWN =====
+  app.get("/api/acap/worksheets/standard-coverage/:code", async (req: Request, res: Response) => {
+    try {
+      const code = req.params.code;
+      const stdRows = await db.select().from(acapStandards).where(eq(acapStandards.code, code)).limit(1);
+      if (!stdRows.length) return res.status(404).json({ error: "Standard not found" });
+      const std = stdRows[0];
+      const description = std.description || "";
+
+      const subskills: { label: string; itemsPlanned: number }[] = [];
+      const desc = description.toLowerCase();
+      if (desc.includes("fraction")) subskills.push({ label: "Fraction operations", itemsPlanned: 3 });
+      if (desc.includes("divide") || desc.includes("division")) subskills.push({ label: "Division concepts", itemsPlanned: 3 });
+      if (desc.includes("multiply") || desc.includes("multiplication")) subskills.push({ label: "Multiplication concepts", itemsPlanned: 3 });
+      if (desc.includes("word problem")) subskills.push({ label: "Word problems", itemsPlanned: 2 });
+      if (desc.includes("model") || desc.includes("visual")) subskills.push({ label: "Visual models", itemsPlanned: 2 });
+      if (desc.includes("equation") || desc.includes("expression")) subskills.push({ label: "Equations/Expressions", itemsPlanned: 3 });
+      if (desc.includes("graph") || desc.includes("data")) subskills.push({ label: "Data analysis", itemsPlanned: 2 });
+      if (desc.includes("ratio") || desc.includes("proportion")) subskills.push({ label: "Ratios/Proportions", itemsPlanned: 3 });
+      if (desc.includes("geometry") || desc.includes("area") || desc.includes("volume")) subskills.push({ label: "Geometry concepts", itemsPlanned: 3 });
+      if (desc.includes("read") || desc.includes("text") || desc.includes("passage")) subskills.push({ label: "Reading comprehension", itemsPlanned: 3 });
+      if (desc.includes("write") || desc.includes("argument") || desc.includes("narrative")) subskills.push({ label: "Writing skills", itemsPlanned: 3 });
+      if (desc.includes("vocabulary") || desc.includes("context")) subskills.push({ label: "Vocabulary in context", itemsPlanned: 2 });
+      if (subskills.length === 0) subskills.push({ label: description.slice(0, 60), itemsPlanned: 5 });
+
+      res.json({
+        standardCode: code,
+        description: std.description,
+        domain: std.domain,
+        gradeLevel: std.gradeLevel,
+        subskills,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load standard coverage" });
     }
   });
 

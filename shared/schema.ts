@@ -1699,6 +1699,11 @@ export const acapWorksheets = pgTable("acap_worksheets", {
   itemCount: integer("item_count").notNull(),
   language: varchar("language", { length: 10 }).notNull().default("en"),
   items: jsonb("items").$type<any[]>().notNull().default([]),
+  config: jsonb("config").$type<Record<string, any>>().default({}),
+  variantLabel: varchar("variant_label", { length: 10 }),
+  batchIndex: integer("batch_index"),
+  coverage: jsonb("coverage").$type<Record<string, any>>(),
+  usedFallback: boolean("used_fallback").default(false),
   createdBy: varchar("created_by"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -1706,6 +1711,63 @@ export const acapWorksheets = pgTable("acap_worksheets", {
 export const insertAcapWorksheetSchema = createInsertSchema(acapWorksheets).omit({ id: true, createdAt: true });
 export type AcapWorksheet = typeof acapWorksheets.$inferSelect;
 export type InsertAcapWorksheet = z.infer<typeof insertAcapWorksheetSchema>;
+
+// ===== WORKSHEET TEMPLATES (saved generation configs) =====
+export const worksheetTemplates = pgTable("worksheet_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  subject: varchar("subject", { length: 50 }).notNull(),
+  grade: integer("grade").notNull(),
+  standardCode: varchar("standard_code", { length: 50 }).notNull(),
+  dokLevel: integer("dok_level").notNull(),
+  itemCount: integer("item_count").notNull(),
+  config: jsonb("config").$type<Record<string, any>>().notNull().default({}),
+  createdBy: varchar("created_by"),
+  createdByRole: varchar("created_by_role", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWorksheetTemplateSchema = createInsertSchema(worksheetTemplates).omit({ id: true, createdAt: true });
+export type WorksheetTemplate = typeof worksheetTemplates.$inferSelect;
+export type InsertWorksheetTemplate = z.infer<typeof insertWorksheetTemplateSchema>;
+
+// ===== WORKSHEET ASSIGNMENTS (admin->teacher, teacher->students) =====
+export const worksheetAssignments = pgTable("worksheet_assignments", {
+  id: serial("id").primaryKey(),
+  worksheetId: integer("worksheet_id").notNull().references(() => acapWorksheets.id),
+  assignedById: varchar("assigned_by_id").notNull(),
+  assignedByRole: varchar("assigned_by_role", { length: 20 }).notNull(),
+  assignedToType: varchar("assigned_to_type", { length: 20 }).notNull(),
+  assignedToId: varchar("assigned_to_id"),
+  assignedToGrade: integer("assigned_to_grade"),
+  title: text("title"),
+  instructions: text("instructions"),
+  dueDate: timestamp("due_date"),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWorksheetAssignmentSchema = createInsertSchema(worksheetAssignments).omit({ id: true, createdAt: true });
+export type WorksheetAssignment = typeof worksheetAssignments.$inferSelect;
+export type InsertWorksheetAssignment = z.infer<typeof insertWorksheetAssignmentSchema>;
+
+// ===== WORKSHEET SUBMISSIONS (student attempts) =====
+export const worksheetSubmissions = pgTable("worksheet_submissions", {
+  id: serial("id").primaryKey(),
+  assignmentId: integer("assignment_id").notNull().references(() => worksheetAssignments.id),
+  scholarId: varchar("scholar_id").notNull(),
+  responses: jsonb("responses").$type<Record<string, any>[]>().notNull().default([]),
+  score: integer("score"),
+  totalPoints: integer("total_points"),
+  percentage: real("percentage"),
+  status: varchar("status", { length: 20 }).notNull().default("in_progress"),
+  startedAt: timestamp("started_at").defaultNow(),
+  submittedAt: timestamp("submitted_at"),
+});
+
+export const insertWorksheetSubmissionSchema = createInsertSchema(worksheetSubmissions).omit({ id: true, startedAt: true });
+export type WorksheetSubmission = typeof worksheetSubmissions.$inferSelect;
+export type InsertWorksheetSubmission = z.infer<typeof insertWorksheetSubmissionSchema>;
 
 // Re-export chat models for integration
 export { conversations, messages } from "./models/chat";

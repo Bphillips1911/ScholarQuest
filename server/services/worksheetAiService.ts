@@ -119,7 +119,7 @@ function getDokGuidance(dokLevel: number): string {
   }
 }
 
-function generateFallbackItems(params: {
+export function generateFallbackItems(params: {
   subject: string; grade: number; standardCode: string; standardDescription: string;
   dokLevel: number; itemCount: number; language: string; includeTextDependentWriting?: boolean;
 }): WorksheetItem[] {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import StudentRankGoalsPanel from "@/components/acap/student/StudentRankGoalsPanel";
 import AccessCodeEntry from "@/components/acap/student/AccessCodeEntry";
+import StudentWorksheetAssignments from "@/components/acap/student/WorksheetPlayer";
 import { useAcapWebSocket } from "@/hooks/useAcapWebSocket";
 import { PRODUCT_NAME_PLAIN, TAGLINE } from "@/lib/educapBrand";
 
@@ -467,6 +468,10 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
           No assessments assigned yet. Ask your teacher for an access code or check back soon!
         </CardContent></Card>
       )}
+
+      <div className="mt-8 border-t pt-6">
+        <StudentWorksheetAssignments scholarId={scholarId} />
+      </div>
     </div>
   );
 }

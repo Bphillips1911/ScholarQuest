@@ -119,7 +119,7 @@ export default function TeacherAcap() {
         {activeTab === "overview" && <OverviewTab teacherId={teacherId} gradeNumber={gradeNumber} teacherInfo={teacherInfo} />}
         {activeTab === "assignments" && <AssignmentsTab teacherId={teacherId} gradeNumber={gradeNumber} />}
         {activeTab === "question-bank" && <QuestionBankTab teacherId={teacherId} gradeNumber={gradeNumber} />}
-        {activeTab === "acap-worksheets" && <WorksheetGeneratorTab />}
+        {activeTab === "acap-worksheets" && <WorksheetGeneratorTab userRole="teacher" />}
         {activeTab === "reports" && <ReportsTab teacherId={teacherId} />}
         {activeTab === "bootcamp" && <BootCampTab teacherId={teacherId} gradeNumber={gradeNumber} />}
         {activeTab === "rank-goals" && <TeacherClassRankGoalsPage />}

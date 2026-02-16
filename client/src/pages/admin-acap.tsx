@@ -135,7 +135,7 @@ export default function AdminAcap() {
         {activeTab === "assessments" && <AssessmentsTab />}
         {activeTab === "assessment-completion" && <AssessmentCompletionTab />}
         {activeTab === "forge" && <ForgeBuilderTab />}
-        {activeTab === "acap-worksheets" && <WorksheetGeneratorTab />}
+        {activeTab === "acap-worksheets" && <WorksheetGeneratorTab userRole="admin" />}
         {activeTab === "ai-settings" && <AISettingsTab />}
         {activeTab === "reports" && <ReportsTab />}
         {activeTab === "bootcamp" && <BootCampTab />}

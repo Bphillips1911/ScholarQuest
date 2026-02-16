@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, BookOpen, Target, BarChart3, Brain, Trophy,
   Loader2, CheckCircle, Clock, AlertTriangle, TrendingUp,
-  Send, Star, Play, MessageCircle, Sparkles, ChevronRight, Award
+  Send, Star, Play, MessageCircle, Sparkles, ChevronRight, Award,
+  Volume2, VolumeX
 } from "lucide-react";
 import StudentRankGoalsPanel from "@/components/acap/student/StudentRankGoalsPanel";
 import AccessCodeEntry from "@/components/acap/student/AccessCodeEntry";
@@ -480,7 +481,39 @@ function BootCampTab({ scholarId, scholarName }: { scholarId: string; scholarNam
   const { toast } = useToast();
   const [activeSession, setActiveSession] = useState<any>(null);
   const [message, setMessage] = useState("");
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const speakText = (text: string, idx: number) => {
+    if (!window.speechSynthesis) {
+      toast({ title: "Not Supported", description: "Your browser doesn't support text-to-speech.", variant: "destructive" });
+      return;
+    }
+    if (speakingIdx === idx) {
+      window.speechSynthesis.cancel();
+      setSpeakingIdx(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const cleaned = text.replace(/[*#_~`]/g, "").replace(/\n+/g, ". ");
+    const chunks = cleaned.match(/.{1,200}(?:\s|$)/g) || [cleaned];
+    let chunkIdx = 0;
+    const speakNext = () => {
+      if (chunkIdx >= chunks.length) { setSpeakingIdx(null); return; }
+      const utterance = new SpeechSynthesisUtterance(chunks[chunkIdx]);
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+      utterance.onend = () => { chunkIdx++; speakNext(); };
+      utterance.onerror = () => { setSpeakingIdx(null); };
+      window.speechSynthesis.speak(utterance);
+    };
+    setSpeakingIdx(idx);
+    speakNext();
+  };
+
+  useEffect(() => {
+    return () => { window.speechSynthesis?.cancel(); };
+  }, []);
 
   const { data: standards } = useQuery({ queryKey: ["/api/acap/standards"] });
   const { data: mastery } = useQuery({
@@ -544,7 +577,20 @@ function BootCampTab({ scholarId, scholarName }: { scholarId: string; scholarNam
                   <div className={`max-w-[80%] p-3 rounded-lg ${
                     m.role === "user" ? "bg-blue-600 text-white" : "bg-purple-50 text-gray-800 border border-purple-200"
                   }`}>
-                    {m.role === "assistant" && <Sparkles className="h-3 w-3 text-purple-500 mb-1" />}
+                    {m.role === "assistant" && (
+                      <div className="flex items-center justify-between mb-1">
+                        <Sparkles className="h-3 w-3 text-purple-500" />
+                        <button
+                          onClick={() => speakText(m.content, i)}
+                          className="p-1 rounded hover:bg-purple-100 transition-colors"
+                          title={speakingIdx === i ? "Stop reading" : "Listen"}
+                        >
+                          {speakingIdx === i
+                            ? <VolumeX className="h-4 w-4 text-red-500" />
+                            : <Volume2 className="h-4 w-4 text-purple-500" />}
+                        </button>
+                      </div>
+                    )}
                     <p className="text-sm whitespace-pre-wrap">{m.content}</p>
                   </div>
                 </div>

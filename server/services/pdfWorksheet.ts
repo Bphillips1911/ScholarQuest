@@ -67,10 +67,14 @@ function buildVisualPng(item: any): Buffer | null {
 async function generatePassageIllustrationPng(title: string, passage: string): Promise<Buffer | null> {
   if (!ILLUSTRATIONS_ON) return null;
   try {
-    const { generatePassageIllustrationSVG } = await import("./worksheetAiService");
-    const svg = await generatePassageIllustrationSVG(title, passage);
-    if (!svg) return null;
-    return svgToPngBuffer(svg);
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000));
+    const illustrationPromise = (async () => {
+      const { generatePassageIllustrationSVG } = await import("./worksheetAiService");
+      const svg = await generatePassageIllustrationSVG(title, passage);
+      if (!svg) return null;
+      return svgToPngBuffer(svg);
+    })();
+    return await Promise.race([illustrationPromise, timeoutPromise]);
   } catch (e: any) {
     console.warn("[PDF] Passage illustration error:", e.message);
     return null;

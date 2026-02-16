@@ -1,0 +1,139 @@
+## SPRINT: Fix Assessment Delivery + Access Codes (Students not seeing assignments)
+
+### Goal
+When admin creates baseline/midpoint/final and teacher assigns to students:
+1) Students see assessments in Student → Assessments tab
+2) Access Codes always start the correct assessment (including Forge version codes)
+3) No more “Assigned successfully” with 0 student delivery rows
+
+---
+
+## A) DATABASE: Normalize statuses + enforce delivery rows
+
+### A1) Standardize statuses (IMPORTANT)
+We will use:
+- assessment_assignments.status = 'active' | 'closed'
+- assessment_student_assignments.status = 'active' | 'started' | 'submitted'
+
+Search codebase for any other strings ('assigned', 'in_progress', 'complete') and map them to the above in queries/views.
+
+### A2) Ensure uniqueness (no duplicates)
+Add unique constraint:
+- assessment_student_assignments UNIQUE (assignment_id, student_id)
+
+Add index:
+- assessment_student_assignments(student_id, status)
+- assessment_student_assignments(assignment_id)
+
+### A3) Access Codes must resolve start target
+Ensure access_codes has:
+- code TEXT UNIQUE NOT NULL
+- assessment_id (FK acap_assessments.id) NOT NULL
+- version_code TEXT NULL  (Forge)
+- is_active BOOLEAN DEFAULT true
+- times_used INT DEFAULT 0
+- max_uses INT DEFAULT 1  (or NULL for unlimited)
+- created_at
+
+If you currently generate per-student codes, keep access_code in assessment_student_assignments too.
+
+### A4) Fix or rebuild student_active_assessments view to match status values
+Recreate view so Student dashboard sees rows:
+
+CREATE OR REPLACE VIEW student_active_assessments AS
+SELECT
+  asa.student_id,
+  aa.id AS assignment_id,
+  aa.assessment_id,
+  a.title AS assessment_title,
+  a.subject,
+  aa.due_date,
+  asa.access_code,
+  asa.version_code,
+  CASE
+    WHEN asa.status = 'submitted' THEN 'completed'
+    WHEN asa.status = 'started' THEN 'in_progress'
+    ELSE 'available'
+  END AS display_status
+FROM assessment_student_assignments asa
+JOIN assessment_assignments aa ON aa.id = asa.assignment_id
+JOIN acap_assessments a ON a.id = aa.assessment_id
+WHERE aa.status = 'active'
+  AND asa.status IN ('active','started','submitted');
+
+---
+
+## B) API: Teacher assignment must create student delivery rows
+
+### B1) PATCH POST /api/teacher/assign-assessment
+Current bug: assignment header is created but student rows not inserted OR inserted with wrong status OR wrong student IDs.
+
+Required behavior:
+Input: { assessmentId, assignmentName, dueDate, studentIds[] }
+Steps:
+1) Create row in assessment_assignments (status='active')
+2) For each studentId:
+   - create access code (either per-student OR shared)
+   - insert row in assessment_student_assignments:
+     assignment_id, student_id, access_code, version_code (nullable), status='active'
+3) Return assigned count and list
+
+Hard requirement:
+- If studentIds is empty, return 400 and DO NOT create assignment.
+
+Also: if any student insert fails, rollback transaction.
+
+---
+
+## C) API: Student dashboard must read from view (and show results)
+
+### C1) PATCH GET /api/student/assessments
+Must query student_active_assessments WHERE student_id = req.user.id
+Return grouped: available / in_progress / completed
+
+---
+
+## D) Access Code flow: “Code Verified” must start the assessment
+
+### D1) PATCH POST /api/access/validate
+Return:
+- assessmentId
+- assignmentId (optional)
+- versionCode (optional)
+- display fields (subject, grade, assessmentType)
+
+### D2) PATCH POST /api/access/start
+Given { code }:
+1) Lookup access_codes, confirm active and usage allowed
+2) Create or update assessment_student_assignments:
+   - if code is per-student: find ASA by student_id + code
+   - else: find ASA by student_id + assignment_id (from code’s assignment)
+   - set status='started'
+3) Increment access_codes.times_used
+4) Return start payload: { assessmentId, assignmentId?, versionCode? }
+
+Front-end should navigate to the assessment player route with these ids.
+
+---
+
+## E) TESTS (must execute in logs)
+Run these SQL checks after assigning:
+
+1) Assignments exist with correct student count
+SELECT aa.id, aa.assignment_name, COUNT(asa.id) students
+FROM assessment_assignments aa
+LEFT JOIN assessment_student_assignments asa ON asa.assignment_id=aa.id
+GROUP BY aa.id
+ORDER BY aa.created_at DESC LIMIT 5;
+
+2) Student view returns rows
+SELECT * FROM student_active_assessments WHERE student_id = '<known-student-id>' LIMIT 10;
+
+3) Validate + Start code returns assessmentId and sets ASA status=started.
+
+Deliverables:
+- DB migration SQL
+- Updated API handlers
+- Updated student dashboard endpoint
+- Updated validate/start code endpoints
+- Console logs proving student_active_assessments now returns assigned rows

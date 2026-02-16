@@ -266,6 +266,7 @@ export async function generateWorksheetItems(params: {
   itemCount: number;
   language: string;
   includeTextDependentWriting?: boolean;
+  variantLabel?: string;
 }): Promise<WorksheetItem[]> {
   const langInstr = params.language === "es"
     ? "Generate ALL content (stems, options, rationale, passages) in Spanish."
@@ -278,15 +279,38 @@ export async function generateWorksheetItems(params: {
   const requiresDiagram = needsDiagramOrChart(params.subject, params.standardCode, params.standardDescription);
   const includeTDW = params.includeTextDependentWriting || (isELA && params.dokLevel >= 3);
 
+  const uniqueSeed = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
   let prompt = `You are an expert Alabama educator creating EduCAP assessment materials aligned to ACAP standards.
 
 Create a ${params.subject} worksheet for Grade ${params.grade} aligned to standard: ${params.standardCode} — ${params.standardDescription}
+
+CRITICAL ALIGNMENT REQUIREMENTS:
+- Every single question MUST directly assess the specific skill described in standard ${params.standardCode}: "${params.standardDescription}"
+- Do NOT create generic questions. Each question must require the student to demonstrate mastery of THIS SPECIFIC standard.
+- If the standard is about fractions, every question must involve fractions. If about inferencing, every question must require making inferences.
+- Reference the standard description in your rationale for each question to prove alignment.
+
+UNIQUENESS REQUIREMENT (Seed: ${uniqueSeed}):
+- Create ENTIRELY ORIGINAL content. Do not reuse passages, scenarios, character names, or contexts from previous generations.
+- For reading passages: Use a UNIQUE topic, setting, and characters. Pick from diverse themes: sports, space exploration, cooking, marine biology, music, robotics, archaeology, fashion design, veterinary science, architecture, etc.
+- For math: Use varied real-world contexts (different stores, sports, recipes, construction, travel, etc.) and different number ranges.
+- Make every generation feel fresh and different.
 
 Requirements:
 - Generate EXACTLY ${params.itemCount} questions
 - All questions must be DOK Level ${params.dokLevel}
 - ${langInstr}
-
+${params.variantLabel ? `
+DIFFERENTIATED VARIANT ${params.variantLabel}:
+- This is Variant ${params.variantLabel} of a differentiated assessment set.
+- Variant A = On-Level (standard grade-level complexity)
+- Variant B = Below-Level (simplified language, more scaffolding, simpler numbers)
+- Variant C = Above-Level (more complex scenarios, higher-order thinking, multi-step)
+- You MUST create COMPLETELY DIFFERENT questions, passages, scenarios, and answer choices than other variants.
+- The questions must still assess the same standard (${params.standardCode}) but with different content.
+- Use different character names, different contexts, different numbers, and different passage topics.
+` : ''}
 DOK Level ${params.dokLevel} Guidelines:
 ${getDokGuidance(params.dokLevel)}
 

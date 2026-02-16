@@ -2904,6 +2904,23 @@ export function registerAcapRoutes(app: Express): void {
     return res.status(401).json({ error: "Invalid token" });
   };
 
+  app.get("/api/acap/worksheets/teachers-list", authenticateWorksheetUser, async (req: any, res: Response) => {
+    try {
+      const allTeachers = await storage.getAllTeacherAuth();
+      const teachers = allTeachers
+        .filter((t: any) => t.isApproved)
+        .map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          role: t.gradeRole || t.subject || "Teacher",
+        }));
+      res.json(teachers);
+    } catch (error: any) {
+      console.error("Worksheet teachers list error:", error);
+      res.status(500).json({ error: "Failed to load teachers" });
+    }
+  });
+
   app.get("/api/acap/standards/list", async (req: Request, res: Response) => {
     try {
       const subject = String(req.query.subject || "");
@@ -3007,6 +3024,7 @@ export function registerAcapRoutes(app: Express): void {
               subject, grade, standardCode, standardDescription,
               dokLevel, itemCount, language: language || "en",
               includeTextDependentWriting: !!includeTextDependentWriting,
+              variantLabel: variant || undefined,
             });
           } catch (genError: any) {
             console.error("[Worksheet] Generation failed:", genError.message);
@@ -3222,13 +3240,15 @@ export function registerAcapRoutes(app: Express): void {
         .where(eq(worksheetAssignments.status, "active"))
         .orderBy(desc(worksheetAssignments.id));
 
+      const scholarGrade = Number(scholar.grade);
       const myAssignments = allAssignments.filter((a) => {
         if (a.assignedToType === "scholar" && a.assignedToId === scholarId) return true;
-        if (a.assignedToType === "grade" && a.assignedToGrade === scholar.grade) return true;
-        if (a.assignedToType === "teacher" && a.assignedToId === scholar.teacherId) return true;
+        if (a.assignedToType === "grade" && Number(a.assignedToGrade) === scholarGrade) return true;
+        if (a.assignedToType === "teacher" && scholar.teacherId && a.assignedToId === scholar.teacherId) return true;
         if (a.assignedToType === "all") return true;
         return false;
       });
+      console.log(`[Worksheet Assignments] Scholar ${scholarId} grade=${scholarGrade}, found ${myAssignments.length} of ${allAssignments.length} total assignments`);
 
       const existingSubmissions = await db.select().from(worksheetSubmissions)
         .where(eq(worksheetSubmissions.scholarId, scholarId));

@@ -1,0 +1,74 @@
+-- DIAGNOSTIC: Find Why Students Don't See Assignments
+-- Run this to identify the problem
+
+-- Check 1: Do assignments exist?
+SELECT 
+    aa.id as assignment_id,
+    aa.assignment_name,
+    aa.assessment_id,
+    aa.created_by as teacher_id,
+    aa.due_date,
+    aa.status,
+    COUNT(DISTINCT asa.student_id) as students_assigned,
+    a.title as assessment_title
+FROM assessment_assignments aa
+LEFT JOIN assessment_student_assignments asa ON asa.assignment_id = aa.id
+LEFT JOIN acap_assessments a ON a.id = aa.assessment_id
+WHERE aa.status = 'active'
+GROUP BY aa.id, aa.assignment_name, aa.assessment_id, aa.created_by, aa.due_date, aa.status, a.title
+ORDER BY aa.created_at DESC
+LIMIT 20;
+
+-- Check 2: Are student assignments being created?
+SELECT 
+    asa.id,
+    asa.assignment_id,
+    asa.student_id,
+    asa.access_code,
+    asa.version_code,
+    asa.status,
+    s.first_name,
+    s.last_name,
+    aa.assignment_name
+FROM assessment_student_assignments asa
+JOIN students s ON s.id = asa.student_id
+JOIN assessment_assignments aa ON aa.id = asa.assignment_id
+WHERE asa.status = 'active'
+ORDER BY asa.created_at DESC
+LIMIT 50;
+
+-- Check 3: Are access codes being generated?
+SELECT 
+    ac.code,
+    ac.assessment_id,
+    ac.version_code,
+    ac.is_active,
+    ac.times_used,
+    ac.max_uses,
+    ac.created_at,
+    a.title as assessment_title
+FROM access_codes ac
+JOIN acap_assessments a ON a.id = ac.assessment_id
+WHERE ac.is_active = true
+ORDER BY ac.created_at DESC
+LIMIT 50;
+
+-- Check 4: What do students see in their dashboard?
+SELECT 
+    s.id as student_id,
+    s.first_name,
+    s.last_name,
+    COUNT(asa.id) as assignments_count
+FROM students s
+LEFT JOIN assessment_student_assignments asa ON asa.student_id = s.id AND asa.status = 'active'
+GROUP BY s.id, s.first_name, s.last_name
+ORDER BY s.last_name;
+
+-- Check 5: Verify the view is working
+SELECT * FROM student_active_assessments
+LIMIT 20;
+
+-- PROBLEM INDICATORS:
+-- If Check 2 shows 0 rows → Student assignments not being created
+-- If Check 3 shows 0 rows → Access codes not being generated
+-- If Check 5 shows 0 rows → View is broken or no data

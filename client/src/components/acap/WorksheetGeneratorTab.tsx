@@ -546,15 +546,7 @@ export default function WorksheetGeneratorTab({ userRole }: { userRole?: string 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             {generatedFiles.map((f, i) => (
               <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
-                <a href={`${f.url}?studentOnly=${config.studentOnly}&includeAnswerKey=${config.includeAnswerKey}`} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-3 flex-1 min-w-0 hover:text-indigo-700">
-                  <FileText className="w-5 h-5 text-indigo-600 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{f.label}</p>
-                    <p className="text-xs text-gray-500">PDF Download</p>
-                  </div>
-                  <Download className="w-4 h-4 text-gray-400 shrink-0" />
-                </a>
+                <PdfDownloadButton url={`${f.url}?studentOnly=${config.studentOnly}&includeAnswerKey=${config.includeAnswerKey}`} label={f.label} sublabel="PDF Download" />
                 <Button variant="ghost" size="sm" className="shrink-0" onClick={() => { setShareWorksheetId(f.id); setShareWorksheetTitle(f.label); }}>
                   <Send className="w-4 h-4 text-indigo-500" />
                 </Button>
@@ -564,15 +556,7 @@ export default function WorksheetGeneratorTab({ userRole }: { userRole?: string 
           {config.includeAnswerKey && !config.studentOnly && (
             <div className="mt-3 grid md:grid-cols-2 lg:grid-cols-3 gap-3">
               {generatedFiles.map((f, i) => (
-                <a key={`key-${i}`} href={`${f.url}?includeAnswerKey=true`} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
-                  <FileText className="w-5 h-5 text-green-600" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-green-900 truncate">{f.label} — Answer Key</p>
-                    <p className="text-xs text-green-600">Teacher Copy</p>
-                  </div>
-                  <Download className="w-4 h-4 text-green-400" />
-                </a>
+                <PdfDownloadButton key={`key-${i}`} url={`${f.url}?includeAnswerKey=true`} label={`${f.label} — Answer Key`} sublabel="Teacher Copy" variant="answer-key" />
               ))}
             </div>
           )}
@@ -661,6 +645,50 @@ export default function WorksheetGeneratorTab({ userRole }: { userRole?: string 
         role={userRole === "admin" ? "admin" : "teacher"}
       />
     </div>
+  );
+}
+
+function PdfDownloadButton({ url, label, sublabel, variant }: {
+  url: string; label: string; sublabel: string; variant?: "answer-key";
+}) {
+  const [downloading, setDownloading] = useState(false);
+  const isAnswerKey = variant === "answer-key";
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${label.replace(/[^a-zA-Z0-9 -]/g, "").trim()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      window.open(url, "_blank");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <button onClick={handleDownload} disabled={downloading}
+      className={`flex items-center gap-3 flex-1 min-w-0 p-3 rounded-lg border transition-colors text-left ${
+        isAnswerKey ? "bg-green-50 border-green-200 hover:bg-green-100" : "hover:bg-gray-100"
+      }`}>
+      {downloading
+        ? <Loader2 className={`w-5 h-5 shrink-0 animate-spin ${isAnswerKey ? "text-green-600" : "text-indigo-600"}`} />
+        : <FileText className={`w-5 h-5 shrink-0 ${isAnswerKey ? "text-green-600" : "text-indigo-600"}`} />}
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium truncate ${isAnswerKey ? "text-green-900" : "text-gray-900"}`}>{label}</p>
+        <p className={`text-xs ${isAnswerKey ? "text-green-600" : "text-gray-500"}`}>{downloading ? "Generating PDF..." : sublabel}</p>
+      </div>
+      <Download className={`w-4 h-4 shrink-0 ${isAnswerKey ? "text-green-400" : "text-gray-400"}`} />
+    </button>
   );
 }
 

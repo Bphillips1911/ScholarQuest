@@ -35,15 +35,16 @@ export default function WorksheetShareDialog({ open, onOpenChange, worksheetId, 
   const [teachers, setTeachers] = useState<any[]>([]);
 
   useEffect(() => {
-    if (open && role === "admin") {
-      fetch("/api/teachers", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("adminToken")}` },
+    if (open && (role === "admin" || assignToType === "teacher")) {
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("teacherToken") || "";
+      fetch("/api/acap/worksheets/teachers-list", {
+        headers: { Authorization: `Bearer ${token}` },
       })
         .then(r => r.ok ? r.json() : [])
         .then(data => setTeachers(Array.isArray(data) ? data : []))
         .catch(() => setTeachers([]));
     }
-  }, [open, role]);
+  }, [open, role, assignToType]);
 
   useEffect(() => {
     if (open) {
@@ -116,7 +117,7 @@ export default function WorksheetShareDialog({ open, onOpenChange, worksheetId, 
                   <SelectTrigger><SelectValue placeholder="Choose a teacher" /></SelectTrigger>
                   <SelectContent>
                     {teachers.map((t: any) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name} ({t.role})</SelectItem>
+                      <SelectItem key={t.id} value={String(t.id)}>{t.name} ({t.role})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

@@ -1,10 +1,8 @@
 import PDFDocument from "pdfkit";
 import * as fs from "fs";
 import * as path from "path";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const { svgToPngBuffer } = require("./pdf/svgRender");
-const { numberLineSVG, barChartSVG, tableSVG, coordinatePlaneSVG } = require("./pdf/visuals");
+import { svgToPngBuffer } from "./pdf/svgRender";
+import { numberLineSVG, barChartSVG, tableSVG, coordinatePlaneSVG } from "./pdf/visuals";
 
 const BRAND_BLUE = "#3B5BDB";
 const BRAND_LIGHT = "#E8EDFF";

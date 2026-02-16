@@ -1,9 +1,7 @@
-const { Resvg } = require("@resvg/resvg-js");
+import { Resvg } from "@resvg/resvg-js";
 
-function svgToPngBuffer(svg) {
+export function svgToPngBuffer(svg: string): Buffer {
   const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 900 } });
   const pngData = resvg.render();
   return pngData.asPng();
 }
-
-module.exports = { svgToPngBuffer };

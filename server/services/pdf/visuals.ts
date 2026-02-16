@@ -1,4 +1,4 @@
-function svgWrap(inner, width = 900, height = 220) {
+function svgWrap(inner: string, width = 900, height = 220): string {
   return `
   <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
     <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
@@ -6,7 +6,7 @@ function svgWrap(inner, width = 900, height = 220) {
   </svg>`;
 }
 
-function numberLineSVG(spec = {}) {
+export function numberLineSVG(spec: any = {}): string {
   const min = Number(spec.min ?? -3);
   const max = Number(spec.max ?? 3);
   const points = Array.isArray(spec.points) ? spec.points : [];
@@ -17,7 +17,7 @@ function numberLineSVG(spec = {}) {
 
   const axis = `<line x1="${pad}" y1="${y}" x2="${w - pad}" y2="${y}" stroke="#111" stroke-width="3"/>`;
 
-  const ticks = [];
+  const ticks: string[] = [];
   for (let v = min; v <= max; v += 1) {
     const x = pad + (v - min) * scale;
     ticks.push(`
@@ -26,7 +26,7 @@ function numberLineSVG(spec = {}) {
     `);
   }
 
-  const plotted = points.map(p => {
+  const plotted = points.map((p: any) => {
     const val = Number(p.value);
     const x = pad + (val - min) * scale;
     const label = String(p.label ?? "");
@@ -44,18 +44,18 @@ function numberLineSVG(spec = {}) {
   `, w, h);
 }
 
-function barChartSVG(spec = {}) {
+export function barChartSVG(spec: any = {}): string {
   const labels = Array.isArray(spec.labels) ? spec.labels : [];
   const values = Array.isArray(spec.values) ? spec.values : [];
   const title = String(spec.title ?? "Bar Chart");
 
   const w = 900, h = 260, pad = 80;
-  const maxVal = Math.max(1, ...values.map(v => Number(v || 0)));
+  const maxVal = Math.max(1, ...values.map((v: any) => Number(v || 0)));
   const chartW = w - pad * 2;
   const chartH = 130;
   const baseY = 190;
 
-  const bars = labels.map((lbl, i) => {
+  const bars = labels.map((lbl: any, i: number) => {
     const v = Number(values[i] || 0);
     const bw = chartW / Math.max(1, labels.length) - 20;
     const x = pad + i * (chartW / Math.max(1, labels.length)) + 10;
@@ -76,7 +76,7 @@ function barChartSVG(spec = {}) {
   `, w, h);
 }
 
-function tableSVG(spec = {}) {
+export function tableSVG(spec: any = {}): string {
   const title = String(spec.title ?? "Data Table");
   const columns = Array.isArray(spec.columns) ? spec.columns : [];
   const rows = Array.isArray(spec.rows) ? spec.rows : [];
@@ -87,7 +87,7 @@ function tableSVG(spec = {}) {
   const headerY = 60;
   const tableH = headerY + rowH * (rows.length + 1) + 20;
 
-  const headerCells = columns.map((col, i) => {
+  const headerCells = columns.map((col: any, i: number) => {
     const x = pad + i * colW;
     return `
       <rect x="${x}" y="${headerY}" width="${colW}" height="${rowH}" fill="#3B5BDB" stroke="#1E3A8A" stroke-width="1"/>
@@ -95,9 +95,9 @@ function tableSVG(spec = {}) {
     `;
   }).join("");
 
-  const dataCells = rows.map((row, ri) => {
+  const dataCells = rows.map((row: any, ri: number) => {
     const cells = Array.isArray(row) ? row : [];
-    return cells.map((val, ci) => {
+    return cells.map((val: any, ci: number) => {
       const x = pad + ci * colW;
       const y = headerY + rowH * (ri + 1);
       const bg = ri % 2 === 0 ? "#f8f9fa" : "#ffffff";
@@ -115,7 +115,7 @@ function tableSVG(spec = {}) {
   `, w, tableH);
 }
 
-function coordinatePlaneSVG(spec = {}) {
+export function coordinatePlaneSVG(spec: any = {}): string {
   const points = Array.isArray(spec.points) ? spec.points : [];
   const title = String(spec.title ?? "Coordinate Plane");
   const w = 900, h = 400;
@@ -144,7 +144,7 @@ function coordinatePlaneSVG(spec = {}) {
     <text x="${cx + 5}" y="${cy - gridSize - 10}" font-size="16" fill="#111">y</text>
   `;
 
-  const plotted = points.map(p => {
+  const plotted = points.map((p: any) => {
     const px = cx + Number(p.x) * unit;
     const py = cy - Number(p.y) * unit;
     const label = p.label ? `<text x="${px + 10}" y="${py - 10}" font-size="14" fill="#111">${String(p.label)}</text>` : "";
@@ -161,5 +161,3 @@ function coordinatePlaneSVG(spec = {}) {
     ${plotted}
   `, w, h);
 }
-
-module.exports = { numberLineSVG, barChartSVG, tableSVG, coordinatePlaneSVG };

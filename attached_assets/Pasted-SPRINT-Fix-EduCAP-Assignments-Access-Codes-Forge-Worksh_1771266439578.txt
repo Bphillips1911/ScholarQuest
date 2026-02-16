@@ -1,0 +1,31 @@
+SPRINT: Fix EduCAP Assignments + Access Codes + Forge + Worksheet Delivery end-to-end (NO table renames, NO new assignment tables)
+
+GOAL:
+Teacher assigns → students see immediately in Student > Assessments
+Student enters Access/Forge code → validates + opens assessment (no spinner, no 404)
+Forge A/B/C codes open the correct version consistently
+ACAP Worksheet share to grade/teacher → students see worksheets immediately
+Gemini worksheet A/B/C must generate different passages + different questions/choices and align to selected standard
+Boot Camp adds free audio read-aloud (Web Speech API) to avoid credit burn
+
+CONSTRAINTS:
+- Do not rename tables
+- Do not introduce new assignment tables
+- Patch existing tables/endpoints only
+
+TASKS:
+1) Patch POST /api/teacher/assign-assessment to create assessment_assignments AND (in same transaction) create N rows in assessment_student_assignments for targeted students. Hard-fail if 0 delivery rows created. Return createdStudentRows + sample codes.
+2) Patch GET /api/student/assessments to read from assessment_student_assignments (delivery rows) joined to assessment_assignments + acap_assessments, grouped into available/in_progress/completed.
+3) Patch POST /api/student/access-code/verify and /start:
+   - Resolve code from access_codes (is_active)
+   - Ensure student has a delivery row (assessment_student_assignments) for that assessment/version (create on redeem if using shared code)
+   - Return startUrl based on studentAssignmentId and start must transition to in_progress.
+4) Forge A/B/C: Ensure version_code is persisted consistently in access_codes + assessment_student_assignments and used in assessment loading.
+5) Worksheets: Patch worksheet share flow so "Share successful" ALWAYS creates student delivery rows (or whatever existing student worksheet assignment table is). Patch student worksheet endpoint to read those rows.
+6) Gemini uniqueness: For A/B/C, enforce different passage premise + different questions/choices. Add content hash check (passage+stems) and regenerate if duplicate. Improve standard alignment by requiring a per-question alignment rationale from Gemini; regenerate once if weak.
+7) PDF fixes: remove overlap; visuals never blank; math uses KaTeX rendering to SVG/PNG; charts render via Chart.js to PNG with fallback.
+8) Boot Camp: Add “Listen” button using browser Web Speech API to read the AI response aloud; no server TTS by default.
+
+VERIFICATION:
+- Run diagnostic-assignment-issue.sql and confirm active assignments exist, delivery rows exist, access codes exist, student_active_assessments returns rows.
+- Manual UI test: assign to Grade 6, student sees it; enter code; assessment opens; share worksheet; student sees worksheet.

@@ -19,6 +19,10 @@ import {
   worksheetAssignments,
   worksheetSubmissions,
   scholars,
+  studentAssessmentInstances,
+  insightAssessmentWindows,
+  insightStudentResults,
+  insightStandardMastery,
 } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -341,9 +345,15 @@ export function registerAcapRoutes(app: Express): void {
           console.error(`[Assign] Failed to create instance for student ${studentId}:`, instanceErr.message);
         }
       }
-      console.log(`[Assign] inserted ${insertedCount} student instances for assessment ${assessmentId}`);
-      await acapStorage.createAuditEntry({ action: "create_assignment", entityType: "assignment", entityId: assignment.id, userId: assignmentData.teacherId, userRole: "teacher", details: { assessmentId, studentCount: insertedCount } });
-      res.status(201).json({ ...assignment, insertedStudentInstances: insertedCount });
+      console.log(`[Assign] inserted ${insertedCount} student instances for assessment ${assessmentId}, targetIds count=${studentIds.length}`);
+      if (insertedCount === 0 && studentIds.length > 0) {
+        console.warn(`[Assign] WARNING: 0 delivery rows created for ${studentIds.length} students. All may already have instances.`);
+      }
+      if (studentIds.length === 0) {
+        console.error(`[Assign] ERROR: No targetIds provided - 0 delivery rows created`);
+      }
+      await acapStorage.createAuditEntry({ action: "create_assignment", entityType: "assignment", entityId: assignment.id, userId: assignmentData.teacherId, userRole: "teacher", details: { assessmentId, studentCount: insertedCount, targetIdsCount: studentIds.length } });
+      res.status(201).json({ ...assignment, insertedStudentInstances: insertedCount, totalTargetIds: studentIds.length });
     } catch (error: any) {
       console.error("Create assignment error:", error);
       res.status(400).json({ error: error.message || "Failed to create assignment" });
@@ -491,6 +501,90 @@ export function registerAcapRoutes(app: Express): void {
         growthFromBaseline: null,
         riskLevel: percentCorrect < 40 ? "high" : percentCorrect < 60 ? "moderate" : percentCorrect < 80 ? "low" : "none",
       });
+
+      // Update student_assessment_instances status
+      try {
+        const studentInstances = await db.select().from(studentAssessmentInstances)
+          .where(and(
+            eq(studentAssessmentInstances.studentId, attempt.scholarId),
+            eq(studentAssessmentInstances.assessmentId, attempt.assessmentId)
+          ));
+        for (const inst of studentInstances) {
+          if (inst.status !== "completed") {
+            await db.update(studentAssessmentInstances)
+              .set({ status: "completed", score: Math.round(percentCorrect * 10) / 10, submittedAt: new Date() })
+              .where(eq(studentAssessmentInstances.id, inst.id));
+          }
+        }
+      } catch (instErr: any) {
+        console.error("[AttemptComplete] Failed to update student instance:", instErr.message);
+      }
+
+      // Sync to EduCAP Insights tables
+      try {
+        const windowMap: Record<string, string> = { baseline: "Baseline", midpoint: "Midpoint", final: "Final" };
+        const assessType = (assessment?.assessmentType || "").toLowerCase();
+        let windowName = "Baseline";
+        for (const [key, name] of Object.entries(windowMap)) {
+          if (assessType.includes(key)) { windowName = name; break; }
+        }
+        const windows = await db.select().from(insightAssessmentWindows)
+          .where(eq(insightAssessmentWindows.name, windowName));
+        let windowId = windows[0]?.id;
+        if (!windowId) {
+          const allWindows = await db.select().from(insightAssessmentWindows).orderBy(insightAssessmentWindows.orderIndex);
+          windowId = allWindows[0]?.id;
+        }
+        if (windowId) {
+          const subj = assessment?.subject || "Math";
+          const scaledPercent = Math.round(percentCorrect * 10) / 10;
+          const band = scaledPercent >= 70 ? "PRO" : scaledPercent >= 50 ? "ON" : scaledPercent >= 30 ? "DEV" : "HR";
+          const existing = await db.select().from(insightStudentResults)
+            .where(and(
+              eq(insightStudentResults.scholarId, attempt.scholarId),
+              eq(insightStudentResults.windowId, windowId),
+              eq(insightStudentResults.subject, subj)
+            ));
+          if (existing.length > 0) {
+            await db.update(insightStudentResults)
+              .set({ score: totalScore, maxScore, scaledPercent, band, completedAt: new Date(), assessmentId: attempt.assessmentId })
+              .where(eq(insightStudentResults.id, existing[0].id));
+          } else {
+            await db.insert(insightStudentResults).values({
+              scholarId: attempt.scholarId, windowId, subject: subj,
+              score: totalScore, maxScore, scaledPercent, band,
+              completedAt: new Date(), assessmentId: attempt.assessmentId,
+            });
+          }
+          // Sync standard mastery to insight_standard_mastery
+          for (const [stdKey, breakdown] of Object.entries(standardBreakdown)) {
+            const standardId = parseInt(stdKey.replace("std", ""));
+            if (isNaN(standardId)) continue;
+            const b = breakdown as any;
+            const pct = b.total > 0 ? (b.correct / b.total) * 100 : 0;
+            const level = pct >= 90 ? "mastered" : pct >= 70 ? "proficient" : pct >= 50 ? "developing" : "beginning";
+            const existMastery = await db.select().from(insightStandardMastery)
+              .where(and(
+                eq(insightStandardMastery.scholarId, attempt.scholarId),
+                eq(insightStandardMastery.standardId, standardId),
+                eq(insightStandardMastery.windowId, windowId)
+              ));
+            if (existMastery.length > 0) {
+              await db.update(insightStandardMastery)
+                .set({ masteryLevel: level, masteryScore: Math.round(pct * 10) / 10 })
+                .where(eq(insightStandardMastery.id, existMastery[0].id));
+            } else {
+              await db.insert(insightStandardMastery).values({
+                scholarId: attempt.scholarId, standardId, windowId,
+                subject: subj, masteryLevel: level, masteryScore: Math.round(pct * 10) / 10,
+              });
+            }
+          }
+          console.log(`[InsightsSync] Updated insight results for scholar=${attempt.scholarId} window=${windowName} score=${scaledPercent}%`);
+        }
+      } catch (insightErr: any) {
+        console.error("[InsightsSync] Failed to sync to insights:", insightErr.message);
+      }
 
       const broadcast = (global as any).__broadcastAcapEvent;
       if (broadcast) {

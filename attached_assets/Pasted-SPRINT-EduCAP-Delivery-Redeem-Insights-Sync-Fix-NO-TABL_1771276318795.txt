@@ -1,0 +1,50 @@
+SPRINT: EduCAP Delivery + Redeem + Insights Sync Fix (NO TABLE RENAMES)
+
+Fix end-to-end wiring for:
+1) Baseline/Midpoint/Final assessments assigned by teachers/admin do not appear for students.
+2) Access code redeem validates but does not open assessment or create student delivery rows.
+3) Forge assessment completion does not sync to EduCAP Insights (rosters missing and scores missing).
+4) ACAP Worksheets shared to grade/teacher do not show in student “Assigned Worksheets”.
+5) Worksheet templates “Load Template” says saved but list is empty.
+6) Differentiated A/B/C worksheet variants repeat passages/questions and sometimes misalign to chosen standards.
+7) Wire Post-Assessment Analytics to populate for teachers/admins after completions.
+
+Hard constraints:
+- DO NOT rename tables.
+- DO NOT introduce a new assignment system/table set.
+- Patch existing tables/endpoints only.
+- Add only minimal columns/indexes if needed.
+- All teacher “Assigned successfully” actions must create student delivery rows (no silent 0-row delivery).
+
+Database:
+- Ensure assessment_assignments, assessment_student_assignments, access_codes, acap_assessments remain canonical.
+- Enforce unique(assignment_id, student_id).
+- Enforce unique(assessment_student_assignments.access_code).
+- Add indexes for student_id/status and access_code lookups.
+- Ensure redeem flow maps code -> assessment_student_assignments row -> assessment player route.
+- Ensure submission writes completion/score where Insights reads.
+
+API:
+- POST /api/teacher/assign-assessment must insert assignment + N student rows + return per-student access codes in a transaction.
+- GET /api/student/assessments must read student rows and return grouped available/in_progress/completed.
+- POST /api/access/redeem must validate code, bind to student if needed, and return startUrl that cannot 404.
+- Submit endpoints must update student assignment row and results ledger so Insights updates instantly.
+- Worksheet sharing must create worksheet_student_assignments and student endpoints must read them.
+- Template load endpoint must return templates user has access to (own + shared).
+- Implement analytics endpoints for worksheet completions.
+
+Insights:
+- Fix roster queries so all scholars appear for teacher/admin (not dependent on results existing).
+- Add scholar search by name/id.
+- Baseline/midpoint/final scores must display once completed.
+
+Gemini generation:
+- A/B/C must be distinct (different passage + different questions + different answer choices).
+- Add anti-duplicate memory using hash of last N outputs per standard/grade/dok.
+- Add alignment verification step; regenerate once if misaligned.
+
+Deliver:
+- Updated Drizzle schema definitions/migrations (minimal changes).
+- Updated server routes and queries.
+- Updated client queries/states to show results and assignments immediately.
+- Add robust logging + error responses when delivery rows are 0.

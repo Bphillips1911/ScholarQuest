@@ -642,15 +642,7 @@ export const acapStorage = {
   // ===== Student Assessment Instances =====
   async getStudentInstances(studentId: string): Promise<StudentAssessmentInstance[]> {
     return db.select().from(studentAssessmentInstances)
-      .where(and(
-        eq(studentAssessmentInstances.studentId, studentId),
-        or(
-          eq(studentAssessmentInstances.status, "assigned"),
-          eq(studentAssessmentInstances.status, "in_progress"),
-          eq(studentAssessmentInstances.status, "submitted"),
-          eq(studentAssessmentInstances.status, "scored")
-        )
-      ))
+      .where(eq(studentAssessmentInstances.studentId, studentId))
       .orderBy(desc(studentAssessmentInstances.assignedAt));
   },
   async getStudentInstance(id: number): Promise<StudentAssessmentInstance | undefined> {

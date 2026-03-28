@@ -1,0 +1,96 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+import { useTenant } from '../../context/TenantProvider';
+
+export default function TenantLoginPage() {
+  const { tenant } = useTenant();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    navigate('/dashboard');
+  }
+
+  async function handleForgotPassword() {
+    if (!email) {
+      alert('Enter the email first.');
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert('Password reset email sent.');
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow p-6">
+        <div className="text-center mb-6">
+          {tenant?.logo_url && (
+            <img src={tenant.logo_url} alt={tenant.school_name} className="h-16 mx-auto mb-3 object-contain" />
+          )}
+          <h1 className="text-2xl font-bold">{tenant?.school_name || 'School Portal'} Login</h1>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            className="w-full border rounded-xl px-4 py-3"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e)=>setEmail(e.target.value)}
+            required
+          />
+          <input
+            className="w-full border rounded-xl px-4 py-3"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e)=>setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-xl text-white font-semibold"
+            style={{ backgroundColor: 'var(--tenant-primary)' }}
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+
+        <button
+          onClick={handleForgotPassword}
+          className="w-full mt-4 text-sm text-slate-600 underline"
+        >
+          Forgot password?
+        </button>
+      </div>
+    </div>
+  );
+}

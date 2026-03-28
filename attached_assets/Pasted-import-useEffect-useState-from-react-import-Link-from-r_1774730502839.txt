@@ -1,0 +1,87 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+
+export default function GlobalAdminDashboard() {
+  const [tenants, setTenants] = useState([]);
+  const [metrics, setMetrics] = useState([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    const { data: tenantsData } = await supabase
+      .from('tenants')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const { data: metricsData } = await supabase
+      .from('platform_metrics')
+      .select('*')
+      .order('metric_date', { ascending: false });
+
+    setTenants(tenantsData || []);
+    setMetrics(metricsData || []);
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold">PBIS House of Champions Owner Dashboard</h1>
+          <p className="text-slate-600">
+            Manage tenants, branding, support, uptime, and platform analytics from one codebase.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-2xl p-5 shadow">
+            <div className="text-sm text-slate-500">Total Schools</div>
+            <div className="text-3xl font-bold">{tenants.length}</div>
+          </div>
+          <div className="bg-white rounded-2xl p-5 shadow">
+            <div className="text-sm text-slate-500">Active Tenants</div>
+            <div className="text-3xl font-bold">{tenants.filter(t => t.is_active).length}</div>
+          </div>
+          <div className="bg-white rounded-2xl p-5 shadow">
+            <div className="text-sm text-slate-500">Metrics Rows</div>
+            <div className="text-3xl font-bold">{metrics.length}</div>
+          </div>
+          <div className="bg-white rounded-2xl p-5 shadow">
+            <div className="text-sm text-slate-500">Codebase Model</div>
+            <div className="text-lg font-semibold">Single Shared Deployment</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow overflow-hidden">
+          <div className="p-5 border-b">
+            <h2 className="text-2xl font-bold">Tenants</h2>
+          </div>
+          <div className="divide-y">
+            {tenants.map((tenant) => (
+              <div key={tenant.id} className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <div className="font-bold text-lg">{tenant.school_name}</div>
+                  <div className="text-slate-500">{tenant.slug}.pbishouseofchampions.com</div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link className="px-3 py-2 rounded-lg border" to={`/owner/tenants/${tenant.id}`}>Manage</Link>
+                  <Link className="px-3 py-2 rounded-lg border" to={`/owner/tenants/${tenant.id}/branding`}>Branding</Link>
+                  <Link className="px-3 py-2 rounded-lg border" to={`/owner/tenants/${tenant.id}/users`}>Users</Link>
+                  <Link className="px-3 py-2 rounded-lg border" to={`/owner/support/${tenant.id}`}>Support</Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <Link to="/owner/monitoring" className="inline-flex px-4 py-3 rounded-xl bg-black text-white">
+            Open Monitoring & Analytics
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

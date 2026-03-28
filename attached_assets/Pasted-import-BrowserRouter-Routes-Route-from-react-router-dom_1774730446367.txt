@@ -1,0 +1,97 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { TenantProvider } from '../context/TenantProvider';
+import { AuthProvider } from '../context/AuthProvider';
+import TenantLandingPage from '../pages/public/TenantLandingPage';
+import TenantLoginPage from '../pages/public/TenantLoginPage';
+import TenantDashboard from '../pages/tenant/TenantDashboard';
+import GlobalAdminDashboard from '../pages/admin/GlobalAdminDashboard';
+import TenantDetailPage from '../pages/admin/TenantDetailPage';
+import TenantBrandingPage from '../pages/admin/TenantBrandingPage';
+import TenantUsersPage from '../pages/admin/TenantUsersPage';
+import PlatformMonitoringPage from '../pages/admin/PlatformMonitoringPage';
+import SupportImpersonationPage from '../pages/admin/SupportImpersonationPage';
+import ProtectedRoute from '../components/guards/ProtectedRoute';
+import RoleGuard from '../components/guards/RoleGuard';
+
+export default function AppRouter() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <TenantProvider>
+          <Routes>
+            <Route path="/" element={<TenantLandingPage />} />
+            <Route path="/login" element={<TenantLoginPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <TenantDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={['super_admin']}>
+                    <GlobalAdminDashboard />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/tenants/:tenantId"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={['super_admin']}>
+                    <TenantDetailPage />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/tenants/:tenantId/branding"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={['super_admin']}>
+                    <TenantBrandingPage />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/tenants/:tenantId/users"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={['super_admin']}>
+                    <TenantUsersPage />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/monitoring"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={['super_admin']}>
+                    <PlatformMonitoringPage />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/support/:tenantId"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allow={['super_admin']}>
+                    <SupportImpersonationPage />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </TenantProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}

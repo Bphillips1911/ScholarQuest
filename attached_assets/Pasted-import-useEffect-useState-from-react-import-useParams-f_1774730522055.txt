@@ -1,0 +1,73 @@
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+
+export default function TenantBrandingPage() {
+  const { tenantId } = useParams();
+  const [form, setForm] = useState({
+    school_name: '',
+    logo_url: '',
+    favicon_url: '',
+    primary_color: '#14532d',
+    secondary_color: '#fbbf24',
+    accent_color: '#1d4ed8',
+    hero_title: '',
+    hero_subtitle: '',
+    support_email: '',
+  });
+
+  useEffect(() => {
+    loadTenant();
+  }, [tenantId]);
+
+  async function loadTenant() {
+    const { data } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
+    if (data) setForm(data);
+  }
+
+  async function saveBranding(e) {
+    e.preventDefault();
+
+    const { error } = await supabase
+      .from('tenants')
+      .update({
+        school_name: form.school_name,
+        logo_url: form.logo_url,
+        favicon_url: form.favicon_url,
+        primary_color: form.primary_color,
+        secondary_color: form.secondary_color,
+        accent_color: form.accent_color,
+        hero_title: form.hero_title,
+        hero_subtitle: form.hero_subtitle,
+        support_email: form.support_email,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', tenantId);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert('Branding saved.');
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Tenant Branding</h1>
+
+      <form onSubmit={saveBranding} className="bg-white rounded-2xl shadow p-6 grid md:grid-cols-2 gap-4">
+        <input className="border rounded-xl px-4 py-3" placeholder="School Name" value={form.school_name || ''} onChange={e=>setForm({...form, school_name:e.target.value})} />
+        <input className="border rounded-xl px-4 py-3" placeholder="Support Email" value={form.support_email || ''} onChange={e=>setForm({...form, support_email:e.target.value})} />
+        <input className="border rounded-xl px-4 py-3" placeholder="Logo URL" value={form.logo_url || ''} onChange={e=>setForm({...form, logo_url:e.target.value})} />
+        <input className="border rounded-xl px-4 py-3" placeholder="Favicon URL" value={form.favicon_url || ''} onChange={e=>setForm({...form, favicon_url:e.target.value})} />
+        <input className="border rounded-xl px-4 py-3" type="color" value={form.primary_color || '#14532d'} onChange={e=>setForm({...form, primary_color:e.target.value})} />
+        <input className="border rounded-xl px-4 py-3" type="color" value={form.secondary_color || '#fbbf24'} onChange={e=>setForm({...form, secondary_color:e.target.value})} />
+        <input className="border rounded-xl px-4 py-3" type="color" value={form.accent_color || '#1d4ed8'} onChange={e=>setForm({...form, accent_color:e.target.value})} />
+        <input className="border rounded-xl px-4 py-3" placeholder="Hero Title" value={form.hero_title || ''} onChange={e=>setForm({...form, hero_title:e.target.value})} />
+        <textarea className="border rounded-xl px-4 py-3 md:col-span-2" placeholder="Hero Subtitle" value={form.hero_subtitle || ''} onChange={e=>setForm({...form, hero_subtitle:e.target.value})} />
+        <button className="md:col-span-2 px-4 py-3 rounded-xl bg-black text-white">Save Branding</button>
+      </form>
+    </div>
+  );
+}

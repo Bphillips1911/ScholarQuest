@@ -1,0 +1,130 @@
+create extension if not exists pgcrypto;
+
+create table if not exists public.tenants (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique check (slug ~ '^[a-z0-9-]+$'),
+  school_name text not null,
+  district_name text,
+  logo_url text,
+  favicon_url text,
+  primary_color text default '#14532d',
+  secondary_color text default '#fbbf24',
+  accent_color text default '#1d4ed8',
+  hero_title text,
+  hero_subtitle text,
+  support_email text,
+  custom_domain text unique,
+  is_active boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  tenant_id uuid references public.tenants(id) on delete cascade,
+  full_name text,
+  email text,
+  role text not null check (role in ('super_admin','tenant_admin','teacher','student')),
+  is_active boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.tenant_settings (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null unique references public.tenants(id) on delete cascade,
+  allow_teacher_signup boolean default false,
+  allow_student_self_signup boolean default false,
+  show_powered_by boolean default true,
+  login_message text,
+  landing_cta_text text default 'Enter PBIS Portal',
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references public.tenants(id) on delete cascade,
+  actor_user_id uuid references auth.users(id) on delete set null,
+  actor_role text,
+  action text not null,
+  target_type text,
+  target_id text,
+  details jsonb default '{}'::jsonb,
+  created_at timestamptz default now()
+);
+
+create table if not exists public.platform_events (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references public.tenants(id) on delete cascade,
+  event_type text not null,
+  severity text default 'info' check (severity in ('info','warning','error')),
+  title text not null,
+  message text,
+  meta jsonb default '{}'::jsonb,
+  created_at timestamptz default now()
+);
+
+create table if not exists public.platform_metrics (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references public.tenants(id) on delete cascade,
+  metric_date date not null default current_date,
+  active_users integer default 0,
+  total_logins integer default 0,
+  total_students integer default 0,
+  total_teachers integer default 0,
+  total_behavior_events integer default 0,
+  total_points_awarded numeric default 0,
+  created_at timestamptz default now(),
+  unique (tenant_id, metric_date)
+);
+
+create table if not exists public.support_sessions (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
+  support_admin_id uuid not null references auth.users(id) on delete cascade,
+  tenant_admin_id uuid references auth.users(id) on delete set null,
+  reason text not null,
+  started_at timestamptz default now(),
+  ended_at timestamptz,
+  is_active boolean default true
+);
+
+-- Example tenant-owned PBIS tables
+create table if not exists public.houses (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
+  name text not null,
+  color text,
+  mascot text,
+  points numeric default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists public.students (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
+  first_name text not null,
+  last_name text not null,
+  grade_level text,
+  student_number text,
+  created_at timestamptz default now()
+);
+
+create table if not exists public.behavior_events (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
+  student_id uuid references public.students(id) on delete cascade,
+  awarded_by uuid references auth.users(id) on delete set null,
+  house_id uuid references public.houses(id) on delete set null,
+  points numeric default 0,
+  category text,
+  notes text,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_profiles_tenant_id on public.profiles(tenant_id);
+create index if not exists idx_students_tenant_id on public.students(tenant_id);
+create index if not exists idx_houses_tenant_id on public.houses(tenant_id);
+create index if not exists idx_behavior_events_tenant_id on public.behavior_events(tenant_id);
+create index if not exists idx_platform_metrics_tenant_id on public.platform_metrics(tenant_id);
+create index if not exists idx_audit_logs_tenant_id on public.audit_logs(tenant_id);

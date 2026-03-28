@@ -1,0 +1,70 @@
+import { Link } from 'react-router-dom';
+import { useTenant } from '../../context/TenantProvider';
+
+export default function TenantLandingPage() {
+  const { tenant, loading } = useTenant();
+
+  if (loading) return <div className="p-8">Loading school portal...</div>;
+
+  if (!tenant) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div className="max-w-xl text-center">
+          <h1 className="text-4xl font-bold mb-4">PBIS House of Champions</h1>
+          <p className="text-slate-600 mb-6">
+            Welcome to the platform. Please access your school using your assigned school subdomain.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
+          {tenant.logo_url && (
+            <img src={tenant.logo_url} alt={tenant.school_name} className="h-14 w-14 object-contain" />
+          )}
+          <div>
+            <h1 className="text-2xl font-bold">{tenant.school_name}</h1>
+            <p className="text-slate-500">PBIS House of Champions Portal</p>
+          </div>
+        </div>
+      </header>
+
+      <section className="max-w-6xl mx-auto px-6 py-16 text-center">
+        <h2 className="text-5xl font-extrabold mb-4">
+          {tenant.hero_title || `Welcome to ${tenant.school_name}`}
+        </h2>
+        <p className="text-xl text-slate-600 mb-8">
+          {tenant.hero_subtitle || 'Track house points, celebrate scholars, and power positive behavior.'}
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to="/login?role=student"
+            className="px-6 py-3 rounded-xl text-white font-semibold"
+            style={{ backgroundColor: 'var(--tenant-primary)' }}
+          >
+            Student Login
+          </Link>
+          <Link
+            to="/login?role=teacher"
+            className="px-6 py-3 rounded-xl text-slate-900 font-semibold"
+            style={{ backgroundColor: 'var(--tenant-secondary)' }}
+          >
+            Teacher Login
+          </Link>
+          <Link
+            to="/login?role=tenant_admin"
+            className="px-6 py-3 rounded-xl text-white font-semibold"
+            style={{ backgroundColor: 'var(--tenant-accent)' }}
+          >
+            Admin Login
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}

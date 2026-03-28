@@ -1,0 +1,131 @@
+alter table public.tenants enable row level security;
+alter table public.profiles enable row level security;
+alter table public.tenant_settings enable row level security;
+alter table public.audit_logs enable row level security;
+alter table public.platform_events enable row level security;
+alter table public.platform_metrics enable row level security;
+alter table public.support_sessions enable row level security;
+alter table public.houses enable row level security;
+alter table public.students enable row level security;
+alter table public.behavior_events enable row level security;
+
+create or replace function public.current_user_role()
+returns text
+language sql
+stable
+as $$
+  select role from public.profiles where id = auth.uid()
+$$;
+
+create or replace function public.current_tenant_id()
+returns uuid
+language sql
+stable
+as $$
+  select tenant_id from public.profiles where id = auth.uid()
+$$;
+
+create or replace function public.is_super_admin()
+returns boolean
+language sql
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'super_admin'
+  )
+$$;
+
+-- Tenants
+create policy "super admin can read all tenants"
+on public.tenants for select
+using (public.is_super_admin());
+
+create policy "tenant users can read own tenant"
+on public.tenants for select
+using (id = public.current_tenant_id());
+
+create policy "super admin can manage tenants"
+on public.tenants for all
+using (public.is_super_admin())
+with check (public.is_super_admin());
+
+-- Profiles
+create policy "super admin can read all profiles"
+on public.profiles for select
+using (public.is_super_admin());
+
+create policy "tenant users can read profiles in own tenant"
+on public.profiles for select
+using (tenant_id = public.current_tenant_id());
+
+create policy "tenant admin can manage profiles in own tenant"
+on public.profiles for all
+using (
+  exists (
+    select 1 from public.profiles me
+    where me.id = auth.uid()
+      and me.role in ('tenant_admin','super_admin')
+      and (
+        me.role = 'super_admin'
+        or me.tenant_id = profiles.tenant_id
+      )
+  )
+)
+with check (
+  exists (
+    select 1 from public.profiles me
+    where me.id = auth.uid()
+      and me.role in ('tenant_admin','super_admin')
+      and (
+        me.role = 'super_admin'
+        or me.tenant_id = profiles.tenant_id
+      )
+  )
+);
+
+-- Generic tenant-owned tables
+create policy "tenant settings read own or super"
+on public.tenant_settings for select
+using (tenant_id = public.current_tenant_id() or public.is_super_admin());
+
+create policy "tenant settings manage own or super"
+on public.tenant_settings for all
+using (
+  tenant_id = public.current_tenant_id() or public.is_super_admin()
+)
+with check (
+  tenant_id = public.current_tenant_id() or public.is_super_admin()
+);
+
+create policy "audit logs own tenant or super"
+on public.audit_logs for select
+using (tenant_id = public.current_tenant_id() or public.is_super_admin());
+
+create policy "platform events own tenant or super"
+on public.platform_events for select
+using (tenant_id = public.current_tenant_id() or public.is_super_admin());
+
+create policy "platform metrics own tenant or super"
+on public.platform_metrics for select
+using (tenant_id = public.current_tenant_id() or public.is_super_admin());
+
+create policy "support sessions super only"
+on public.support_sessions for all
+using (public.is_super_admin())
+with check (public.is_super_admin());
+
+create policy "houses own tenant or super"
+on public.houses for all
+using (tenant_id = public.current_tenant_id() or public.is_super_admin())
+with check (tenant_id = public.current_tenant_id() or public.is_super_admin());
+
+create policy "students own tenant or super"
+on public.students for all
+using (tenant_id = public.current_tenant_id() or public.is_super_admin())
+with check (tenant_id = public.current_tenant_id() or public.is_super_admin());
+
+create policy "behavior events own tenant or super"
+on public.behavior_events for all
+using (tenant_id = public.current_tenant_id() or public.is_super_admin())
+with check (tenant_id = public.current_tenant_id() or public.is_super_admin());

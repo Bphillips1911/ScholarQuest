@@ -1,0 +1,75 @@
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+
+export default function TenantUsersPage() {
+  const { tenantId } = useParams();
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [tenantId]);
+
+  async function loadUsers() {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+
+    setUsers(data || []);
+  }
+
+  async function deactivateUser(userId, nextState) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_active: nextState })
+      .eq('id', userId);
+
+    if (!error) loadUsers();
+  }
+
+  async function sendPasswordReset(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert(`Password reset sent to ${email}`);
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Tenant Users</h1>
+
+      <div className="bg-white rounded-2xl shadow overflow-hidden">
+        <div className="divide-y">
+          {users.map((user) => (
+            <div key={user.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <div className="font-semibold">{user.full_name}</div>
+                <div className="text-slate-500">{user.email}</div>
+                <div className="text-sm">{user.role}</div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button className="px-3 py-2 rounded-lg border" onClick={() => sendPasswordReset(user.email)}>
+                  Reset Password
+                </button>
+                <button
+                  className="px-3 py-2 rounded-lg border"
+                  onClick={() => deactivateUser(user.id, !user.is_active)}
+                >
+                  {user.is_active ? 'Deactivate' : 'Activate'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

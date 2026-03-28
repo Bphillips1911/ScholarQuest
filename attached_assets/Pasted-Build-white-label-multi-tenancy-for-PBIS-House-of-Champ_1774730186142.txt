@@ -1,0 +1,76 @@
+Build white-label multi-tenancy for PBIS House of Champions using React + Supabase on a single shared codebase with strict tenant isolation.
+
+GOAL
+Create a production-grade multi-tenant architecture where:
+1. Each school has its own branded subdomain:
+   - {slug}.pbishouseofchampions.com
+2. Each school has its own:
+   - landing page
+   - login page
+   - branding (logo, colors, mascot/banner)
+   - users
+   - students
+   - teachers
+   - houses
+   - points
+   - settings
+   - analytics
+3. No school can access another school's data.
+4. Owner/super admin can:
+   - view/manage each tenant
+   - impersonate tenant admin in a safe support mode
+   - reset user credentials by sending password reset emails
+   - update tenant branding
+   - view uptime, logs, and analytics by school
+   - push app updates once and have all tenants receive them automatically
+5. Keep one codebase and one frontend deployment.
+6. Use tenant-aware routing and Supabase Row Level Security (RLS).
+7. Add a Global Admin Dashboard for the platform owner.
+
+STACK
+- React
+- React Router
+- Supabase Auth
+- Supabase Postgres
+- Supabase Storage
+- Tailwind
+- shadcn/ui style components if already present
+- Vite if frontend is Vite-based
+- No mock data in final routes
+- Keep code modular and production-ready
+
+ARCHITECTURE REQUIREMENTS
+- Shared DB with tenant_id on all tenant-owned tables
+- RLS enforced on every tenant-owned table
+- One "tenants" table storing school branding and routing config
+- Frontend detects tenant from subdomain
+- Owner role = super_admin
+- School principal/admin role = tenant_admin
+- Teacher role = teacher
+- Student role = student
+- Staff support logs + audit trail
+- Storage paths scoped by tenant slug or tenant_id
+- All tenant pages must only load tenant-scoped data
+
+DELIVERABLES
+1. Supabase SQL migration files
+2. React tenant resolver
+3. Tenant branding context/provider
+4. Tenant login flow
+5. Tenant landing page
+6. Global admin dashboard
+7. Tenant management pages
+8. Branding management page
+9. Analytics/uptime page
+10. Safe impersonation support mode
+11. Password reset admin action
+12. Example DNS/subdomain config notes
+13. Route guards for roles
+14. Clean code comments for where to wire existing PBIS modules to tenant_id
+
+IMPORTANT
+- Do not break existing PBIS functionality.
+- Add tenant_id support in a way that can be extended into existing student, house, behavior, rewards, and leaderboard tables.
+- All future updates must propagate from one codebase to all tenant schools automatically.
+- Keep owner access separate from tenant access.
+- Use environment-safe patterns.

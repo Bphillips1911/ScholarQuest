@@ -302,14 +302,38 @@ Requirements:
 - All questions must be DOK Level ${params.dokLevel}
 - ${langInstr}
 ${params.variantLabel ? `
-DIFFERENTIATED VARIANT ${params.variantLabel}:
-- This is Variant ${params.variantLabel} of a differentiated assessment set.
-- Variant A = On-Level (standard grade-level complexity)
-- Variant B = Below-Level (simplified language, more scaffolding, simpler numbers)
-- Variant C = Above-Level (more complex scenarios, higher-order thinking, multi-step)
-- You MUST create COMPLETELY DIFFERENT questions, passages, scenarios, and answer choices than other variants.
-- The questions must still assess the same standard (${params.standardCode}) but with different content.
-- Use different character names, different contexts, different numbers, and different passage topics.
+DIFFERENTIATED VARIANT ${params.variantLabel} (Variant Seed: ${params.variantLabel}-${uniqueSeed}):
+- This is Variant ${params.variantLabel} of a 3-variant differentiated assessment set.
+- You MUST create content that is COMPLETELY DIFFERENT from other variants.
+- The questions still assess standard ${params.standardCode} but MUST use DIFFERENT scenarios.
+
+VARIANT-SPECIFIC RULES:
+${params.variantLabel === "A" ? `
+VARIANT A — On-Level (Grade ${params.grade} standard complexity):
+- Use grade-appropriate complexity and vocabulary
+- Passages must use a SCHOOL or SPORTS setting (e.g., science fair, track team, student council)
+- Math: Use numbers in the range 10–999 with whole number and simple fraction contexts
+- Character names: Use Maya, Jordan, Carlos, Priya (ONLY for Variant A)
+- NO sentence starters or extra hints provided
+` : params.variantLabel === "B" ? `
+VARIANT B — Below-Level (Scaffolded / Simplified):
+- Simplify sentence complexity and vocabulary (use 2nd–3rd grade reading level for questions)
+- Passages must use a NATURE or ANIMALS setting (e.g., a rainforest, a pond ecosystem, pets)
+- Math: Use small whole numbers only (1–100), include step-by-step cues in the stem
+- Character names: Use Sam, Alex, Dana, Casey (ONLY for Variant B)
+- Include sentence starters like "One reason is..." or "First, ..."
+- Reduce multi-step reasoning; focus on 1–2 key operations
+` : `
+VARIANT C — Above-Level (Enriched / Extended Thinking):
+- Use complex vocabulary and multi-layered scenarios
+- Passages must use a TECHNOLOGY or CAREERS setting (e.g., robotics lab, architecture firm, marine research vessel)
+- Math: Use multi-step problems, decimals, percentages, and negative numbers
+- Character names: Use Avery, Phoenix, Zara, Orion (ONLY for Variant C)
+- Include open-ended extensions and multi-part reasoning
+- Add cross-disciplinary connections (ELA ↔ Social Studies, Math ↔ Science)
+`}
+- ABSOLUTELY DO NOT copy questions, numbers, passages, or answer choices from other variants.
+- Every question stem, passage excerpt, and answer option must be unique to Variant ${params.variantLabel}.
 ` : ''}
 DOK Level ${params.dokLevel} Guidelines:
 ${getDokGuidance(params.dokLevel)}

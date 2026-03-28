@@ -102,10 +102,18 @@ async function seedEssentialTeachers() {
 
   for (const teacher of essentialTeachers) {
     try {
-      await db.insert(teacherAuth).values(teacher).onConflictDoNothing();
+      await db.insert(teacherAuth).values(teacher).onConflictDoUpdate({
+        target: teacherAuth.email,
+        set: {
+          passwordHash: teacher.passwordHash,
+          isApproved: true,
+          name: teacher.name,
+          updatedAt: new Date(),
+        }
+      });
       console.log(`✅ Teacher: ${teacher.name}`);
     } catch (error) {
-      console.log(`⚠️ Teacher ${teacher.name} may already exist`);
+      console.log(`⚠️ Teacher ${teacher.name} seed error: ${error.message}`);
     }
   }
 }
@@ -315,10 +323,18 @@ async function seedEssentialScholars() {
 
   for (const scholar of essentialScholars) {
     try {
-      await db.insert(scholars).values(scholar).onConflictDoNothing();
+      await db.insert(scholars).values(scholar).onConflictDoUpdate({
+        target: scholars.id,
+        set: {
+          username: scholar.username,
+          passwordHash: scholar.passwordHash,
+          needsPasswordReset: false,
+          isActive: true,
+        }
+      });
       console.log(`✅ Scholar: ${scholar.name} (${scholar.username})`);
     } catch (error) {
-      console.log(`⚠️ Scholar ${scholar.name} may already exist`);
+      console.log(`⚠️ Scholar ${scholar.name} seed error: ${error.message}`);
     }
   }
 }

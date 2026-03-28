@@ -61,6 +61,7 @@ export default function ForgeTestPlayer() {
   const lastAnswerTime = useRef<number>(0);
   const itemStartTime = useRef<number>(Date.now());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoLaunchRef = useRef(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("studentData");
@@ -71,6 +72,54 @@ export default function ForgeTestPlayer() {
       } catch {}
     }
   }, []);
+
+  const mapForgeResponse = (data: any): AssessmentInfo => ({
+    forgeAssessmentId: data.assessment?.id ?? data.forgeAssessmentId,
+    versionId: data.version?.id ?? data.versionId,
+    title: data.assessment?.title ?? data.title ?? "Assessment",
+    timeLimitMinutes: data.assessment?.timeLimitMinutes ?? data.timeLimitMinutes ?? 30,
+    itemCount: data.assessment?.itemCount ?? data.items?.length ?? 0,
+    versionLabel: data.version?.label ?? data.versionLabel ?? "",
+    items: (data.items || []).map((item: any) => ({
+      id: item.id,
+      stem: item.stem,
+      options: Array.isArray(item.options)
+        ? item.options
+        : Object.entries(item.options || {}).map(([label, text]) => ({ label, text: String(text) })),
+      itemType: item.itemType || item.type || "mc",
+      passageId: item.passageId,
+      dokLevel: item.dokLevel,
+    })),
+  });
+
+  useEffect(() => {
+    const storedCode = sessionStorage.getItem("forgeAutoCode");
+    const params = new URLSearchParams(window.location.search);
+    const codeParam = storedCode || params.get("code");
+    if (codeParam && !autoLaunchRef.current) {
+      autoLaunchRef.current = true;
+      if (storedCode) sessionStorage.removeItem("forgeAutoCode");
+      const normalized = codeParam.toUpperCase().replace(/\s/g, "");
+      setAccessCode(normalized);
+      setLoading(true);
+      fetch(`/api/acap/forge/test/access/${normalized}`)
+        .then(async (res) => {
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: "Invalid access code" }));
+            throw new Error(err.error || "Invalid access code");
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setAssessmentInfo(mapForgeResponse(data));
+          setPhase("info");
+        })
+        .catch((err) => {
+          toast({ title: "Access Denied", description: err.message, variant: "destructive" });
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [toast]);
 
   useEffect(() => {
     if (phase !== "test" || timeLeft <= 0) return;
@@ -137,19 +186,19 @@ export default function ForgeTestPlayer() {
   }, [attemptId, scholarId, startTime, toast]);
 
   const handleAccessSubmit = async () => {
-    if (accessCode.length !== 6) {
-      toast({ title: "Invalid Code", description: "Please enter a 6-character access code", variant: "destructive" });
+    if (accessCode.trim().length < 4) {
+      toast({ title: "Invalid Code", description: "Please enter a valid access code", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(`/api/acap/forge/test/access/${accessCode}`);
+      const res = await fetch(`/api/acap/forge/test/access/${accessCode.trim().toUpperCase()}`);
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Invalid access code" }));
         throw new Error(err.error || "Invalid access code");
       }
       const data = await res.json();
-      setAssessmentInfo(data);
+      setAssessmentInfo(mapForgeResponse(data));
       setPhase("info");
     } catch (err: any) {
       toast({ title: "Access Denied", description: err.message, variant: "destructive" });
@@ -324,15 +373,15 @@ export default function ForgeTestPlayer() {
           <CardContent className="space-y-4">
             <Input
               value={accessCode}
-              onChange={(e) => setAccessCode(e.target.value.toUpperCase().slice(0, 6))}
+              onChange={(e) => setAccessCode(e.target.value.toUpperCase().replace(/\s/g, "").slice(0, 12))}
               placeholder="Enter access code"
               className="text-center text-2xl tracking-[0.3em] font-mono uppercase h-14"
-              maxLength={6}
+              maxLength={12}
               onKeyDown={(e) => e.key === "Enter" && handleAccessSubmit()}
             />
             <Button
               onClick={handleAccessSubmit}
-              disabled={loading || accessCode.length !== 6}
+              disabled={loading || accessCode.trim().length < 4}
               className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 text-base"
             >
               {loading ? "Verifying..." : "Enter Assessment"}

@@ -1721,7 +1721,7 @@ export function registerAcapRoutes(app: Express): void {
           versionId: accessCode.versionId,
           instanceId,
           launchUrl: accessCode.forgeAssessmentId
-            ? `/student-acap/forge/${normalizedCode}`
+            ? `/acap/forge-test?code=${normalizedCode}`
             : `/student-acap`,
         });
       } else if (forgeMatch) {
@@ -1765,7 +1765,7 @@ export function registerAcapRoutes(app: Express): void {
           forgeAssessmentId: forgeMatch.assessment.id,
           versionId: forgeMatch.version.id,
           instanceId,
-          launchUrl: `/student-acap/forge/${normalizedCode}`,
+          launchUrl: `/acap/forge-test?code=${normalizedCode}`,
         });
       }
       return res.status(404).json({ error: "Invalid access code" });
@@ -2992,7 +2992,7 @@ export function registerAcapRoutes(app: Express): void {
       }
     } catch {}
     try {
-      const decoded: any = jwt.verify(token, "bhsa-teacher-jwt-secret-2025");
+      const decoded: any = jwt.verify(token, "bhsa-teacher-secret-2025-stable");
       if (decoded.teacherId) { req.user = { id: decoded.teacherId, role: "teacher" }; return next(); }
     } catch {}
     return res.status(401).json({ error: "Invalid token" });
@@ -3318,12 +3318,16 @@ export function registerAcapRoutes(app: Express): void {
       const token = authHeader.replace("Bearer ", "");
       let decoded: any;
       try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET || "bhsa-secret-key-2024");
+        decoded = jwt.verify(token, "bhsa-student-secret-2025-stable");
       } catch {
-        return res.status(401).json({ error: "Invalid token" });
+        try {
+          decoded = jwt.verify(token, "bhsa-admin-secret-2025-stable");
+        } catch {
+          return res.status(401).json({ error: "Invalid token" });
+        }
       }
 
-      const scholarId = decoded.id || decoded.scholarId;
+      const scholarId = decoded.studentId || decoded.id || decoded.scholarId;
       if (!scholarId) return res.status(401).json({ error: "Invalid student token" });
 
       const scholarRows = await db.select().from(scholars).where(eq(scholars.id, scholarId)).limit(1);
@@ -3413,11 +3417,15 @@ export function registerAcapRoutes(app: Express): void {
       const token = authHeader.replace("Bearer ", "");
       let decoded: any;
       try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET || "bhsa-secret-key-2024");
+        decoded = jwt.verify(token, "bhsa-student-secret-2025-stable");
       } catch {
-        return res.status(401).json({ error: "Invalid token" });
+        try {
+          decoded = jwt.verify(token, "bhsa-admin-secret-2025-stable");
+        } catch {
+          return res.status(401).json({ error: "Invalid token" });
+        }
       }
-      const scholarId = decoded.id || decoded.scholarId;
+      const scholarId = decoded.studentId || decoded.id || decoded.scholarId;
       if (!scholarId) return res.status(401).json({ error: "Invalid student token" });
 
       const assignmentRows = await db.select().from(worksheetAssignments).where(eq(worksheetAssignments.id, assignmentId));

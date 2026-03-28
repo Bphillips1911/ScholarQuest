@@ -389,7 +389,11 @@ function AssessmentsTab({ scholarId }: { scholarId: string }) {
               queryClient.invalidateQueries({ queryKey: ["/api/acap/student/assessments"] });
               if (data.forgeAssessmentId && data.launchUrl) {
                 toast({ title: "Access Granted", description: "Launching Forge assessment..." });
-                window.location.href = data.launchUrl;
+                const codeMatch = data.launchUrl.match(/[?&]code=([^&]+)/);
+                if (codeMatch) {
+                  sessionStorage.setItem("forgeAutoCode", codeMatch[1]);
+                }
+                window.location.href = "/acap/forge-test";
               } else if (data.assessmentId) {
                 toast({ title: "Access Granted", description: "Starting assessment..." });
                 startMutation.mutate({ assessmentId: data.assessmentId, scholarId });

@@ -6,6 +6,14 @@ The "PBIS House of Champions" is a web application for Bush Hills STEAM Academy,
 
 Preferred communication style: Simple, everyday language.
 
+# Demo Credentials (Development)
+
+- **Teacher login**: `david.thompson@bhsteam.edu` / `BHSATeacher2025!` (all demo teachers use same password)
+- **Student login**: `hulhog03` (Hulk Hogan) / `BHSAStudent2025!` (all demo students use same password)
+- **Tiffany Demo student**: `tifdau78` / `bhsabh1478`
+- **JWT secrets**: teacher=`bhsa-teacher-secret-2025-stable`, admin=`bhsa-admin-secret-2025-stable`, student=`bhsa-student-secret-2025-stable`
+- **Security note**: Passwords are reset on every startup via `onConflictDoUpdate` in deployment-comprehensive-seed.ts
+
 # System Architecture
 
 ## Frontend
